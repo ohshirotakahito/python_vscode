@@ -1,0 +1,12 @@
+# 改行コードをGit管理下で自動的にLF(Unix形式)に統一する。
+# Windows/Mac/Linux間で開発者が混在しても、コミットされる内容は常にLFになるため、
+# 「1行しか変更していないのにdiffが全行分表示される」というCRLF起因の事故を防ぐ。
+* text=auto eol=lf
+
+# バイナリファイルは改行変換の対象外にする(念のため明示)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.zip binary
+*.npy binary
+*.pkl binary
