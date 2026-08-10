@@ -110,6 +110,17 @@ pip install -r requirements.txt
 
 ---
 
+## 📝 変更履歴 (Changelog)
+
+### 2026-08 — resumable機能の追加
+- `extract_features_traditional.py` / `extract_features_tsfresh.py` /
+  `extract_features_chronos.py` に、処理を中断しても再開できる仕組みを追加
+- 新規データの有無をチェックする `check_available_tdms_data.py` を追加
+- 詳細は [Pull Request一覧](https://github.com/ohshirotakahito/python_vscode/pulls?q=is%3Apr+is%3Aclosed) を参照
+
+---
+
+
 ## 🚫 Git管理対象外(.gitignoreで除外)
 
 - `ML/data/` — 入力データ(容量が大きいため。配布方法は別途相談)
