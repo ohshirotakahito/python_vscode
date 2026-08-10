@@ -3,6 +3,7 @@ ML/data/
 ML/models/
 ML/results/
 Viewer/clips_pick/
+ML/data_checks/
 
 # tsfreshキャッシュ(念のため、上記に含まれない場所にできても除外)
 **/_tsfresh_cache/

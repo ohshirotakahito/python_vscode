@@ -47,7 +47,7 @@ FEATURE_SET = 'rmc'
 if __name__ == '__main__':
     server = 'Rackstation'
     keyfolder = 'analysis'
-    ex = 'Shanli_thy'
+    ex = 'Suzuki_Lys'
 
     ExPath = '//' + server + '/' + keyfolder + '/' + ex + '/'
 

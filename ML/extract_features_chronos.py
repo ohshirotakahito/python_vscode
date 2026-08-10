@@ -9,6 +9,25 @@ TDMS読込・イベント抽出のコア処理は common/tdms_io.py に共通化
 tdmsファイル1つ処理するたびにtsfresh_input.csv / chronos_emb.csvへ
 逐次追記していく方式（rmc版からのメモリ対策）を保持している。
 
+【中断・再開対応】(このバージョンで追加)
+実行に時間がかかるため、以下の方式で「途中で止めても再実行すれば
+続きから再開できる」ようにしている。
+
+  ・サンプルごとに <SamplePath>_<TargetPath>_checkpoint.json を書き出し、
+    「処理済みtdmsファイルのパス一覧」「next_event_id」「各CSVの
+    ヘッダ書き込み済みフラグ」を保持する。
+  ・tdmsファイルを1つ処理し終えるたびにチェックポイントを更新する
+    （tempfile + os.replace によるatomic writeなので、書き込み中に
+    プロセスが落ちてもチェックポイント自体は壊れない）。
+  ・波形特徴量(CX)もメモリに溜めず meta.csv へ逐次追記するように変更。
+    rmd.npy はサンプル完了時に meta.csv から作り直す。
+  ・サンプル処理が最後まで終わったら <SamplePath>_<TargetPath>.done を
+    作成し、チェックポイントJSONは削除する。次回実行時、.done がある
+    サンプルは丸ごとスキップする。
+  ・起動時にチェックポイントJSONがあれば「途中から再開」、なければ
+    「新規実行」として関連CSV/meta.csvを削除してから開始する
+    （中途半端に混ざったデータが残らないようにするため）。
+
 現時点でこのシリーズ（rmb→rmc→rmd）の中では最も改良されたバージョン。
 チームで新規にTDMS抽出スクリプトを書く場合は、このファイルをベースにするのが良い。
 
@@ -20,6 +39,8 @@ common/paths.py に統一（data/features/rmd/ 以下に保存される）。
 """
 
 import os
+import json
+import tempfile
 
 import numpy as np
 import pandas as pd
@@ -97,19 +118,47 @@ def extract_chronos_embeddings(
 
 
 # =====================================================================
+# チェックポイント関連（中断・再開のためのユーティリティ）
+# =====================================================================
+
+def load_checkpoint(checkpoint_path):
+    """チェックポイントを読み込む。存在しない/壊れている場合はNoneを返す。"""
+    if not os.path.exists(checkpoint_path):
+        return None
+    try:
+        with open(checkpoint_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        print(f"チェックポイントが読み込めないため、新規実行として扱います: {checkpoint_path}")
+        return None
+
+
+def save_checkpoint(checkpoint_path, state):
+    """チェックポイントをatomicに保存する。
+    一時ファイルに書いてからos.replaceで置き換えることで、
+    書き込み中にプロセスが落ちてもチェックポイントファイル自体は
+    「更新前」か「更新後」のどちらかの完全な状態を保つ。
+    """
+    dir_ = os.path.dirname(checkpoint_path)
+    fd, tmp_path = tempfile.mkstemp(dir=dir_, prefix='.ckpt_', suffix='.tmp')
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            json.dump(state, f, ensure_ascii=False)
+        os.replace(tmp_path, checkpoint_path)
+    except Exception:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise
+
+
+# =====================================================================
 # メイン処理
-#
-# 変更点（メモリ対策）:
-#   ALL_LONG_ROWSをリストに溜め込まず、tdmsファイルを1つ処理するたびに
-#     ・tsfresh_input.csv への追記
-#     ・Chronos埋め込みの計算とchronos_emb.csvへの追記
-#   をその場で行う（CXは12点波形特徴量+メタ情報のみで軽量なため保持）。
 # =====================================================================
 
 if __name__ == '__main__':
-    server = 'Rackstation'
+    server = 'QTserver'
     keyfolder = 'analysis'
-    ex = 'Sakano_02'
+    ex = 'Chirality_N2'
 
     ExPath = '//' + server + '/' + keyfolder + '/' + ex + '/'
 
@@ -123,68 +172,145 @@ if __name__ == '__main__':
     CHRONOS_DEVICE = "cpu"  # GPUがあれば "cuda"
 
     for sample in samples:
-        folderlist = Analtfoler(server, keyfolder, ex, sample)
-
         SamplePath = sample + '_10k_Sample'
         TargetPath = 'ANAL'
 
         tsfresh_path = os.path.join(OUTPUT_DIR, SamplePath + '_' + TargetPath + '_tsfresh_input.csv')
         emb_path = os.path.join(OUTPUT_DIR, SamplePath + '_' + TargetPath + '_chronos_emb.csv')
+        meta_path = os.path.join(OUTPUT_DIR, SamplePath + '_' + TargetPath + '_meta.csv')
+        checkpoint_path = os.path.join(OUTPUT_DIR, SamplePath + '_' + TargetPath + '_checkpoint.json')
+        done_marker_path = os.path.join(OUTPUT_DIR, SamplePath + '_' + TargetPath + '.done')
 
-        # 既存ファイルが残っていると追記モードで混ざってしまうため、実行開始時に削除しておく
-        for p in (tsfresh_path, emb_path):
-            if os.path.exists(p):
-                os.remove(p)
+        # このサンプルは既に完了済み（.doneがある）ならまるごとスキップ
+        if os.path.exists(done_marker_path):
+            print(f"[{sample}] 完了済みのためスキップします。")
+            continue
 
-        CX = []
-        next_event_id = 0
-        tsfresh_header_written = False
-        emb_header_written = False
-        total_long_rows = 0
-        total_events_with_emb = 0
+        folderlist = Analtfoler(server, keyfolder, ex, sample)
 
-        for folder_path in folderlist:
-            tdms_files = tdmslist_files(folder_path)
+        checkpoint = load_checkpoint(checkpoint_path)
+
+        if checkpoint is None:
+            # 新規実行: 古い出力が中途半端に残っていると混ざるので削除してから開始
+            for p in (tsfresh_path, emb_path, meta_path):
+                if os.path.exists(p):
+                    os.remove(p)
+            processed_files = set()
+            next_event_id = 0
+            tsfresh_header_written = False
+            emb_header_written = False
+            meta_header_written = False
+            wave_columns = None
+            total_long_rows = 0
+            total_events_with_emb = 0
+            total_meta_rows = 0
+            print(f"[{sample}] 新規実行として開始します。")
+        else:
+            processed_files = set(checkpoint['processed_files'])
+            next_event_id = checkpoint['next_event_id']
+            tsfresh_header_written = checkpoint['tsfresh_header_written']
+            emb_header_written = checkpoint['emb_header_written']
+            meta_header_written = checkpoint['meta_header_written']
+            wave_columns = checkpoint['wave_columns']
+            total_long_rows = checkpoint['total_long_rows']
+            total_events_with_emb = checkpoint['total_events_with_emb']
+            total_meta_rows = checkpoint['total_meta_rows']
+            print(f"[{sample}] チェックポイントから再開します "
+                  f"(処理済み {len(processed_files)} ファイル, next_event_id={next_event_id})")
+
+        def write_checkpoint():
+            save_checkpoint(checkpoint_path, {
+                'processed_files': sorted(processed_files),
+                'next_event_id': next_event_id,
+                'tsfresh_header_written': tsfresh_header_written,
+                'emb_header_written': emb_header_written,
+                'meta_header_written': meta_header_written,
+                'wave_columns': wave_columns,
+                'total_long_rows': total_long_rows,
+                'total_events_with_emb': total_events_with_emb,
+                'total_meta_rows': total_meta_rows,
+            })
+
+        # folderlist / tdms_files はそれぞれ glob / os.listdir 由来で
+        # 実行のたびに順序が変わり得る（tdms_io.py の実装依存）。
+        # 済/未済は絶対パスの集合で管理しているので順序自体は正しさに
+        # 影響しないが、ログを見やすく・再現しやすくするためソートしておく。
+        for folder_path in sorted(folderlist):
+            tdms_files = sorted(tdmslist_files(folder_path))
 
             for tdms_file_name in tdms_files:
                 tdms_file_path = os.path.join(folder_path, tdms_file_name)
+
+                if tdms_file_path in processed_files:
+                    continue  # 処理済み（再開時はここでスキップされる）
+
                 basename = os.path.basename(tdms_file_path)
                 print(basename)
 
                 echec = tdms_checker(tdms_file_path)
 
+                # ---- ここでは計算のみ行い、まだCSVには一切書き込まない ----
+                # (extract_chronos_embeddings は例外を握りつぶさず外へ伝播するため、
+                #  推論失敗時にCSVへ中途半端に書き込み済み、という状態を避けるために
+                #  「全部計算してから、まとめて書き込む」順序にしている)
+                meta_chunk = None
+                tsfresh_chunk = None
+                emb_df = None
+                candidate_next_event_id = next_event_id
+
                 if echec == 1:
-                    AX, long_rows, next_event_id = apick(
+                    AX, long_rows, candidate_next_event_id = apick(
                         tdms_file_path, sample, start_event_id=next_event_id
                     )
+
                     if AX:
-                        CX.extend(AX)
+                        if wave_columns is None:
+                            n_wave_features = len(AX[0]) - len(META_COLUMNS)
+                            wave_columns = [f'wave_{i}' for i in range(n_wave_features)]
+                        meta_chunk = pd.DataFrame(AX, columns=META_COLUMNS + wave_columns)
 
                     if long_rows:
-                        file_df = pd.DataFrame(long_rows)
-                        file_df['id'] = file_df['id'].astype('int32')
-                        file_df['time'] = file_df['time'].astype('int32')
-                        file_df['value'] = file_df['value'].astype('float32')
+                        tsfresh_chunk = pd.DataFrame(long_rows)
+                        tsfresh_chunk['id'] = tsfresh_chunk['id'].astype('int32')
+                        tsfresh_chunk['time'] = tsfresh_chunk['time'].astype('int32')
+                        tsfresh_chunk['value'] = tsfresh_chunk['value'].astype('float32')
 
-                        tsfresh_header_written = append_df_to_csv(
-                            file_df, tsfresh_path, tsfresh_header_written
-                        )
-                        total_long_rows += len(file_df)
-
+                        # ここで例外が起きても、まだ何もCSVに書いていないので安全
                         emb_df = extract_chronos_embeddings(
                             long_rows,
                             model_name=CHRONOS_MODEL,
                             device=CHRONOS_DEVICE,
                         )
-                        emb_header_written = append_df_to_csv(
-                            emb_df, emb_path, emb_header_written
-                        )
-                        total_events_with_emb += len(emb_df)
 
-                        del file_df, long_rows, emb_df
+                # ---- ここまで来て初めて、このファイル分の結果をまとめて書き込む ----
+                if meta_chunk is not None:
+                    meta_header_written = append_df_to_csv(
+                        meta_chunk, meta_path, meta_header_written
+                    )
+                    total_meta_rows += len(meta_chunk)
 
-        save_path = os.path.join(OUTPUT_DIR, SamplePath + '_' + TargetPath + '_' + 'rmd.npy')
-        np.save(save_path, CX)
+                if tsfresh_chunk is not None:
+                    tsfresh_header_written = append_df_to_csv(
+                        tsfresh_chunk, tsfresh_path, tsfresh_header_written
+                    )
+                    total_long_rows += len(tsfresh_chunk)
+
+                if emb_df is not None:
+                    emb_header_written = append_df_to_csv(
+                        emb_df, emb_path, emb_header_written
+                    )
+                    total_events_with_emb += len(emb_df)
+
+                next_event_id = candidate_next_event_id
+                del meta_chunk, tsfresh_chunk, emb_df
+
+                # このtdmsファイルの計算・書き込みが最後まで終わった時点で「処理済み」にする
+                # （途中で例外が出た場合はここに到達しないので、次回再実行時に
+                #   このファイルからやり直しになる＝中途半端なデータは残らない）
+                processed_files.add(tdms_file_path)
+                write_checkpoint()
+
+        # ---- ここまででこのサンプルの全tdmsファイル処理が完了 ----
 
         if total_long_rows > 0:
             print(f"tsfresh入力データを保存: {tsfresh_path} (rows={total_long_rows})")
@@ -192,15 +318,13 @@ if __name__ == '__main__':
             print("tsfresh用データが空のため保存をスキップしました。")
 
         meta_df = None
-        if CX:
-            n_wave_features = len(CX[0]) - len(META_COLUMNS)
-            wave_columns = [f'wave_{i}' for i in range(n_wave_features)]
-            meta_df = pd.DataFrame(CX, columns=META_COLUMNS + wave_columns)
-            meta_path = os.path.join(
-                OUTPUT_DIR, SamplePath + '_' + TargetPath + '_meta.csv'
-            )
-            meta_df.to_csv(meta_path, index=False)
-            print(f"メタ情報+波形特徴量を保存: {meta_path}")
+        if total_meta_rows > 0:
+            meta_df = pd.read_csv(meta_path)
+            save_path = os.path.join(OUTPUT_DIR, SamplePath + '_' + TargetPath + '_' + 'rmd.npy')
+            np.save(save_path, meta_df.to_numpy())
+            print(f"メタ情報+波形特徴量を保存: {meta_path} / {save_path}")
+        else:
+            print("メタ情報が空のため保存をスキップしました。")
 
         if total_events_with_emb > 0 and meta_df is not None:
             emb_df_full = pd.read_csv(emb_path)
@@ -216,5 +340,12 @@ if __name__ == '__main__':
             del emb_df_full, combined
         else:
             print("Chronos埋め込みが空のため結合をスキップしました。")
+
+        # このサンプルは完全に完了したので .done マーカーを作り、
+        # チェックポイントJSONは不要になるので削除する
+        with open(done_marker_path, 'w', encoding='utf-8') as f:
+            f.write('done')
+        if os.path.exists(checkpoint_path):
+            os.remove(checkpoint_path)
 
     print('end')
