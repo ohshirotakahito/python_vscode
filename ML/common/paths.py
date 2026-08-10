@@ -113,6 +113,27 @@ def model_dir(feature_set: str, algorithm: str, smns_tag: str) -> Path:
     d.mkdir(parents=True, exist_ok=True)
     return d
 
+def data_check_dir(server: str) -> Path:
+    """check_available_tdms_data.py が出力する、サーバーごとの
+    「TDMSデータ棚卸し結果」の保存先フォルダを返す(無ければ作成する)。
+
+    data/features/(特徴量本体)や results/(学習結果)とは別の、
+    「元データがサーバー上にどれだけ存在するか」を確認した記録専用の場所。
+
+    実行するたびにタイムスタンプ付きCSVを追加保存していく想定
+    （履歴として過去の状態も追える）。加えて、同じ内容を
+    latest.csv としても上書き保存することで、「今の最新状態」を
+    毎回同じファイル名で参照できるようにする
+    （model_dir() で使っている latest.txt と同じ考え方）。
+
+    server: 'Rackstation' / 'QTserver' / 'QDserver' など。
+
+    例: data_check_dir('QTserver')
+        -> <project_root(=ML/)>/data_checks/QTserver
+    """
+    d = PROJECT_ROOT / 'data_checks' / server
+    d.mkdir(parents=True, exist_ok=True)
+    return d
 
 def new_run(feature_set: str, algorithm: str, smns=None, timestamp: str = None,
             run_type: str = None):
