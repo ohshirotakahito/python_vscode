@@ -313,6 +313,16 @@ from common.ml_analysis import (
     run_shap_class_comparison,
     build_physical_category_table,
     run_umap_integration,
+    # --- rmc独自の追加解析(train_xgboost_tsfresh.pyと同じ関数群) ---
+    data_stat,
+    plot_dim_reduction,
+    feature_group_tests,
+    compare_importance_and_stats,
+    plot_shap_class_importance,
+    compare_shap_and_stats,
+    class_distance_heatmap,
+    class_centroid_network,
+    distance_confusion_correlation,
 )
 from common.data_pipeline import estimate_fc_parameters_cost
 
@@ -471,8 +481,8 @@ def learn_dataset(dnf, feature_columns, n_jobs=N_JOBS,
 if __name__ == '__main__':
     #smns = ['Lys','M1Lys','M2Lys','M3Lys']
     #smns = ['T2', 'T3','T4']
-    #smns = ['P','2I','3I','4I','24I','246I']
-    smns = ['26I','2I','P']
+    smns = ['P','2I','3I','4I','24I','246I']
+    #smns = ['26I','2I','P']
     data_root = paths.feature_dir(FEATURE_SET)
 
     # --- 実行ごとにタイムスタンプ付きフォルダを作成（上書き防止） ---
@@ -561,6 +571,66 @@ if __name__ == '__main__':
         main_result, shap_result=shap_result, top_feature=top_feature_for_color,
         top_n_shap_for_color=TOP_N_SHAP, n_neighbors=UMAP_N_NEIGHBORS, min_dist=UMAP_MIN_DIST,
         output_dir=RUN_OUTPUT_DIR,
+    )
+
+    # ============================================================
+    # rmc独自の追加解析(ヒストグラム統計・PCA/UMAP・統計検定・
+    # SHAPクラス別重要度ヒートマップ・クラス間距離解析)
+    # train_xgboost_tsfresh.py と同じ内容をLightGBM側にも出力する。
+    # ============================================================
+
+    feature_columns = main_result['feature_columns']
+    le = main_result['le']
+    class_names = main_result['class_names']
+    X_test = main_result['X_test']
+    y_test = main_result['y_test']
+    y_pred = main_result['y_pred']
+    clf = main_result['clf']
+
+    # --- 混同行列(distance_confusion_correlationで使用するN_MXを得るため) ---
+    MX, N_MX, report = conmtx(y_test, y_pred, le, save_dir=RUN_OUTPUT_DIR)
+
+    # --- ヒストグラム・統計データの作成と保存 ---
+    hist_stats_df, summary_stats_df = data_stat(dnf, META_FEATURE_COLUMNS, save_dir=RUN_OUTPUT_DIR)
+
+    # --- PCA / UMAP による次元削減の可視化 ---
+    plot_dim_reduction(dnf, META_FEATURE_COLUMNS, method='pca', save_path=RUN_OUTPUT_DIR / "pca_2d.png")
+    plot_dim_reduction(dnf, META_FEATURE_COLUMNS, method='umap', save_path=RUN_OUTPUT_DIR / "umap_2d.png")
+
+    # --- 特徴量ごとの統計検定 (ANOVA / Kruskal-Wallis) ---
+    stats_df = feature_group_tests(dnf, META_FEATURE_COLUMNS, save_path=RUN_OUTPUT_DIR / "feature_group_tests.csv")
+
+    # --- 重要度と統計的有意性の比較 ---
+    compare_df = compare_importance_and_stats(
+        clf, feature_columns, stats_df, save_path=RUN_OUTPUT_DIR / "importance_vs_stats.csv"
+    )
+
+    # --- SHAPのクラス別重要度ヒートマップ(Step3で計算済みのshap_values_listを再利用) ---
+    if shap_result is not None:
+        shap_importance_df = plot_shap_class_importance(
+            shap_result['shap_values_list'], X_test, feature_columns, class_names,
+            save_path=RUN_OUTPUT_DIR / "shap_class_importance.png"
+        )
+
+        # --- SHAP順位とgainベース重要度・KW検定順位の比較 ---
+        shap_compare_df = compare_shap_and_stats(
+            shap_importance_df, compare_df, save_path=RUN_OUTPUT_DIR / "shap_vs_importance_vs_stats.csv"
+        )
+    else:
+        shap_importance_df, shap_compare_df = None, None
+
+    # --- メタ特徴空間でのクラス間距離ヒートマップ ---
+    dist_df = class_distance_heatmap(dnf, META_FEATURE_COLUMNS, save_path=RUN_OUTPUT_DIR / "class_distance_heatmap.png")
+
+    # --- クラス中心ネットワーク ---
+    # pathway_edges には既知の反応・変換経路を (始点クラス名, 終点クラス名) のタプルで指定できる。
+    pathway_edges = []  # 必要に応じて書き換える
+    class_centroid_network(dist_df, pathway_edges=pathway_edges,
+                            save_path=RUN_OUTPUT_DIR / "class_centroid_network.png")
+
+    # --- クラス間距離と混同行列(誤分類率)の相関解析 ---
+    corr_df, corr_stats = distance_confusion_correlation(
+        dist_df, N_MX, smns, save_path=RUN_OUTPUT_DIR / "distance_confusion_correlation.png"
     )
 
     execution_time = time.time() - start_time
