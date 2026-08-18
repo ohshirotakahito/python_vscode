@@ -47,13 +47,13 @@ FEATURE_SET = 'rmc'
 if __name__ == '__main__':
     server = 'Rackstation'
     keyfolder = 'analysis'
-    ex = 'Suzuki_Lys'
+    ex = 'Suzuki_I'
 
     ExPath = '//' + server + '/' + keyfolder + '/' + ex + '/'
 
     samples = exfoler_check(server, keyfolder, ex)
     # samples = ['L','Adenine','OxoG','OMeG']  # テスト時に限定する場合
-    #samples = ['GO6MeG1-1']
+    samples = ['4I']
 
     # 出力先フォルダ（data/features/rmc/ 以下。無ければ自動作成される）
     OUTPUT_DIR = paths.feature_dir(FEATURE_SET)

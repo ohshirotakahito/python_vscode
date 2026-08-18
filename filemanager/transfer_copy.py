@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
+
 transfer_copy.py
+
+① create_folders(解析前作業)  → ② transfer_copy → (解析作業) → ③ cleanup_folders → ④ zip_stocked
  
 TOP_Data_transfer_for_ANAL.py / for_BNAL.py / for_file.py / for_Text.py
 を統合した汎用コピースクリプト。

@@ -4,6 +4,11 @@ ML/models/
 ML/results/
 Viewer/clips_pick/
 ML/data_checks/
+ML/temp/
+Viewer/temp/
+Viewer/count_data/
+Viewer/heat_data/
+clips_pick/
 
 # tsfreshキャッシュ(念のため、上記に含まれない場所にできても除外)
 **/_tsfresh_cache/

@@ -3,6 +3,7 @@
 import os
 import re
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, SpanSelector, CheckButtons
 from scipy.signal import savgol_filter
@@ -49,6 +50,79 @@ def tdms_read_channel(tdms_file_path, target_group="Data", target_channel="Ch1")
 
 def make_safe_filename(name: str) -> str:
     return re.sub(r'[\\/:*?"<>|]', "_", name)
+
+
+def load_count_csv(script_dir: str, sample: str,
+                    server: str = None, keyfolder: str = None, ex: str = None,
+                    folder_limit: int = 1) -> pd.DataFrame:
+    """
+    view_analtdms_count.py が出力する count_data/{sample}_sc.csv を読み込む。
+    CSVが無い場合は、view_analtdms_count.py の集計処理(run_count_for_sample)を
+    自動的に実行してから読み込む。
+    （server/keyfolder/exが与えられない場合は従来通りエラーで停止する）
+    """
+    csv_path = os.path.join(script_dir, "count_data", f"{sample}_sc.csv")
+
+    if not os.path.isfile(csv_path):
+        if server is None or keyfolder is None or ex is None:
+            raise RuntimeError(
+                f"[ERROR] count_data のCSVが見つかりません: {csv_path}\n"
+                f"先に view_analtdms_count.py を実行して '{sample}' のシグナル数集計を行ってください。"
+            )
+
+        print(f"[INFO] count_data のCSVが見つからないため、先に集計を実行します: sample={sample}")
+
+        #view_analtdms_count.py を同じフォルダから読み込んで集計関数を呼び出す
+        import sys
+        if script_dir not in sys.path:
+            sys.path.insert(0, script_dir)
+        import view_analtdms_count as count_module
+
+        count_module.run_count_for_sample(
+            server, keyfolder, ex, sample,
+            script_dir=script_dir, folder_limit=folder_limit
+        )
+
+        if not os.path.isfile(csv_path):
+            raise RuntimeError(
+                f"[ERROR] 集計を実行しましたが、CSVが生成されませんでした: {csv_path}"
+            )
+
+    df = pd.read_csv(csv_path)
+    # 合計行(name='Total')は照合対象から除外
+    df = df[df["name"] != "Total"].copy()
+    return df
+
+
+def match_count_for_file(tdms_path: str, count_df: pd.DataFrame):
+    """
+    tdmsファイル名と count_data CSV の name 列をファイル名で自動照合し、
+    対応する count を返す。見つからなければ None。
+    （name列は元のファイル名を' D_'の手前で切り詰めた文字列のため、
+    　実ファイル名がname列の値を含む/で始まる形で照合する）
+    """
+    base = os.path.splitext(os.path.basename(tdms_path))[0]
+
+    for _, row in count_df.iterrows():
+        name = str(row["name"])
+        if name and name in base:
+            return int(row["count"])
+
+    return None
+
+
+def sort_tdms_by_count(tdms_files, count_df):
+    """
+    count_data CSVのcount値をもとに、シグナル数が多い順にtdmsファイルを並べ替える。
+    (path, count) のタプルのリストを返す。照合できなかったファイルはcount=0扱いで末尾に回る。
+    """
+    scored = []
+    for path in tdms_files:
+        count = match_count_for_file(path, count_df)
+        scored.append((path, count if count is not None else 0))
+
+    scored.sort(key=lambda x: x[1], reverse=True)
+    return scored
 
 
 def detect_pulses(y, dt=0.0001, threshold_k=6.0, min_width_ms=0.2):
@@ -121,6 +195,12 @@ class TdmsMultiFolderBrowser:
     def __init__(
         self,
         anal_folders,
+        anal_folder_samples=None,
+        script_dir=None,
+        server=None,
+        keyfolder=None,
+        ex=None,
+        count_folder_limit=1,
         dt=0.0001,
         chunk_sec=5.0,
         target_group="Data",
@@ -140,6 +220,19 @@ class TdmsMultiFolderBrowser:
             raise RuntimeError("ANALフォルダが1つも見つかりませんでした。")
 
         self.anal_folders = anal_folders
+
+        #シグナル数(count_data)によるファイル並べ替え用の情報
+        #anal_folders と対になる sample 名のリスト（省略時は並べ替えなし）
+        self.anal_folder_samples = anal_folder_samples
+        self.script_dir = script_dir or os.path.dirname(os.path.abspath(__file__))
+        #count_data CSVが無い場合に自動集計するためのサーバー情報
+        self.server = server
+        self.keyfolder = keyfolder
+        self.ex = ex
+        self.count_folder_limit = count_folder_limit
+        self._count_df_cache = {}
+        #現在読み込み中フォルダの {tdms_path: count} 対応表
+        self.tdms_counts = {}
         self.dt = float(dt)
         self.chunk_sec = float(chunk_sec)
         self.chunk_size = int(round(self.chunk_sec / self.dt))
@@ -306,11 +399,33 @@ class TdmsMultiFolderBrowser:
         base = os.path.splitext(os.path.basename(self.current_tdms_path()))[0]
         return make_safe_filename(base) if self.sanitize_filename else base
 
+    def _get_count_df(self, sample):
+        """サンプルごとのcount_data CSVをキャッシュしつつ読み込む（無ければ自動集計）"""
+        if sample not in self._count_df_cache:
+            self._count_df_cache[sample] = load_count_csv(
+                self.script_dir, sample,
+                server=self.server, keyfolder=self.keyfolder, ex=self.ex,
+                folder_limit=self.count_folder_limit,
+            )
+        return self._count_df_cache[sample]
+
     def load_folder(self, idx):
         self.folder_idx = idx % len(self.anal_folders)
         anal = self.current_anal_folder()
 
-        self.tdms_files = list_tdms_files(anal, recursive=self.recursive_tdms)
+        tdms_files = list_tdms_files(anal, recursive=self.recursive_tdms)
+
+        #シグナル数(count_data)が分かる場合は、多い順に並べ替える
+        if self.anal_folder_samples is not None:
+            sample = self.anal_folder_samples[self.folder_idx]
+            count_df = self._get_count_df(sample)
+            scored = sort_tdms_by_count(tdms_files, count_df)
+            self.tdms_files = [p for p, c in scored]
+            self.tdms_counts = {p: c for p, c in scored}
+        else:
+            self.tdms_files = tdms_files
+            self.tdms_counts = {}
+
         self.file_idx = 0
         self.chunk_idx = 0
         self.on_clear(None)
@@ -484,11 +599,14 @@ class TdmsMultiFolderBrowser:
 
         current_file = os.path.basename(self.current_tdms_path())
         current_fullpath = self.current_tdms_path()
+        current_count = self.tdms_counts.get(current_fullpath)
+        count_label = f"count={current_count} | " if current_count is not None else ""
 
         self.ax.set_title(
             f"[{aa}] "
             f"File {self.file_idx+1}/{len(self.tdms_files)} | "
             f"{current_file} | "
+            f"{count_label}"
             f"Chunk {self.chunk_idx+1}/{self.num_chunks} | "
             f"Pulses: {len(pulses)} | std≈{std:.4g}"
         )
@@ -592,13 +710,17 @@ class TdmsMultiFolderBrowser:
 
 if __name__ == "__main__":
 
+    #このスクリプト自身が置かれているフォルダ（count_dataフォルダと同じ場所）
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
     server = "QDserver"
     keyfolder = "analysis"
     ex = "Lipid"
 
-    samples = ["DSPC"]
+    samples = ['DOPC']
 
     anal_folders = []
+    anal_folder_samples = []
 
     for sample in samples:
 
@@ -619,6 +741,7 @@ if __name__ == "__main__":
 
             if tdms_files:
                 anal_folders.append(str(tdms_folder))
+                anal_folder_samples.append(sample)
 
                 for p in tdms_files[:5]:
                     print("   ", p)
@@ -638,8 +761,30 @@ if __name__ == "__main__":
     for f in anal_folders:
         print("   ", f)
 
+    #count_data のCSVが無いサンプルは、GUIを開く前に自動で集計しておく
+    #（ここで先に呼んでおくことで、GUI表示直前にまとまって時間がかかるのを避ける）
+    import sys
+    if script_dir not in sys.path:
+        sys.path.insert(0, script_dir)
+    import view_analtdms_count as count_module
+
+    for sample in anal_folder_samples:
+        csv_path = os.path.join(script_dir, "count_data", f"{sample}_sc.csv")
+        if not os.path.isfile(csv_path):
+            print(f"[INFO] count_data のCSVが無いため、先に集計を実行します: sample={sample}")
+            count_module.run_count_for_sample(
+                server, keyfolder, ex, sample,
+                script_dir=script_dir, folder_limit=1
+            )
+
     browser = TdmsMultiFolderBrowser(
         anal_folders=anal_folders,
+        anal_folder_samples=anal_folder_samples,
+        script_dir=script_dir,
+        server=server,
+        keyfolder=keyfolder,
+        ex=ex,
+        count_folder_limit=1,
         dt=0.0001,
         chunk_sec=5.0,
         target_group="Data",

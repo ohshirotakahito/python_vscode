@@ -471,7 +471,8 @@ def learn_dataset(dnf, feature_columns, n_jobs=N_JOBS,
 if __name__ == '__main__':
     #smns = ['Lys','M1Lys','M2Lys','M3Lys']
     #smns = ['T2', 'T3','T4']
-    smns = ['glucose','DGl', 'GDL','GlcA']
+    #smns = ['P','2I','3I','4I','24I','246I']
+    smns = ['26I','2I','P']
     data_root = paths.feature_dir(FEATURE_SET)
 
     # --- 実行ごとにタイムスタンプ付きフォルダを作成（上書き防止） ---
