@@ -231,6 +231,18 @@ else:
 
 USE_TSFRESH_FEATURE_SELECTION = True
 
+# 全データではなく条件を指定してイベントを絞り込みたい場合はここに書く
+# （何も絞り込まない場合は FILTERS = None のままでよい）。
+# 詳細な条件の書き方は common/filters.py の docstring を参照。
+#
+# 例:
+#   FILTERS = {
+#       'file_number': {'min': 1, 'max': 5, 'exclude': [7]},  # 001〜005を使う、007は除外
+#       'machine_no':  {'include': [3]},                        # AN#3のみ使う
+#       'measured_at': {'min': '2026-07-01', 'max': '2026-07-31'},  # 計測日時の範囲
+#   }
+FILTERS = None
+
 # 特徴量セット名・アルゴリズム名（common/paths.py のフォルダ命名規則と揃える）
 FEATURE_SET = 'rmc'
 ALGORITHM = 'lightgbm'
@@ -336,6 +348,7 @@ dp.CHUNKSIZE = CHUNKSIZE
 dp.BATCH_SIZE_EVENTS = BATCH_SIZE_EVENTS
 dp.BATCH_EVENT_THRESHOLD = BATCH_EVENT_THRESHOLD
 dp.FC_PARAMETERS = FC_PARAMETERS
+dp.FILTERS = FILTERS
 
 
 

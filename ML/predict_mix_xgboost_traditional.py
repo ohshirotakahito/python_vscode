@@ -64,6 +64,7 @@ from sklearn.metrics import f1_score
 
 import common.paths as paths
 import common.eval_viz as eval_viz
+import common.filters as filters_mod
 
 # =====================
 # 設定
@@ -102,6 +103,20 @@ XGB_NUM_ROUND = 300
 # 0.8 = 一般的な目安。厳しめにしたい場合は 0.9 などに変更する。
 PMAX_THRESHOLD = 0.8
 
+# --- イベント絞り込み条件 ---
+# 全データではなく条件を指定してイベントを絞り込みたい場合はここに書く
+# （何も絞り込まない場合は None のままでよい）。詳細は common/filters.py 参照。
+# rmc/tsfresh系の 'sample_name'/'ex_id' に相当する列は、rmb（このファイル）
+# では 'file'/'Ex_ID' という列名になっている（load_and_filter()内で対応）。
+# 学習データ（純粋サンプル）と混合サンプル（予測対象）は別々のデータなので、
+# それぞれ独立した条件を設定できるようにしている。
+#
+# 例:
+#   TRAIN_FILTERS = {'file_number': {'min': 1, 'max': 5, 'exclude': [7]}}  # 学習は001〜005（007除く）
+#   MIX_FILTERS = {'machine_no': {'include': [3]}}                          # 予測対象はAN#3のみ
+TRAIN_FILTERS = None
+MIX_FILTERS = None
+
 # 入出力カラム
 # 注意: common/tdms_io.py の apick() は event_id を先頭に付与するようになったため
 #       （旧rmb.pyの出力は22列だったが、統合後は event_id 分が増えて23列になる）、
@@ -128,8 +143,16 @@ FEATURES = [
 # =====================
 # データ読み込み・フィルタ
 # =====================
-def load_and_filter(path: str) -> pd.DataFrame:
-    """NumPy(np.load) -> DataFrame化し、物理量の範囲でフィルタリング。"""
+def load_and_filter(path: str, filters: Optional[dict] = None) -> pd.DataFrame:
+    """NumPy(np.load) -> DataFrame化し、物理量の範囲でフィルタリング。
+
+    filters: イベント絞り込み条件（common/filters.py参照）。
+             rmc/tsfresh系の 'sample_name'/'ex_id' に相当する列は、
+             このrmb形式では 'file'/'Ex_ID' という列名になっている。
+             未指定（None）の場合は絞り込みを行わない（TRAIN_FILTERS/MIX_FILTERSは
+             呼び出し側で明示的に渡すこと。common/data_pipeline.pyのような
+             モジュール変数の暗黙参照はしない設計にしている）。
+    """
     datum = np.load(path, allow_pickle=True)
     df = pd.DataFrame(data=datum, columns=COLUMNS)
 
@@ -151,6 +174,13 @@ def load_and_filter(path: str) -> pd.DataFrame:
     # --- 派生特徴量の計算（common/data_pipeline.load_meta_data()と同じ定義） ---
     df["relative_signal"] = df["signal_intensity"]
     df["absolute_signal"] = df["signal_intensity"] + df["signal_baseline"]
+
+    # --- file_number / machine_no / measured_at を追加（'file'/'Ex_ID'から抽出） ---
+    df = filters_mod.parse_derived_columns(df, file_number_col='file', ex_id_col='Ex_ID')
+
+    if filters:
+        print(f"イベント絞り込み条件を適用します: {filters}")
+        df = filters_mod.apply_filters(df, filters)
 
     return df
 
@@ -282,8 +312,12 @@ def load_artifacts(smns: List[str]) -> Optional[TrainArtifacts]:
 # =====================
 # 学習
 # =====================
-def train(smns: List[str]) -> TrainArtifacts:
-    """複数サンプル(smns)を読み込み→前処理→学習。"""
+def train(smns: List[str], filters: Optional[dict] = None) -> TrainArtifacts:
+    """複数サンプル(smns)を読み込み→前処理→学習。
+
+    filters: 学習データだけに適用するイベント絞り込み条件（common/filters.py参照）。
+             未指定（None）なら絞り込みなし。
+    """
     all_df = pd.DataFrame(columns=COLUMNS)
 
     for smn in smns:
@@ -293,7 +327,7 @@ def train(smns: List[str]) -> TrainArtifacts:
             print(f"[WARN] missing file: {npy_path} (skip)")
             continue
 
-        df = load_and_filter(npy_path)
+        df = load_and_filter(npy_path, filters=filters)
         all_df = pd.concat([all_df, df], axis=0, ignore_index=True)
         print(f"{smn}: {len(df)} rows")
 
@@ -463,8 +497,13 @@ def _aggregate_highconf(event_df: pd.DataFrame, smns: List[str],
 
 
 def predict_grouped(test_smn: str, art: TrainArtifacts, smns: List[str],
-                     threshold: float = PMAX_THRESHOLD):
+                     threshold: float = PMAX_THRESHOLD,
+                     filters: Optional[dict] = None):
     """混合サンプルをfile単位で比率集計する。
+
+    filters: 混合サンプル側だけに適用するイベント絞り込み条件（common/filters.py参照）。
+             学習データ側の条件（train()のfilters引数）とは独立に指定できる。
+
     戻り値: (all_df, highconf_df) のタプル。
       all_df      : 従来通り全イベントで比率計算（+pmax統計列を追加）
       highconf_df : pmax >= threshold のイベントだけに絞った参考版
@@ -475,7 +514,7 @@ def predict_grouped(test_smn: str, art: TrainArtifacts, smns: List[str],
         print(f"[WARN] missing file: {npy_path} (skip)")
         return pd.DataFrame(), pd.DataFrame()
 
-    df = load_and_filter(npy_path)
+    df = load_and_filter(npy_path, filters=filters)
     if df.empty:
         print(f"[WARN] filtered empty: {npy_path}")
         return pd.DataFrame(), pd.DataFrame()
@@ -502,9 +541,10 @@ def predict_grouped(test_smn: str, art: TrainArtifacts, smns: List[str],
 
 def save_group_predictions(test_smns: List[str], art: TrainArtifacts,
                             smns: List[str], run_dir,
-                            threshold: float = PMAX_THRESHOLD) -> None:
+                            threshold: float = PMAX_THRESHOLD,
+                            filters: Optional[dict] = None) -> None:
     for tsmn in test_smns:
-        all_df, highconf_df = predict_grouped(tsmn, art, smns, threshold=threshold)
+        all_df, highconf_df = predict_grouped(tsmn, art, smns, threshold=threshold, filters=filters)
 
         if not all_df.empty:
             out_path = run_dir / f"predict_{tsmn}_all.csv"
@@ -535,7 +575,7 @@ if __name__ == "__main__":
     if artifacts is None:
         print(f"[TRAIN] モデルを新規学習します: {smns}")
         fingerprints = _source_fingerprints(smns)
-        artifacts = train(smns)
+        artifacts = train(smns, filters=TRAIN_FILTERS)
         model_version_dir = save_artifacts(artifacts, smns, fingerprints)
         evaluate(artifacts, run_dir)
     else:
@@ -548,6 +588,6 @@ if __name__ == "__main__":
     (run_dir / "used_model_version.txt").write_text(str(model_version_dir), encoding="utf-8")
 
     # --- 予測（混合サンプルのfile単位比率集計） ---
-    save_group_predictions(test_smns, artifacts, smns, run_dir)
+    save_group_predictions(test_smns, artifacts, smns, run_dir, filters=MIX_FILTERS)
 
     print("end")

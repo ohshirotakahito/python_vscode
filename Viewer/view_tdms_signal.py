@@ -9,6 +9,7 @@ from matplotlib.widgets import Button, SpanSelector, CheckButtons
 from scipy.signal import savgol_filter
 from nptdms import TdmsFile
 from pathlib import Path
+from datetime import datetime
 
 
 # ========= Utility =========
@@ -219,6 +220,9 @@ class TdmsMultiFolderBrowser:
         if not anal_folders:
             raise RuntimeError("ANALフォルダが1つも見つかりませんでした。")
 
+        # 保存フォルダ名に使う解析日時（このビューアを起動した日時で固定）
+        self.run_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
+
         self.anal_folders = anal_folders
 
         #シグナル数(count_data)によるファイル並べ替え用の情報
@@ -373,15 +377,14 @@ class TdmsMultiFolderBrowser:
         return self.anal_folders[self.folder_idx]
 
     def current_aa_id(self):
-        anal = Path(self.current_anal_folder())
+        # 保存フォルダ名は「解析日時_サンプル名」だけにする（例: 20260818_143012_DOPC）
+        if self.anal_folder_samples is not None:
+            sample = self.anal_folder_samples[self.folder_idx]
+        else:
+            anal = Path(self.current_anal_folder())
+            sample = anal.parent.name
 
-        try:
-            condition = anal.parent.name
-            sample_folder = anal.parent.parent.name
-            sample = anal.parent.parent.parent.name
-            return f"{sample}_{sample_folder}_{condition}"
-        except Exception:
-            return anal.parent.name
+        return f"{self.run_datetime}_{sample}"
 
     def out_dir(self):
         if not self.save_subfolder_per_aa:
@@ -713,11 +716,11 @@ if __name__ == "__main__":
     #このスクリプト自身が置かれているフォルダ（count_dataフォルダと同じ場所）
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
-    server = "QDserver"
+    server = "Rackstation"
     keyfolder = "analysis"
-    ex = "Lipid"
+    ex = "Sakano_02"
 
-    samples = ['DOPC']
+    samples = ['oxytocin','vasopressin']
 
     anal_folders = []
     anal_folder_samples = []
@@ -755,6 +758,10 @@ if __name__ == "__main__":
     if not anal_folders:
         raise RuntimeError("有効な ANAL フォルダが1つも見つかりませんでした。")
 
+    # clips_pick の保存先は、カレントディレクトリに依存せず
+    # 常に本スクリプト（Viewerフォルダ）の直下に固定する
+    clips_pick_dir = os.path.join(script_dir, "clips_pick")
+
     print("=" * 80)
     print("[INFO] 使用する ANAL フォルダ数 =", len(anal_folders))
 
@@ -789,7 +796,7 @@ if __name__ == "__main__":
         chunk_sec=5.0,
         target_group="Data",
         target_channel="Ch1",
-        out_root="clips_pick",
+        out_root=clips_pick_dir,
         recursive_tdms=False,
         sanitize_filename=False,
         save_subfolder_per_aa=True,

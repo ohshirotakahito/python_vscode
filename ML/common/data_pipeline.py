@@ -50,6 +50,7 @@ from tsfresh import extract_features, select_features
 from tsfresh.utilities.dataframe_functions import impute
 
 import common.paths as paths
+from common.filters import apply_filters
 
 
 # ============================================================
@@ -73,6 +74,11 @@ BATCH_EVENT_THRESHOLD = 20000
 
 # 呼び出し側で必ず設定すること（MinimalFCParameters() やカスタム辞書など）
 FC_PARAMETERS = None
+
+# 条件付きデータ選択（file_number/machine_no/measured_at等での絞り込み）。
+# 未設定(None)ならload_meta_data()は何も絞り込まない（従来通りの挙動）。
+# 書式・詳細は common/filters.py の docstring を参照。
+FILTERS = None
 
 
 # ============================================================
@@ -176,6 +182,11 @@ def load_meta_data(smn, data_root=None,
     meta_df['absolute_signal'] = meta_df['signal'] + meta_df['baseline']
 
     meta_df['global_id'] = smn + '__' + meta_df['event_id'].astype(str)
+
+    # 条件付きデータ選択（file_number/machine_no/measured_at等）。
+    # FILTERSが未設定(None/{})なら何もしない（従来通りの挙動）。
+    if FILTERS:
+        meta_df = apply_filters(meta_df, FILTERS)
 
     return meta_df, tsfresh_path
 

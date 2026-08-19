@@ -53,7 +53,7 @@ if __name__ == '__main__':
 
     samples = exfoler_check(server, keyfolder, ex)
     # samples = ['L','Adenine','OxoG','OMeG']  # テスト時に限定する場合
-    samples = ['4I']
+    #samples = ['ALTNA','CLTNA','GLTNA','TLTNA']
 
     # 出力先フォルダ（data/features/rmc/ 以下。無ければ自動作成される）
     OUTPUT_DIR = paths.feature_dir(FEATURE_SET)

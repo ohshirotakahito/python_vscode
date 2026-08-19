@@ -110,6 +110,18 @@ USE_TSFRESH_FEATURE_SELECTION = True
 WAVE_COLUMNS = [f"wave_{i}" for i in range(12)]
 META_FEATURE_COLUMNS = ["absolute_signal", "relative_signal", "duration"] + WAVE_COLUMNS
 
+# --- イベント絞り込み条件 ---
+# 全データではなく条件を指定してイベントを絞り込みたい場合はここに書く
+# （何も絞り込まない場合は None のままでよい）。詳細は common/filters.py 参照。
+# 学習データ（純粋サンプル）と混合サンプル（予測対象）は別々のデータなので、
+# それぞれ独立した条件を設定できるようにしている。
+#
+# 例:
+#   TRAIN_FILTERS = {'file_number': {'min': 1, 'max': 5, 'exclude': [7]}}  # 学習は001〜005（007除く）
+#   MIX_FILTERS = {'machine_no': {'include': [3]}}                          # 予測対象はAN#3のみ
+TRAIN_FILTERS = None
+MIX_FILTERS = None
+
 # common/data_pipeline.py 側の設定にも反映
 dp.DATA_ROOT = DATA_ROOT
 dp.CACHE_DIR = CACHE_DIR
@@ -276,11 +288,15 @@ def load_artifacts(smns: List[str]) -> Optional[TrainArtifacts]:
 # =====================
 # 学習
 # =====================
-def train(smns: List[str]) -> TrainArtifacts:
-    """純粋分子サンプル(smns)のtsfresh特徴量を読み込み→前処理→学習。"""
+def train(smns: List[str], filters: Optional[dict] = None) -> TrainArtifacts:
+    """純粋分子サンプル(smns)のtsfresh特徴量を読み込み→前処理→学習。
+
+    filters: 学習データ（純粋サンプル）だけに適用するイベント絞り込み条件
+             （common/filters.py参照）。未指定ならモジュール変数 dp.FILTERS を使う。
+    """
     dnf, tsfresh_feature_cols = dp.build_combined_dataset(
         smns, data_root=DATA_ROOT, use_cache=True,
-        n_jobs=N_JOBS, chunksize=CHUNKSIZE
+        n_jobs=N_JOBS, chunksize=CHUNKSIZE, filters=filters
     )
 
     # --- クラス数チェック（tsfreshの特徴量選択はクラスが2種類以上ないと
@@ -444,12 +460,17 @@ def _aggregate_highconf(event_df: pd.DataFrame, smns: List[str],
 
 
 def predict_grouped(mix_smn: str, art: TrainArtifacts, smns: List[str],
-                     threshold: float = PMAX_THRESHOLD):
+                     threshold: float = PMAX_THRESHOLD,
+                     filters: Optional[dict] = None):
     """混合サンプル(mix_smn)のtsfresh特徴量を読み込み、sample_name（tdmsファイル単位、
     rmb版の"file"に相当）ごとに予測クラスの割合(%)を集計する。
 
     事前に extract_features_tsfresh.py で mix_smn を抽出済みであること
     （data/features/rmc/ に mix_smn の meta.csv / tsfresh_input.csv が必要）。
+
+    filters: 混合サンプル側だけに適用するイベント絞り込み条件（common/filters.py参照）。
+             未指定ならモジュール変数 dp.FILTERS を使う。学習データ側の条件（train()の
+             filters引数）とは独立に指定できる。
 
     戻り値: (all_df, highconf_df) のタプル。
       all_df      : 従来通り全イベントで比率計算（+pmax統計列を追加）
@@ -459,6 +480,7 @@ def predict_grouped(mix_smn: str, art: TrainArtifacts, smns: List[str],
     # 単一サンプル（混合サンプル）のtsfresh特徴量抽出・キャッシュにもそのまま使える
     combined_mix, _ = dp.build_combined_dataset(
         [mix_smn], data_root=DATA_ROOT, use_cache=True,
+        filters=filters,
         n_jobs=N_JOBS, chunksize=CHUNKSIZE
     )
 
@@ -492,9 +514,10 @@ def predict_grouped(mix_smn: str, art: TrainArtifacts, smns: List[str],
 
 def save_group_predictions(test_smns: List[str], art: TrainArtifacts,
                             smns: List[str], run_dir,
-                            threshold: float = PMAX_THRESHOLD) -> None:
+                            threshold: float = PMAX_THRESHOLD,
+                            filters: Optional[dict] = None) -> None:
     for tsmn in test_smns:
-        all_df, highconf_df = predict_grouped(tsmn, art, smns, threshold=threshold)
+        all_df, highconf_df = predict_grouped(tsmn, art, smns, threshold=threshold, filters=filters)
 
         if not all_df.empty:
             out_path = run_dir / f"predict_{tsmn}_all.csv"
@@ -529,7 +552,7 @@ if __name__ == "__main__":
     if artifacts is None:
         print(f"[TRAIN] モデルを新規学習します: {smns}")
         fingerprints = _source_fingerprints(smns)
-        artifacts = train(smns)
+        artifacts = train(smns, filters=TRAIN_FILTERS)
         model_version_dir = save_artifacts(artifacts, smns, fingerprints)
         evaluate(artifacts, run_dir)
     else:
@@ -542,6 +565,6 @@ if __name__ == "__main__":
     (run_dir / "used_model_version.txt").write_text(str(model_version_dir), encoding="utf-8")
 
     # --- 予測（混合サンプルのsample_name単位比率集計） ---
-    save_group_predictions(test_smns, artifacts, smns, run_dir)
+    save_group_predictions(test_smns, artifacts, smns, run_dir, filters=MIX_FILTERS)
 
     print("end")

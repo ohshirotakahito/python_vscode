@@ -67,6 +67,25 @@ def list_subfolder_paths(path, keyword=None):
     return paths
 
 
+def list_files_in_folder(folder_path, keyword=None):
+    """
+    folder_path直下のファイル(フォルダは除く)のフルパスリストを返す。
+    keywordを指定するとファイル名にkeywordを含むもののみに絞り込む。
+    元コードの folderfile 相当。
+    """
+    if not os.path.exists(folder_path):
+        print(f"指定されたフォルダが存在しません: {folder_path}")
+        return []
+    files = []
+    for item in os.listdir(folder_path):
+        item_path = os.path.join(folder_path, item)
+        if os.path.isfile(item_path):
+            files.append(item_path)
+    if keyword:
+        files = [f for f in files if keyword in os.path.basename(f)]
+    return files
+
+
 def ensure_folders(paths):
     """
     存在しないフォルダを順番に作成する（単純な os.mkdir なので、
