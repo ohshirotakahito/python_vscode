@@ -4,8 +4,8 @@ train_xgboost_traditional.py
 
 【このファイルについて】
 TOP_XGboost_any_rmb_20250221_2.py のリファクタリング版。
-tsfresh を使わない、12点波形特徴量（f1〜f12）のみによる、より単純な
-XGBoost分類パイプライン（GridSearchCVによるハイパーパラメータ探索付き）。
+tsfresh を使わない、12点波形特徴量（f1〜f12）を中心とした、より単純な
+XGBoost分類パイプライン。
 train_lightgbm_tsfresh.py / train_xgboost_tsfresh.py（tsfresh併用版）とは別系統。
 
 読み込むデータ: extract_features_traditional.py が data/features/rmb/ に保存する *_rmb.npy
@@ -16,16 +16,9 @@ common/ml_analysis.py に切り出した追加解析関数（SHAP分析、PCA/UM
 特徴量ごとの統計検定、クラス間距離解析など）を、train_xgboost_tsfresh.py と同じ形で
 このスクリプトにも組み込んだ。
 
-これらの関数は「生の xgb.Booster（.get_score(importance_type=...)が呼べる
-もの）」を受け取る想定で統一されているが、本スクリプトは GridSearchCV で
-得た sklearn の XGBClassifier を使っているため、呼び出し時には
-clf.get_booster() で内部の Booster を取り出して渡している。
-
-なお、rmc版にある plot_learning_curve()（train/valのmlogloss推移グラフ）は
-xgb.train(evals=[...])のearly stoppingで得られるevals_resultが必要だが、
-本スクリプトはGridSearchCVのみで学習しており、その形式の学習履歴を
-持たないため、ここでは呼び出していない（学習曲線を見たい場合は、
-GridSearchCVをやめてrmc版のようなearly stopping方式に変更する必要がある）。
+評価は全データを層化80% training / 20% held-out testに分割し、training内の
+層化10-fold CVでboosting roundsを選択する。最後にtraining 80%全体で
+再学習した生のxgb.Boosterを、隔離しておいたheld-out testで一度だけ評価する。
 
 【混同行列の可視化について】
 以前はこのファイル専用の簡易 conmtx() を使っていたが、
@@ -63,10 +56,9 @@ import time
 import numpy as np
 import pandas as pd
 
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.metrics import f1_score
-from sklearn import preprocessing
-from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.metrics import f1_score, classification_report
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 from imblearn.under_sampling import RandomUnderSampler
 
@@ -113,6 +105,10 @@ columns = ['event_id',
            'f1', 'f2', 'f3', 'f4', 'f5', 'f6',
            'f7', 'f8', 'f9', 'f10', 'f11', 'f12']
 
+# event_id が追加される前に作成された .npy 用の列定義。
+# 学習には event_id を使わないため、旧データもそのまま利用できる。
+legacy_columns = columns[1:]
+
 # 訓練で用いるカラムリスト。
 # common/data_pipeline.py（rmc/tsfresh側）と同じ考え方に合わせ、
 # signal_baseline を直接特徴量として使うのをやめ、
@@ -146,7 +142,21 @@ def dfdata(smns, data_root=None):
     for smn in smns:
         sam = smn + '_10k_Sample_ANAL_rmb'
         datum = np.load(f'{data_root}/{sam}.npy', allow_pickle=True)
-        df = pd.DataFrame(data=datum, columns=columns)
+        if datum.ndim != 2:
+            raise ValueError(f'{sam}.npy must be a 2-D array, got shape {datum.shape}')
+
+        if datum.shape[1] == len(columns):
+            loaded_columns = columns
+        elif datum.shape[1] == len(legacy_columns):
+            loaded_columns = legacy_columns
+            print(f'{smn}: loading legacy 22-column data (without event_id)')
+        else:
+            raise ValueError(
+                f'{sam}.npy has {datum.shape[1]} columns; '
+                f'expected {len(legacy_columns)} (legacy) or {len(columns)} (current)'
+            )
+
+        df = pd.DataFrame(data=datum, columns=loaded_columns)
         df = df[df['signal_time'].astype(int) > st_l_lmt]
         df = df[df['signal_time'].astype(int) < st_h_lmt]
         df = df[df['signal_baseline'].astype(float) < sb_h_lmt]
@@ -167,59 +177,131 @@ def dfdata(smns, data_root=None):
     return dnf
 
 
-def optimize_xgboost(X_train, y_train):
-    xgb_model = xgb.XGBClassifier(eval_metric='mlogloss', use_label_encoder=False)
+def learn_dataset(dnf, feature_set_name='既存15特徴量', max_depth=6, eta=0.1,
+                  num_round=500, early_stopping_rounds=20, test_size=0.2,
+                  random_state=0, verbose_eval=False, n_cv_folds=10):
+    """80% training 内のCVで学習回数を選び、隔離した20% testで評価する。"""
+    y_labels = [sample.split('_')[0] for sample in dnf['sample']]
+    x = dnf[data].astype(float)
 
-    param_grid = {
-        'max_depth': [3, 6, 10, 20],
-        'eta': [0.1, 0.3, 0.5, 0.7, 1],
-        'n_estimators': [50, 100, 200]
+    le = LabelEncoder().fit(y_labels)
+    y = le.transform(y_labels)
+    num_class = len(le.classes_)
+    feature_columns = list(data)
+
+    row_positions = np.arange(len(dnf))
+    idx_train_full, idx_test = train_test_split(
+        row_positions, test_size=test_size, random_state=random_state, stratify=y
+    )
+    x_train_full_raw = x.iloc[idx_train_full]
+    x_test_raw = x.iloc[idx_test]
+    y_train_full = y[idx_train_full]
+    y_test = y[idx_test]
+
+    params = {
+        'max_depth': max_depth,
+        'eta': eta,
+        'eval_metric': 'mlogloss',
+        'num_class': num_class,
+        'objective': 'multi:softprob',
     }
 
-    grid_search = GridSearchCV(estimator=xgb_model, param_grid=param_grid, cv=3,
-                                scoring='accuracy', verbose=1, n_jobs=-1)
-    grid_search.fit(X_train, y_train)
+    min_class_count = int(np.bincount(y_train_full).min())
+    n_splits = min(n_cv_folds, min_class_count)
+    if n_splits < 2:
+        raise ValueError('10-fold CVには、training内の各クラスに2件以上必要です。')
+    skf = StratifiedKFold(
+        n_splits=n_splits, shuffle=True, random_state=random_state
+    )
 
-    print("Best parameters found: ", grid_search.best_params_)
-    return grid_search.best_estimator_
+    fold_scores = []
+    fold_best_rounds = []
+    for train_idx, valid_idx in skf.split(x_train_full_raw, y_train_full):
+        x_train_fold = x_train_full_raw.iloc[train_idx]
+        x_valid_fold = x_train_full_raw.iloc[valid_idx]
+        y_train_fold = y_train_full[train_idx]
+        y_valid_fold = y_train_full[valid_idx]
 
+        scaler_fold = StandardScaler()
+        X_train_fold = scaler_fold.fit_transform(x_train_fold)
+        X_valid_fold = scaler_fold.transform(x_valid_fold)
 
-def learn_dataset(dnf):
-    """学習する。
+        rus = RandomUnderSampler(random_state=random_state)
+        X_train_res, y_train_res = rus.fit_resample(X_train_fold, y_train_fold)
 
-    戻り値に X_test, clf, le を追加した（元は y_test, y_pred, acc のみ）。
-    追加解析（SHAP・PCA/UMAP等）で必要になるため。
-    """
-    y = [_.split('_')[0] for _ in dnf['sample']]
+        dtrain = xgb.DMatrix(
+            X_train_res, label=y_train_res, feature_names=feature_columns
+        )
+        dvalid = xgb.DMatrix(
+            X_valid_fold, label=y_valid_fold, feature_names=feature_columns
+        )
+        bst_fold = xgb.train(
+            params,
+            dtrain,
+            num_boost_round=num_round,
+            evals=[(dtrain, 'train'), (dvalid, 'val')],
+            early_stopping_rounds=early_stopping_rounds,
+            verbose_eval=False,
+        )
+        y_valid_pred = bst_fold.predict(
+            dvalid, iteration_range=(0, bst_fold.best_iteration + 1)
+        ).argmax(axis=1)
+        fold_scores.append(f1_score(y_valid_fold, y_valid_pred, average='macro'))
+        fold_best_rounds.append(bst_fold.best_iteration + 1)
 
-    x = dnf[data]
-    X = preprocessing.scale(x)
+    cv_macro_f1 = float(np.mean(fold_scores))
+    selected_rounds = max(1, int(round(np.median(fold_best_rounds))))
+    print(
+        f'[{feature_set_name}] 80% training 内 {n_splits}-fold CV: '
+        f'mean Macro F1={cv_macro_f1:.4f}, selected_rounds={selected_rounds}'
+    )
 
-    le = LabelEncoder()
-    le = le.fit(y)
-    y = le.transform(y)
+    scaler = StandardScaler()
+    X_train_full = scaler.fit_transform(x_train_full_raw)
+    X_test = scaler.transform(x_test_raw)
+    rus = RandomUnderSampler(random_state=random_state)
+    X_train_res, y_train_res = rus.fit_resample(X_train_full, y_train_full)
 
-    num_class = max(y) + 1
+    dtrain = xgb.DMatrix(
+        X_train_res, label=y_train_res, feature_names=feature_columns
+    )
+    dtest = xgb.DMatrix(X_test, feature_names=feature_columns)
+    evals_result = {}
+    fit_start = time.time()
+    booster = xgb.train(
+        params,
+        dtrain,
+        num_boost_round=selected_rounds,
+        evals=[(dtrain, 'train')],
+        evals_result=evals_result,
+        verbose_eval=verbose_eval,
+    )
+    print(
+        f'[{feature_set_name}] final model fit 完了 '
+        f'({time.time() - fit_start:.1f}秒, best_iteration={selected_rounds}/{selected_rounds})'
+    )
 
-    test_size = 0.2
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=0)
+    y_pred = booster.predict(
+        dtest, iteration_range=(0, selected_rounds)
+    ).argmax(axis=1)
+    macro_f1 = f1_score(y_test, y_pred, average='macro')
+    print(f'[{feature_set_name}] Held-out test Macro F1: {macro_f1:.4f}')
+    print(classification_report(y_test, y_pred, target_names=le.classes_))
 
-    cn = [len(y_train[y_train == i]) for i in range(num_class)]
-    counts = [min(cn) for _ in range(len(cn))]
-    keys = [_ for _ in range(len(cn))]
-    strategy = {key: count for key, count in zip(keys, counts)}
-
-    rus = RandomUnderSampler(random_state=0, sampling_strategy=strategy)
-    X_resampled, y_resampled = rus.fit_resample(X_train, y_train)
-
-    clf = optimize_xgboost(X_resampled, y_resampled)
-
-    y_pred = clf.predict(X_test)
-
-    acc = f1_score(y_test, y_pred, average="micro")
-    print('f-measure_value:', acc)
-
-    return X_test, y_test, y_pred, clf, le
+    return {
+        'X_test': X_test,
+        'y_test': y_test,
+        'y_pred': y_pred,
+        'booster': booster,
+        'le': le,
+        'scaler': scaler,
+        'evals_result': evals_result,
+        'macro_f1': macro_f1,
+        'cv_macro_f1': cv_macro_f1,
+        'n_cv_folds': n_splits,
+        'cv_best_rounds': fold_best_rounds,
+        'selected_rounds': selected_rounds,
+    }
 
 
 def mapping(data, bst):
@@ -229,15 +311,20 @@ def mapping(data, bst):
 
 
 if __name__ == '__main__':
-    List = [['Guanine', 'OMeG']]  # 学習したいクラスの組み合わせをここに書く
+    List = [['T2', 'T3','T4'],['T2', 'T3'],['T3','T4'],['T2', 'T4']]  # 学習したいクラスの組み合わせをここに書く
     start_time = time.time()
 
     X = []
     for smns in List:
         dnf = dfdata(smns)
 
-        X_test, y_test, y_pred, clf, le = learn_dataset(dnf)
-        acc = f1_score(y_test, y_pred, average="micro")
+        result = learn_dataset(dnf)
+        X_test = result['X_test']
+        y_test = result['y_test']
+        y_pred = result['y_pred']
+        booster = result['booster']
+        le = result['le']
+        acc = result['macro_f1']
 
         X.append((smns, acc))
 
@@ -247,8 +334,6 @@ if __name__ == '__main__':
 
         MX, N_MX, report = conmtx(y_test, y_pred, le, save_dir=RUN_DIR)
 
-        # sklearnのXGBClassifierから、追加解析関数が要求する生のBoosterを取り出す
-        booster = clf.get_booster()
         class_names = list(le.classes_)
         feature_columns = data  # 学習に使った15特徴量
 
@@ -264,6 +349,8 @@ if __name__ == '__main__':
         booster.save_model(str(RUN_DIR / 'model.json'))
         with open(RUN_DIR / 'label_encoder.pkl', 'wb') as f:
             pickle.dump(le, f)
+        with open(RUN_DIR / 'scaler.pkl', 'wb') as f:
+            pickle.dump(result['scaler'], f)
         (RUN_DIR / 'feature_columns.txt').write_text('\n'.join(feature_columns), encoding='utf-8')
 
         # ============================================================
@@ -315,7 +402,10 @@ if __name__ == '__main__':
             f.write(f"実行フォルダ: {RUN_DIR.name}\n")
             f.write(f"クラス(smns): {smns}\n")
             f.write(f"特徴量総数: {len(feature_columns)}\n")
-            f.write(f"micro-F1: {acc:.4f}\n")
+            f.write(f"training内CV Macro F1: {result['cv_macro_f1']:.4f}\n")
+            f.write(f"CV fold数: {result['n_cv_folds']}\n")
+            f.write(f"選択したboosting rounds: {result['selected_rounds']}\n")
+            f.write(f"held-out test Macro F1: {acc:.4f}\n")
 
         print(f"\n今回の結果は {RUN_DIR} にまとめて保存しました。")
 

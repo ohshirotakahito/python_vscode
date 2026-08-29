@@ -72,7 +72,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.metrics import confusion_matrix, f1_score, classification_report
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.inspection import permutation_importance
@@ -365,77 +365,118 @@ def train_lgbm_classifier(dnf, feature_columns, feature_set_name="model",
                            use_early_stopping=USE_EARLY_STOPPING,
                            valid_size=VALID_SIZE,
                            early_stopping_rounds=EARLY_STOPPING_ROUNDS,
-                           test_size=0.2, random_state=0):
+                           test_size=0.2, random_state=0,
+                           n_cv_folds=10, n_estimators=500):
     """
-    LightGBM (LGBMClassifier) による学習。Step1〜5で使い回せるよう、
-    学習済みモデルに加えて、スケーラー・テストデータ（生値／スケール後）・
-    テストデータのインデックス（global_id）などをまとめて返す。
+    全データを80% training / 20% held-out testに分割し、training内の
+    Stratified K-fold CVでboosting roundsを選択する。最後にtraining全体で
+    再学習し、一度もモデル選択に使っていないheld-out testで評価する。
+
+    valid_sizeは後方互換のため残しているが、K-fold CVでは使用しない。
     """
     y_labels = [_.split('_')[0] for _ in dnf['sample']]
-
+    feature_columns = list(feature_columns)
     x = dnf[feature_columns]
 
-    le = LabelEncoder()
-    le = le.fit(y_labels)
+    le = LabelEncoder().fit(y_labels)
     y = le.transform(y_labels)
-    num_class = max(y) + 1
+    num_class = len(le.classes_)
 
-    idx_train, idx_test = train_test_split(
-        dnf.index, test_size=test_size, random_state=random_state,
-        stratify=y
+    row_positions = np.arange(len(dnf))
+    idx_train_full, idx_test = train_test_split(
+        row_positions, test_size=test_size, random_state=random_state, stratify=y
+    )
+    x_train_full_raw = x.iloc[idx_train_full]
+    x_test_raw = x.iloc[idx_test]
+    y_train_full = y[idx_train_full]
+    y_test = y[idx_test]
+
+    model_params = {
+        'objective': 'multiclass',
+        'num_class': num_class,
+        'num_leaves': 63,
+        'max_depth': -1,
+        'learning_rate': 0.05,
+        'subsample': 0.8,
+        'colsample_bytree': 0.8,
+        'random_state': random_state,
+        'n_jobs': n_jobs,
+        'verbosity': -1,
+    }
+
+    min_class_count = int(np.bincount(y_train_full).min())
+    n_splits = min(n_cv_folds, min_class_count)
+    if n_splits < 2:
+        raise ValueError('K-fold CVには、training内の各クラスに2件以上必要です。')
+    skf = StratifiedKFold(
+        n_splits=n_splits, shuffle=True, random_state=random_state
     )
 
-    x_train_raw = x.loc[idx_train]
-    x_test_raw = x.loc[idx_test]
-    y_train = y[dnf.index.get_indexer(idx_train)]
-    y_test = y[dnf.index.get_indexer(idx_test)]
+    fold_scores = []
+    fold_best_rounds = []
+    for train_idx, valid_idx in skf.split(x_train_full_raw, y_train_full):
+        x_train_fold = x_train_full_raw.iloc[train_idx]
+        x_valid_fold = x_train_full_raw.iloc[valid_idx]
+        y_train_fold = y_train_full[train_idx]
+        y_valid_fold = y_train_full[valid_idx]
+
+        scaler_fold = StandardScaler()
+        X_train_fold = scaler_fold.fit_transform(x_train_fold)
+        X_valid_fold = scaler_fold.transform(x_valid_fold)
+
+        rus_fold = RandomUnderSampler(random_state=random_state)
+        X_train_res, y_train_res = rus_fold.fit_resample(
+            X_train_fold, y_train_fold
+        )
+
+        fold_clf = lgb.LGBMClassifier(
+            **model_params, n_estimators=n_estimators
+        )
+        fit_kwargs = {}
+        if use_early_stopping:
+            fit_kwargs = {
+                'eval_set': [(X_valid_fold, y_valid_fold)],
+                'callbacks': [
+                    lgb.early_stopping(
+                        stopping_rounds=early_stopping_rounds, verbose=False
+                    ),
+                    lgb.log_evaluation(period=0),
+                ],
+            }
+        fold_clf.fit(X_train_res, y_train_res, **fit_kwargs)
+        y_valid_pred = fold_clf.predict(X_valid_fold)
+        fold_scores.append(
+            f1_score(y_valid_fold, y_valid_pred, average='macro')
+        )
+        best_round = (
+            fold_clf.best_iteration_
+            if use_early_stopping and fold_clf.best_iteration_
+            else n_estimators
+        )
+        fold_best_rounds.append(int(best_round))
+
+    cv_macro_f1 = float(np.mean(fold_scores))
+    selected_rounds = max(1, int(round(np.median(fold_best_rounds))))
+    print(
+        f"[{feature_set_name}] 80% training 内 {n_splits}-fold CV: "
+        f"mean Macro F1={cv_macro_f1:.4f}, selected_rounds={selected_rounds}"
+    )
 
     scaler = StandardScaler()
-    X_train = scaler.fit_transform(x_train_raw)
+    X_train_full = scaler.fit_transform(x_train_full_raw)
     X_test = scaler.transform(x_test_raw)
-
-    # --- アンダーサンプリング（元コードと同様、クラス不均衡対策） ---
-    cn = [len(y_train[y_train == i]) for i in range(num_class)]
-    counts = [min(cn) for _ in range(len(cn))]
-    keys = list(range(len(cn)))
-    strategy = {key: count for key, count in zip(keys, counts)}
-
-    rus = RandomUnderSampler(random_state=random_state, sampling_strategy=strategy)
-    X_train_res, y_train_res = rus.fit_resample(X_train, y_train)
-
-    # --- 早期打ち切り用の検証データ ---
-    fit_kwargs = {}
-    if use_early_stopping:
-        X_fit, X_valid, y_fit, y_valid = train_test_split(
-            X_train_res, y_train_res, test_size=valid_size, random_state=random_state,
-            stratify=y_train_res
-        )
-        fit_kwargs['eval_set'] = [(X_valid, y_valid)]
-        fit_kwargs['callbacks'] = [
-            lgb.early_stopping(stopping_rounds=early_stopping_rounds, verbose=False),
-            lgb.log_evaluation(period=0),
-        ]
-    else:
-        X_fit, y_fit = X_train_res, y_train_res
+    rus = RandomUnderSampler(random_state=random_state)
+    X_train_res, y_train_res = rus.fit_resample(X_train_full, y_train_full)
 
     clf = lgb.LGBMClassifier(
-        objective='multiclass',
-        num_class=num_class,
-        n_estimators=500,
-        num_leaves=63,
-        max_depth=-1,
-        learning_rate=0.05,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        random_state=random_state,
-        n_jobs=n_jobs,
+        **model_params, n_estimators=selected_rounds
     )
-
     t0 = time.time()
-    clf.fit(X_fit, y_fit, **fit_kwargs)
-    print(f"[{feature_set_name}] LightGBM学習 完了 ({time.time() - t0:.1f}秒, "
-          f"best_iteration={getattr(clf, 'best_iteration_', clf.n_estimators)})")
-
+    clf.fit(X_train_res, y_train_res)
+    print(
+        f"[{feature_set_name}] final model fit 完了 "
+        f"({time.time() - t0:.1f}秒, best_iteration={selected_rounds}/{selected_rounds})"
+    )
     y_pred = clf.predict(X_test)
 
     class_names = list(le.classes_)
@@ -450,14 +491,15 @@ def train_lgbm_classifier(dnf, feature_columns, feature_set_name="model",
         columns=[f'Pred_{c}' for c in class_names],
     )
 
-    print(f"[{feature_set_name}] Macro F1: {macro_f1:.4f}")
+    print(f"[{feature_set_name}] Held-out test Macro F1: {macro_f1:.4f}")
+    print(classification_report(y_test, y_pred, target_names=class_names))
 
     result = {
         'name': feature_set_name,
         'clf': clf,
         'le': le,
         'scaler': scaler,
-        'feature_columns': list(feature_columns),
+        'feature_columns': feature_columns,
         'class_names': class_names,
         'num_class': num_class,
         'X_train': X_train_res,
@@ -466,10 +508,14 @@ def train_lgbm_classifier(dnf, feature_columns, feature_set_name="model",
         'X_test_raw': x_test_raw,
         'y_test': y_test,
         'y_pred': y_pred,
-        'test_global_ids': list(idx_test),
+        'test_global_ids': list(dnf.index[idx_test]),
         'macro_f1': macro_f1,
         'per_class_f1': per_class_f1,
         'confusion_matrix': cm_df,
+        'cv_macro_f1': cv_macro_f1,
+        'n_cv_folds': n_splits,
+        'cv_best_rounds': fold_best_rounds,
+        'selected_rounds': selected_rounds,
     }
     return result
 
@@ -491,11 +537,8 @@ def learn_dataset(dnf, feature_columns, n_jobs=N_JOBS,
 # メイン処理
 # ============================================================
 
-if __name__ == '__main__':
-    #smns = ['Lys','M1Lys','M2Lys','M3Lys']
-    #smns = ['T2', 'T3','T4']
-    smns = ['P','2I','3I','4I','24I','246I']
-    #smns = ['26I','2I','P']
+def run_analysis(smns):
+    """指定したクラスの組み合わせについて、学習から結果保存まで実行する。"""
     data_root = paths.feature_dir(FEATURE_SET)
 
     # --- 実行ごとにタイムスタンプ付きフォルダを作成（上書き防止） ---
@@ -660,5 +703,39 @@ if __name__ == '__main__':
         },
         execution_time=execution_time,
         comparison_df=step1_comparison_df,
-        extra_info={'feature_set_names': step1_feature_set_names},
+        extra_info={
+            'feature_set_names': step1_feature_set_names,
+            'cv_macro_f1': main_result['cv_macro_f1'],
+            'n_cv_folds': main_result['n_cv_folds'],
+            'selected_rounds': main_result['selected_rounds'],
+            'held_out_test_macro_f1': main_result['macro_f1'],
+        },
     )
+
+
+if __name__ == '__main__':
+    # 解析したいクラスの組み合わせを追加する。
+    # 各要素について、独立した10-fold CV・held-out test評価・結果保存を行う。
+    SMN_COMBINATIONS = [
+        ['P', '2I', '3I', '4I', '24I', '246I'],
+        # ['Lys', 'M1Lys', 'M2Lys', 'M3Lys'],
+        # ['T2', 'T3', 'T4'],
+        # ['26I', '2I', 'P'],
+    ]
+
+    completed_combinations = []
+    total_start_time = time.time()
+    for combination_index, smns in enumerate(SMN_COMBINATIONS, start=1):
+        print(
+            f"\n{'=' * 70}\n"
+            f"組み合わせ {combination_index}/{len(SMN_COMBINATIONS)}: {smns}\n"
+            f"{'=' * 70}"
+        )
+        run_analysis(smns)
+        completed_combinations.append(smns)
+
+    print(
+        f"\n全{len(completed_combinations)}組の解析が完了しました: "
+        f"{completed_combinations}"
+    )
+    print(f"総実行時間: {time.time() - total_start_time:.2f}秒")

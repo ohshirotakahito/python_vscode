@@ -50,7 +50,7 @@ def _setup_japanese_font():
 
 _setup_japanese_font()
 
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.metrics import confusion_matrix, f1_score, classification_report
 from sklearn import preprocessing
 from sklearn.preprocessing import LabelEncoder, StandardScaler
@@ -293,23 +293,15 @@ def train_xgb_classifier(dnf, feature_columns, feature_set_name="model",
                           n_jobs=N_JOBS,
                           max_depth=6, eta=0.1, num_round=500,
                           early_stopping_rounds=20, val_size=0.15,
-                          test_size=0.2, random_state=0, verbose_eval=False):
+                          test_size=0.2, random_state=0, verbose_eval=False,
+                          n_cv_folds=10):
     """
-    XGBoost (Booster, early stopping付き) による学習。
+    評価フロー:
+      1) 全データを 80% training / 20% held-out test に分割
+      2) training 80% の中で 10-fold CV によりモデル選択
+      3) 最後に held-out 20% test で最終評価
 
-    TOP_LightGBM_rmc.py の train_lgbm_classifier() と同じ形式の結果辞書を返す
-    ようにしたもの（Step1: compare_feature_sets / Step2: run_permutation_importance /
-    Step5: run_umap_integration 等、common/ml_analysis.py の共通関数から
-    そのまま使うため）。
-
-    【learn_dataset()からの主な変更点】
-    - スケーリングを preprocessing.scale(全データ) から、
-      StandardScaler を train のみで fit する方式に変更した
-      （全データでscaleすると test の情報が学習前処理に混ざるリークになるため。
-       TOP_XGboost_mix_rmb.py/rmc.py と同じ方針に統一）。
-    - 予測に使う生の Booster に加えて、sklearn互換の BoosterClassifierWrapper も
-      result['clf'] として返す（Permutation Importance等で必要なため）。
-      SHAP分析には result['booster']（生のBooster）を使うこと。
+    既存の result 辞書のキー構造は維持し、Step1〜5 の共通関数との互換性を保つ。
     """
     y_labels = [_.split('_')[0] for _ in dnf['sample']]
     x = dnf[feature_columns]
@@ -320,62 +312,96 @@ def train_xgb_classifier(dnf, feature_columns, feature_set_name="model",
     num_class = max(y) + 1
     class_names = list(le.classes_)
 
+    row_positions = np.arange(len(dnf))
     idx_train_full, idx_test = train_test_split(
-        dnf.index, test_size=test_size, random_state=random_state, stratify=y
+        row_positions, test_size=test_size, random_state=random_state, stratify=y
     )
-    idxer = dnf.index.get_indexer
 
-    x_train_full_raw = x.loc[idx_train_full]
-    x_test_raw = x.loc[idx_test]
-    y_train_full = y[idxer(idx_train_full)]
-    y_test = y[idxer(idx_test)]
-
-    # --- train内からさらにvalidationを切り出す（early stopping用） ---
-    idx_train, idx_val = train_test_split(
-        idx_train_full, test_size=val_size, random_state=random_state,
-        stratify=y_train_full
-    )
-    x_train_raw = x.loc[idx_train]
-    x_val_raw = x.loc[idx_val]
-    y_train = y[idxer(idx_train)]
-    y_val = y[idxer(idx_val)]
-
-    # --- スケーラー：train のみで fit ---
-    scaler = StandardScaler()
-    X_train = scaler.fit_transform(x_train_raw)
-    X_val = scaler.transform(x_val_raw)
-    X_test = scaler.transform(x_test_raw)
-
-    # --- アンダーサンプリングはtrainのみに適用 ---
-    cn = [len(y_train[y_train == i]) for i in range(num_class)]
-    counts = [min(cn) for _ in range(len(cn))]
-    keys = list(range(len(cn)))
-    strategy = {key: count for key, count in zip(keys, counts)}
-    rus = RandomUnderSampler(random_state=random_state, sampling_strategy=strategy)
-    X_train_res, y_train_res = rus.fit_resample(X_train, y_train)
+    x_train_full_raw = x.iloc[idx_train_full]
+    x_test_raw = x.iloc[idx_test]
+    y_train_full = y[idx_train_full]
+    y_test = y[idx_test]
 
     feature_columns = list(feature_columns)
-    dtrain = xgb.DMatrix(X_train_res, label=y_train_res, feature_names=feature_columns)
-    dval = xgb.DMatrix(X_val, label=y_val, feature_names=feature_columns)
-    dtest = xgb.DMatrix(X_test, feature_names=feature_columns)
-
     params = {
         'max_depth': max_depth, 'eta': eta, 'eval_metric': 'mlogloss',
         'num_class': num_class, 'objective': 'multi:softprob',
     }
 
+    min_class_count = min(np.bincount(y_train_full).min(), n_cv_folds)
+    n_splits = max(2, min(n_cv_folds, min_class_count))
+    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+
+    fold_scores = []
+    fold_best_rounds = []
+
+    for train_idx, valid_idx in skf.split(x_train_full_raw, y_train_full):
+        x_train_fold = x_train_full_raw.iloc[train_idx]
+        x_valid_fold = x_train_full_raw.iloc[valid_idx]
+        y_train_fold = y_train_full[train_idx]
+        y_valid_fold = y_train_full[valid_idx]
+
+        scaler_fold = StandardScaler()
+        X_train_fold = scaler_fold.fit_transform(x_train_fold)
+        X_valid_fold = scaler_fold.transform(x_valid_fold)
+
+        cn = [len(y_train_fold[y_train_fold == i]) for i in range(num_class)]
+        counts = [min(cn) for _ in range(len(cn))]
+        keys = list(range(len(cn)))
+        strategy = {key: count for key, count in zip(keys, counts)}
+        rus = RandomUnderSampler(random_state=random_state, sampling_strategy=strategy)
+        X_train_res, y_train_res = rus.fit_resample(X_train_fold, y_train_fold)
+
+        dtrain = xgb.DMatrix(X_train_res, label=y_train_res, feature_names=feature_columns)
+        dvalid = xgb.DMatrix(X_valid_fold, label=y_valid_fold, feature_names=feature_columns)
+
+        evals_result_fold = {}
+        bst_fold = xgb.train(
+            params, dtrain, num_boost_round=num_round,
+            evals=[(dtrain, 'train'), (dvalid, 'val')],
+            early_stopping_rounds=early_stopping_rounds,
+            evals_result=evals_result_fold,
+            verbose_eval=False,
+        )
+
+        y_valid_proba = bst_fold.predict(
+            dvalid, iteration_range=(0, bst_fold.best_iteration + 1)
+        )
+        y_valid_pred = y_valid_proba.argmax(axis=1)
+        fold_score = f1_score(y_valid_fold, y_valid_pred, average='macro')
+        fold_scores.append(fold_score)
+        fold_best_rounds.append(bst_fold.best_iteration)
+
+    cv_macro_f1 = float(np.mean(fold_scores))
+    selected_rounds = int(round(np.median(fold_best_rounds)))
+    print(f"[{feature_set_name}] 80% training 内 {n_splits}-fold CV: mean Macro F1={cv_macro_f1:.4f}, selected_rounds={selected_rounds}")
+
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(x_train_full_raw)
+    X_test = scaler.transform(x_test_raw)
+
+    cn = [len(y_train_full[y_train_full == i]) for i in range(num_class)]
+    counts = [min(cn) for _ in range(len(cn))]
+    keys = list(range(len(cn)))
+    strategy = {key: count for key, count in zip(keys, counts)}
+    rus = RandomUnderSampler(random_state=random_state, sampling_strategy=strategy)
+    X_train_res, y_train_res = rus.fit_resample(X_train, y_train_full)
+
+    dtrain = xgb.DMatrix(X_train_res, label=y_train_res, feature_names=feature_columns)
+    dtest = xgb.DMatrix(X_test, feature_names=feature_columns)
+
     evals_result = {}
     t0 = time.time()
     bst = xgb.train(
-        params, dtrain, num_boost_round=num_round,
-        evals=[(dtrain, 'train'), (dval, 'val')],
-        early_stopping_rounds=early_stopping_rounds,
-        evals_result=evals_result, verbose_eval=verbose_eval,
+        params, dtrain, num_boost_round=selected_rounds,
+        evals=[(dtrain, 'train')],
+        evals_result=evals_result,
+        verbose_eval=verbose_eval,
     )
-    print(f"[{feature_set_name}] XGBoost学習 完了 ({time.time() - t0:.1f}秒, "
-          f"best_iteration={bst.best_iteration}/{num_round})")
+    final_rounds = selected_rounds if selected_rounds is not None else bst.num_boosted_rounds()
+    print(f"[{feature_set_name}] final model fit 完了 ({time.time() - t0:.1f}秒, best_iteration={final_rounds}/{selected_rounds})")
 
-    y_pred_proba = bst.predict(dtest, iteration_range=(0, bst.best_iteration + 1))
+    y_pred_proba = bst.predict(dtest, iteration_range=(0, final_rounds))
     y_pred = y_pred_proba.argmax(axis=1)
 
     macro_f1 = f1_score(y_test, y_pred, average='macro')
@@ -386,12 +412,10 @@ def train_xgb_classifier(dnf, feature_columns, feature_set_name="model",
     cm_df = pd.DataFrame(cm, index=[f'Actual_{c}' for c in class_names],
                           columns=[f'Pred_{c}' for c in class_names])
 
-    print(f"[{feature_set_name}] Macro F1: {macro_f1:.4f}")
+    print(f"[{feature_set_name}] Held-out test Macro F1: {macro_f1:.4f}")
 
-    # sklearn互換ラッパー（Permutation Importance等、numpy配列で.predict()を
-    # 呼ぶsklearnツールから使うため。SHAP分析には使わず、result['booster']を使うこと）
     wrapper = BoosterClassifierWrapper(bst, num_class=num_class, feature_names=feature_columns)
-    wrapper.fit(X_train_res, y_train_res)  # classes_を設定するだけ、実学習はしない
+    wrapper.fit(X_train_res, y_train_res)
 
     result = {
         'name': feature_set_name,
@@ -408,11 +432,14 @@ def train_xgb_classifier(dnf, feature_columns, feature_set_name="model",
         'X_test_raw': x_test_raw,
         'y_test': y_test,
         'y_pred': y_pred,
-        'test_global_ids': list(idx_test),
+        'test_global_ids': list(dnf.index[idx_test]),
         'macro_f1': macro_f1,
         'per_class_f1': per_class_f1,
         'confusion_matrix': cm_df,
         'evals_result': evals_result,
+        'cv_macro_f1': cv_macro_f1,
+        'n_cv_folds': n_splits,
+        'cv_best_rounds': fold_best_rounds,
     }
     return result
 
@@ -442,8 +469,11 @@ for _i in range(12):
     META_PHYSICAL_CATEGORY[f'wave_{_i}'] = '局所変動'  # 要ドメイン確認
 
 
-if __name__ == '__main__':
-    smns = ['26I','2I','3I','4I','246I','P']  # 必要に応じて書き換える
+def run_analysis(smns):
+    """指定したクラスの組み合わせについて、学習から結果保存まで実行する。"""
+
+    #smns = ['oxytocin','LCys','LIle','LGln','LAsn','LPro','LLeu','Gly']  # 必要に応じて書き換える
+    #smns = ['vasopressin','LCys','LTyr','LPhe','LGln','LAsn','LCys','LPro','LArg','Gly']  # 必要に応じて書き換える
     data_root = DATA_ROOT
 
     # fc_parametersや前処理ロジックを変更した場合、古いキャッシュを使い回さないよう
@@ -614,3 +644,27 @@ if __name__ == '__main__':
     print(f"🗜️ 結果フォルダをZIP化しました: {zip_path}")
 
     print(f"\n今回の結果は {RUN_DIR} にまとめて保存しました。")
+
+
+if __name__ == '__main__':
+    # 解析したいクラスの組み合わせを追加する。
+    # 各要素について、独立した学習・held-out test評価・結果保存を順番に実行する。
+    SMN_COMBINATIONS = [
+        ['oxytocin', 'vasopressin'],
+        # ['oxytocin', '別のクラス'],
+        # ['vasopressin', '別のクラス'],
+    ]
+
+    all_results = []
+    total_start_time = time.time()
+    for combination_index, smns in enumerate(SMN_COMBINATIONS, start=1):
+        print(
+            f"\n{'=' * 70}\n"
+            f"組み合わせ {combination_index}/{len(SMN_COMBINATIONS)}: {smns}\n"
+            f"{'=' * 70}"
+        )
+        run_analysis(smns)
+        all_results.append(smns)
+
+    print(f"\n全{len(all_results)}組の解析が完了しました: {all_results}")
+    print(f"総実行時間: {time.time() - total_start_time:.2f}秒")
