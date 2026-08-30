@@ -9,6 +9,15 @@ Viewer/temp/
 Viewer/count_data/
 Viewer/heat_data/
 clips_pick/
+ML_N/data/
+ML_N/output/
+ML_N/results/
+ML_N/**/*.tdms
+ML_N/**/*.npy
+ML_N/**/*.npz
+ML_N/**/*.csv
+ML_N/**/*.parquet
+*.egg-info/
 
 # tsfreshキャッシュ(念のため、上記に含まれない場所にできても除外)
 **/_tsfresh_cache/
