@@ -8,10 +8,21 @@ from .normalize import (
 )
 from .schema import FileCatalogRecord
 
+from .builder import (
+    CatalogBuildError,
+    CatalogBuildResult,
+    build_catalog,
+    discover_tdms_files,
+)
+
 __all__ = [
     "FileCatalogRecord",
     "build_catalog_record",
     "normalize_float",
     "normalize_int",
     "normalize_text",
+    "CatalogBuildError",
+    "CatalogBuildResult",
+    "build_catalog",
+    "discover_tdms_files",
 ]
