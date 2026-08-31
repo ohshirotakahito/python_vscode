@@ -47,6 +47,16 @@ def main():
         type=float,
         default=10.0,
     )
+    parser.add_argument(
+        "--noise-method",
+        choices=("global", "blockwise"),
+        default="global",
+    )
+    parser.add_argument(
+        "--noise-block-points",
+        type=int,
+        default=10_000,
+    )
     args = parser.parse_args()
 
     timer_start = perf_counter()
@@ -73,6 +83,8 @@ def main():
         baseline_percentile=args.baseline_percentile,
         noise_iterations=5,
         noise_clip_sigma=4.0,
+        noise_method=args.noise_method,
+        noise_block_points=args.noise_block_points,
     )
 
     python_result = detect_measurement_events(
