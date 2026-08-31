@@ -1,8 +1,10 @@
 import argparse
+import numpy as np
 from dataclasses import asdict
 import json
 from pathlib import Path
 from time import perf_counter
+
 
 import pandas as pd
 
@@ -11,6 +13,24 @@ from ml_n.processing import detect_measurement_events
 from ml_n.validation import match_events
 from signal_core import DetectionConfig, PipelineConfig
 
+def summarize_noise(
+    noise_pa: float | np.ndarray,
+) -> dict[str, float | int]:
+    """Scalarまたは局所ノイズ曲線を要約する。"""
+
+    values = np.asarray(
+        noise_pa,
+        dtype=float,
+    ).reshape(-1)
+
+    return {
+        "minimum": float(np.min(values)),
+        "median": float(np.median(values)),
+        "mean": float(np.mean(values)),
+        "p95": float(np.percentile(values, 95.0)),
+        "maximum": float(np.max(values)),
+        "unique_value_count": int(np.unique(values).size),
+    }
 
 def main():
     parser = argparse.ArgumentParser(
@@ -143,6 +163,9 @@ def main():
         "max_peak_error_ms": args.max_peak_error_ms,
         "config_hash": python_result.config_hash,
         "pipeline_config": asdict(config),
+        "noise_summary_pa": summarize_noise(
+            python_result.detection.noise_pa
+        ),
         "processing_seconds": perf_counter() - timer_start,
     }
 
