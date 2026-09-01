@@ -59,6 +59,32 @@ python scripts/run_batch_validation.py `
   --threshold-k2 5.5
 ```
 
+Build searchable event tables and compressed waveform regions with the same
+manifest and detector settings:
+
+```powershell
+python scripts/build_event_datasets.py `
+  data/manifests/validation_pairs.csv `
+  --noise-method blockwise `
+  --noise-block-points 10000 `
+  --threshold-k1 3.0 `
+  --threshold-k2 5.5 `
+  --verify-anal
+```
+
+Outputs are separated by waveform and detector configuration:
+
+```text
+data/events/
+├─ dataset_index.csv
+├─ dataset_summary.json
+└─ <file_id>/
+   └─ <config_hash>/
+      ├─ events.csv
+      └─ segments/
+         └─ <event_id>.npz
+```
+
 ## Dataset splits
 
 Do not move TDMS files when assigning tuning, validation, or holdout roles.
