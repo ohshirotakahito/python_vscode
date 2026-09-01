@@ -7,6 +7,7 @@ from time import perf_counter
 
 import pandas as pd
 
+from ml_n.catalog import resolve_manifest_path
 from ml_n.io import read_anal_tdms, read_raw_tdms
 from ml_n.processing import detect_measurement_events
 from ml_n.validation import (
@@ -53,7 +54,8 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    pairs = pd.read_csv(args.pairs_csv)
+    manifest_path = Path(args.pairs_csv).resolve()
+    pairs = pd.read_csv(manifest_path)
 
     required_columns = {
         "pair_id",
@@ -81,8 +83,16 @@ def main() -> None:
 
         print(f"Processing: {pair_id}")
 
-        raw = read_raw_tdms(row.raw_tdms_path)
-        anal = read_anal_tdms(row.anal_tdms_path)
+        raw_path = resolve_manifest_path(
+            row.raw_tdms_path,
+            manifest_path=manifest_path,
+        )
+        anal_path = resolve_manifest_path(
+            row.anal_tdms_path,
+            manifest_path=manifest_path,
+        )
+        raw = read_raw_tdms(raw_path)
+        anal = read_anal_tdms(anal_path)
 
         if raw.file_id != anal.file_id:
             raise ValueError(
