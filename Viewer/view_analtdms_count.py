@@ -198,13 +198,13 @@ if __name__ =='__main__':
     keyfolder = 'analysis'
     
     #データ元のターゲットサーバー内の元フォルダ内の対象フォルダの場所
-    ex = 'Chirality_N2'
+    ex = 'Chirality_NL'
     
     #sampleリスト（特定フォルダごと作成）
     samples = exfoler_check(server, keyfolder, ex)
     #sampleリスト限定（テスト時に使用）
     #samples = [samples[0]]
-    samples =['LTrp','DTrp']
+    #samples =['LTrp','DTrp']
     #ssamples =['Dtrp']
     #ssamples =['N01SN5457','N02SN2461','N03SN9857','N04SN9283']
     

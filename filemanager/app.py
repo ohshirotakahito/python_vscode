@@ -23,6 +23,15 @@ ERROR_PREFIX = '__FILEMANAGER_ERROR__'
 PROGRESS_PREFIX = '__FILEMANAGER_PROGRESS__'
 
 
+def format_file_size(size):
+    """コピー予定で読みやすいファイルサイズを返す。"""
+    value = float(size)
+    for unit in ('B', 'KiB', 'MiB', 'GiB', 'TiB'):
+        if value < 1024 or unit == 'TiB':
+            return f'{int(value)} {unit}' if unit == 'B' else f'{value:.2f} {unit}'
+        value /= 1024
+
+
 def copy_with_progress(plans):
     """一時ファイルへ分割転送し、転送バイト数をGUIへ通知する。"""
     files = []
@@ -416,25 +425,44 @@ def copy_selected_targets(d, samples, common, create_folders):
                 plans.append((selected, target, extension))
     if d.get('preview'):
         copy_count = skip_count = total_bytes = 0
-        print('\n=== コピー予定ファイル ===')
+        groups = []
         for source, destination, extension in plans:
+            rows = []
             with os.scandir(source) as entries:
                 files = sorted((entry.name for entry in entries
                                 if entry.is_file() and entry.name.lower().endswith(extension.lower())))
             for name in files:
                 source_file = os.path.join(source, name)
                 destination_file = os.path.normpath(os.path.join(destination, name))
+                size = os.path.getsize(source_file)
                 if os.path.exists(destination_file):
-                    action = 'スキップ予定（コピー先に存在）'
+                    action = '既存・スキップ'
                     skip_count += 1
                 else:
-                    action = 'コピー予定'
+                    action = 'コピー'
                     copy_count += 1
-                    total_bytes += os.path.getsize(source_file)
-                print(f'[{action}]\n  元: {source_file}\n  先: {destination_file}')
-        print(f'\n対象: {copy_count + skip_count}件 / コピー予定: {copy_count}件 / スキップ予定: {skip_count}件')
-        print(f'コピー予定サイズ: {total_bytes:,} bytes ({total_bytes / 1024**2:.2f} MiB)')
-        print('実行時には標準フォルダ構造も作成します。確認後にファイルが変わると実行結果も変わります。')
+                    total_bytes += size
+                rows.append((action, name, size))
+            if rows:
+                groups.append((source, destination, rows))
+
+        print('\n=== コピー予定の概要 ===')
+        print(f'対象: {copy_count + skip_count}件')
+        print(f'  コピー予定: {copy_count}件 / {format_file_size(total_bytes)}')
+        print(f'  スキップ予定: {skip_count}件（コピー先に同名あり）')
+        print(f'コピー元: //{d["server"]}/{d["share"]}/{d["experiment"]}')
+        print(f'コピー先: //{d["server"]}/{d["destination"]}/{d["experiment"]}')
+        print(f'サンプル: {", ".join(samples)} / 接尾辞: {d["suffix"]}')
+
+        print('\n=== ファイル一覧 ===')
+        for source, destination, rows in groups:
+            print(f'\nコピー元フォルダ: {source}')
+            print(f'コピー先フォルダ: {destination}')
+            for index, (action, name, size) in enumerate(rows, start=1):
+                print(f'  {index:>3}. [{action}] {name}  ({format_file_size(size)})')
+        print('\n※「既存・スキップ」はコピー先に同名ファイルがあり、上書きしない項目です。')
+        print('※確認だけではコピーしません。実行時には標準フォルダ構造も作成します。')
+        print('※確認後にファイルが変わると、実行結果も変わる場合があります。')
         return
     matched = 0
     for source, _, extension in plans:

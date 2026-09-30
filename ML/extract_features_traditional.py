@@ -62,6 +62,7 @@ from common.tdms_io import (
     append_df_to_csv, META_COLUMNS,
 )
 from common.incremental_save import load_existing_npy, merge_new_events
+from common.extract_catalog import record_extraction
 
 # この抽出手法の系統名（common/paths.py 側のフォルダ名と揃える）
 FEATURE_SET = 'rmb'
@@ -97,22 +98,38 @@ def save_checkpoint(checkpoint_path, state):
         raise
 
 
-if __name__ == '__main__':
-    server = 'QTserver'
-    keyfolder = 'analysis'
-    ex = 'Chirality_N2'
+def run_extraction(samples, server='Rackstation', keyfolder='analysis', ex='Shanli_thy',
+                    output_dir=None, progress_callback=None, files_by_sample=None):
+    """指定サンプルのtdmsファイルから特徴量を抽出し、data/features/rmb/ 以下に保存する。
 
-    ExPath = '//' + server + '/' + keyfolder + '/' + ex + '/'
+    progress_callback は progress_callback(processed_count, total_count, message) の形で
+    ファイル1件処理するたびに呼ばれる（UIの進捗バー更新用。Noneなら呼ばれない）。
+    files_by_sample: {サンプル名: [ANAL tdmsのパス, ...]} を渡すと、そのファイルだけを
+                     読み込む（UIで選択したファイルのみ抽出する用）。None なら全ファイル。
+    """
+    if output_dir is None:
+        output_dir = paths.feature_dir(FEATURE_SET)
+    OUTPUT_DIR = output_dir
 
-    # sampleリスト非限定（テスト時に使用）
-    samples = exfoler_check(server, keyfolder, ex)
-
-    # sampleリスト限定（特定フォルダごと作成）
-    #samples = ["Guanine", 'OMeG', 'OxoG']
-    # samples = ['Guanine']
-
-    # 出力先フォルダ（data/features/rmb/ 以下。無ければ自動作成される）
-    OUTPUT_DIR = paths.feature_dir(FEATURE_SET)
+    # 全サンプル分のtdmsファイル一覧を先に集め、進捗の総数（全体件数）を確定させる。
+    # （Analtfoler/tdmslist_filesは一覧取得のみなので、ここで1回呼んでおいて後で使い回す）
+    sample_file_lists = {}
+    for sample in samples:
+        if files_by_sample is not None:
+            sample_file_lists[sample] = [
+                (os.path.dirname(path), os.path.basename(path))
+                for path in sorted(files_by_sample.get(sample, []))
+            ]
+            continue
+        folderlist = Analtfoler(server, keyfolder, ex, sample)
+        files = [
+            (folder_path, tdms_file_name)
+            for folder_path in sorted(folderlist)
+            for tdms_file_name in sorted(tdmslist_files(folder_path))
+        ]
+        sample_file_lists[sample] = files
+    total_files = sum(len(files) for files in sample_file_lists.values())
+    processed_count = 0
 
     for sample in samples:
         SamplePath = sample + '_10k_Sample'
@@ -144,6 +161,9 @@ if __name__ == '__main__':
             print(f"[{sample}] 中断していた収集をチェックポイントから再開します "
                   f"(処理済み {len(processed_files)} ファイル, next_event_id={next_event_id})")
 
+        # 抽出履歴用（このパスで実際に読んだファイルのみ。再開時にスキップした分は含まない）
+        file_log = []
+
         def write_checkpoint():
             save_checkpoint(checkpoint_path, {
                 'processed_files': sorted(processed_files),
@@ -152,54 +172,57 @@ if __name__ == '__main__':
                 'wave_columns': wave_columns,
             })
 
-        folderlist = Analtfoler(server, keyfolder, ex, sample)
-
         # folderlist / tdms_files の並び順はtdms_io.py側の実装依存で保証されない。
         # 済/未済は絶対パスの集合で管理しているので順序自体は正しさに影響しないが、
-        # ログを見やすく・再現しやすくするためソートしておく。
-        for folder_path in sorted(folderlist):
-            tdms_files = sorted(tdmslist_files(folder_path))
+        # ログを見やすく・再現しやすくするためソートしておく（一覧自体は事前収集済み）。
+        for folder_path, tdms_file_name in sample_file_lists[sample]:
+            tdms_file_path = os.path.join(folder_path, tdms_file_name)
 
-            for tdms_file_name in tdms_files:
-                tdms_file_path = os.path.join(folder_path, tdms_file_name)
+            if tdms_file_path in processed_files:
+                processed_count += 1
+                continue  # 処理済み（再開時はここでスキップされる）
 
-                if tdms_file_path in processed_files:
-                    continue  # 処理済み（再開時はここでスキップされる）
+            basename = os.path.basename(tdms_file_path)
+            print(basename)
 
-                basename = os.path.basename(tdms_file_path)
-                print(basename)
+            echec = tdms_checker(tdms_file_path)
 
-                echec = tdms_checker(tdms_file_path)
+            # ---- ここでは計算のみ行い、まだステージングCSVには書き込まない ----
+            meta_chunk = None
+            candidate_next_event_id = next_event_id
 
-                # ---- ここでは計算のみ行い、まだステージングCSVには書き込まない ----
-                meta_chunk = None
-                candidate_next_event_id = next_event_id
+            n_events = 0
+            if echec == 1:
+                AX, _long_rows, candidate_next_event_id = apick(
+                    tdms_file_path, sample, start_event_id=next_event_id
+                )
+                n_events = len(AX) if AX else 0
+                # このファイルではtsfresh用long_rowsは使わないため無視する
+                # （元のコードと同じ挙動）
 
-                if echec == 1:
-                    AX, _long_rows, candidate_next_event_id = apick(
-                        tdms_file_path, sample, start_event_id=next_event_id
-                    )
-                    # このファイルではtsfresh用long_rowsは使わないため無視する
-                    # （元のコードと同じ挙動）
+                if AX:
+                    if wave_columns is None:
+                        n_wave_features = len(AX[0]) - len(META_COLUMNS)
+                        wave_columns = [f'wave_{i}' for i in range(n_wave_features)]
+                    meta_chunk = pd.DataFrame(AX, columns=META_COLUMNS + wave_columns)
 
-                    if AX:
-                        if wave_columns is None:
-                            n_wave_features = len(AX[0]) - len(META_COLUMNS)
-                            wave_columns = [f'wave_{i}' for i in range(n_wave_features)]
-                        meta_chunk = pd.DataFrame(AX, columns=META_COLUMNS + wave_columns)
+            # ---- ここまで来て初めて、このファイル分をステージングCSVへ書き込む ----
+            if meta_chunk is not None:
+                meta_header_written = append_df_to_csv(
+                    meta_chunk, staging_meta_path, meta_header_written
+                )
 
-                # ---- ここまで来て初めて、このファイル分をステージングCSVへ書き込む ----
-                if meta_chunk is not None:
-                    meta_header_written = append_df_to_csv(
-                        meta_chunk, staging_meta_path, meta_header_written
-                    )
+            next_event_id = candidate_next_event_id
+            del meta_chunk
 
-                next_event_id = candidate_next_event_id
-                del meta_chunk
+            # このtdmsファイルの計算・書き込みが最後まで終わった時点で「処理済み」にする
+            processed_files.add(tdms_file_path)
+            write_checkpoint()
+            file_log.append((tdms_file_path, echec, n_events))
 
-                # このtdmsファイルの計算・書き込みが最後まで終わった時点で「処理済み」にする
-                processed_files.add(tdms_file_path)
-                write_checkpoint()
+            processed_count += 1
+            if progress_callback is not None:
+                progress_callback(processed_count, total_files, f"[{sample}] {basename}")
 
         # ---- ここまでで、このサンプルの全tdmsファイルの「収集」が完了 ----
         # ステージングCSVを読み戻して、元の CX 相当を再構成する。
@@ -221,6 +244,9 @@ if __name__ == '__main__':
             f"[{sample}] 新規追加: {n_added}件 / 重複スキップ: {n_skipped}件 "
             f"/ 合計: {len(merged_array)}件 -> {save_path}"
         )
+        record_extraction(FEATURE_SET, server, keyfolder, ex, sample, file_log,
+                          n_added=n_added, n_skipped=n_skipped, n_total=len(merged_array),
+                          output_path=save_path)
 
         # --- この収集パスは正常終了したので、ステージング/チェックポイントは削除 ---
         # 次回スクリプトを実行した際は、また全tdmsファイルを収集し直す
@@ -230,4 +256,17 @@ if __name__ == '__main__':
                 os.remove(p)
 
     print('end')
+    return OUTPUT_DIR
+
+
+if __name__ == '__main__':
+    # sampleリスト非限定（テスト時に使用）
+    # samples = exfoler_check('Rackstation', 'analysis', 'Shanli_thy')
+
+    # sampleリスト限定（特定フォルダごと作成）
+    #samples = ["Guanine", 'OMeG', 'OxoG']
+    samples = ['T2', 'T3', 'T4']
+    #  samples = ['Guanine']
+
+    run_extraction(samples)
 

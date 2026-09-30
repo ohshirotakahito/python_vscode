@@ -62,6 +62,7 @@ import json
 import math
 import hashlib
 import pickle
+import shutil
 import warnings
 from pathlib import Path
 from datetime import datetime
@@ -537,8 +538,19 @@ def learn_dataset(dnf, feature_columns, n_jobs=N_JOBS,
 # メイン処理
 # ============================================================
 
-def run_analysis(smns):
-    """指定したクラスの組み合わせについて、学習から結果保存まで実行する。"""
+_TOTAL_ANALYSIS_STAGES = 10
+
+
+def run_analysis(smns, progress_callback=None):
+    """指定したクラスの組み合わせについて、学習から結果保存まで実行する。
+
+    progress_callback は progress_callback(stage_index, total_stages, message) の形で
+    処理の大まかな段階が切り替わるたびに呼ばれる（UIの進捗バー更新用。Noneなら呼ばれない）。
+    """
+    def _report(stage_index, message):
+        if progress_callback is not None:
+            progress_callback(stage_index, _TOTAL_ANALYSIS_STAGES, message)
+
     data_root = paths.feature_dir(FEATURE_SET)
 
     # --- 実行ごとにタイムスタンプ付きフォルダを作成（上書き防止） ---
@@ -556,11 +568,13 @@ def run_analysis(smns):
 
     start_time = time.time()
 
+    _report(0, "データセットを構築中...")
     dnf, tsfresh_feature_cols_all = build_combined_dataset(
         smns, data_root=data_root, use_cache=True,
         n_jobs=N_JOBS, chunksize=CHUNKSIZE
     )
 
+    _report(1, "tsfresh特徴量を選択中...")
     if USE_TSFRESH_FEATURE_SELECTION:
         tsfresh_feature_cols = apply_tsfresh_feature_selection(
             dnf, tsfresh_feature_cols_all, n_jobs=N_JOBS, chunksize=CHUNKSIZE
@@ -571,6 +585,7 @@ def run_analysis(smns):
     # ---------------------------------------------------------
     # Step1: 既存15特徴量 / tsfresh選択特徴量 / 既存15+tsfresh の性能比較
     # ---------------------------------------------------------
+    _report(2, "Step1: 特徴量セットを比較・学習中...")
     step1_results, step1_comparison_df, step1_feature_set_names = compare_feature_sets(
         dnf, META_FEATURE_COLUMNS, tsfresh_feature_cols, train_fn=train_lgbm_classifier,
         n_jobs=N_JOBS, output_dir=RUN_OUTPUT_DIR,
@@ -578,12 +593,14 @@ def run_analysis(smns):
 
     # '既存14+tsfresh' のような、実際に使われた列数から生成された名前を使う。
     main_result = step1_results[step1_feature_set_names['combined']]
+    _report(3, "特徴量重要度を保存中...")
     plot_feature_importance(main_result['clf'], main_result['feature_columns'], top_n=30,
                              save_dir=RUN_OUTPUT_DIR)
 
     # ---------------------------------------------------------
     # Step2: Permutation Importance（独立テストデータ）
     # ---------------------------------------------------------
+    _report(4, "Step2: Permutation Importanceを計算中...")
     perm_importance_df = run_permutation_importance(
         main_result, n_repeats=PERMUTATION_N_REPEATS, n_jobs=N_JOBS,
         top_n=TOP_N_IMPORTANCE, output_dir=RUN_OUTPUT_DIR,
@@ -593,12 +610,14 @@ def run_analysis(smns):
     # ---------------------------------------------------------
     # Step3: SHAP分析
     # ---------------------------------------------------------
+    _report(5, "Step3: SHAP分析中...")
     shap_result = run_shap_class_comparison(main_result, top_n=TOP_N_SHAP, output_dir=RUN_OUTPUT_DIR,
                                              max_samples=SHAP_MAX_SAMPLES)
 
     # ---------------------------------------------------------
     # Step4: 物理量への再分類（Permutation Importance / SHAP の両方に適用）
     # ---------------------------------------------------------
+    _report(6, "Step4: 物理カテゴリ別に集計中...")
     perm_with_category, perm_category_summary = build_physical_category_table(
         perm_importance_df, feature_col='feature', importance_col='importance_mean',
         extra_category_map=META_PHYSICAL_CATEGORY,
@@ -620,6 +639,7 @@ def run_analysis(smns):
     # ---------------------------------------------------------
     # Step5: UMAPとの統合可視化
     # ---------------------------------------------------------
+    _report(7, "Step5: UMAP統合可視化を作成中...")
     top_feature_for_color = perm_importance_df.iloc[0]['feature'] \
         if len(perm_importance_df) else None
 
@@ -634,6 +654,7 @@ def run_analysis(smns):
     # SHAPクラス別重要度ヒートマップ・クラス間距離解析)
     # train_xgboost_tsfresh.py と同じ内容をLightGBM側にも出力する。
     # ============================================================
+    _report(8, "追加解析（ヒストグラム・PCA/UMAP・統計検定・距離解析）中...")
 
     feature_columns = main_result['feature_columns']
     le = main_result['le']
@@ -647,7 +668,12 @@ def run_analysis(smns):
     MX, N_MX, report = conmtx(y_test, y_pred, le, save_dir=RUN_OUTPUT_DIR)
 
     # --- ヒストグラム・統計データの作成と保存 ---
-    hist_stats_df, summary_stats_df = data_stat(dnf, META_FEATURE_COLUMNS, save_dir=RUN_OUTPUT_DIR)
+    hist_stats_df, summary_stats_df = data_stat(
+        dnf,
+        META_FEATURE_COLUMNS,
+        save_dir=RUN_OUTPUT_DIR,
+        feature_upper_limits={'relative_signal': 150, 'duration': 150},
+    )
 
     # --- PCA / UMAP による次元削減の可視化 ---
     plot_dim_reduction(dnf, META_FEATURE_COLUMNS, method='pca', save_path=RUN_OUTPUT_DIR / "pca_2d.png")
@@ -689,6 +715,7 @@ def run_analysis(smns):
         dist_df, N_MX, smns, save_path=RUN_OUTPUT_DIR / "distance_confusion_correlation.png"
     )
 
+    _report(9, "結果を保存・ZIP圧縮中...")
     execution_time = time.time() - start_time
     print(f"\n実行時間: {execution_time:.2f}秒")
     print(f"各種出力（CSV/PNG）は '{RUN_OUTPUT_DIR.resolve()}' に保存されています。")
@@ -712,12 +739,22 @@ def run_analysis(smns):
         },
     )
 
+    # --- 保存フォルダをZIP圧縮してダウンロードしやすくする ---
+    zip_path = shutil.make_archive(
+        base_name=str(RUN_OUTPUT_DIR), format="zip",
+        root_dir=RUN_OUTPUT_DIR.parent, base_dir=RUN_OUTPUT_DIR.name
+    )
+    print(f"🗜️ 結果フォルダをZIP化しました: {zip_path}")
+
+    _report(_TOTAL_ANALYSIS_STAGES, "完了")
+    return RUN_OUTPUT_DIR
+
 
 if __name__ == '__main__':
     # 解析したいクラスの組み合わせを追加する。
     # 各要素について、独立した10-fold CV・held-out test評価・結果保存を行う。
     SMN_COMBINATIONS = [
-        ['P', '2I', '3I', '4I', '24I', '246I'],
+         ['ALTNA','GLTNA','CLTNA','TLTNA'],
         # ['Lys', 'M1Lys', 'M2Lys', 'M3Lys'],
         # ['T2', 'T3', 'T4'],
         # ['26I', '2I', 'P'],

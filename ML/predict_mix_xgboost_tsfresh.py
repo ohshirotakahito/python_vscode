@@ -64,7 +64,7 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import Callable, List, Dict, Optional
 
 import joblib
 import numpy as np
@@ -301,7 +301,9 @@ def train(smns: List[str], filters: Optional[dict] = None) -> TrainArtifacts:
 
     # --- クラス数チェック（tsfreshの特徴量選択はクラスが2種類以上ないと
     #     内部でAssertionErrorになり原因が分かりにくいため、その前に確認する） ---
-    y_raw_check = [s.split("_")[0] for s in dnf["sample"]]
+    # train_xgboost_tsfresh.py と同じく sample 名をそのままクラス名にする
+    # （split("_")[0] だと "Lys_pH12" と "Lys" が同じクラスに潰れてしまうため）
+    y_raw_check = dnf["sample"].astype(str).tolist()
     label_counts = Counter(y_raw_check)
     print(f"クラスごとの行数（フィルタ後）: {dict(label_counts)}")
     if len(label_counts) < 2:
@@ -322,7 +324,7 @@ def train(smns: List[str], filters: Optional[dict] = None) -> TrainArtifacts:
     print(f"学習に使う特徴量の総数: {len(feature_columns)} "
           f"(メタ特徴量 {len(META_FEATURE_COLUMNS)} + tsfresh特徴量 {len(tsfresh_feature_cols)})")
 
-    y_raw = [s.split("_")[0] for s in dnf["sample"]]
+    y_raw = dnf["sample"].astype(str).tolist()
     X_raw = dnf[feature_columns]
 
     le = LabelEncoder().fit(y_raw)
@@ -407,7 +409,7 @@ def _aggregate_all(event_df: pd.DataFrame, smns: List[str],
     """従来通り全イベントで比率計算。pmaxの統計列（平均・高信頼度割合）を追加するだけで、
     絞り込み（除外）は一切行わない。"""
     rows = []
-    for name, g in event_df.groupby("sample_name"):
+    for name, g in event_df.groupby("file"):
         total = len(g)
         counts = Counter(g["pred_class"])
 
@@ -432,7 +434,7 @@ def _aggregate_highconf(event_df: pd.DataFrame, smns: List[str],
                          id2name: Dict[int, str], threshold: float) -> pd.DataFrame:
     """pmax >= threshold のイベントだけに絞り込んで比率を再計算した参考版。"""
     rows = []
-    for name, g_all in event_df.groupby("sample_name"):
+    for name, g_all in event_df.groupby("file"):
         total_original = len(g_all)
         g = g_all[g_all["pmax"] >= threshold]
         n_used = len(g)
@@ -459,22 +461,19 @@ def _aggregate_highconf(event_df: pd.DataFrame, smns: List[str],
     return pd.DataFrame(rows, columns=cols)
 
 
-def predict_grouped(mix_smn: str, art: TrainArtifacts, smns: List[str],
-                     threshold: float = PMAX_THRESHOLD,
-                     filters: Optional[dict] = None):
-    """混合サンプル(mix_smn)のtsfresh特徴量を読み込み、sample_name（tdmsファイル単位、
-    rmb版の"file"に相当）ごとに予測クラスの割合(%)を集計する。
+# 1イベントのピーク位置(peak_pos)は「ファイル先頭からのサンプル数」（10 kHz）。
+# common/tdms_io.py で S Peak Position [s] * 10000 して保存しているため、
+# 10000で割るとファイル内の経過時間[秒]になる（N秒ごとの集計に使う）。
+SAMPLING_RATE_HZ = 10000
 
-    事前に extract_features_tsfresh.py で mix_smn を抽出済みであること
-    （data/features/rmc/ に mix_smn の meta.csv / tsfresh_input.csv が必要）。
 
-    filters: 混合サンプル側だけに適用するイベント絞り込み条件（common/filters.py参照）。
-             未指定ならモジュール変数 dp.FILTERS を使う。学習データ側の条件（train()の
-             filters引数）とは独立に指定できる。
+def predict_events(mix_smn: str, art: TrainArtifacts,
+                   filters: Optional[dict] = None) -> pd.DataFrame:
+    """混合サンプル(mix_smn)の全イベントについて予測クラスとpmaxを返す（集計前）。
 
-    戻り値: (all_df, highconf_df) のタプル。
-      all_df      : 従来通り全イベントで比率計算（+pmax統計列を追加）
-      highconf_df : pmax >= threshold のイベントだけに絞った参考版
+    戻り値の列: mix_sample, file, time_s, pred_class, pred_label, pmax
+      file   : tdmsファイル単位のsample_name（rmb版の"file"に相当）
+      time_s : ファイル内でのイベントのピーク時刻[秒]
     """
     # dp.build_combined_dataset は元々複数smnsの結合用だが、要素数1で渡せば
     # 単一サンプル（混合サンプル）のtsfresh特徴量抽出・キャッシュにもそのまま使える
@@ -499,25 +498,60 @@ def predict_grouped(mix_smn: str, art: TrainArtifacts, smns: List[str],
     y_pred = probs.argmax(axis=1)
     pmax = probs.max(axis=1)
 
-    id2name = {i: c for i, c in enumerate(art.class_names)}
-
-    event_df = pd.DataFrame({
-        "sample_name": combined_mix["sample_name"].values,
+    return pd.DataFrame({
+        "mix_sample": mix_smn,
+        "file": combined_mix["sample_name"].values,
+        "time_s": pd.to_numeric(combined_mix["peak_pos"], errors="coerce").values / SAMPLING_RATE_HZ,
         "pred_class": y_pred,
+        "pred_label": [art.class_names[i] for i in y_pred],
         "pmax": pmax,
     })
 
+
+def predict_grouped(mix_smn: str, art: TrainArtifacts, smns: List[str],
+                     threshold: float = PMAX_THRESHOLD,
+                     filters: Optional[dict] = None):
+    """混合サンプル(mix_smn)のtsfresh特徴量を読み込み、sample_name（tdmsファイル単位、
+    rmb版の"file"に相当）ごとに予測クラスの割合(%)を集計する。
+
+    事前に extract_features_tsfresh.py で mix_smn を抽出済みであること
+    （data/features/rmc/ に mix_smn の meta.csv / tsfresh_input.csv が必要）。
+
+    filters: 混合サンプル側だけに適用するイベント絞り込み条件（common/filters.py参照）。
+             未指定ならモジュール変数 dp.FILTERS を使う。学習データ側の条件（train()の
+             filters引数）とは独立に指定できる。
+
+    戻り値: (all_df, highconf_df, event_df) のタプル。
+      all_df      : 従来通り全イベントで比率計算（+pmax統計列を追加）
+      highconf_df : pmax >= threshold のイベントだけに絞った参考版
+      event_df    : 集計前のイベント単位の予測結果（predict_events()の戻り値）
+    """
+    event_df = predict_events(mix_smn, art, filters=filters)
+    id2name = {i: c for i, c in enumerate(art.class_names)}
+
     all_df = _aggregate_all(event_df, smns, id2name, threshold)
     highconf_df = _aggregate_highconf(event_df, smns, id2name, threshold)
-    return all_df, highconf_df
+    return all_df, highconf_df, event_df
 
 
 def save_group_predictions(test_smns: List[str], art: TrainArtifacts,
                             smns: List[str], run_dir,
                             threshold: float = PMAX_THRESHOLD,
-                            filters: Optional[dict] = None) -> None:
-    for tsmn in test_smns:
-        all_df, highconf_df = predict_grouped(tsmn, art, smns, threshold=threshold, filters=filters)
+                            filters: Optional[dict] = None,
+                            progress_callback: Optional[Callable[[int, int, str], None]] = None,
+                            ) -> None:
+    for i, tsmn in enumerate(test_smns):
+        if progress_callback is not None:
+            progress_callback(i, len(test_smns), f"[{tsmn}] 予測中")
+        all_df, highconf_df, event_df = predict_grouped(
+            tsmn, art, smns, threshold=threshold, filters=filters
+        )
+
+        # 集計前のイベント単位の結果（UIでファイル内N秒ごとなどに再集計するため）
+        if not event_df.empty:
+            out_path = run_dir / f"predict_{tsmn}_events.csv"
+            event_df.to_csv(out_path, index=False)
+            print(f"[SAVE] {out_path}")
 
         if not all_df.empty:
             out_path = run_dir / f"predict_{tsmn}_all.csv"
@@ -528,6 +562,67 @@ def save_group_predictions(test_smns: List[str], art: TrainArtifacts,
             out_path = run_dir / f"predict_{tsmn}_highconf.csv"
             highconf_df.to_csv(out_path, index=False)
             print(f"[SAVE] {out_path} (pmax >= {threshold})")
+
+
+# =====================
+# 実行（CLI・UI共通の入口）
+# =====================
+def run_prediction(smns: List[str], test_smns: List[str], retrain: bool = RETRAIN,
+                   threshold: float = PMAX_THRESHOLD,
+                   train_filters: Optional[dict] = TRAIN_FILTERS,
+                   mix_filters: Optional[dict] = MIX_FILTERS,
+                   progress_callback: Optional[Callable[[int, int, str], None]] = None) -> Path:
+    """純粋分子(smns)でモデルを取得（再利用 or 学習）し、混合サンプル(test_smns)の
+    比率を予測して results/rmc/xgboost/<timestamp>_mix_<smns>/ に保存する。
+
+    progress_callback(current, total, message): 進捗通知（UI用、省略可）。
+    戻り値: 結果保存フォルダ(run_dir)
+    """
+    total_stages = 1 + len(test_smns)
+
+    def notify(i, message):
+        if progress_callback is not None:
+            progress_callback(i, total_stages, message)
+
+    run_dir, run_ts = paths.new_run(FEATURE_SET, ALGORITHM, smns=smns, run_type='mix')
+
+    # --- モデルの取得（学習データの指紋が一致すれば再利用、変わっていれば自動再学習） ---
+    notify(0, "学習済みモデルを確認中")
+    artifacts = None if retrain else load_artifacts(smns)
+
+    if artifacts is None:
+        print(f"[TRAIN] モデルを新規学習します: {smns}")
+        notify(0, "モデルを新規学習中")
+        fingerprints = _source_fingerprints(smns)
+        artifacts = train(smns, filters=train_filters)
+        model_version_dir = save_artifacts(artifacts, smns, fingerprints)
+        evaluate(artifacts, run_dir)
+        model_status = "trained"
+    else:
+        print(f"[SKIP] 既存モデルを再利用します（再学習なし）: {smns}")
+        model_version_dir = model_family_dir(smns) / (
+            (model_family_dir(smns) / "latest.txt").read_text(encoding="utf-8").strip()
+        )
+        model_status = "reused"
+
+    # --- 今回の実行でどのモデルバージョンを使ったかを記録（トレーサビリティ） ---
+    (run_dir / "used_model_version.txt").write_text(str(model_version_dir), encoding="utf-8")
+
+    # --- 予測（混合サンプルのファイル単位比率集計） ---
+    save_group_predictions(test_smns, artifacts, smns, run_dir, threshold=threshold,
+                           filters=mix_filters,
+                           progress_callback=lambda i, _n, msg: notify(1 + i, msg))
+
+    paths.write_run_manifest(run_dir, run_ts, smns, config={
+        "run_type": "mix",
+        "test_smns": list(test_smns),
+        "class_names": list(artifacts.class_names),
+        "pmax_threshold": threshold,
+        "model_status": model_status,
+        "model_version_dir": str(model_version_dir),
+    })
+    notify(total_stages, "完了")
+    return run_dir
 
 
 # =====================
@@ -543,28 +638,6 @@ if __name__ == "__main__":
     #   生成しておくこと
     test_smns = ["GO6MeG1-1"]
 
-    run_dir, run_ts = paths.new_run(FEATURE_SET, ALGORITHM, smns=smns, run_type='mix')
-
-    # --- モデルの取得（学習データの指紋が一致すれば再利用、変わっていれば自動再学習） ---
-    artifacts = None if RETRAIN else load_artifacts(smns)
-    model_version_dir = None
-
-    if artifacts is None:
-        print(f"[TRAIN] モデルを新規学習します: {smns}")
-        fingerprints = _source_fingerprints(smns)
-        artifacts = train(smns, filters=TRAIN_FILTERS)
-        model_version_dir = save_artifacts(artifacts, smns, fingerprints)
-        evaluate(artifacts, run_dir)
-    else:
-        print(f"[SKIP] 既存モデルを再利用します（再学習なし）: {smns}")
-        model_version_dir = model_family_dir(smns) / (
-            (model_family_dir(smns) / "latest.txt").read_text(encoding="utf-8").strip()
-        )
-
-    # --- 今回の実行でどのモデルバージョンを使ったかを記録（トレーサビリティ） ---
-    (run_dir / "used_model_version.txt").write_text(str(model_version_dir), encoding="utf-8")
-
-    # --- 予測（混合サンプルのsample_name単位比率集計） ---
-    save_group_predictions(test_smns, artifacts, smns, run_dir, filters=MIX_FILTERS)
+    run_prediction(smns, test_smns)
 
     print("end")

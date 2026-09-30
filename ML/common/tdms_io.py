@@ -341,38 +341,56 @@ def tdmslist_files(folder_path):
     return tdms_files
 
 
-def collect_events_for_sample(server, keyfolder, ex, sample):
+def find_anal_tdms(server, keyfolder, ex, sample):
+    """1サンプル分の ANAL tdms ファイルのフルパス一覧を返す（Analtfoler + tdmslist_files）。"""
+    return [
+        os.path.join(folder_path, tdms_file_name)
+        for folder_path in Analtfoler(server, keyfolder, ex, sample)
+        for tdms_file_name in tdmslist_files(folder_path)
+    ]
+
+
+def collect_events_for_sample(server, keyfolder, ex, sample, tdms_paths=None,
+                              progress_callback=None, file_log=None):
     """1サンプル分の 'ANAL' フォルダを全て探索し、イベント特徴量(CX)と
     tsfresh用long format行(ALL_LONG_ROWS)をまとめて返す便利関数。
 
     各 TOP_Feex_*.py の main 部分で共通していた
     「folderlist取得 → tdmsファイル一覧取得 → tdms_checkerでフィルタ → apick」
     のループをそのまま関数化したもの。
+
+    tdms_paths        : 読み込むANAL tdmsのパス一覧。None なら全ANALファイル（従来通り）。
+    progress_callback : progress_callback(処理済み数, 総数, ファイル名) をファイルごとに呼ぶ。
+    file_log          : リストを渡すと (パス, tdms_checkerの結果, イベント数) をファイルごとに追記する
+                        （抽出履歴 common/extract_catalog.record_extraction 用）。
     """
-    folderlist = Analtfoler(server, keyfolder, ex, sample)
+    if tdms_paths is None:
+        tdms_paths = find_anal_tdms(server, keyfolder, ex, sample)
 
     CX = []
     ALL_LONG_ROWS = []
     next_event_id = 0
 
-    for folder_path in folderlist:
-        tdms_files = tdmslist_files(folder_path)
+    for index, tdms_file_path in enumerate(tdms_paths):
+        basename = os.path.basename(tdms_file_path)
+        print(basename)
+        if progress_callback is not None:
+            progress_callback(index, len(tdms_paths), basename)
 
-        for tdms_file_name in tdms_files:
-            tdms_file_path = os.path.join(folder_path, tdms_file_name)
-            basename = os.path.basename(tdms_file_path)
-            print(basename)
+        echec = tdms_checker(tdms_file_path)
 
-            echec = tdms_checker(tdms_file_path)
-
-            if echec == 1:
-                AX, long_rows, next_event_id = apick(
-                    tdms_file_path, sample, start_event_id=next_event_id
-                )
-                if AX:
-                    CX.extend(AX)
-                if long_rows:
-                    ALL_LONG_ROWS.extend(long_rows)
+        n_events = 0
+        if echec == 1:
+            AX, long_rows, next_event_id = apick(
+                tdms_file_path, sample, start_event_id=next_event_id
+            )
+            if AX:
+                CX.extend(AX)
+                n_events = len(AX)
+            if long_rows:
+                ALL_LONG_ROWS.extend(long_rows)
+        if file_log is not None:
+            file_log.append((tdms_file_path, echec, n_events))
 
     return CX, ALL_LONG_ROWS
 

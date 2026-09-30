@@ -51,7 +51,7 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import Callable, List, Dict, Optional
 
 import joblib
 import numpy as np
@@ -175,12 +175,13 @@ def load_and_filter(path: str, filters: Optional[dict] = None) -> pd.DataFrame:
     df["relative_signal"] = df["signal_intensity"]
     df["absolute_signal"] = df["signal_intensity"] + df["signal_baseline"]
 
-    # --- file_number / machine_no / measured_at を追加（'file'/'Ex_ID'から抽出） ---
-    df = filters_mod.parse_derived_columns(df, file_number_col='file', ex_id_col='Ex_ID')
-
     if filters:
+        # common/filters.py は rmc形式の列名（sample_name/ex_id）から
+        # file_number / machine_no / measured_at を導出するため、一時的に読み替える
         print(f"イベント絞り込み条件を適用します: {filters}")
-        df = filters_mod.apply_filters(df, filters)
+        rename = {"file": "sample_name", "Ex_ID": "ex_id"}
+        df = filters_mod.apply_filters(df.rename(columns=rename), filters)
+        df = df.rename(columns={v: k for k, v in rename.items()}).reset_index(drop=True)
 
     return df
 
@@ -496,30 +497,30 @@ def _aggregate_highconf(event_df: pd.DataFrame, smns: List[str],
     return pd.DataFrame(rows, columns=cols)
 
 
-def predict_grouped(test_smn: str, art: TrainArtifacts, smns: List[str],
-                     threshold: float = PMAX_THRESHOLD,
-                     filters: Optional[dict] = None):
-    """混合サンプルをfile単位で比率集計する。
+# signal_position は「ファイル先頭からのサンプル数」（10 kHz）。
+# common/tdms_io.py で S Peak Position [s] * 10000 して保存しているため、
+# 10000で割るとファイル内の経過時間[秒]になる（N秒ごとの集計に使う）。
+SAMPLING_RATE_HZ = 10000
 
-    filters: 混合サンプル側だけに適用するイベント絞り込み条件（common/filters.py参照）。
-             学習データ側の条件（train()のfilters引数）とは独立に指定できる。
 
-    戻り値: (all_df, highconf_df) のタプル。
-      all_df      : 従来通り全イベントで比率計算（+pmax統計列を追加）
-      highconf_df : pmax >= threshold のイベントだけに絞った参考版
+def predict_events(test_smn: str, art: TrainArtifacts,
+                   filters: Optional[dict] = None) -> pd.DataFrame:
+    """混合サンプルの全イベントについて予測クラスとpmaxを返す（集計前）。
+
+    戻り値の列: mix_sample, file, time_s, pred_class, pred_label, pmax
+      time_s : ファイル内でのイベントのピーク時刻[秒]
+    npyが無い／絞り込み後に空の場合は空のDataFrameを返す。
     """
     sam = f"{test_smn}_10k_Sample_ANAL_rmb"
     npy_path = os.path.join(DATA_DIR, f"{sam}.npy")
     if not os.path.exists(npy_path):
         print(f"[WARN] missing file: {npy_path} (skip)")
-        return pd.DataFrame(), pd.DataFrame()
+        return pd.DataFrame()
 
     df = load_and_filter(npy_path, filters=filters)
     if df.empty:
         print(f"[WARN] filtered empty: {npy_path}")
-        return pd.DataFrame(), pd.DataFrame()
-
-    id2name = {i: c for i, c in enumerate(art.class_names)}
+        return pd.DataFrame()
 
     # --- イベント単位で予測確率・pmaxを計算（fileごとにループせず一括で処理） ---
     X = art.scaler.transform(df[FEATURES])
@@ -528,23 +529,57 @@ def predict_grouped(test_smn: str, art: TrainArtifacts, smns: List[str],
     y_pred = probs.argmax(axis=1)
     pmax = probs.max(axis=1)
 
-    event_df = pd.DataFrame({
+    return pd.DataFrame({
+        "mix_sample": test_smn,
         "file": df["file"].values,
+        "time_s": pd.to_numeric(df["signal_position"], errors="coerce").values / SAMPLING_RATE_HZ,
         "pred_class": y_pred,
+        "pred_label": [art.class_names[i] for i in y_pred],
         "pmax": pmax,
     })
 
+
+def predict_grouped(test_smn: str, art: TrainArtifacts, smns: List[str],
+                     threshold: float = PMAX_THRESHOLD,
+                     filters: Optional[dict] = None):
+    """混合サンプルをfile単位で比率集計する。
+
+    filters: 混合サンプル側だけに適用するイベント絞り込み条件（common/filters.py参照）。
+             学習データ側の条件（train()のfilters引数）とは独立に指定できる。
+
+    戻り値: (all_df, highconf_df, event_df) のタプル。
+      all_df      : 従来通り全イベントで比率計算（+pmax統計列を追加）
+      highconf_df : pmax >= threshold のイベントだけに絞った参考版
+      event_df    : 集計前のイベント単位の予測結果（predict_events()の戻り値）
+    """
+    event_df = predict_events(test_smn, art, filters=filters)
+    if event_df.empty:
+        return pd.DataFrame(), pd.DataFrame(), event_df
+
+    id2name = {i: c for i, c in enumerate(art.class_names)}
     all_df = _aggregate_all(event_df, smns, id2name, threshold)
     highconf_df = _aggregate_highconf(event_df, smns, id2name, threshold)
-    return all_df, highconf_df
+    return all_df, highconf_df, event_df
 
 
 def save_group_predictions(test_smns: List[str], art: TrainArtifacts,
                             smns: List[str], run_dir,
                             threshold: float = PMAX_THRESHOLD,
-                            filters: Optional[dict] = None) -> None:
-    for tsmn in test_smns:
-        all_df, highconf_df = predict_grouped(tsmn, art, smns, threshold=threshold, filters=filters)
+                            filters: Optional[dict] = None,
+                            progress_callback: Optional[Callable[[int, int, str], None]] = None,
+                            ) -> None:
+    for i, tsmn in enumerate(test_smns):
+        if progress_callback is not None:
+            progress_callback(i, len(test_smns), f"[{tsmn}] 予測中")
+        all_df, highconf_df, event_df = predict_grouped(
+            tsmn, art, smns, threshold=threshold, filters=filters
+        )
+
+        # 集計前のイベント単位の結果（UIでファイル内N秒ごとなどに再集計するため）
+        if not event_df.empty:
+            out_path = run_dir / f"predict_{tsmn}_events.csv"
+            event_df.to_csv(out_path, index=False)
+            print(f"[SAVE] {out_path}")
 
         if not all_df.empty:
             out_path = run_dir / f"predict_{tsmn}_all.csv"
@@ -558,36 +593,73 @@ def save_group_predictions(test_smns: List[str], art: TrainArtifacts,
 
 
 # =====================
+# 実行（CLI・UI共通の入口）
+# =====================
+def run_prediction(smns: List[str], test_smns: List[str], retrain: bool = RETRAIN,
+                   threshold: float = PMAX_THRESHOLD,
+                   train_filters: Optional[dict] = TRAIN_FILTERS,
+                   mix_filters: Optional[dict] = MIX_FILTERS,
+                   progress_callback: Optional[Callable[[int, int, str], None]] = None) -> Path:
+    """純粋分子(smns)でモデルを取得（再利用 or 学習）し、混合サンプル(test_smns)の
+    比率を予測して results/rmb/xgboost/<timestamp>_mix_<smns>/ に保存する。
+
+    progress_callback(current, total, message): 進捗通知（UI用、省略可）。
+    戻り値: 結果保存フォルダ(run_dir)
+    """
+    total_stages = 1 + len(test_smns)
+
+    def notify(i, message):
+        if progress_callback is not None:
+            progress_callback(i, total_stages, message)
+
+    run_dir, run_ts = paths.new_run(FEATURE_SET, ALGORITHM, smns=smns, run_type='mix')
+
+    # --- モデルの取得（学習データの指紋が一致すれば再利用、変わっていれば自動再学習） ---
+    notify(0, "学習済みモデルを確認中")
+    artifacts = None if retrain else load_artifacts(smns)
+
+    if artifacts is None:
+        print(f"[TRAIN] モデルを新規学習します: {smns}")
+        notify(0, "モデルを新規学習中")
+        fingerprints = _source_fingerprints(smns)
+        artifacts = train(smns, filters=train_filters)
+        model_version_dir = save_artifacts(artifacts, smns, fingerprints)
+        evaluate(artifacts, run_dir)
+        model_status = "trained"
+    else:
+        print(f"[SKIP] 既存モデルを再利用します（再学習なし）: {smns}")
+        model_version_dir = model_family_dir(smns) / (
+            (model_family_dir(smns) / "latest.txt").read_text(encoding="utf-8").strip()
+        )
+        model_status = "reused"
+
+    # --- 今回の実行でどのモデルバージョンを使ったかを記録（トレーサビリティ） ---
+    (run_dir / "used_model_version.txt").write_text(str(model_version_dir), encoding="utf-8")
+
+    # --- 予測（混合サンプルのファイル単位比率集計） ---
+    save_group_predictions(test_smns, artifacts, smns, run_dir, threshold=threshold,
+                           filters=mix_filters,
+                           progress_callback=lambda i, _n, msg: notify(1 + i, msg))
+
+    paths.write_run_manifest(run_dir, run_ts, smns, config={
+        "run_type": "mix",
+        "test_smns": list(test_smns),
+        "class_names": list(artifacts.class_names),
+        "pmax_threshold": threshold,
+        "model_status": model_status,
+        "model_version_dir": str(model_version_dir),
+    })
+    notify(total_stages, "完了")
+    return run_dir
+
+
+# =====================
 # main
 # =====================
 if __name__ == "__main__":
     smns = ["Guanine", "OMeG"]
     test_smns = ["GO6MeG1-1"]
 
-    # この回の実行結果（評価・予測CSV）の保存先
-    # common/paths.new_run が results/rmb/xgboost/<timestamp>_mix_<smns>/ を作成する
-    run_dir, run_ts = paths.new_run(FEATURE_SET, ALGORITHM, smns=smns, run_type='mix')
-
-    # --- モデルの取得（学習データの指紋が一致すれば再利用、変わっていれば自動再学習） ---
-    artifacts = None if RETRAIN else load_artifacts(smns)
-    model_version_dir = None
-
-    if artifacts is None:
-        print(f"[TRAIN] モデルを新規学習します: {smns}")
-        fingerprints = _source_fingerprints(smns)
-        artifacts = train(smns, filters=TRAIN_FILTERS)
-        model_version_dir = save_artifacts(artifacts, smns, fingerprints)
-        evaluate(artifacts, run_dir)
-    else:
-        print(f"[SKIP] 既存モデルを再利用します（再学習なし）: {smns}")
-        model_version_dir = model_family_dir(smns) / (
-            (model_family_dir(smns) / "latest.txt").read_text(encoding="utf-8").strip()
-        )
-
-    # --- 今回の実行でどのモデルバージョンを使ったかを記録（トレーサビリティ） ---
-    (run_dir / "used_model_version.txt").write_text(str(model_version_dir), encoding="utf-8")
-
-    # --- 予測（混合サンプルのfile単位比率集計） ---
-    save_group_predictions(test_smns, artifacts, smns, run_dir, filters=MIX_FILTERS)
+    run_prediction(smns, test_smns)
 
     print("end")

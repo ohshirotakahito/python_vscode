@@ -214,6 +214,10 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         # (its value still equals what we displayed) keeps its auto/pinned
         # mode, an edited box gets pinned to the new number.
         self._box_shown = [None, None, None, None]
+        # When False, the range boxes are NOT refreshed on every redraw (they
+        # can go stale in auto mode), which keeps Next/Prev light.  Pinned
+        # limits still apply; editing a box still works.  Toggle button below.
+        self._axis_box_sync = True
 
         # Whole-file overview strip + "good region" candidate finder.
         self.overview_buckets = int(overview_buckets)
@@ -312,8 +316,27 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         )
         self.auto_axes_button.on_clicked(self.on_auto_axes)
 
+        self.axis_sync_button = Button(
+            plt.axes([0.525, 0.925, 0.085, 0.028]), "Box sync: ON"
+        )
+        self.axis_sync_button.on_clicked(self._toggle_axis_sync)
+
         self.ax.callbacks.connect("xlim_changed", self._on_ax_lim_changed)
         self.ax.callbacks.connect("ylim_changed", self._on_ax_lim_changed)
+
+    def _toggle_axis_sync(self, event):
+        """Turn the per-redraw refresh of the range boxes on/off."""
+        self._axis_box_sync = not self._axis_box_sync
+        self.axis_sync_button.label.set_text(
+            f"Box sync: {'ON' if self._axis_box_sync else 'OFF'}"
+        )
+        if self._axis_box_sync:
+            self._refresh_axis_boxes(redraw=True)
+        else:
+            try:
+                self.fig.canvas.draw_idle()
+            except Exception:
+                pass
 
     @property
     def _axis_boxes(self):
@@ -334,7 +357,7 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         parsed = [self._parse_axis_box(b.text) for b in self._axis_boxes]
         if "bad" in parsed:
             print("[WARN] Axis range values must be numbers.")
-            self._refresh_axis_boxes()
+            self._refresh_axis_boxes(redraw=True)
             return
 
         # A box still showing the value we displayed keeps its current mode
@@ -353,31 +376,34 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         ylo, yhi, xlo, xhi = modes
         if ylo is not None and yhi is not None and yhi <= ylo:
             print("[WARN] Y max must be greater than Y min.")
-            self._refresh_axis_boxes()
+            self._refresh_axis_boxes(redraw=True)
             return
         if xlo is not None and xhi is not None and xhi <= xlo:
             print("[WARN] X max must be greater than X min.")
-            self._refresh_axis_boxes()
+            self._refresh_axis_boxes(redraw=True)
             return
         self._ylim_user = [ylo, yhi]
         self._xlim_user = [xlo, xhi]
         self.draw()
+        self._refresh_axis_boxes(redraw=True)
 
     def on_auto_axes(self, event):
         self._xlim_user = [None, None]
         self._ylim_user = [None, None]
         self.draw()
+        self._refresh_axis_boxes(redraw=True)
 
     def _reset_x_axis_user(self):
         """Called when the view moves - absolute X bounds no longer apply."""
         self._xlim_user = [None, None]
 
-    def _refresh_axis_boxes(self):
+    def _refresh_axis_boxes(self, redraw=False):
         """Show the range currently in use in all four boxes.
 
         Uses ``text_disp.set_text`` (not ``TextBox.set_val``, which forces a
         nested ``canvas.draw()`` that is unsafe from an ``xlim_changed``
-        callback).
+        callback).  ``redraw`` requests a repaint; callers inside ``draw()``
+        leave it False because ``draw()`` repaints anyway.
         """
         if not hasattr(self, "ymin_box") or self.ax is None:
             return
@@ -390,10 +416,11 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
             except Exception:
                 pass
         self._box_shown = values
-        try:
-            self.fig.canvas.draw_idle()
-        except Exception:
-            pass
+        if redraw:
+            try:
+                self.fig.canvas.draw_idle()
+            except Exception:
+                pass
 
     def _on_ax_lim_changed(self, ax):
         # Fired by our own draw() (guarded) or by a toolbar pan/zoom (captured).
@@ -401,7 +428,7 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
             return
         self._xlim_user = [float(ax.get_xlim()[0]), float(ax.get_xlim()[1])]
         self._ylim_user = [float(ax.get_ylim()[0]), float(ax.get_ylim()[1])]
-        self._refresh_axis_boxes()
+        self._refresh_axis_boxes(redraw=True)
 
     # ------------------------------------------------------------------
     # Whole-file overview strip + candidate "good region" finder
@@ -1280,7 +1307,8 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
 
         self._draw_selection_info()
         self._update_overview_window()
-        self._refresh_axis_boxes()
+        if self._axis_box_sync:
+            self._refresh_axis_boxes()
         self.fig.canvas.draw_idle()
 
     def load_file(self, idx):

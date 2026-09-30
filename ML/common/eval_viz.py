@@ -20,6 +20,80 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, classification_report
 
 
+def _confusion_matrix_style(matrix):
+    """Return a readable figure size and annotation size for a matrix."""
+    rows, columns = matrix.shape
+    largest_dimension = max(rows, columns, 1)
+
+    # Keep small matrices compact, while giving larger matrices enough room.
+    figure_width = min(20.0, max(6.5, 3.0 + columns * 1.05))
+    figure_height = min(18.0, max(5.5, 2.5 + rows * 0.90))
+
+    # Long values need a little more room than one- or two-digit values.
+    values = matrix.to_numpy()
+    max_chars = max((len(f"{value:.1f}") for value in values.flat), default=1)
+    annotation_size = min(24.0, max(8.0, 27.0 - 1.6 * largest_dimension))
+    annotation_size *= min(1.0, 4.0 / max_chars)
+
+    tick_size = min(12.0, max(7.0, 14.0 - 0.55 * largest_dimension))
+    return (figure_width, figure_height), annotation_size, tick_size
+
+
+def _plot_confusion_matrix(matrix, title, output_path, fmt):
+    """Plot one confusion-matrix DataFrame with class-count-aware sizing."""
+    figsize, annotation_size, tick_size = _confusion_matrix_style(matrix)
+    fig, ax = plt.subplots(figsize=figsize)
+    sns.heatmap(
+        matrix,
+        annot=True,
+        fmt=fmt,
+        cmap="YlGnBu",
+        ax=ax,
+        square=True,
+        annot_kws={'fontsize': annotation_size, 'fontweight': 'bold'},
+        cbar_kws={'shrink': 0.85},
+    )
+    ax.set_title(title)
+    ax.set_xlabel('Predicted Label')
+    ax.set_ylabel('True Label')
+    ax.tick_params(axis='both', labelsize=tick_size)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=180, bbox_inches='tight')
+    plt.close(fig)
+
+
+def plot_confusion_matrices(MX, N_MX, save_dir):
+    """Render count and normalized confusion matrices without model training."""
+    out_dir = Path(save_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    _plot_confusion_matrix(
+        MX, 'Confusion Matrix', out_dir / 'confusion_matrix.png', 'd'
+    )
+    _plot_confusion_matrix(
+        N_MX,
+        'Normalized Confusion Matrix (%)',
+        out_dir / 'confusion_matrix_normalized.png',
+        '.1f',
+    )
+
+
+def redraw_confusion_matrices(run_dir):
+    """Recreate the PNG files from CSV files already saved in a run directory."""
+    run_dir = Path(run_dir)
+    matrix_path = run_dir / 'confusion_matrix.csv'
+    normalized_path = run_dir / 'confusion_matrix_normalized.csv'
+    if not matrix_path.is_file() or not normalized_path.is_file():
+        raise FileNotFoundError(
+            f"Confusion-matrix CSV files were not found in: {run_dir}"
+        )
+
+    matrix = pd.read_csv(matrix_path, index_col=0).astype(int)
+    normalized = pd.read_csv(normalized_path, index_col=0).astype(float)
+    plot_confusion_matrices(matrix, normalized, run_dir)
+
+
 def conmtx(y_test, y_pred, le, save_dir=None):
     """混同行列（実数・正規化%）を作成・可視化する。
 
@@ -43,23 +117,7 @@ def conmtx(y_test, y_pred, le, save_dir=None):
 
     out_dir = Path(save_dir) if save_dir else Path('.')
 
-    fig, ax = plt.subplots(figsize=(10, 8))
-    sns.heatmap(MX, annot=True, fmt="d", cmap="YlGnBu", annot_kws={'size': 12})
-    ax.set_title('Confusion Matrix')
-    ax.set_xlabel('Predicted Label')
-    ax.set_ylabel('True Label')
-    plt.tight_layout()
-    plt.savefig(out_dir / 'confusion_matrix.png', dpi=150)
-    plt.show()
-
-    fig, ax = plt.subplots(figsize=(10, 8))
-    sns.heatmap(N_MX, annot=True, fmt="1.1f", cmap="YlGnBu", annot_kws={'size': 12})
-    ax.set_title('Normalized Confusion Matrix (%)')
-    ax.set_xlabel('Predicted Label')
-    ax.set_ylabel('True Label')
-    plt.tight_layout()
-    plt.savefig(out_dir / 'confusion_matrix_normalized.png', dpi=150)
-    plt.show()
+    plot_confusion_matrices(MX, N_MX, out_dir)
 
     if save_dir:
         MX.to_csv(out_dir / 'confusion_matrix.csv')

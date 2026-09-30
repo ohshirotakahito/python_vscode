@@ -718,9 +718,8 @@ if __name__ == "__main__":
 
     server = "Rackstation"
     keyfolder = "analysis"
-    ex = "Sakano_02"
-
-    samples = ['oxytocin','vasopressin']
+    ex = "Morita"
+    samples = ['glucose']
 
     anal_folders = []
     anal_folder_samples = []

@@ -202,8 +202,11 @@ class AppTests(unittest.TestCase):
             with patch.object(common, 'server_path', local_path), contextlib.redirect_stdout(preview_output):
                 app.run_job({**data, 'preview': True})
             self.assertEqual(before, {p.relative_to(temp).as_posix() for p in Path(temp).rglob('*')})
+            self.assertIn('=== コピー予定の概要 ===', preview_output.getvalue())
             self.assertIn('コピー予定: 5件', preview_output.getvalue())
             self.assertIn('スキップ予定: 0件', preview_output.getvalue())
+            self.assertIn('[コピー] notes.txt', preview_output.getvalue())
+            self.assertEqual(preview_output.getvalue().count('コピー元フォルダ:'), 5)
             with patch.object(common, 'server_path', local_path), contextlib.redirect_stdout(io.StringIO()):
                 destination = Path(local_path('Rackstation', 'RT_server', 'E', 'S', 'S_100k_Blank'))
                 app.run_job({**data, 'target_text': False, 'target_raw': False, 'target_anal': False,

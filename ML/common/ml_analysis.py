@@ -43,6 +43,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 import seaborn as sns
 
 from sklearn import preprocessing
@@ -59,27 +60,51 @@ import shap
 import xgboost as xgb
 
 
+def _setup_japanese_font():
+    """利用可能な日本語フォントを Matplotlib に設定する。"""
+    candidates = [
+        'Yu Gothic', 'Meiryo', 'MS Gothic', 'MS PGothic',
+        'Hiragino Sans', 'Hiragino Kaku Gothic Pro',
+        'Noto Sans CJK JP', 'Noto Sans JP', 'IPAexGothic', 'IPAGothic',
+    ]
+    available = {font.name for font in fm.fontManager.ttflist}
+    font_name = next((name for name in candidates if name in available), None)
+    if font_name is None:
+        print('⚠ 日本語対応フォントが見つかりません。グラフの日本語が文字化けする可能性があります。')
+        return
+
+    plt.rcParams['font.family'] = font_name
+    plt.rcParams['axes.unicode_minus'] = False
+
+
+_setup_japanese_font()
+
+
 # ============================================================
 # 学習曲線・特徴量重要度
 # ============================================================
 
 def plot_learning_curve(evals_result, save_dir=None):
-    """train/valのmloglossの推移をプロットし、過学習が起きていないか目視確認する。
+    """train/valのmloglossの推移をプロットする。
 
     early stopping・検証データを使った学習（xgb.train(evals=[...])）で得られる
-    evals_result が無い場合（例: GridSearchCVのみで学習したモデル）は呼べない
-    ので注意。
+    evals_result に val があれば両方を、最終モデルを全trainingデータで学習した場合
+    など train しかなければtraining lossのみを描画する。
 
     save_dirを指定するとそのフォルダにPNGを保存する（未指定ならカレントディレクトリ）。
     """
+    if 'train' not in evals_result or 'mlogloss' not in evals_result['train']:
+        raise ValueError("evals_resultに train/mlogloss がありません。")
+
     train_loss = evals_result['train']['mlogloss']
-    val_loss = evals_result['val']['mlogloss']
+    val_loss = evals_result.get('val', {}).get('mlogloss')
 
     save_path = (Path(save_dir) / 'learning_curve.png') if save_dir else Path('learning_curve.png')
 
     plt.figure(figsize=(8, 5))
     plt.plot(train_loss, label='train mlogloss')
-    plt.plot(val_loss, label='val mlogloss')
+    if val_loss is not None:
+        plt.plot(val_loss, label='val mlogloss')
     plt.xlabel('Boosting round')
     plt.ylabel('mlogloss')
     plt.title('Learning curve')
@@ -331,7 +356,9 @@ def run_shap_analysis(booster, X_test, feature_columns, le, y_test, y_pred,
 # ============================================================
 
 def data_stat(dnf, features, bins='auto', xlim=None, show_plot=True, save_dir=None,
-              clip_percentiles=(0.5, 99.5), log_scale='auto'):
+              clip_percentiles=(0.5, 99.5), log_scale='auto', feature_upper_limits=None,
+              sample_colors=None, feature_lower_limits=None, group_col='sample',
+              split_group_prefix=False):
     """'sample'ごとに指定された特徴量のヒストグラムを描画し、
     そのビンごとの統計をCSV化しやすいDataFrameで返す。
 
@@ -347,6 +374,15 @@ def data_stat(dnf, features, bins='auto', xlim=None, show_plot=True, save_dir=No
     レンジ全体を支配し、ヒストグラムがほぼ1ビンに潰れてしまう問題への対策。
     表示上レンジ外に落ちる外れ値がある場合はその件数を警告表示する。
 
+    feature_upper_limits に ``{'relative_signal': 150}`` のような辞書を渡すと、
+    該当する特徴量だけ表示範囲の上限を固定できる。下限は従来どおり自動計算する。
+
+    feature_lower_limits に ``{'relative_signal': 0}`` のような辞書を渡すと、
+    該当する特徴量だけ表示範囲の下限を固定できる。
+
+    sample_colors に ``{'LPhe': '#0072B2', 'LIle': 'orange'}`` のような辞書を
+    渡すと、サンプルごとの描画色を固定できる。
+
     bins='auto' の場合、サンプルサイズに応じてビン数を自動決定する
     （np.histogram_bin_edges(..., bins='auto') のFreedman-Diaconis/Sturgesを利用）。
     整数を渡せば従来通り固定ビン数として扱う。
@@ -355,12 +391,30 @@ def data_stat(dnf, features, bins='auto', xlim=None, show_plot=True, save_dir=No
     最大/最小比が大きい（裾の長い分布）ときはx軸を対数スケールにする。
     True/Falseで明示的に指定することもできる。
     """
-    group_col = 'sample'
-    groups_all = dnf[group_col].astype(str).apply(lambda s: s.split('_')[0])
+    if group_col not in dnf.columns:
+        raise KeyError(f"group column not found: {group_col!r}")
+    groups_all = dnf[group_col].astype(str)
+    if split_group_prefix:
+        groups_all = groups_all.apply(lambda s: s.split('_')[0])
     unique_samples = sorted(groups_all.dropna().unique())
+    sample_colors = sample_colors or {}
+    default_colors = plt.rcParams['axes.prop_cycle'].by_key().get('color', [])
+    color_map = {
+        sample: sample_colors.get(
+            sample,
+            default_colors[i % len(default_colors)] if default_colors else None,
+        )
+        for i, sample in enumerate(unique_samples)
+    }
 
     hist_records = []
     summary_records = []
+    feature_units = {
+        'signal': 'pA',
+        'absolute_signal': 'pA',
+        'relative_signal': 'pA',
+        'duration': '0.1 ms',
+    }
 
     for feature in features:
         col = pd.to_numeric(dnf[feature], errors='coerce')
@@ -375,9 +429,12 @@ def data_stat(dnf, features, bins='auto', xlim=None, show_plot=True, save_dir=No
         if xlim is None:
             lo_pct, hi_pct = clip_percentiles
             vmin, vmax = np.percentile(all_vals, [lo_pct, hi_pct])
-            if vmin == vmax:
-                vmin -= 0.5
-                vmax += 0.5
+            if feature_lower_limits and feature in feature_lower_limits:
+                vmin = float(feature_lower_limits[feature])
+            if feature_upper_limits and feature in feature_upper_limits:
+                vmax = float(feature_upper_limits[feature])
+            if vmin >= vmax:
+                vmin = vmax - 0.5
             n_clipped = int(((all_vals < vmin) | (all_vals > vmax)).sum())
             if n_clipped > 0:
                 print(f"[INFO] '{feature}': 外れ値 {n_clipped}/{len(all_vals)} 件を"
@@ -391,7 +448,7 @@ def data_stat(dnf, features, bins='auto', xlim=None, show_plot=True, save_dir=No
             in_range = all_vals[(all_vals >= vmin) & (all_vals <= vmax)]
             positive = in_range[in_range > 0]
             use_log = (
-                positive.size == in_range.size and positive.size > 1
+                vmin > 0 and positive.size == in_range.size and positive.size > 1
                 and positive.max() / max(positive.min(), 1e-12) > 50
             )
 
@@ -420,6 +477,10 @@ def data_stat(dnf, features, bins='auto', xlim=None, show_plot=True, save_dir=No
             fig, axes = plt.subplots(2, 1, figsize=(10, 10))
             for ax in axes:
                 ax.set_xlim(vmin, vmax)
+                ax.tick_params(
+                    axis='both', which='both', direction='in',
+                    top=True, right=True,
+                )
                 if use_log:
                     ax.set_xscale('log')
 
@@ -447,15 +508,17 @@ def data_stat(dnf, features, bins='auto', xlim=None, show_plot=True, save_dir=No
             norm = pdf / pdf_max
 
             if show_plot:
+                legend_label = f'{sample} (n={n:,}, mean={mean:.2f})'
                 (n_hist, _, patches) = axes[0].hist(
-                    subset, bins=bin_edges, alpha=0.4, density=True, label=f'{sample}'
+                    subset, bins=bin_edges, alpha=0.4, density=True, label=legend_label,
+                    color=color_map[sample]
                 )
-                color = patches[0].get_facecolor() if patches else None
+                color = color_map[sample]
                 axes[0].axvline(mean, color=color, linestyle='dashed', linewidth=2,
-                                 label=f'Mean {sample}: {mean:.2f}')
+                                 label='_nolegend_')
 
                 axes[1].bar(bin_edges[:-1], norm, width=bin_widths, alpha=0.4,
-                             align='edge', label=f'{sample}')
+                             align='edge', label=legend_label, color=color)
                 axes[1].axvline(mean, color=color, linestyle='dashed', linewidth=2)
 
             for i in range(n_bins):
@@ -470,12 +533,15 @@ def data_stat(dnf, features, bins='auto', xlim=None, show_plot=True, save_dir=No
                 })
 
         if show_plot:
-            axes[0].set_xlabel(feature, fontsize=14)
+            unit = feature_units.get(feature)
+            display_feature = 'relative_signal current' if feature == 'relative_signal' else feature
+            axis_label = f'{display_feature} ({unit})' if unit else display_feature
+            axes[0].set_xlabel(axis_label, fontsize=14)
             axes[0].set_ylabel('Density (PDF)', fontsize=14)
-            axes[0].set_title(f'Histogram (PDF) of {feature}', fontsize=16)
+            axes[0].set_title(f'Histogram of {feature}', fontsize=16)
             axes[0].legend(loc='upper left', bbox_to_anchor=(1.02, 1), borderaxespad=0.)
 
-            axes[1].set_xlabel(feature, fontsize=14)
+            axes[1].set_xlabel(axis_label, fontsize=14)
             axes[1].set_ylabel('Normalized Frequency', fontsize=14)
             axes[1].set_title(f'Normalized Histogram of {feature}', fontsize=16)
             axes[1].legend(loc='upper left', bbox_to_anchor=(1.02, 1), borderaxespad=0., fontsize=12)
@@ -536,7 +602,7 @@ def plot_dim_reduction(dnf, features, group_col='sample', method='pca',
     max_points を超える場合はランダムに間引く（Noneなら全点使用）。
     save_path を指定すると図と各クラスの重心座標CSV(<save_path>_centroids.csv)を保存する。
     戻り値: 埋め込み座標とグループ名を含むDataFrame"""
-    groups = dnf[group_col].astype(str).apply(lambda s: s.split('_')[0])
+    groups = dnf[group_col].astype(str)
 
     X = dnf[features].astype(float).values
     X = preprocessing.scale(X)
@@ -629,7 +695,7 @@ def feature_group_tests(dnf, features, group_col='sample', save_path=None):
     """features ごとに ANOVA (f_oneway) と Kruskal-Wallis 検定を行い、
     群間で統計的に有意な差があるかを定量化する。
     効果量: ANOVA は eta二乗、Kruskal-Wallis は epsilon二乗を算出。"""
-    groups = dnf[group_col].astype(str).apply(lambda s: s.split('_')[0])
+    groups = dnf[group_col].astype(str)
     unique_groups = sorted(groups.unique())
 
     records = []
@@ -772,7 +838,7 @@ def class_distance_heatmap(dnf, features, group_col='sample', save_path=None):
     """標準化した特徴空間における各クラスの重心を求め、クラス間のユークリッド距離を
     ヒートマップとして可視化する。値が小さいほど、その2クラスは特徴空間上で近い(似ている)。
     戻り値: クラス間距離行列(index/columnsはクラス名)"""
-    groups = dnf[group_col].astype(str).apply(lambda s: s.split('_')[0])
+    groups = dnf[group_col].astype(str)
     X = dnf[features].astype(float).values
     X = preprocessing.scale(X)
 
@@ -1563,5 +1629,3 @@ def run_shap_class_comparison(result, top_n=20, output_dir=None, max_samples=200
         'correct_mask': correct_mask,
         'sample_index': sample_index,
     }
-
-

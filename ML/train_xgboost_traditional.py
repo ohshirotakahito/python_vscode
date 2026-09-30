@@ -51,6 +51,7 @@ results/rmb/xgboost/<timestamp>_<smns>/ 以下になる。
 """
 
 import pickle
+import shutil
 import time
 
 import numpy as np
@@ -310,104 +311,155 @@ def mapping(data, bst):
     xgb.plot_importance(mapped)
 
 
+_TOTAL_ANALYSIS_STAGES = 5
+
+
+def run_analysis(smns, progress_callback=None):
+    """指定したクラスの組み合わせについて、学習から結果保存まで実行する。
+
+    progress_callback は progress_callback(stage_index, total_stages, message) の形で
+    処理の大まかな段階が切り替わるたびに呼ばれる（UIの進捗バー更新用。Noneなら呼ばれない）。
+    戻り値は結果一式を保存したRUN_DIR。
+    """
+    def _report(stage_index, message):
+        if progress_callback is not None:
+            progress_callback(stage_index, _TOTAL_ANALYSIS_STAGES, message)
+
+    run_start_time = time.time()
+
+    _report(0, "データを読み込み中...")
+    dnf = dfdata(smns)
+
+    _report(1, "学習中（CV + held-out test）...")
+    result = learn_dataset(dnf)
+    X_test = result['X_test']
+    y_test = result['y_test']
+    y_pred = result['y_pred']
+    booster = result['booster']
+    le = result['le']
+    acc = result['macro_f1']
+
+    # 結果保存フォルダ（results/rmb/xgboost/<timestamp>_<smns>/）を作成し、
+    # 混同行列・追加解析の結果一式をそこに保存する
+    RUN_DIR, RUN_TIMESTAMP = paths.new_run(FEATURE_SET, ALGORITHM, smns=smns, run_type='train')
+
+    _report(2, "混同行列・特徴量重要度・SHAPを保存中...")
+    MX, N_MX, report = conmtx(y_test, y_pred, le, save_dir=RUN_DIR)
+
+    class_names = list(le.classes_)
+    feature_columns = data  # 学習に使った15特徴量
+
+    # --- 特徴量重要度 ---
+    plot_feature_importance(booster, feature_columns, top_n=30, save_dir=RUN_DIR)
+
+    # --- SHAPによる識別結果の解釈（テストデータ全体で計算） ---
+    shap_comparison, shap_values = run_shap_analysis(
+        booster, X_test, feature_columns, le, y_test, y_pred, save_dir=RUN_DIR
+    )
+
+    # --- モデル・ラベルエンコーダ・使用特徴量一覧も同じフォルダにまとめて保存 ---
+    booster.save_model(str(RUN_DIR / 'model.json'))
+    with open(RUN_DIR / 'label_encoder.pkl', 'wb') as f:
+        pickle.dump(le, f)
+    with open(RUN_DIR / 'scaler.pkl', 'wb') as f:
+        pickle.dump(result['scaler'], f)
+    (RUN_DIR / 'feature_columns.txt').write_text('\n'.join(feature_columns), encoding='utf-8')
+
+    # ============================================================
+    # 追加解析（train_xgboost_tsfresh.py と同じ一式）
+    # ============================================================
+    _report(3, "追加解析（ヒストグラム・PCA/UMAP・統計検定・距離解析）中...")
+
+    # --- ヒストグラム・統計データの作成と保存 ---
+    hist_stats_df, summary_stats_df = data_stat(
+        dnf,
+        feature_columns,
+        save_dir=RUN_DIR,
+        feature_upper_limits={'relative_signal': 150, 'duration': 150},
+    )
+
+    # --- PCA / UMAP による次元削減の可視化 ---
+    plot_dim_reduction(dnf, feature_columns, method='pca', save_path=RUN_DIR / "pca_2d.png")
+    plot_dim_reduction(dnf, feature_columns, method='umap', save_path=RUN_DIR / "umap_2d.png")
+
+    # --- 特徴量ごとの統計検定 (ANOVA / Kruskal-Wallis) ---
+    stats_df = feature_group_tests(dnf, feature_columns, save_path=RUN_DIR / "feature_group_tests.csv")
+
+    # --- 重要度と統計的有意性の比較 ---
+    compare_df = compare_importance_and_stats(
+        booster, feature_columns, stats_df, save_path=RUN_DIR / "importance_vs_stats.csv"
+    )
+
+    # --- SHAPのクラス別重要度ヒートマップ（run_shap_analysisで計算済みのshap_valuesを再利用） ---
+    shap_importance_df = plot_shap_class_importance(
+        shap_values, X_test, feature_columns, class_names,
+        save_path=RUN_DIR / "shap_class_importance.png"
+    )
+
+    # --- SHAP順位とgainベース重要度・KW検定順位の比較 ---
+    shap_compare_df = compare_shap_and_stats(
+        shap_importance_df, compare_df, save_path=RUN_DIR / "shap_vs_importance_vs_stats.csv"
+    )
+
+    # --- メタ特徴空間でのクラス間距離ヒートマップ ---
+    dist_df = class_distance_heatmap(dnf, feature_columns, save_path=RUN_DIR / "class_distance_heatmap.png")
+
+    # --- クラス中心ネットワーク ---
+    # pathway_edges には既知の反応・変換経路を (始点クラス名, 終点クラス名) のタプルで指定できる。
+    pathway_edges = []  # 必要に応じて書き換える
+    class_centroid_network(dist_df, pathway_edges=pathway_edges,
+                            save_path=RUN_DIR / "class_centroid_network.png")
+
+    # --- クラス間距離と混同行列(誤分類率)の相関解析 ---
+    corr_df, corr_stats = distance_confusion_correlation(
+        dist_df, N_MX, smns, save_path=RUN_DIR / "distance_confusion_correlation.png"
+    )
+
+    # --- 実行条件・結果のサマリーをテキストで保存 ---
+    with open(RUN_DIR / "run_summary.txt", "w", encoding="utf-8") as f:
+        f.write(f"実行フォルダ: {RUN_DIR.name}\n")
+        f.write(f"クラス(smns): {smns}\n")
+        f.write(f"特徴量総数: {len(feature_columns)}\n")
+        f.write(f"training内CV Macro F1: {result['cv_macro_f1']:.4f}\n")
+        f.write(f"CV fold数: {result['n_cv_folds']}\n")
+        f.write(f"選択したboosting rounds: {result['selected_rounds']}\n")
+        f.write(f"held-out test Macro F1: {acc:.4f}\n")
+
+    _report(4, "manifestを保存・ZIP圧縮中...")
+    # --- 実行条件をmanifestとして保存（他のtrainスクリプトと同じ形式。結果ブラウザ用） ---
+    paths.write_run_manifest(
+        RUN_DIR, RUN_TIMESTAMP, smns,
+        config={'n_meta_features': len(feature_columns)},
+        execution_time=time.time() - run_start_time,
+        comparison_df=None,
+        extra_info={
+            'cv_macro_f1': result['cv_macro_f1'],
+            'n_cv_folds': result['n_cv_folds'],
+            'selected_rounds': result['selected_rounds'],
+            'held_out_test_macro_f1': acc,
+        },
+    )
+
+    # --- 保存フォルダをZIP圧縮してダウンロードしやすくする ---
+    zip_path = shutil.make_archive(
+        base_name=str(RUN_DIR), format="zip",
+        root_dir=RUN_DIR.parent, base_dir=RUN_DIR.name
+    )
+    print(f"🗜️ 結果フォルダをZIP化しました: {zip_path}")
+
+    print(f"\n今回の結果は {RUN_DIR} にまとめて保存しました。")
+    _report(_TOTAL_ANALYSIS_STAGES, "完了")
+    return RUN_DIR
+
+
 if __name__ == '__main__':
     List = [['T2', 'T3','T4'],['T2', 'T3'],['T3','T4'],['T2', 'T4']]  # 学習したいクラスの組み合わせをここに書く
     start_time = time.time()
 
     X = []
     for smns in List:
-        dnf = dfdata(smns)
-
-        result = learn_dataset(dnf)
-        X_test = result['X_test']
-        y_test = result['y_test']
-        y_pred = result['y_pred']
-        booster = result['booster']
-        le = result['le']
-        acc = result['macro_f1']
-
-        X.append((smns, acc))
-
-        # 結果保存フォルダ（results/rmb/xgboost/<timestamp>_<smns>/）を作成し、
-        # 混同行列・追加解析の結果一式をそこに保存する
-        RUN_DIR, RUN_TIMESTAMP = paths.new_run(FEATURE_SET, ALGORITHM, smns=smns, run_type='train')
-
-        MX, N_MX, report = conmtx(y_test, y_pred, le, save_dir=RUN_DIR)
-
-        class_names = list(le.classes_)
-        feature_columns = data  # 学習に使った15特徴量
-
-        # --- 特徴量重要度 ---
-        plot_feature_importance(booster, feature_columns, top_n=30, save_dir=RUN_DIR)
-
-        # --- SHAPによる識別結果の解釈（テストデータ全体で計算） ---
-        shap_comparison, shap_values = run_shap_analysis(
-            booster, X_test, feature_columns, le, y_test, y_pred, save_dir=RUN_DIR
-        )
-
-        # --- モデル・ラベルエンコーダ・使用特徴量一覧も同じフォルダにまとめて保存 ---
-        booster.save_model(str(RUN_DIR / 'model.json'))
-        with open(RUN_DIR / 'label_encoder.pkl', 'wb') as f:
-            pickle.dump(le, f)
-        with open(RUN_DIR / 'scaler.pkl', 'wb') as f:
-            pickle.dump(result['scaler'], f)
-        (RUN_DIR / 'feature_columns.txt').write_text('\n'.join(feature_columns), encoding='utf-8')
-
-        # ============================================================
-        # 追加解析（train_xgboost_tsfresh.py と同じ一式）
-        # ============================================================
-
-        # --- ヒストグラム・統計データの作成と保存 ---
-        hist_stats_df, summary_stats_df = data_stat(dnf, feature_columns, save_dir=RUN_DIR)
-
-        # --- PCA / UMAP による次元削減の可視化 ---
-        plot_dim_reduction(dnf, feature_columns, method='pca', save_path=RUN_DIR / "pca_2d.png")
-        plot_dim_reduction(dnf, feature_columns, method='umap', save_path=RUN_DIR / "umap_2d.png")
-
-        # --- 特徴量ごとの統計検定 (ANOVA / Kruskal-Wallis) ---
-        stats_df = feature_group_tests(dnf, feature_columns, save_path=RUN_DIR / "feature_group_tests.csv")
-
-        # --- 重要度と統計的有意性の比較 ---
-        compare_df = compare_importance_and_stats(
-            booster, feature_columns, stats_df, save_path=RUN_DIR / "importance_vs_stats.csv"
-        )
-
-        # --- SHAPのクラス別重要度ヒートマップ（run_shap_analysisで計算済みのshap_valuesを再利用） ---
-        shap_importance_df = plot_shap_class_importance(
-            shap_values, X_test, feature_columns, class_names,
-            save_path=RUN_DIR / "shap_class_importance.png"
-        )
-
-        # --- SHAP順位とgainベース重要度・KW検定順位の比較 ---
-        shap_compare_df = compare_shap_and_stats(
-            shap_importance_df, compare_df, save_path=RUN_DIR / "shap_vs_importance_vs_stats.csv"
-        )
-
-        # --- メタ特徴空間でのクラス間距離ヒートマップ ---
-        dist_df = class_distance_heatmap(dnf, feature_columns, save_path=RUN_DIR / "class_distance_heatmap.png")
-
-        # --- クラス中心ネットワーク ---
-        # pathway_edges には既知の反応・変換経路を (始点クラス名, 終点クラス名) のタプルで指定できる。
-        pathway_edges = []  # 必要に応じて書き換える
-        class_centroid_network(dist_df, pathway_edges=pathway_edges,
-                                save_path=RUN_DIR / "class_centroid_network.png")
-
-        # --- クラス間距離と混同行列(誤分類率)の相関解析 ---
-        corr_df, corr_stats = distance_confusion_correlation(
-            dist_df, N_MX, smns, save_path=RUN_DIR / "distance_confusion_correlation.png"
-        )
-
-        # --- 実行条件・結果のサマリーをテキストで保存 ---
-        with open(RUN_DIR / "run_summary.txt", "w", encoding="utf-8") as f:
-            f.write(f"実行フォルダ: {RUN_DIR.name}\n")
-            f.write(f"クラス(smns): {smns}\n")
-            f.write(f"特徴量総数: {len(feature_columns)}\n")
-            f.write(f"training内CV Macro F1: {result['cv_macro_f1']:.4f}\n")
-            f.write(f"CV fold数: {result['n_cv_folds']}\n")
-            f.write(f"選択したboosting rounds: {result['selected_rounds']}\n")
-            f.write(f"held-out test Macro F1: {acc:.4f}\n")
-
-        print(f"\n今回の結果は {RUN_DIR} にまとめて保存しました。")
+        run_dir = run_analysis(smns)
+        X.append(smns)
 
     print(X)
     end_time = time.time()

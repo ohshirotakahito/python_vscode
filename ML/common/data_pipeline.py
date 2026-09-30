@@ -138,7 +138,8 @@ def get_sample_cache_path(smn, n_events, tsfresh_path, fc_parameters, cache_dir=
 # ============================================================
 
 def load_meta_data(smn, data_root=None,
-                    duration_limit=None, baseline_limit=None, signal_limit=None):
+                    duration_limit=None, baseline_limit=None, signal_limit=None,
+                    filters=None):
     """meta（軽い）だけを読み込む。tsfresh_input（巨大）には一切触れない。
     キャッシュがあるかどうかの判定を、巨大ファイルを読む前に行うため。"""
     if data_root is None:
@@ -184,9 +185,11 @@ def load_meta_data(smn, data_root=None,
     meta_df['global_id'] = smn + '__' + meta_df['event_id'].astype(str)
 
     # 条件付きデータ選択（file_number/machine_no/measured_at等）。
-    # FILTERSが未設定(None/{})なら何もしない（従来通りの挙動）。
-    if FILTERS:
-        meta_df = apply_filters(meta_df, FILTERS)
+    # filters引数が未指定ならモジュール変数FILTERSを使う。
+    # どちらも未設定(None/{})なら何もしない（従来通りの挙動）。
+    filters = FILTERS if filters is None else filters
+    if filters:
+        meta_df = apply_filters(meta_df, filters)
 
     return meta_df, tsfresh_path
 
@@ -336,9 +339,12 @@ def clear_cache(cache_dir=None):
 
 def build_combined_dataset(smns, data_root=None, use_cache=True,
                             n_jobs=None, chunksize=None,
-                            fc_parameters=None, cache_dir=None):
+                            fc_parameters=None, cache_dir=None, filters=None):
     """サンプルごとに逐次tsfresh特徴量を抽出してメタ特徴量と結合する。
-    全サンプルに対して必ず同じfc_parametersを使うこと。"""
+    全サンプルに対して必ず同じfc_parametersを使うこと。
+
+    filters: イベント絞り込み条件（common/filters.py参照）。未指定ならモジュール変数
+             FILTERS を使う（学習データと混合サンプルで別条件を渡したい場合用）。"""
     if data_root is None:
         data_root = DATA_ROOT
     if fc_parameters is None:
@@ -352,7 +358,7 @@ def build_combined_dataset(smns, data_root=None, use_cache=True,
     per_sample_features = []
 
     for smn in smns:
-        meta_df, tsfresh_path = load_meta_data(smn, data_root=data_root)
+        meta_df, tsfresh_path = load_meta_data(smn, data_root=data_root, filters=filters)
         if meta_df is None or meta_df.empty:
             print(f"⚠ [{smn}] 有効なメタデータがないためスキップします")
             continue
@@ -422,8 +428,16 @@ def apply_tsfresh_feature_selection(dnf, tsfresh_feature_cols, n_jobs=None,
     chunksize = CHUNKSIZE if chunksize is None else chunksize
 
     y_for_selection = pd.Series(
-        [_.split('_')[0] for _ in dnf['sample']], index=dnf.index
+        dnf['sample'].astype(str), index=dnf.index
     )
+
+    classes = sorted(y_for_selection.dropna().unique())
+    if len(classes) < 2:
+        raise ValueError(
+            "tsfresh特徴量選択には2クラス以上が必要です。"
+            f"読み込まれたクラス: {classes}。"
+            "指定したサンプル名と *_10k_Sample_ANAL_meta.csv の存在を確認してください。"
+        )
 
     X_tsfresh = dnf[tsfresh_feature_cols]
 

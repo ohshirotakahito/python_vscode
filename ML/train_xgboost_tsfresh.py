@@ -75,19 +75,20 @@ WAVE_COLUMNS = [f'wave_{i}' for i in range(12)]
 # 実際の計算はload_meta_data()内で行う
 META_FEATURE_COLUMNS = ['absolute_signal', 'relative_signal', 'duration'] + WAVE_COLUMNS
 
+# --- データの絞り込み条件（ここでまとめて指定） ---
 DURATION_LIMIT = (5, 1000)
 BASELINE_LIMIT = (-300, 1000)
 SIGNAL_LIMIT = (0, 1000)
+#DURATION_LIMIT = (5, 200)
+#BASELINE_LIMIT = (-300, 200)
+#SIGNAL_LIMIT = (0, 200)
 
-# 重要: 全サンプルで必ず同じfc_parametersを使うこと（結合時の列不一致でMemoryErrorになるため）。
-# 今回のデータ規模（十万イベント/数百万〜数千万行）では EfficientFCParameters は重すぎるため
-# まずは MinimalFCParameters で通すことを推奨。物足りなければ後で変更可。
-FC_PARAMETERS = MinimalFCParameters()
+# distanceはすべてNoneなら全対象。値指定と上下限の併用はAND条件。
+DISTANCE_VALUES = [0.58]  # 例: [0.5, 1.0] → 指定値のみ
+DISTANCE_MIN = None     # 下限（含む）。例: 0.5
+DISTANCE_MAX = None     # 上限（含む）。例: 1.0
 
-USE_TSFRESH_FEATURE_SELECTION = True
-
-# 全データではなく条件を指定してイベントを絞り込みたい場合はここに書く
-# （何も絞り込まない場合は FILTERS = None のままでよい）。
+# ファイル番号・装置・計測日時などの追加条件（未指定ならNone）。
 # 詳細な条件の書き方は common/filters.py の docstring を参照。
 #
 # 例:
@@ -97,6 +98,14 @@ USE_TSFRESH_FEATURE_SELECTION = True
 #       'measured_at': {'min': '2026-07-01', 'max': '2026-07-31'},  # 計測日時の範囲
 #   }
 FILTERS = None
+
+# --- 特徴量・学習の設定 ---
+# 重要: 全サンプルで必ず同じfc_parametersを使うこと（結合時の列不一致でMemoryErrorになるため）。
+# 今回のデータ規模（十万イベント/数百万〜数千万行）では EfficientFCParameters は重すぎるため
+# まずは MinimalFCParameters で通すことを推奨。物足りなければ後で変更可。
+FC_PARAMETERS = MinimalFCParameters()
+
+USE_TSFRESH_FEATURE_SELECTION = True
 
 # 特徴量セット名・アルゴリズム名（common/paths.py のフォルダ命名規則と揃える）
 FEATURE_SET = 'rmc'
@@ -226,7 +235,7 @@ def learn_dataset(dnf, feature_columns, max_depth=6, eta=0.1, num_round=500,
     - train_test_split を2段階にして、train内からさらにvalidationを切り出し、
       test setは最後の評価にのみ使う（early stoppingにtestを使うとリークになるため）
     """
-    y_labels = [_.split('_')[0] for _ in dnf['sample']]
+    y_labels = dnf['sample'].astype(str).tolist()
 
     x = dnf[feature_columns]
     X = preprocessing.scale(x)
@@ -303,7 +312,7 @@ def train_xgb_classifier(dnf, feature_columns, feature_set_name="model",
 
     既存の result 辞書のキー構造は維持し、Step1〜5 の共通関数との互換性を保つ。
     """
-    y_labels = [_.split('_')[0] for _ in dnf['sample']]
+    y_labels = dnf['sample'].astype(str).tolist()
     x = dnf[feature_columns]
 
     le = LabelEncoder()
@@ -469,8 +478,47 @@ for _i in range(12):
     META_PHYSICAL_CATEGORY[f'wave_{_i}'] = '局所変動'  # 要ドメイン確認
 
 
-def run_analysis(smns):
-    """指定したクラスの組み合わせについて、学習から結果保存まで実行する。"""
+_TOTAL_ANALYSIS_STAGES = 10
+
+
+def filter_distance(dnf):
+    """設定したdistance条件で絞り込む。未指定なら全行を返す。"""
+    if not DISTANCE_VALUES and DISTANCE_MIN is None and DISTANCE_MAX is None:
+        return dnf
+    if 'distance' not in dnf.columns:
+        raise ValueError("distance条件が指定されていますが、データにdistance列がありません。")
+    if DISTANCE_MIN is not None and DISTANCE_MAX is not None and DISTANCE_MIN > DISTANCE_MAX:
+        raise ValueError("DISTANCE_MINはDISTANCE_MAX以下にしてください。")
+
+    distance = pd.to_numeric(dnf['distance'], errors='coerce')
+    mask = distance.notna()
+    if DISTANCE_VALUES:
+        selected = np.zeros(len(dnf), dtype=bool)
+        for value in DISTANCE_VALUES:
+            selected |= np.isclose(distance, value, rtol=1e-7, atol=1e-9)
+        mask &= selected
+    if DISTANCE_MIN is not None:
+        mask &= distance >= DISTANCE_MIN
+    if DISTANCE_MAX is not None:
+        mask &= distance <= DISTANCE_MAX
+
+    filtered = dnf.loc[mask].copy()
+    print(f"distance条件適用: {len(dnf)}件 -> {len(filtered)}件")
+    if filtered.empty:
+        raise ValueError("distance条件を満たすデータがありません。設定値を確認してください。")
+    return filtered
+
+
+def run_analysis(smns, progress_callback=None):
+    """指定したクラスの組み合わせについて、学習から結果保存まで実行する。
+
+    progress_callback は progress_callback(stage_index, total_stages, message) の形で
+    処理の大まかな段階（データ構築→学習→SHAP→...→保存）が切り替わるたびに呼ばれる
+    （UIの進捗バー更新用。Noneなら呼ばれない）。
+    """
+    def _report(stage_index, message):
+        if progress_callback is not None:
+            progress_callback(stage_index, _TOTAL_ANALYSIS_STAGES, message)
 
     #smns = ['oxytocin','LCys','LIle','LGln','LAsn','LPro','LLeu','Gly']  # 必要に応じて書き換える
     #smns = ['vasopressin','LCys','LTyr','LPhe','LGln','LAsn','LCys','LPro','LArg','Gly']  # 必要に応じて書き換える
@@ -492,11 +540,14 @@ def run_analysis(smns):
 
     start_time = time.time()
 
+    _report(0, "データセットを構築中...")
     dnf, tsfresh_feature_cols_all = build_combined_dataset(
         smns, data_root=data_root, use_cache=True,
         n_jobs=N_JOBS, chunksize=CHUNKSIZE
     )
+    dnf = filter_distance(dnf)
 
+    _report(1, "tsfresh特徴量を選択中...")
     if USE_TSFRESH_FEATURE_SELECTION:
         tsfresh_feature_cols = apply_tsfresh_feature_selection(
             dnf, tsfresh_feature_cols_all, n_jobs=N_JOBS, chunksize=CHUNKSIZE
@@ -507,6 +558,7 @@ def run_analysis(smns):
     # ---------------------------------------------------------
     # Step1: メタ特徴量のみ / tsfresh選択特徴量のみ / メタ+tsfresh の性能比較
     # ---------------------------------------------------------
+    _report(2, "Step1: 特徴量セットを比較・学習中...")
     step1_results, step1_comparison_df, step1_feature_set_names = compare_feature_sets(
         dnf, META_FEATURE_COLUMNS, tsfresh_feature_cols, train_fn=train_xgb_classifier,
         n_jobs=N_JOBS, output_dir=RUN_DIR,
@@ -534,9 +586,12 @@ def run_analysis(smns):
         pickle.dump(le, f)
     (RUN_DIR / 'feature_columns.txt').write_text('\n'.join(feature_columns), encoding='utf-8')
 
+    _report(3, "混同行列・学習曲線を保存中...")
+
     # ---------------------------------------------------------
     # Step2: Permutation Importance（独立テストデータ）
     # ---------------------------------------------------------
+    _report(4, "Step2: Permutation Importanceを計算中...")
     perm_importance_df = run_permutation_importance(
         main_result, n_repeats=10, n_jobs=N_JOBS, top_n=30, output_dir=RUN_DIR,
     )
@@ -544,11 +599,13 @@ def run_analysis(smns):
     # ---------------------------------------------------------
     # Step3: SHAPによるクラス別比較・誤分類分析
     # ---------------------------------------------------------
+    _report(5, "Step3: SHAP分析中...")
     shap_result = run_shap_class_comparison(main_result, top_n=20, output_dir=RUN_DIR)
 
     # ---------------------------------------------------------
     # Step4: 物理量への再分類（Permutation Importance / SHAP の両方に適用）
     # ---------------------------------------------------------
+    _report(6, "Step4: 物理カテゴリ別に集計中...")
     perm_with_category, perm_category_summary = build_physical_category_table(
         perm_importance_df, feature_col='feature', importance_col='importance_mean',
         extra_category_map=META_PHYSICAL_CATEGORY,
@@ -567,6 +624,7 @@ def run_analysis(smns):
     # ---------------------------------------------------------
     # Step5: UMAPとの統合可視化
     # ---------------------------------------------------------
+    _report(7, "Step5: UMAP統合可視化を作成中...")
     top_feature_for_color = perm_importance_df.iloc[0]['feature'] \
         if len(perm_importance_df) else None
 
@@ -579,9 +637,15 @@ def run_analysis(smns):
     # rmc独自の追加解析（ヒストグラム統計・PCA/UMAP・統計検定・
     # SHAPクラス別重要度ヒートマップ・クラス間距離解析）
     # ============================================================
+    _report(8, "追加解析（ヒストグラム・PCA/UMAP・統計検定・距離解析）中...")
 
     # --- ヒストグラム・統計データの作成と保存 ---
-    hist_stats_df, summary_stats_df = data_stat(dnf, META_FEATURE_COLUMNS, save_dir=RUN_DIR)
+    hist_stats_df, summary_stats_df = data_stat(
+        dnf,
+        META_FEATURE_COLUMNS,
+        save_dir=RUN_DIR,
+        feature_upper_limits={'relative_signal': 150, 'duration': 150},
+    )
 
     # --- PCA / UMAP による次元削減の可視化 ---
     plot_dim_reduction(dnf, META_FEATURE_COLUMNS, method='pca', save_path=RUN_DIR / "pca_2d.png")
@@ -620,6 +684,7 @@ def run_analysis(smns):
         dist_df, N_MX, smns, save_path=RUN_DIR / "distance_confusion_correlation.png"
     )
 
+    _report(9, "結果を保存・ZIP圧縮中...")
     execution_time = time.time() - start_time
     print(f"\n実行時間: {execution_time:.2f}秒")
 
@@ -630,6 +695,9 @@ def run_analysis(smns):
             'fc_parameters_mode': type(FC_PARAMETERS).__name__,
             'use_tsfresh_feature_selection': USE_TSFRESH_FEATURE_SELECTION,
             'n_meta_features': len(META_FEATURE_COLUMNS),
+            'distance_values': DISTANCE_VALUES,
+            'distance_min': DISTANCE_MIN,
+            'distance_max': DISTANCE_MAX,
         },
         execution_time=execution_time,
         comparison_df=step1_comparison_df,
@@ -645,12 +713,28 @@ def run_analysis(smns):
 
     print(f"\n今回の結果は {RUN_DIR} にまとめて保存しました。")
 
+    _report(_TOTAL_ANALYSIS_STAGES, "完了")
+    return RUN_DIR
+
 
 if __name__ == '__main__':
     # 解析したいクラスの組み合わせを追加する。
     # 各要素について、独立した学習・held-out test評価・結果保存を順番に実行する。
     SMN_COMBINATIONS = [
-        ['oxytocin', 'vasopressin'],
+        #['oxytocin',],
+        #['AA31LTyr', 'AA20LGln','AA22Gly','AA29LPro','AA19LCys'],
+        #['vasopressin', 'LILe','LTyr']
+        #['vasopressin', 'LCys','LTyr','LPhe','LGlne','LAsn','LPro','LArg','Gly']
+        #['Lys_pH12','Kme1_pH12','TriMeLys_pH12']
+        #['Lys_pH12','Lys']#,['M1Lys','Kme1_pH12'],['M3Lys','TriMeLys_pH12']
+        #['Lys','M1Lys','M3Lys','Lys_pH12','Kme1_pH12','TriMeLys_pH12']
+        ['ALTNA','GLTNA','CLTNA','TLTNA']
+                
+        #['BBBDO','BBNDO','BNBDO','NBBDO','BNNDO','NBNDO','NNNDO']
+
+        #['oxytocin',  'LCys','LTyr','LIle','LGlne','LAsn','LPro','LLeu','Gly']
+
+        #['oxytocin', 'LPhe','LTyr']
         # ['oxytocin', '別のクラス'],
         # ['vasopressin', '別のクラス'],
     ]

@@ -2,6 +2,10 @@
 ML/data/
 ML/models/
 ML/results/
+ML/hist_results/
+ML/hist_var_resulsts/
+Viewer/csv_data/
+filemanager/rename_logs/
 Viewer/clips_pick/
 ML/data_checks/
 ML/temp/
