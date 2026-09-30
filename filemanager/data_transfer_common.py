@@ -98,12 +98,14 @@ def ensure_folders(paths):
             print(f"作成: {folder}")
 
 
-def copy_files_by_ext(folder_path, keyfolder, t_folder, ext, progress_scale=100):
+def copy_files_by_ext(folder_path, keyfolder, t_folder, ext, progress_scale=100,
+                      destination_folder=None):
     """
     folder_path 内の ext 拡張子ファイルを、パス中の keyfolder 文字列を
     t_folder に置換した保存先へコピーする。
     保存先が既に存在する場合はスキップする。
     元コードの copy_tdms_files / copy_text_files 相当（拡張子を引数化）。
+    destination_folder指定時は、そのフォルダへ元のファイル名のままコピーする。
     """
     if not os.path.exists(folder_path):
         print(f"指定されたフォルダが存在しません: {folder_path}")
@@ -116,7 +118,8 @@ def copy_files_by_ext(folder_path, keyfolder, t_folder, ext, progress_scale=100)
         item_path = os.path.join(folder_path, item)
         if os.path.isfile(item_path) and item.lower().endswith(ext.lower()):
             n_count += 1
-            destination_path = item_path.replace(keyfolder, t_folder)
+            destination_path = (os.path.join(destination_folder, item) if destination_folder is not None
+                                else item_path.replace(keyfolder, t_folder))
             progress = (n_count / len(items) * progress_scale) if items else 0.0
 
             if not os.path.exists(destination_path):

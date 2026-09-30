@@ -69,11 +69,12 @@ from data_transfer_common import (
  
 def transfer(server, source_keyfolder, dest_keyfolder, ex, samples, ext,
              sample_suffix='_10k_Sample', search_subpath='', keyword=None,
-             extra_tree=None):
+             extra_tree=None, dest_server=None):
     """
     サーバー間ファイル転送(コピー)を実行する。
  
     server            : サーバー名 例: 'Rackstation'
+    dest_server       : コピー先サーバー。省略時は従来どおりserverと同じ。
     source_keyfolder  : コピー元の共有フォルダ名 例: 'analysis'
     dest_keyfolder    : コピー先の共有フォルダ名 例: 'RT_server'
     ex                : 対象exフォルダ名
@@ -89,6 +90,7 @@ def transfer(server, source_keyfolder, dest_keyfolder, ex, samples, ext,
     """
     if extra_tree is None:
         extra_tree = []
+    dest_server = dest_server or server
  
     if samples is None:
         samples = list_subfolder_names(server_path(server, source_keyfolder, ex))
@@ -99,9 +101,9 @@ def transfer(server, source_keyfolder, dest_keyfolder, ex, samples, ext,
         sample_folder_name = sample + sample_suffix
  
         # --- 転送先フォルダツリーの作成 ---
-        dest_ex = server_path(server, dest_keyfolder, ex)
-        dest_data = server_path(server, dest_keyfolder, ex, sample)
-        dest_sample = server_path(server, dest_keyfolder, ex, sample, sample_folder_name)
+        dest_ex = server_path(dest_server, dest_keyfolder, ex)
+        dest_data = server_path(dest_server, dest_keyfolder, ex, sample)
+        dest_sample = server_path(dest_server, dest_keyfolder, ex, sample, sample_folder_name)
         tree = [dest_ex, dest_data, dest_sample]
         for rel in extra_tree:
             tree.append(dest_sample + "/" + rel)
@@ -115,14 +117,15 @@ def transfer(server, source_keyfolder, dest_keyfolder, ex, samples, ext,
             source_folders = list_subfolder_paths(search_dir, keyword=keyword)
             print(source_folders)
             # 一致したフォルダに対応する転送先も作成しておく
-            dest_folders = [s.replace(source_keyfolder, dest_keyfolder) for s in source_folders]
-            ensure_folders(dest_folders)
         else:
             source_folders = [search_dir]
  
         # --- コピー実行 ---
         for n, folder_path in enumerate(source_folders, start=1):
-            copy_files_by_ext(folder_path, source_keyfolder, dest_keyfolder, ext)
+            destination_folder = os.path.join(dest_sample, os.path.relpath(folder_path, src_sample))
+            os.makedirs(destination_folder, exist_ok=True)
+            copy_files_by_ext(folder_path, source_keyfolder, dest_keyfolder, ext,
+                              destination_folder=destination_folder)
             progress = (n / len(source_folders) * 100) if source_folders else 100.0
             print(sample, ":", os.path.basename(folder_path), format(progress, ".2f") + " %", now_str())
  
@@ -134,7 +137,7 @@ if __name__ == '__main__':
     server = 'Rackstation'
  
     #コピー元の共有フォルダ名
-    source_keyfolder = 'analysis'
+    source_keyfolder = 'Kumamoto_N2'
  
     #コピー先の共有フォルダ名
     dest_keyfolder = 'RT_server'

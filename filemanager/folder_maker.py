@@ -3,29 +3,13 @@
 Created on Fri Sep 10 11:06:39 2021
 
 @author: ohshi
-
-全体の役割
-ファイル	役割	単体で実行する?
-data_transfer_common.py	他の4本が共通で使う関数集(部品箱)	❌ 直接実行しない
-create_folders.py	実験用のフォルダツリーを新規作成	✅
-transfer_copy.py	サーバー間でファイルをコピー	✅
-cleanup_folders.py	解析後の不要ファイルを削除	✅
-zip_stocked.py	溜まったフォルダをZIP圧縮して元を削除	✅
-
-典型的な使う順番は 
-① create_folders → ② transfer_copy → (解析作業) → ③ cleanup_folders → ④ zip_stocked 
-という流れ
 """
 import os
 
 
 def fo_xx(server, keyfolder, ex, sample):
     #対象となるフォルダを指定する．
-    try:
-        from .data_transfer_common import server_path
-    except ImportError:
-        from data_transfer_common import server_path
-    ServerPath = server_path(server, keyfolder) + '/'
+    ServerPath = '//' + server +'/' + keyfolder +'/'
     DataPath = ex +'/'+sample
     SamplePath = sample+'_10k_Sample'
     BlankPath = sample+'_10k_Blank'
@@ -57,7 +41,7 @@ def fo_xx(server, keyfolder, ex, sample):
     
     #対象となるフォルダの作成
     for folder in Folders:
-        os.makedirs(folder, exist_ok=True)
+        os.mkdir(folder)
         print(folder)   
             
 if __name__ =='__main__':
@@ -68,10 +52,10 @@ if __name__ =='__main__':
     keyfolder = 'analysis'
     
     #元フォルダ内の対象フォルダの場所
-    ex = 'Sakano_00'
+    ex = 'Takakahagi_LTNAn'
     
     #サンプルリスト
-    samples =[ 'OXT','AVP']
+    samples =[ 'ALTNA','CLTNA','GLTNA','TLTNA']
 
     
     for sample in samples:
