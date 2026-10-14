@@ -43,6 +43,22 @@ def history(legacy, local):
     return sorted(result, key=lambda r: datetime.strptime(r[0], '%Y/%m/%d_%H:%M'), reverse=True)
 
 
+def sync_history(legacy, local):
+    """Merge missing legacy records into the local CSV, deduplicating all 17 fields."""
+    legacy, local = Path(legacy), Path(local)
+    if legacy.resolve() == local.resolve() or (local.exists() and os.path.samefile(legacy, local)):
+        raise ValueError('既存CSVと試用版履歴CSVには別のファイルを指定してください')
+    records = history(legacy, local)
+    existing = rows(local) if local.exists() else []
+    local_records = [tuple(row[:17]) for row in existing
+                     if len(row) >= 17 and row[0] and row[0] != HEADERS[0]]
+    added = len(set(records) - set(local_records))
+    removed = len(local_records) - len(set(local_records))
+    if added or removed or not local.exists():
+        write_csv(local, HEADERS, records)
+    return added, removed
+
+
 def write_csv(path, headers, records):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)

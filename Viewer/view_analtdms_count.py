@@ -128,7 +128,7 @@ def run_count_for_sample(server, keyfolder, ex, sample, script_dir=None, folder_
     シグナル数・頻度を集計してcount_data/{sample}_sc.csvに保存する。
 
     view_analtdms_count.pyを直接実行した場合と同じ集計処理を、
-    他スクリプト（view_tdms_signal.pyなど）からも呼び出せるようにした関数。
+    他スクリプト（tdms_signal_base.pyなど）からも呼び出せるようにした関数。
 
     戻り値: 保存したCSVファイルのパス
     """

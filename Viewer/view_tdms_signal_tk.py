@@ -8,6 +8,7 @@ Waveforms and save previews are embedded in the application's tabs.
 import math
 import os
 import queue
+import re
 from pathlib import Path
 import sys
 import threading
@@ -61,17 +62,40 @@ def discover_anal_folders(selection):
     return list(dict.fromkeys(folder for item in sample_inventory(selection) for folder in item["folders"]))
 
 
+def read_measurement_metadata(ar_table):
+    """Read optional measurement identifiers without requiring every channel."""
+    metadata = dict(date=None, machine=None, distance=None)
+    def first_text(channel):
+        value = ar_table[channel][:1][0]
+        return value.decode("utf-8") if isinstance(value, bytes) else str(value)
+
+    try:
+        ex_id = first_text("Ex ID").strip()
+        date = re.match(r"^(\d{8}_\d{4})\b", ex_id)
+        machine = re.search(r"\bAN#\d+", ex_id)
+        metadata["date"] = date.group(1) if date else None
+        metadata["machine"] = machine.group(0) if machine else None
+    except (KeyError, IndexError, ValueError, UnicodeError):
+        pass
+    try:
+        distance = float(first_text("Distance (nm)"))
+        metadata["distance"] = distance if math.isfinite(distance) else None
+    except (KeyError, IndexError, ValueError, UnicodeError):
+        pass
+    return metadata
+
+
 def scan_file_counts(selection, progress=None):
-    """Read LabVIEW's saved counts without loading the continuous waveform."""
+    """Read saved counts and duration without loading the continuous waveform."""
     rows = []
     inventory = sample_inventory(selection, progress)
     for item in inventory:
         if not item["folders"]:
             if item["raw"]:
-                rows.extend(dict(path=str(path), sample=item["sample"], count=None,
+                rows.extend(dict(path=str(path), sample=item["sample"], name=path.name, count=None, time=None, freq=None,
                                  status="未解析（ANALなし）", analyzed=False) for path in item["raw"])
             else:
-                rows.append(dict(path="", sample=item["sample"], count=None,
+                rows.append(dict(path="", sample=item["sample"], name=None, count=None, time=None, freq=None,
                                  status="未測定（未アップロード）", analyzed=False))
     analyzed_folders = [(item["sample"], folder) for item in inventory for folder in item["folders"]]
     if analyzed_folders:
@@ -84,17 +108,34 @@ def scan_file_counts(selection, progress=None):
                 continue
             if progress:
                 progress(f"シグナル数を確認中（{checked}ファイル確認済み）: {sample} / {path.name}")
-            count, status = None, ""
+            count, duration, frequency, source_name, status = None, None, None, None, ""
+            metadata = dict(date=None, machine=None, distance=None)
             try:
                 with TdmsFile.open(path) as tdms:
+                    metadata = read_measurement_metadata(tdms["AR Table"])
                     values = tdms["AR Table"]["Signal#Sum"][:1]
                     count = int(values[0])
                     if count < 0:
                         raise ValueError("シグナル数が負です。")
-                status = "確認済み"
+                    # Each saved R Table row represents 1 ms, as in a_countpick.
+                    duration = len(tdms["R Table"]["R # [n]"]) / 1000.0
+                    frequency = count / duration if duration > 0 else None
+                    try:
+                        filename = tdms["AR Table"]["Filename"][:1][0]
+                        if isinstance(filename, bytes):
+                            filename = filename.decode("utf-8")
+                        # Strip LabVIEW's analysis suffix, as in a_countpick.
+                        source_name = str(filename).split(" D_", 1)[0]
+                    except Exception as exc:
+                        status = f"元ファイル名を取得できません: {exc}"
+                if not status:
+                    status = "確認済み"
+                if duration == 0:
+                    status = "全時間が0秒のため頻度を計算できません"
             except Exception as exc:
-                status = f"数を取得できません: {exc}"
-            rows.append(dict(path=str(path), sample=sample, count=count, status=status, analyzed=True))
+                status = f"解析情報を取得できません: {exc}"
+            rows.append(dict(path=str(path), sample=sample, name=source_name, count=count, time=duration,
+                             freq=frequency, status=status, analyzed=True, **metadata))
             checked += 1
     return sorted(rows, key=lambda row: (row["count"] is None, -(row["count"] or 0), row["path"]))
 
@@ -247,14 +288,18 @@ class FrontPanel(ttk.Frame):
         self.rowconfigure(10, weight=1)
         table_frame.columnconfigure(0, weight=1)
         table_frame.rowconfigure(1, weight=1)
-        ttk.Label(table_frame, text="行を選択して「波形を読み込む」を押すか、ダブルクリックで表示します。数はLabVIEWの保存済み解析結果です。"
+        ttk.Label(table_frame, text="行を選択して「波形を読み込む」を押すか、ダブルクリックで表示します。数・全時間・頻度はLabVIEWの保存済み解析結果から取得します。"
                   ).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 6))
-        self.file_table = ttk.Treeview(table_frame, columns=("sample", "file", "count", "status"),
+        self.file_table = ttk.Treeview(table_frame, columns=("sample", "file", "name", "date", "machine", "distance", "count", "time", "freq", "status"),
                                       show="headings", selectmode="browse", height=8)
         for key, title, width in (("sample", "サンプル", 120), ("file", "ファイル名", 580),
-                                  ("count", "シグナル数", 100), ("status", "状態", 240)):
+                                  ("name", "元ファイル名", 300),
+                                  ("date", "Date", 140), ("machine", "Machine", 90),
+                                  ("distance", "Distance (nm)", 110),
+                                  ("count", "シグナル数", 100), ("time", "全時間 (s)", 100),
+                                  ("freq", "頻度 (/s)", 100), ("status", "状態", 240)):
             self.file_table.heading(key, text=title)
-            self.file_table.column(key, width=width, anchor="e" if key == "count" else "w")
+            self.file_table.column(key, width=width, anchor="e" if key in {"count", "time", "freq", "distance"} else "w")
         self.file_table.grid(row=1, column=0, sticky="nsew")
         scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.file_table.yview)
         scrollbar.grid(row=1, column=1, sticky="ns")
@@ -419,7 +464,12 @@ class FrontPanel(ttk.Frame):
                         iid = str(index)
                         self.file_rows[iid] = row
                         self.file_table.insert("", "end", iid=iid, values=(row["sample"], Path(row["path"]).name if row["path"] else "—",
-                                                row["count"] if row["count"] is not None else ("不明" if row.get("analyzed", True) else "—"), row["status"]),
+                                                row["name"] or "—",
+                                                row.get("date") or "—", row.get("machine") or "—",
+                                                f"{row['distance']:g}" if row.get("distance") is not None else "—",
+                                                row["count"] if row["count"] is not None else ("不明" if row.get("analyzed", True) else "—"),
+                                                f"{row['time']:.3f}" if row["time"] is not None else "—",
+                                                f"{row['freq']:.2f}" if row["freq"] is not None else "—", row["status"]),
                                                 tags=("analyzed" if row.get("analyzed", True) else "pending",))
                     if rows:
                         self.file_table.selection_set("0")
@@ -473,7 +523,7 @@ class FrontPanel(ttk.Frame):
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-        from view_tdms_signal_robust import RobustTdmsMultiFolderBrowser
+        from tdms_signal_core import RobustTdmsMultiFolderBrowser
 
         self.clear_viewer()
         panel = self
@@ -939,6 +989,7 @@ class SavedFilesPanel(ttk.Frame):
         self.plot_frame.pack(fill="both", expand=True)
         ttk.Label(self, textvariable=self.status, style="Status.TLabel", padding=8).pack(fill="x", pady=(10, 0))
         self.after(200, self.poll)
+        self.after_idle(self.refresh)
 
     def browse(self):
         folder = filedialog.askdirectory(parent=self, title="保存ファイルのフォルダ")

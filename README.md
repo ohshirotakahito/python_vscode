@@ -34,7 +34,7 @@ PYTHON_VSCODE/
 │
 └── Viewer/               # 可視化・データ確認用ツール
     ├── clips_pick/
-    └── view_tdms_signal.py
+    └── view_tdms_signal_tk.py
 ```
 
 > **Note:** 上記のファイル名は移行後の命名案です。移行が完了するまでは

@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""TDMS signal viewer using the extraction tool's robust pickup rules.
-
-This module leaves ``view_tdms_signal.py`` unchanged and reuses its file
-navigation and clip-saving UI.  Detection follows ``extract_extdms_data.py``:
-a smoothed moving-percentile baseline, iterative MAD noise estimation, and
-t1/t2 hysteresis thresholds.
-"""
+"""Robust detection and waveform backend for view_tdms_signal_tk.py."""
 
 import os
 import sys
@@ -21,7 +15,7 @@ from matplotlib.widgets import Button, CheckButtons, TextBox
 from scipy.ndimage import find_objects, label, percentile_filter
 from scipy.signal import savgol_filter
 
-from view_tdms_signal import TdmsMultiFolderBrowser
+from tdms_signal_base import TdmsMultiFolderBrowser
 from noise_estimation import lower_mode_noise, analysis_bounds
 
 
@@ -1438,134 +1432,3 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
                 self.fig.canvas.draw_idle()
             else:
                 self._set_processing_status(False)
-
-
-def _run_local(anal_dirs):
-    """Open the viewer straight against local ANAL folders (no network share).
-
-    Set ``TDMS_ANAL_DIRS`` to one or more folders (``;`` separated) that each
-    hold ``.tdms`` files directly.  Count-based sorting is skipped, so no
-    ``count_data`` CSV or ``view_analtdms_count`` run is needed.
-    """
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    folders = []
-    for raw in anal_dirs:
-        folder = Path(raw.strip().strip('"'))
-        if not folder.is_dir():
-            print(f"[WARN] Not a folder, skipped: {folder}")
-            continue
-        if not find_direct_tdms_files(folder):
-            print(f"[WARN] No .tdms directly in: {folder}")
-            continue
-        folders.append(str(folder))
-        print(f"[INFO] Local ANAL folder: {folder}")
-
-    if not folders:
-        raise RuntimeError(
-            "TDMS_ANAL_DIRS was set but no listed folder contained .tdms files."
-        )
-
-    RobustTdmsMultiFolderBrowser(
-        anal_folders=folders,
-        anal_folder_samples=None,
-        script_dir=script_dir,
-        count_folder_limit=1,
-        dt=0.0001,
-        chunk_sec=1.0,
-        target_group="Data",
-        target_channel="Ch1",
-        out_root=os.path.join(script_dir, "clips_pick"),
-        recursive_tdms=False,
-        sanitize_filename=False,
-        save_subfolder_per_aa=True,
-        baseline_window=501,
-        baseline_percentile=10.0,
-        sg_window=51,
-        sg_poly=3,
-        threshold_k1=1.0,
-        threshold_k2=5.0,
-        pad_for_std=500,
-        min_width_ms=0.2,
-    )
-    plt.show()
-
-
-def main():
-    local_dirs = os.environ.get("TDMS_ANAL_DIRS", "").strip()
-    if local_dirs:
-        _run_local(local_dirs.split(";"))
-        return
-
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    server = "Rackstation"
-    keyfolder = "analysis"
-    ex = "Sakano_02"
-    samples = ["vasopressin"]
-
-    anal_folders = []
-    anal_folder_samples = []
-    for sample in samples:
-        folder = Path(
-            rf"\\{server}\{keyfolder}\{ex}\{sample}\{sample}_10k_Sample\T\ANAL"
-        )
-        print("=" * 80)
-        print("[INFO] TDMS Folder =", folder)
-        try:
-            tdms_files = find_direct_tdms_files(folder)
-        except (PermissionError, OSError) as exc:
-            print(f"[ERROR] {exc}")
-            continue
-
-        if tdms_files:
-            anal_folders.append(str(folder))
-            anal_folder_samples.append(sample)
-        else:
-            print(f"[WARN] No files ending in .tdms were found directly in: {folder}")
-
-    if not anal_folders:
-        raise RuntimeError(
-            "No accessible ANAL folder containing TDMS files was found. "
-            "Review the [ERROR]/[WARN] message above."
-        )
-
-    if script_dir not in sys.path:
-        sys.path.insert(0, script_dir)
-    import view_analtdms_count as count_module
-    for sample in anal_folder_samples:
-        csv_path = os.path.join(script_dir, "count_data", f"{sample}_sc.csv")
-        if not os.path.isfile(csv_path):
-            count_module.run_count_for_sample(
-                server, keyfolder, ex, sample,
-                script_dir=script_dir, folder_limit=1,
-            )
-
-    RobustTdmsMultiFolderBrowser(
-        anal_folders=anal_folders,
-        anal_folder_samples=anal_folder_samples,
-        script_dir=script_dir,
-        server=server,
-        keyfolder=keyfolder,
-        ex=ex,
-        count_folder_limit=1,
-        dt=0.0001,
-        chunk_sec=1.0,
-        target_group="Data",
-        target_channel="Ch1",
-        out_root=os.path.join(script_dir, "clips_pick"),
-        recursive_tdms=False,
-        sanitize_filename=False,
-        save_subfolder_per_aa=True,
-        baseline_window=501,
-        baseline_percentile=10.0,
-        sg_window=51,
-        sg_poly=3,
-        threshold_k1=1.0,
-        threshold_k2=5.0,
-        pad_for_std=500,
-        min_width_ms=0.2,
-    )
-    plt.show()
-
-
-if __name__ == "__main__":
-    main()

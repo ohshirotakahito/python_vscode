@@ -259,6 +259,10 @@ class App(tk.Tk):
         v = self.values()
         def work():
             results = {}
+            try:
+                results['history_sync'] = core.sync_history(v['legacy'], v['local'])
+            except Exception as exc:
+                results['history_sync_error'] = str(exc)
             for name, reader in [('machines', lambda: core.machines(Path(v['db'])/'Machine_N.csv')), ('operators', lambda: core.rows(Path(v['db'])/'Operator.csv'))]:
                 try:
                     results[name] = reader()
@@ -273,7 +277,10 @@ class App(tk.Tk):
             for key in ('operator','uploader'):
                 self.set_choices(key, list(self.people))
             self.log(f'CSV読込: 装置 {len(self.machine_data)} 件 / 担当者 {len(self.people)} 件。保存先は「保存先一覧を読み込み」で取得してください。')
-            for key in ('machines_error', 'operators_error'):
+            if 'history_sync' in data:
+                added, removed = data['history_sync']
+                self.log(f'履歴CSV同期: 既存CSVから {added} 件追加 / 試用版CSVの重複 {removed} 件整理。')
+            for key in ('machines_error', 'operators_error', 'history_sync_error'):
                 if key in data:
                     self.log(f'CSV読込エラー ({key}): {data[key]}')
             if self.restore_initial:

@@ -335,6 +335,7 @@ def run_job(raw):
         if not samples:
             raise ValueError('対象サンプルがありません。')
         if kind == 'folders':
+            os.makedirs(root, exist_ok=True)
             for sample in samples:
                 create_folders.fo_xx(d['server'], d['share'], d['experiment'], sample)
         else:
@@ -547,11 +548,15 @@ class App(tk.Tk):
             self.buttons.append(button)
 
     def shared(self, frame, group):
-        for key, label, default in [('server', 'サーバー名', 'Rackstation'),
-                                    ('share', '共有フォルダ名', 'analysis'),
-                                    ('experiment', '実験フォルダ名', ''),
-                                    ('samples', 'サンプル名（カンマ区切り）', '')]:
-            self.field(frame, group, key, label, default)
+        server = self.field(frame, group, 'server', 'サーバー名', 'Rackstation', values=COPY_SERVERS)
+        self.field(frame, group, 'share', '共有フォルダ名', 'analysis',
+                   browse=lambda: self.select_copy_folder('share', group))
+        self.field(frame, group, 'experiment', '実験フォルダ名',
+                   browse=lambda: self.select_copy_folder('experiment', group))
+        self.field(frame, group, 'samples', 'サンプル名（カンマ区切り）')
+        fields = self.fields[group]
+        server.bind('<<ComboboxSelected>>', lambda _event: fields['share'].set('analysis'))
+        fields['share'].trace_add('write', lambda *_: fields['experiment'].set(''))
 
     def copy_tab(self):
         f = self.tab('copy', 'ファイルコピー')
@@ -821,8 +826,10 @@ class App(tk.Tk):
         if automatic:
             fields['destination'].set(COPY_SHARES[frozenset((source, fields['dest_server'].get()))])
 
-    def select_copy_folder(self, key):
-        fields = self.fields['copy']
+    def select_copy_folder(self, key, group='copy'):
+        if self.busy:
+            return
+        fields = self.fields[group]
         try:
             server = component(fields['server'].get(), 'サーバー名')
             share = (fields['share'].get().strip() if key == 'share' else
@@ -855,7 +862,7 @@ class App(tk.Tk):
                 messagebox.showerror('選択先を確認してください', 'サーバー直下の共有フォルダを選択してください。', parent=dialog)
                 return
             accepted = (self.apply_copy_samples(selected if isinstance(selected, list) else [selected], parent)
-                        if key == 'samples' else self.apply_copy_folder(key, selected, server, share))
+                        if key == 'samples' else self.apply_copy_folder(key, selected, server, share, group))
             if accepted:
                 dialog.destroy()
 
@@ -943,7 +950,7 @@ class App(tk.Tk):
         self.fields['copy']['samples'].set(', '.join(dict.fromkeys(names)))
         return True
 
-    def apply_copy_folder(self, key, selected, server, share):
+    def apply_copy_folder(self, key, selected, server, share, group='copy'):
         """共有フォルダと実験フォルダをUNCパスの階層に応じて反映する。"""
         normalized = selected.replace('\\', '/').rstrip('/')
         parts = normalized[2:].split('/') if normalized.startswith('//') else []
@@ -956,7 +963,7 @@ class App(tk.Tk):
                                  '\n実験フォルダの選択では、現在の共有フォルダ内から選んでください。',
                                  parent=self)
             return False
-        fields = self.fields['copy']
+        fields = self.fields[group]
         if fields['share'].get() != parts[1]:
             fields['share'].set(parts[1])
         fields['experiment'].set(parts[2] if len(parts) == 3 else '')
@@ -987,7 +994,8 @@ class App(tk.Tk):
         self.shared(f, 'folders')
         self.actions(f, 'folders', [('フォルダ作成', lambda: self.submit('folders'))],
                      '各サンプルに10k/100kのSample・Blank、raw data、T、stocked等の既存構成を作成します。\n'
-                     '既存フォルダはそのまま利用します。サンプル名は必須です。')
+                     '実験フォルダは一覧から選択、または新しい名前を直接入力できます。\n'
+                     '未作成の実験フォルダは新規作成し、既存フォルダはそのまま利用します。サンプル名は必須です。')
 
     def submit(self, kind, preview=False):
         if self.busy:
