@@ -184,14 +184,21 @@ def sq_inventory(path=DEFAULT_DB, search=''):
                 name = PurePosixPath(relative).name
                 row = dict(common, name=name, relative_path=relative, entry_type=entry_type,
                            **parse_experiment_name(name, entry_type == '圧縮ファイル'))
+                first, separator, remainder = relative.partition('/')
+                row.update(first_folder=first if separator or entry_type == 'フォルダ' else '',
+                           remaining_path=remainder if separator else '' if entry_type == 'フォルダ' else first,
+                           child_folders='')
                 row.update(scope_state(source, relative, source['_updates']))
-                row.update(exsv_tdms='', exsv_t_tdms='')
-                if group == 'Recent data' and entry_type == 'フォルダ':
+                row.update(exsv_tdms='', exsv_t_tdms='', exsvz_tdms='', exsvz_t_tdms='')
+                if entry_type == 'フォルダ':
                     direct = {PurePosixPath(f).name.casefold(): f for f in children[relative]}
-                    exsv = direct.get('exsv', relative + '/EXSV')
-                    inside = {PurePosixPath(f).name.casefold(): f for f in children[exsv]}
-                    row.update(exsv_tdms=_count(folders, counts, exsv),
-                               exsv_t_tdms=_count(folders, counts, inside.get('t', exsv + '/T')))
+                    row['child_folders'] = '; '.join(PurePosixPath(direct[key]).name
+                                                    for key in ('exsv', 'exsvz') if key in direct)
+                    for key in ('exsv', 'exsvz'):
+                        target = direct.get(key, relative + '/' + key.upper())
+                        inside = {PurePosixPath(f).name.casefold(): f for f in children[target]}
+                        row[key + '_tdms'] = _count(folders, counts, target)
+                        row[key + '_t_tdms'] = _count(folders, counts, inside.get('t', target + '/T'))
                 group_entries.append(row)
             summary = dict(common, folder_count=len(folder_names), archive_count=len(compressed),
                            folder_names='; '.join(PurePosixPath(f).name for f in folder_names),

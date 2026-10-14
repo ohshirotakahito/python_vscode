@@ -541,6 +541,10 @@ def learn_dataset(dnf, feature_columns, n_jobs=N_JOBS,
 _TOTAL_ANALYSIS_STAGES = 10
 
 
+from common.feature_store import versioned_training
+
+
+@versioned_training('rmc')
 def run_analysis(smns, progress_callback=None):
     """指定したクラスの組み合わせについて、学習から結果保存まで実行する。
 

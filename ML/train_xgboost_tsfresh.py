@@ -84,7 +84,7 @@ SIGNAL_LIMIT = (0, 1000)
 #SIGNAL_LIMIT = (0, 200)
 
 # distanceはすべてNoneなら全対象。値指定と上下限の併用はAND条件。
-DISTANCE_VALUES = [0.58]  # 例: [0.5, 1.0] → 指定値のみ
+DISTANCE_VALUES = None  # 全距離を使用。AspPhe/PheAspで絞る場合は [0.54] または [0.56]
 DISTANCE_MIN = None     # 下限（含む）。例: 0.5
 DISTANCE_MAX = None     # 上限（含む）。例: 1.0
 
@@ -505,10 +505,23 @@ def filter_distance(dnf):
     filtered = dnf.loc[mask].copy()
     print(f"distance条件適用: {len(dnf)}件 -> {len(filtered)}件")
     if filtered.empty:
-        raise ValueError("distance条件を満たすデータがありません。設定値を確認してください。")
+        available = sorted(distance.dropna().unique().tolist())
+        raise ValueError(
+            "distance条件を満たすデータがありません。"
+            f"設定: DISTANCE_VALUES={DISTANCE_VALUES}, "
+            f"DISTANCE_MIN={DISTANCE_MIN}, DISTANCE_MAX={DISTANCE_MAX}。"
+            f"利用可能なdistance値: {available}。"
+            f"欠損・数値変換不可: {int(distance.isna().sum())}件。"
+            "全距離を使う場合はDISTANCE_VALUES/DISTANCE_MIN/DISTANCE_MAXを"
+            "すべてNoneにしてください。"
+        )
     return filtered
 
 
+from common.feature_store import versioned_training
+
+
+@versioned_training('rmc')
 def run_analysis(smns, progress_callback=None):
     """指定したクラスの組み合わせについて、学習から結果保存まで実行する。
 
@@ -543,7 +556,8 @@ def run_analysis(smns, progress_callback=None):
     _report(0, "データセットを構築中...")
     dnf, tsfresh_feature_cols_all = build_combined_dataset(
         smns, data_root=data_root, use_cache=True,
-        n_jobs=N_JOBS, chunksize=CHUNKSIZE
+        n_jobs=N_JOBS, chunksize=CHUNKSIZE,
+        progress_callback=lambda current, total, message: _report(current / max(total, 1), message),
     )
     dnf = filter_distance(dnf)
 
@@ -727,8 +741,9 @@ if __name__ == '__main__':
         #['vasopressin', 'LCys','LTyr','LPhe','LGlne','LAsn','LPro','LArg','Gly']
         #['Lys_pH12','Kme1_pH12','TriMeLys_pH12']
         #['Lys_pH12','Lys']#,['M1Lys','Kme1_pH12'],['M3Lys','TriMeLys_pH12']
-        #['Lys','M1Lys','M3Lys','Lys_pH12','Kme1_pH12','TriMeLys_pH12']
-        ['ALTNA','GLTNA','CLTNA','TLTNA']
+        #['AspPhe','PheAsp']
+        ['GlnVal','ValGln']
+        #['ALTNA','GLTNA','CLTNA','TLTNA']
                 
         #['BBBDO','BBNDO','BNBDO','NBBDO','BNNDO','NBNDO','NNNDO']
 

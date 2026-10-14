@@ -53,12 +53,28 @@ def main():
     style.configure("TNotebook.Tab", padding=(14, 4))
 
     runner = TaskRunner(root)
+    activity = ttk.LabelFrame(root, text="実行状況", padding=6)
+    activity.pack(fill="x", padx=6, pady=(6, 0))
+    activity_label = ttk.Label(activity, text="待機中", font=("Meiryo UI", 11, "bold"))
+    activity_label.pack(anchor="w")
+    activity_bar = ttk.Progressbar(activity, mode="indeterminate")
+    activity_bar.pack(fill="x", pady=(4, 0))
+    runner.add_busy_listener(lambda busy: activity_bar.start(20) if busy else activity_bar.stop())
+
+    def show_activity(busy, elapsed, stage, fraction):
+        duration = f"{elapsed // 3600:02d}:{elapsed // 60 % 60:02d}:{elapsed % 60:02d}"
+        activity_label.configure(
+            text=(f"● 処理実行中　経過 {duration}　工程進捗 {fraction:.0%}　{stage}" if busy
+                  else f"待機中　直前の処理時間 {duration}"),
+            foreground="#174ea6" if busy else "#555")
+    runner.add_status_listener(show_activity)
 
     # 各タブの import は Tk 作成後に行う（重いライブラリの読み込み中もウィンドウを出すため）
     from tab_browser import BrowserTab
     from tab_extract import ExtractTab
     from tab_predict import PredictTab
     from tab_stat import StatTab
+    from tab_review import ReviewTab
     from tab_train import TrainTab
 
     notebook = ttk.Notebook(root)
@@ -68,9 +84,15 @@ def main():
     stat = StatTab(notebook, runner)
     tabs = {}
 
+    def open_review_training(feature_set, samples, versions, rules):
+        if tabs['train'].apply_review_selection(feature_set, samples, versions, rules):
+            notebook.select(tabs['train'])
+
+    review = ReviewTab(notebook, runner, on_train=open_review_training)
+
     def features_changed():
         # 抽出が終わったら、各タブのサンプル一覧を最新にする
-        for tab in (stat, tabs["train"], tabs["predict"]):
+        for tab in (stat, review, tabs["train"], tabs["predict"]):
             tab.refresh_samples()
 
     def runs_changed():
@@ -82,6 +104,7 @@ def main():
 
     notebook.add(extract, text="① 特徴量抽出")
     notebook.add(stat, text="② 統計ヒストグラム")
+    notebook.add(review, text="抽出ファイル精査")
     notebook.add(tabs["train"], text="③ 学習・評価")
     notebook.add(browser, text="④ 結果ブラウザ")
     notebook.add(tabs["predict"], text="⑤ 混合予測")

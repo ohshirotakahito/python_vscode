@@ -22,6 +22,11 @@ def list_available_samples(feature_set: str) -> list[str]:
     """
     data_root: Path = paths.feature_dir(feature_set)
     names = set()
+    from common.feature_store import list_versions
+    for child in data_root.iterdir():
+        if child.is_dir() and not child.name.startswith('_'):
+            if list_versions(feature_set, child.name, root=data_root):
+                names.add(child.name)
 
     for path in data_root.glob("*_10k_Sample_ANAL_meta.*"):
         match = _META_SUFFIX_RE.search(path.stem)

@@ -10,15 +10,17 @@ from tkinter import messagebox, ttk
 import pandas as pd
 
 import common.paths as paths
+from inspection_versions import InspectionVersions
 from lib.catalog import list_available_samples
 from widgets import CheckList, DataTable, ImageGallery, ProgressPanel, open_path, save_zip_dialog
 
 
-class StatTab(ttk.Frame):
+class StatTab(InspectionVersions, ttk.Frame):
     def __init__(self, master, runner):
         super().__init__(master, padding=10)
         self.runner = runner
         self.output_dir = None
+        self.feature_set = tk.StringVar(value='rmc')
 
         paned = ttk.PanedWindow(self, orient="horizontal")
         paned.pack(fill="both", expand=True)
@@ -29,6 +31,8 @@ class StatTab(ttk.Frame):
         ttk.Label(left, text="サンプル（rmc、複数選択可）").pack(anchor="w")
         self.samples = CheckList(left, height=12)
         self.samples.pack(fill="both", expand=True, pady=4)
+
+        self._build_version_picker(left)
 
         opts = ttk.LabelFrame(left, text="詳細設定（任意）", padding=6)
         opts.pack(fill="x", pady=4)
@@ -95,13 +99,15 @@ class StatTab(ttk.Frame):
         use_distance = self.use_distance.get()
         dmin, dmax = self.dmin.get(), self.dmax.get()
 
+        versions = dict(self.feature_versions)
+
         def task(progress):
             from stat_features_rmc import (
                 DEFAULT_LOWER_LIMITS, DEFAULT_OUTPUT_ROOT, DEFAULT_UPPER_LIMITS, create_histograms,
             )
             progress(0, 1, "集計中")
             return create_histograms(
-                samples=samples, data_root=paths.feature_dir("rmc"),
+                samples=samples, feature_versions=versions, data_root=paths.feature_dir("rmc"),
                 output_root=DEFAULT_OUTPUT_ROOT, bins=bins,
                 upper_limits=DEFAULT_UPPER_LIMITS, lower_limits=DEFAULT_LOWER_LIMITS,
                 distance_min=dmin if use_distance else None,

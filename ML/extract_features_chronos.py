@@ -10,8 +10,10 @@ tdmsファイル1つ処理するたびにtsfresh_input.csv / chronos_emb.csvへ
 逐次追記していく方式（rmc版からのメモリ対策）を保持している。
 
 【中断・再開対応】(このバージョンで追加)
-実行に時間がかかるため、以下の方式で「途中で止めても再実行すれば
-続きから再開できる」ようにしている。
+実行ごとにサンプル別の新しいフォルダへ保存する。
+中断した版の再開は同じ入力・条件で resume_run_ids を指定する。
+通常の再実行は新しい版になる。詳細は README_feature_history.md を参照。
+同一版内での再開には以下の方式を使う。
 
   ・サンプルごとに <SamplePath>_<TargetPath>_checkpoint.json を書き出し、
     「処理済みtdmsファイルのパス一覧」「next_event_id」「各CSVの
@@ -41,6 +43,7 @@ common/paths.py に統一（data/features/rmd/ 以下に保存される）。
 import os
 import json
 import tempfile
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -62,16 +65,18 @@ FEATURE_SET = 'rmd'
 # =====================================================================
 
 _CHRONOS_PIPELINE = None
+_CHRONOS_PIPELINE_KEY = None
 
 
 def get_chronos_pipeline(model_name="amazon/chronos-t5-small", device="cpu"):
-    global _CHRONOS_PIPELINE
-    if _CHRONOS_PIPELINE is None:
+    global _CHRONOS_PIPELINE, _CHRONOS_PIPELINE_KEY
+    if _CHRONOS_PIPELINE is None or _CHRONOS_PIPELINE_KEY != (model_name, device):
         _CHRONOS_PIPELINE = ChronosPipeline.from_pretrained(
             model_name,
             device_map=device,
             torch_dtype=torch.float32,
         )
+        _CHRONOS_PIPELINE_KEY = (model_name, device)
     return _CHRONOS_PIPELINE
 
 
@@ -155,21 +160,24 @@ def save_checkpoint(checkpoint_path, state):
 # メイン処理
 # =====================================================================
 
-if __name__ == '__main__':
-    server = 'QTserver'
-    keyfolder = 'analysis'
-    ex = 'Chirality_N2'
+from common.feature_store import versioned_extraction
+from common.extract_catalog import record_extraction
+
+
+@versioned_extraction('rmd')
+def run_extraction(samples, server='QTserver', keyfolder='analysis', ex='Chirality_N2',
+                   output_dir=None, progress_callback=None, files_by_sample=None,
+                   chronos_model='amazon/chronos-t5-small', chronos_device='cpu'):
 
     ExPath = '//' + server + '/' + keyfolder + '/' + ex + '/'
 
-    samples = exfoler_check(server, keyfolder, ex)
     # samples = ['L','Adenine','OxoG','OMeG']  # テスト時に限定する場合
 
     # 出力先フォルダ（data/features/rmd/ 以下。無ければ自動作成される）
-    OUTPUT_DIR = paths.feature_dir(FEATURE_SET)
+    OUTPUT_DIR = Path(output_dir) if output_dir is not None else paths.feature_dir(FEATURE_SET)
 
-    CHRONOS_MODEL = "amazon/chronos-t5-small"
-    CHRONOS_DEVICE = "cpu"  # GPUがあれば "cuda"
+    CHRONOS_MODEL = chronos_model
+    CHRONOS_DEVICE = chronos_device  # GPUがあれば "cuda"
 
     for sample in samples:
         SamplePath = sample + '_10k_Sample'
@@ -186,7 +194,10 @@ if __name__ == '__main__':
             print(f"[{sample}] 完了済みのためスキップします。")
             continue
 
-        folderlist = Analtfoler(server, keyfolder, ex, sample)
+        selected_files = None if files_by_sample is None else set(map(str, files_by_sample.get(sample, [])))
+        folderlist = (Analtfoler(server, keyfolder, ex, sample) if selected_files is None else
+                      sorted({os.path.dirname(p) for p in selected_files}))
+        file_log = []
 
         checkpoint = load_checkpoint(checkpoint_path)
 
@@ -240,6 +251,9 @@ if __name__ == '__main__':
 
             for tdms_file_name in tdms_files:
                 tdms_file_path = os.path.join(folder_path, tdms_file_name)
+
+                if selected_files is not None and tdms_file_path not in selected_files:
+                    continue
 
                 if tdms_file_path in processed_files:
                     continue  # 処理済み（再開時はここでスキップされる）
@@ -309,6 +323,10 @@ if __name__ == '__main__':
                 #   このファイルからやり直しになる＝中途半端なデータは残らない）
                 processed_files.add(tdms_file_path)
                 write_checkpoint()
+                file_log.append((tdms_file_path, echec, len(AX) if echec == 1 and AX else 0))
+                if progress_callback is not None:
+                    progress_callback(len(processed_files), len(selected_files or processed_files),
+                                      f"[{sample}] {basename}")
 
         # ---- ここまででこのサンプルの全tdmsファイル処理が完了 ----
 
@@ -343,9 +361,18 @@ if __name__ == '__main__':
 
         # このサンプルは完全に完了したので .done マーカーを作り、
         # チェックポイントJSONは不要になるので削除する
+        record_extraction(FEATURE_SET, server, keyfolder, ex, sample, file_log,
+                          n_total=total_meta_rows, output_path=Path(meta_path))
         with open(done_marker_path, 'w', encoding='utf-8') as f:
             f.write('done')
         if os.path.exists(checkpoint_path):
             os.remove(checkpoint_path)
 
     print('end')
+
+    return OUTPUT_DIR
+
+
+if __name__ == '__main__':
+    server, keyfolder, ex = 'QTserver', 'analysis', 'Chirality_N2'
+    run_extraction(exfoler_check(server, keyfolder, ex), server=server, keyfolder=keyfolder, ex=ex)

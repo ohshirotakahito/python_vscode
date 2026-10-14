@@ -39,6 +39,7 @@ import time
 import math
 import hashlib
 import pickle
+import json
 import shutil
 from pathlib import Path
 
@@ -50,6 +51,7 @@ from tsfresh import extract_features, select_features
 from tsfresh.utilities.dataframe_functions import impute
 
 import common.paths as paths
+from common.feature_store import sample_directory
 from common.filters import apply_filters
 
 
@@ -97,6 +99,7 @@ def _sample_paths(smn, data_root=None):
     if data_root is None:
         data_root = DATA_ROOT
     data_root = Path(data_root)  # 文字列で渡された場合もPathに正規化する
+    data_root = sample_directory(data_root, smn)
     meta_path = _resolve_path(data_root, f"{smn}_10k_Sample_ANAL_meta")
     tsfresh_path = _resolve_path(data_root, f"{smn}_10k_Sample_ANAL_tsfresh_input")
     return meta_path, tsfresh_path
@@ -106,7 +109,7 @@ def _file_fingerprint(path: Path):
     """ファイルサイズ+更新日時から簡易指紋を作る。
     巨大なtsfresh_inputファイルの中身を読まずにキャッシュキーを決めるため。"""
     st = path.stat()
-    return f"{st.st_size}_{int(st.st_mtime)}"
+    return f"{path.resolve()}_{st.st_size}_{st.st_mtime_ns}"
 
 
 def _read_table(path: Path):
@@ -116,18 +119,23 @@ def _read_table(path: Path):
       ArrowKeyError: pandas.period already defined を避けるため）。"""
     if path.suffix == '.parquet':
         return pq.read_table(path).to_pandas()
-    return pd.read_csv(path)
+    return pd.read_csv(path, dtype={'sample_name': str, 'ex_id': str, 'sample': str})
 
 
 def _sample_cache_key(smn, n_events, tsfresh_fingerprint, fc_parameters):
-    key_src = f"{smn}|{n_events}|{tsfresh_fingerprint}|{type(fc_parameters).__name__}"
+    settings = json.dumps(fc_parameters, sort_keys=True, default=str)
+    key_src = f"v2|{smn}|{n_events}|{tsfresh_fingerprint}|{settings}"
     return hashlib.md5(key_src.encode('utf-8')).hexdigest()[:12]
 
 
 def get_sample_cache_path(smn, n_events, tsfresh_path, fc_parameters, cache_dir=None):
     if cache_dir is None:
         cache_dir = CACHE_DIR
-    fp = _file_fingerprint(tsfresh_path)
+    # Different preprocessing filters can select different events with the same count.
+    from common.training_file_filter import selection_manifest
+    fp = _file_fingerprint(tsfresh_path) + json.dumps(
+        [DURATION_LIMIT, BASELINE_LIMIT, SIGNAL_LIMIT, FILTERS, selection_manifest()],
+        sort_keys=True, default=str)
     cache_key = _sample_cache_key(smn, n_events, fp, fc_parameters)
     cache_path = cache_dir / f"tsfresh_{smn}_{cache_key}.pkl"
     return cache_key, cache_path
@@ -163,6 +171,8 @@ def load_meta_data(smn, data_root=None,
         print(f"❌ meta読み込み失敗 ({smn}): {type(e).__name__}: {e}")
         return None, None
 
+    from common.training_file_filter import filter_training_rows
+    meta_df = filter_training_rows(meta_df, smn)
     duration = meta_df['duration'].astype(np.int32)
     baseline = meta_df['baseline'].astype(np.float32)
     signal = meta_df['signal'].astype(np.float32)
@@ -173,6 +183,9 @@ def load_meta_data(smn, data_root=None,
         & signal.between(signal_limit[0] + 1e-12, signal_limit[1] - 1e-12)
     )
     meta_df = meta_df[mask].copy()
+    from common.training_file_filter import selection_manifest
+    if meta_df.empty and selection_manifest():
+        raise ValueError(f'{smn}: ファイル条件と既存のイベント範囲条件を満たすイベントがありません。')
     meta_df['duration'] = duration[mask]
     meta_df['baseline'] = baseline[mask]
     meta_df['signal'] = signal[mask]
@@ -190,6 +203,8 @@ def load_meta_data(smn, data_root=None,
     filters = FILTERS if filters is None else filters
     if filters:
         meta_df = apply_filters(meta_df, filters)
+    if meta_df.empty and selection_manifest():
+        raise ValueError(f'{smn}: すべての学習条件を満たすイベントがありません。')
 
     return meta_df, tsfresh_path
 
@@ -236,7 +251,7 @@ def extract_features_for_sample(smn, long_df, n_events, use_cache=True,
                                  batch_event_threshold=None,
                                  fc_parameters=None,
                                  cache_dir=None,
-                                 cache_key=None, cache_path=None):
+                                 cache_key=None, cache_path=None, progress_callback=None):
     n_jobs = N_JOBS if n_jobs is None else n_jobs
     chunksize = CHUNKSIZE if chunksize is None else chunksize
     batch_size_events = BATCH_SIZE_EVENTS if batch_size_events is None else batch_size_events
@@ -260,6 +275,8 @@ def extract_features_for_sample(smn, long_df, n_events, use_cache=True,
         return feats
 
     if n_events <= batch_event_threshold:
+        if progress_callback:
+            progress_callback(0, 1, f"{smn}: tsfresh特徴量を計算中（{n_events:,}イベント）")
         print(f"[{smn}] tsfresh特徴量抽出を開始します "
               f"(events={n_events}, rows={len(long_df)}, n_jobs={n_jobs}, "
               f"chunksize={chunksize}, fc={type(fc_parameters).__name__})")
@@ -278,6 +295,8 @@ def extract_features_for_sample(smn, long_df, n_events, use_cache=True,
 
         feats_list = []
         for b in range(n_batches):
+            if progress_callback:
+                progress_callback(b, n_batches, f"{smn}: tsfresh バッチ {b + 1}/{n_batches}")
             batch_ids = unique_ids[b * batch_size_events:(b + 1) * batch_size_events]
             batch_ids_set = set(batch_ids)
 
@@ -307,6 +326,8 @@ def extract_features_for_sample(smn, long_df, n_events, use_cache=True,
                 gc.collect()
 
             feats_list.append(feats_b)
+            if progress_callback:
+                progress_callback(b + 1, n_batches, f"{smn}: バッチ {b + 1}/{n_batches} 完了")
 
         feats = pd.concat(feats_list, axis=0, sort=False)
         if feats.isna().any().any():
@@ -339,7 +360,7 @@ def clear_cache(cache_dir=None):
 
 def build_combined_dataset(smns, data_root=None, use_cache=True,
                             n_jobs=None, chunksize=None,
-                            fc_parameters=None, cache_dir=None, filters=None):
+                            fc_parameters=None, cache_dir=None, filters=None, progress_callback=None):
     """サンプルごとに逐次tsfresh特徴量を抽出してメタ特徴量と結合する。
     全サンプルに対して必ず同じfc_parametersを使うこと。
 
@@ -357,7 +378,11 @@ def build_combined_dataset(smns, data_root=None, use_cache=True,
     all_meta = []
     per_sample_features = []
 
-    for smn in smns:
+    for sample_index, smn in enumerate(smns):
+        def report(current, total, message):
+            if progress_callback:
+                progress_callback((sample_index + current / max(total, 1)) / len(smns), 1, message)
+        report(0, 1, f"{smn}: メタデータを読み込み中（{sample_index + 1}/{len(smns)}サンプル）")
         meta_df, tsfresh_path = load_meta_data(smn, data_root=data_root, filters=filters)
         if meta_df is None or meta_df.empty:
             print(f"⚠ [{smn}] 有効なメタデータがないためスキップします")
@@ -368,8 +393,12 @@ def build_combined_dataset(smns, data_root=None, use_cache=True,
         cache_key, cache_path = get_sample_cache_path(
             smn, n_events, tsfresh_path, fc_parameters, cache_dir=cache_dir
         )
+        event_key = hashlib.sha256(json.dumps(meta_df['event_id'].astype(str).tolist()).encode()).hexdigest()[:16]
+        cache_key += '_' + event_key
+        cache_path = cache_dir / f"tsfresh_{smn}_{cache_key}.pkl"
 
         if use_cache and cache_path.exists():
+            report(0, 1, f"{smn}: 特徴量キャッシュを読み込み中（{n_events:,}イベント）")
             print(f"[{smn}] events(meta)={len(meta_df)} / "
                   f"キャッシュを利用します（巨大ファイルは読み込みません）: {cache_path}")
             with open(cache_path, 'rb') as f:
@@ -377,6 +406,7 @@ def build_combined_dataset(smns, data_root=None, use_cache=True,
             print(f"[{smn}] キャッシュから読み込み完了: {feats.shape}")
         else:
             valid_ids = set(meta_df['event_id'])
+            report(0, 1, f"{smn}: 波形データを読み込み中（{n_events:,}イベント）")
             long_df = load_long_data(smn, tsfresh_path, valid_ids)
             print(f"{smn}: events(meta)={len(meta_df)}, "
                   f"events(tsfresh入力)={long_df['id'].nunique()}, rows={len(long_df)}")
@@ -389,11 +419,12 @@ def build_combined_dataset(smns, data_root=None, use_cache=True,
                 smn, long_df, n_events,
                 use_cache=use_cache, n_jobs=n_jobs, chunksize=chunksize,
                 fc_parameters=fc_parameters, cache_dir=cache_dir,
-                cache_key=cache_key, cache_path=cache_path
+                cache_key=cache_key, cache_path=cache_path, progress_callback=report
             )
 
         all_meta.append(meta_df)
         per_sample_features.append(feats)
+        report(1, 1, f"{smn}: データ構築完了")
 
     if not all_meta:
         raise RuntimeError(

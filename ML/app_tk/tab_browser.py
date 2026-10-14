@@ -8,7 +8,7 @@ results/ 配下の run_manifest.json を持つ実行結果（UI経由・CLI経�
 import json
 import tkinter as tk
 from pathlib import Path
-from tkinter import ttk
+from tkinter import messagebox, ttk
 from tkinter.scrolledtext import ScrolledText
 
 import pandas as pd
@@ -45,8 +45,17 @@ class RunResultView(ttk.Frame):
         self.comparison = DataTable(summary, height=5)
         self.comparison.pack(fill="x", pady=4)
 
-        self.cm_gallery = ImageGallery(self.notebook, columns=2)
-        self.notebook.add(self.cm_gallery, text="混同行列")
+        cm_frame = ttk.Frame(self.notebook)
+        self.notebook.add(cm_frame, text="混同行列")
+        cm_bar = ttk.Frame(cm_frame)
+        cm_bar.pack(fill="x")
+        self.cm_order_button = ttk.Button(cm_bar, text="サンプルの表示順を変更",
+                                         command=self._choose_cm_order, state="disabled")
+        self.cm_order_button.pack(side="left", padx=4, pady=4)
+        self.cm_order_summary = ttk.Label(cm_bar, text="")
+        self.cm_order_summary.pack(side="left", fill="x", expand=True)
+        self.cm_gallery = ImageGallery(cm_frame, columns=2)
+        self.cm_gallery.pack(fill="both", expand=True)
         self.other_gallery = ImageGallery(self.notebook, columns=3)
         self.notebook.add(self.other_gallery, text="重要度・解析画像")
 
@@ -75,6 +84,14 @@ class RunResultView(ttk.Frame):
             redraw_confusion_matrices(self.run_dir)  # CSVだけ残っている古い結果は画像を再生成
         cm_paths = [self.run_dir / n for n in cm_names if (self.run_dir / n).exists()]
         self.cm_gallery.show(cm_paths)
+        self.cm_class_order = []
+        csv_path = self.run_dir / "confusion_matrix.csv"
+        if csv_path.exists() and (self.run_dir / "confusion_matrix_normalized.csv").exists():
+            self.cm_class_order = [str(label).removeprefix("Actual_")
+                                   for label in pd.read_csv(csv_path, index_col=0).index]
+        self.cm_order_button.configure(state="normal" if self.cm_class_order else "disabled")
+        self.cm_order_summary.configure(text="CSVの元の順番" if self.cm_class_order
+                                        else "順番の変更には混同行列のCSVが必要です")
         self.other_gallery.show(sorted(p for p in self.run_dir.glob("*.png") if p not in cm_paths))
 
         manifest_path = self.run_dir / "run_manifest.json"
@@ -83,6 +100,61 @@ class RunResultView(ttk.Frame):
             text = json.dumps(json.loads(manifest_path.read_text(encoding="utf-8")),
                               ensure_ascii=False, indent=2)
         self._set_text(self.manifest, text or "（run_manifest.json がありません）")
+
+    def _choose_cm_order(self):
+        dialog = tk.Toplevel(self)
+        dialog.title("混同行列の表示順")
+        dialog.transient(self.winfo_toplevel())
+        dialog.grab_set()
+        ttk.Label(dialog, text="サンプルを選んで上下に移動してください。行・列を同じ順番で変更します。",
+                  wraplength=400).pack(padx=10, pady=10)
+        items = tk.Listbox(dialog, exportselection=False, height=12, width=40)
+        items.pack(fill="both", expand=True, padx=10)
+        for name in self.cm_class_order:
+            items.insert("end", name)
+        controls = ttk.Frame(dialog)
+        controls.pack(fill="x", padx=10, pady=10)
+
+        def move(offset):
+            selected = items.curselection()
+            if not selected:
+                return
+            index = selected[0]
+            target = index + offset
+            if 0 <= target < items.size():
+                name = items.get(index)
+                items.delete(index)
+                items.insert(target, name)
+                items.selection_clear(0, "end")
+                items.selection_set(target)
+                items.see(target)
+
+        def reset():
+            names = pd.read_csv(self.run_dir / "confusion_matrix.csv", index_col=0).index
+            items.delete(0, "end")
+            for name in names:
+                items.insert("end", str(name).removeprefix("Actual_"))
+
+        def apply():
+            from common.eval_viz import redraw_confusion_matrices
+
+            order = list(items.get(0, "end"))
+            output = self.run_dir / "confusion_matrix_display"
+            try:
+                redraw_confusion_matrices(self.run_dir, class_order=order, output_dir=output)
+            except Exception as exc:
+                messagebox.showerror("混同行列の表示順を変更できません", str(exc), parent=dialog)
+                return
+            self.cm_class_order = order
+            self.cm_order_summary.configure(text=" → ".join(order), wraplength=500)
+            self.cm_gallery.show([output / "confusion_matrix.png",
+                                  output / "confusion_matrix_normalized.png"])
+            dialog.destroy()
+
+        ttk.Button(controls, text="↑ 上へ", command=lambda: move(-1)).pack(side="left")
+        ttk.Button(controls, text="↓ 下へ", command=lambda: move(1)).pack(side="left", padx=4)
+        ttk.Button(controls, text="元の順番", command=reset).pack(side="left")
+        ttk.Button(controls, text="適用", command=apply).pack(side="right")
 
     @staticmethod
     def _set_text(widget, text):

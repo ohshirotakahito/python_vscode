@@ -8,18 +8,12 @@ TDMS読込・イベント抽出のコア処理は common/tdms_io.py に共通化
 このファイルには「data/features/rmc フォルダへの保存 + tsfresh用CSV/meta CSVの出力」
 というrmc_tsfresh固有の挙動だけを残している。
 
-【追記保存対応（今回の変更点）】
-以前は同じサンプル名で本スクリプトを再実行すると、既存の .npy / meta.csv /
-tsfresh_input.csv を丸ごと上書きしていた。今回から common/incremental_save.py の
-merge_new_events() を使い、「既存データ + 新しく見つかったイベントだけを追記」する
-方式に変更した。
-  - .npy / meta.csv : 既存データ＋新規イベントをまとめたもので毎回作り直す
-                       （merge_new_events() が既に重複除去・event_id振り直し
-                        済みの完全なマージ結果を返すため、これで問題ない）
-  - tsfresh_input.csv: 新規追加分の long format 行だけを merge_new_events() から
-                        受け取り、既存CSVを読み込んで concat する
-                        （こちらは全件書き直すとファイルサイズが大きく非効率なため、
-                         新規分のみ追記する形にしている）
+【抽出結果の版管理】
+common/feature_store.py により、実行ごとにサンプル別の新しいフォルダへ保存する。
+選択した入力だけで独立した結果を作り、過去の版へは自動追記しない。
+内部の merge_new_events() は同一版内での重複除去・再開用。
+日時・条件・入力・処理コードなどを extraction_manifest.json に記録する。
+旧形式の結果も学習時に選択可能。詳細は README_feature_history.md を参照。
 
 ※ サンプルが大きい場合、ALL_LONG_ROWSを全てメモリに溜め込む方式のため
    メモリ不足になりやすい。その場合は extract_features_chronos.py
@@ -40,11 +34,13 @@ import common.paths as paths
 from common.tdms_io import exfoler_check, collect_events_for_sample, META_COLUMNS
 from common.incremental_save import load_existing_npy, merge_new_events
 from common.extract_catalog import record_extraction
+from common.feature_store import versioned_extraction
 
 # この抽出手法の系統名（common/paths.py 側のフォルダ名と揃える）
 FEATURE_SET = 'rmc'
 
 
+@versioned_extraction('rmc')
 def run_extraction(samples, server='Rackstation', keyfolder='analysis', ex='Suzuki_Lys',
                     output_dir=None, progress_callback=None, files_by_sample=None):
     """指定サンプルのtdmsファイルからtsfresh用特徴量を抽出し、data/features/rmc/ 以下に保存する。
@@ -141,9 +137,9 @@ if __name__ == '__main__':
     # 実行設定（ここで読み込み元・対象サンプル・保存先を指定）
     server = 'Rackstation'
     keyfolder = 'analysis'
-    ex = 'Takahagi_LTNAn'
+    ex = 'Sato_pep'
     #samples = ['M2Lys']  # テスト時に限定する場合
-    samples = ['TLTNA']
+    samples = ['AspPhe','PheAsp','GlnVal','ValGln']
     
     # samples = exfoler_check(server, keyfolder, ex)  # サンプルリスト非限定
     output_dir = None  # None: ML/data/features/rmc/。任意の保存先は r'D:\output' など

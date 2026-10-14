@@ -79,7 +79,7 @@ def plot_confusion_matrices(MX, N_MX, save_dir):
     )
 
 
-def redraw_confusion_matrices(run_dir):
+def redraw_confusion_matrices(run_dir, class_order=None, output_dir=None):
     """Recreate the PNG files from CSV files already saved in a run directory."""
     run_dir = Path(run_dir)
     matrix_path = run_dir / 'confusion_matrix.csv'
@@ -91,7 +91,15 @@ def redraw_confusion_matrices(run_dir):
 
     matrix = pd.read_csv(matrix_path, index_col=0).astype(int)
     normalized = pd.read_csv(normalized_path, index_col=0).astype(float)
-    plot_confusion_matrices(matrix, normalized, run_dir)
+    if class_order is not None:
+        names = [str(label).removeprefix('Actual_') for label in matrix.index]
+        if len(class_order) != len(names) or set(class_order) != set(names):
+            raise ValueError('Class order must contain every class exactly once.')
+        rows = [f'Actual_{name}' for name in class_order]
+        columns = [f'Pred_{name}' for name in class_order]
+        matrix = matrix.loc[rows, columns]
+        normalized = normalized.loc[rows, columns]
+    plot_confusion_matrices(matrix, normalized, output_dir or run_dir)
 
 
 def conmtx(y_test, y_pred, le, save_dir=None):

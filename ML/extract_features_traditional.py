@@ -7,21 +7,16 @@ TOP_Feex_rmb_20260803.py のリファクタリング版。
 TDMS読込・イベント抽出のコア処理は common/tdms_io.py に共通化した。
 このファイルには「data/features/rmb フォルダへの保存」というrmb固有の挙動だけを残している。
 
-【追記保存対応】
-以前は同じサンプル名（例: 'Guanine'）で本スクリプトを再実行すると、
-既存の .npy を丸ごと上書きしていた。これだと、別日に追加計測したデータを
-反映させたくて再実行しただけのつもりが、以前の計測データが消えてしまう
-リスクがあった。
-common/incremental_save.py の merge_new_events() を使い、
-「既存データ + 新しく見つかったイベントだけを追記」する方式にしている。
-同じtdmsファイルを何度再実行しても、(file, signal_position) の組み合わせで
-重複判定されるため、二重にイベントが増えることはない。
+【抽出結果の版管理】
+common/feature_store.py により、実行ごとにサンプル別の新しいフォルダへ保存する。
+選択した入力だけで独立した結果を作り、過去の版へは自動追記しない。
+日時・条件・入力・処理コードなどを extraction_manifest.json に記録する。
+内部の merge_new_events() は同一版内での重複除去・再開用。
+旧形式の結果も学習時に選択可能。詳細は README_feature_history.md を参照。
 
 【中断・再開対応】(このバージョンで追加)
-このスクリプトも tsfresh 版と同様、「新しいtdmsファイルが増えるたびに定期的に
-再実行する」運用を前提にしており、merge_new_events() が既存データとの重複を
-弾いてくれるため何度再実行しても安全な設計になっている。そのため中断・再開に
-ついても「サンプルを二度と処理しない」というマーカーではなく、以下の考え方にした:
+中断した版を再開する場合は、同じ入力・条件で resume_run_ids を指定する。
+通常の再実行は新しい版になる。同一版内での再開は以下の仕組みを使う:
 
   ・collect_events_for_sample() 相当の「全tdmsファイルを読んでCXをメモリに
     溜め込む」処理をこのファイル内に展開し、tdmsファイル1つ処理するたびに、
@@ -63,6 +58,7 @@ from common.tdms_io import (
 )
 from common.incremental_save import load_existing_npy, merge_new_events
 from common.extract_catalog import record_extraction
+from common.feature_store import versioned_extraction
 
 # この抽出手法の系統名（common/paths.py 側のフォルダ名と揃える）
 FEATURE_SET = 'rmb'
@@ -98,6 +94,7 @@ def save_checkpoint(checkpoint_path, state):
         raise
 
 
+@versioned_extraction('rmb')
 def run_extraction(samples, server='Rackstation', keyfolder='analysis', ex='Shanli_thy',
                     output_dir=None, progress_callback=None, files_by_sample=None):
     """指定サンプルのtdmsファイルから特徴量を抽出し、data/features/rmb/ 以下に保存する。

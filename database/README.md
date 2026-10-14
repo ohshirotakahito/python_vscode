@@ -52,6 +52,10 @@ python database/app.py
 
 ## SQserverの設定・表示
 
+「SQserver 実験一覧」では相対パスの先頭フォルダを別列に分けて表示します。実験直下の子フォルダ表示はEXSV・EXSVZに限定し、それぞれの直下とT直下のTDMS件数を表示します。圧縮ファイルの中身は読み込みません。
+
+「保存先設定」でサーバーを選び、「フォルダを選んで追加」から実際のフォルダを選択できます。複数の保存先は繰り返し選択し、最後に「保存」を押します。SQserverの空欄の初期行は自動的に置き換わります。`backup_AN1`、`data`、`data_stocked` に加えて `data/AN1` や `data_stocked/AN1` も選択でき、種別はパスから設定されます。親フォルダとその子フォルダを重ねて登録しないでください。
+
 `experiment` はルートまたは直下の `backup_*` / `Recent data` / `Recent_Data` / `data` / `data_stocked` を自動分類します。
 Recent data内にbackup_*がある場合はbackup_*ごとに集計します。backup_*がサーバーの別々の共有なら、それぞれを保存先設定に登録してください。サーバー直下の共有を自動列挙する機能はありません。
 

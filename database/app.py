@@ -1,5 +1,5 @@
 """Run: python database/app.py"""
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import csv
 import json
 import queue
@@ -19,6 +19,16 @@ CONFIG = BASE / 'sources.json'
 DEFAULTS = [dict(server=name, root='\\\\' + name + '\\analysis', kind='analysis')
             for name in ('Rackstation', 'QTserver', 'QDserver', 'QKserver')]
 DEFAULTS.append(dict(server='SQserver', root='', kind='experiment'))
+
+
+def selected_source_kind(server, root):
+    if server.casefold() != 'sqserver':
+        return 'analysis'
+    path = PureWindowsPath(root)
+    name = path.name.casefold()
+    if name.startswith('an') and name[2:].lstrip('#').isdigit():
+        name = path.parent.name.casefold()
+    return {'data': 'sq_data', 'data_stocked': 'sq_stocked'}.get(name, 'experiment')
 
 
 class App(tk.Tk):
@@ -115,8 +125,8 @@ class App(tk.Tk):
              ('server', 'group', 'container', 'folder_count', 'archive_count', 'folder_names', 'archive_names', 'root', 'last_success', 'status'),
              ('サーバー', 'グループ', 'backup / ANフォルダ', '直下フォルダ数', '直下圧縮ファイル数', 'フォルダ名一覧', '圧縮ファイル名一覧', '保存先', '最終取得 UTC', '取得状態')),
             ('sq_entries', 'SQserver 実験一覧',
-             ('group', 'container', 'entry_type', 'name', 'experiment_at', 'operator', 'machine', 'experiment_number', 'repeat_number', 'experiment_name', 'parse_status', 'exsv_t_tdms', 'exsv_tdms', 'relative_path', 'root', 'last_success', 'status'),
-             ('グループ', 'backup / ANフォルダ', '種類', '元の名前', '実験日時', '操作者', '装置', '実験回数', '繰返し回数', '実験名', '名前解析', 'EXSV/T TDMS', 'EXSV直下 TDMS', '相対パス', '保存先', '最終取得 UTC', '取得状態')),
+             ('group', 'container', 'entry_type', 'name', 'experiment_at', 'operator', 'machine', 'experiment_number', 'repeat_number', 'experiment_name', 'parse_status', 'first_folder', 'remaining_path', 'child_folders', 'exsv_t_tdms', 'exsv_tdms', 'exsvz_t_tdms', 'exsvz_tdms', 'root', 'last_success', 'status'),
+             ('グループ', 'backup / ANフォルダ', '種類', '元の名前', '実験日時', '操作者', '装置', '実験回数', '繰返し回数', '実験名', '名前解析', '相対パスの先頭フォルダ', '残りの相対パス', '実験直下（EXSV / EXSVZ）', 'EXSV/T TDMS', 'EXSV直下 TDMS', 'EXSVZ/T TDMS', 'EXSVZ直下 TDMS', '保存先', '最終取得 UTC', '取得状態')),
             ('summary', '全ファイル集計', self.columns,
              ('サーバー', '保存先', '実験／最上位フォルダ', 'サンプル', '周波数', '区分', '保存分類', '件数', '容量(bytes)', '最終取得 UTC')),
         ]
@@ -245,9 +255,49 @@ class App(tk.Tk):
         dialog.title('保存先設定（1共有につき1行）')
         dialog.transient(self)
         dialog.grab_set()
+        picker = ttk.Frame(dialog)
+        picker.pack(fill='x', padx=10, pady=10)
+        ttk.Label(picker, text='サーバー').pack(side='left')
+        selected_server = tk.StringVar(value=self.target_server.get() or 'SQserver')
+        ttk.Combobox(picker, textvariable=selected_server,
+                     values=list(dict.fromkeys(s['server'] for s in self.configured)),
+                     state='readonly', width=18).pack(side='left', padx=6)
+
+        def browse():
+            server = selected_server.get()
+            root = filedialog.askdirectory(parent=dialog, title=f'{server}：登録するフォルダを選択',
+                                           initialdir='\\\\' + server + '\\', mustexist=True)
+            if not root:
+                return
+            root = str(Path(root))
+            lines = editor.get('1.0', 'end').splitlines()
+            # Replace the empty default; keep other shares when adding another folder.
+            kept = []
+            for line in lines:
+                parts = [part.strip() for part in line.split('|')]
+                if len(parts) == 3 and parts[0] == server:
+                    if not parts[2] or Path(parts[2]) == Path(root):
+                        continue
+                if line.strip():
+                    kept.append(line)
+            kept.append(f'{server} | {selected_source_kind(server, root)} | {root}')
+            editor.delete('1.0', 'end')
+            editor.insert('1.0', '\n'.join(kept))
+
+        ttk.Button(picker, text='フォルダを選んで追加', command=browse).pack(side='left')
+        ttk.Label(dialog, text='フォルダを選ぶと下の設定に追加されます。複数ある場合は繰り返し選び、最後に「保存」を押してください。\nSQserverはbackup_AN1、data、data_stocked、data内のAN1などを選べます。').pack(padx=10)
         ttk.Label(dialog, text='サーバー名 | 種別 | 絶対パス\n種別: analysis（解析）、experiment（SQ自動分類）、sq_recent、sq_data、sq_stocked\nSQserverはbackup_*・data・data_stockedを含む共有、または各グループのパスを指定します。\n共有名で分類できない場合はsq_recent等を選択。backup_*が別共有なら各共有を1行ずつ登録。\n空欄は更新対象外。解析用は実験フォルダを直接含む共有を指定。親子で重なるパスは登録しないでください。').pack(padx=10, pady=10)
-        editor = tk.Text(dialog, width=110, height=15)
-        editor.pack(padx=10)
+        editor_frame = ttk.Frame(dialog)
+        editor_frame.pack(fill='both', expand=True, padx=10)
+        editor_frame.rowconfigure(0, weight=1)
+        editor_frame.columnconfigure(0, weight=1)
+        editor = tk.Text(editor_frame, width=110, height=15, wrap='none')
+        vertical_scroll = ttk.Scrollbar(editor_frame, orient='vertical', command=editor.yview)
+        horizontal_scroll = ttk.Scrollbar(editor_frame, orient='horizontal', command=editor.xview)
+        editor.configure(yscrollcommand=vertical_scroll.set, xscrollcommand=horizontal_scroll.set)
+        editor.grid(row=0, column=0, sticky='nsew')
+        vertical_scroll.grid(row=0, column=1, sticky='ns')
+        horizontal_scroll.grid(row=1, column=0, sticky='ew')
         editor.insert('1.0', '\n'.join(f"{s['server']} | {s['kind']} | {s['root']}" for s in self.configured))
 
         def save():

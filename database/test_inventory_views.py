@@ -101,6 +101,20 @@ class DomainInventoryTests(unittest.TestCase):
         groups, entries = views.sq_inventory(self.db)
         self.assertEqual(next(r for r in entries if r['group'] == 'Recent data')['exsv_t_tdms'], 1)
 
+    def test_sq_path_columns_and_only_exsv_children(self):
+        self.file('backup_AN1/exp/EXSV/T/a.tdms')
+        self.file('backup_AN1/exp/exsvz/b.tdms')
+        self.file('backup_AN1/exp/exsvz/t/c.tdms')
+        self.file('backup_AN1/exp/OTHER/ignored.tdms')
+        self.scan('experiment')
+        row = views.sq_inventory(self.db)[1][0]
+        self.assertEqual(row['first_folder'], 'backup_AN1')
+        self.assertEqual(row['remaining_path'], 'exp')
+        self.assertEqual(row['relative_path'], 'backup_AN1/exp')
+        self.assertEqual(row['child_folders'], 'EXSV; exsvz')
+        self.assertEqual((row['exsv_t_tdms'], row['exsvz_tdms'], row['exsvz_t_tdms']), (1, 1, 1))
+        self.assertEqual(views.sq_inventory(self.db, 'OTHER')[1], [])
+
     def test_recent_container_with_backup_subfolders(self):
         self.folder('Recent data/backup_one/exp/EXSV/T')
         self.folder('Recent data/backup_two')

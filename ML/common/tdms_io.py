@@ -35,6 +35,11 @@ import nptdms
 import numpy as np
 from tqdm import tqdm
 
+# 保存する抽出条件と計算処理で共用する値。
+SAMPLE_RATE_HZ = 10000
+MIN_DURATION_SAMPLES = 10
+WAVE_SEGMENTS = 13
+
 
 def clip_segment(Y_data, st, ss, se):
     """イベント周辺の波形切り出し（fp / tsfresh 双方から共有）。
@@ -203,14 +208,14 @@ def apick(path_load, sample, start_event_id=0):
 
         for m in tqdm(range(len(SP_data))):
             ssp = []
-            sp = SP_data[m] * 10000
-            ss = SS_data[m] * 10000
-            se = SE_data[m] * 10000
-            st = ST_data[m] * 10
+            sp = SP_data[m] * SAMPLE_RATE_HZ
+            ss = SS_data[m] * SAMPLE_RATE_HZ
+            se = SE_data[m] * SAMPLE_RATE_HZ
+            st = ST_data[m] * (SAMPLE_RATE_HZ / 1000)
             si = SI_data[m]
             sb = SB_data[m]
             sd = SD_data[m]
-            sl = SL_data[m] * 10000
+            sl = SL_data[m] * SAMPLE_RATE_HZ
 
             sp = int(sp)
             ss = int(ss)
@@ -221,8 +226,8 @@ def apick(path_load, sample, start_event_id=0):
             sd = round(sd, 6)
             sl = round(sl, 6)
 
-            if st > 10:  # default = 10
-                ss_n = 13  # 分割数設定
+            if st > MIN_DURATION_SAMPLES:
+                ss_n = WAVE_SEGMENTS
                 ssp = fp(Y_data, st, sb, ss, se, si, ss_n)
                 count += 1
 

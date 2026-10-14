@@ -197,6 +197,8 @@ def make_sample_colors(
 
 def _find_meta_path(data_root: Path, sample: str) -> Path:
     """Parquet を優先し、なければ CSV を返す。"""
+    from common.feature_store import sample_directory
+    data_root = sample_directory(data_root, sample)
     stem = f"{sample}_10k_Sample_ANAL_meta"
     parquet_path = data_root / f"{stem}.parquet"
     csv_path = data_root / f"{stem}.csv"
@@ -306,21 +308,22 @@ def create_histograms(
     distance_values: list[float] | None = None,
     distance_min: float | None = None,
     distance_max: float | None = None,
+    feature_versions: dict[str, str] | None = None,
 ) -> Path:
     """指定サンプルを結合し、15特徴量のヒストグラムを保存する。"""
     if not samples:
         raise ValueError("サンプルを1つ以上指定してください。")
 
-    frames = [
-        load_sample_features(
-            sample,
-            data_root,
-            distance_values=distance_values,
-            distance_min=distance_min,
-            distance_max=distance_max,
-        )
-        for sample in samples
-    ]
+    from common.feature_store import inspection_inputs, training_inputs
+    with inspection_inputs('rmc', samples, data_root, feature_versions) as selected:
+        frames = [
+            load_sample_features(
+                sample, data_root, distance_values=distance_values,
+                distance_min=distance_min, distance_max=distance_max,
+            )
+            for sample in samples
+        ]
+        training_inputs()  # Reject results changed while being read.
     combined = pd.concat(frames, ignore_index=True)
     if combined.empty:
         raise RuntimeError("フィルタ後にヒストグラム対象のデータが残りませんでした。")
@@ -336,6 +339,9 @@ def create_histograms(
         distance_tag += f"_distance-max-{distance_max:g}"
     output_dir = output_root / f'{timestamp}_{"-".join(samples)}{distance_tag}'
     output_dir.mkdir(parents=True, exist_ok=False)
+    import json
+    (output_dir / 'feature_inputs.json').write_text(
+        json.dumps(selected, ensure_ascii=False, indent=2), encoding='utf-8')
 
     used_file_records = [
         {"sample": sample, "sample_name": sample_name}

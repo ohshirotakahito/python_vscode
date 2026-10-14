@@ -15,6 +15,7 @@ import os
 import queue
 import sys
 import threading
+import time
 import traceback
 import tkinter as tk
 from pathlib import Path
@@ -69,6 +70,10 @@ class TaskRunner:
         self._panel = None
         self._on_done = None
         self._busy_listeners = []
+        self._status_listeners = []
+        self._started_at = None
+        self._stage = "準備中"
+        self._fraction = 0
         self.root.after(self.POLL_MS, self._poll)
 
     @property
@@ -78,6 +83,10 @@ class TaskRunner:
     def add_busy_listener(self, callback):
         """実行中/待機中が切り替わるたびに callback(busy: bool) を呼ぶ。"""
         self._busy_listeners.append(callback)
+
+    def add_status_listener(self, callback):
+        """Publish elapsed time and stage on the UI thread, even during long calculations."""
+        self._status_listeners.append(callback)
 
     def run(self, func, panel: "ProgressPanel", on_done=None) -> bool:
         """func(progress_callback) を別スレッドで実行する。
@@ -89,6 +98,9 @@ class TaskRunner:
         if self._busy:
             messagebox.showwarning("実行中", "別の処理が実行中です。終わるまでお待ちください。")
             return False
+        self._started_at = time.monotonic()
+        self._stage = "準備中"
+        self._fraction = 0
         self._set_busy(True)
         self._panel = panel
         self._on_done = on_done
@@ -120,12 +132,15 @@ class TaskRunner:
 
     def _poll(self):
         try:
-            while True:
+            for _ in range(200):  # Let Tk repaint even when tqdm produces many messages.
                 kind, payload = self._q.get_nowait()
                 panel = self._panel
                 if kind == "log" and panel:
                     panel.log(payload)
                 elif kind == "progress" and panel:
+                    current, total, message = payload
+                    self._stage = message or self._stage
+                    self._fraction = min(max(current / max(total, 1), 0), 1)
                     panel.set_progress(*payload)
                 elif kind == "error":
                     exc, tb = payload
@@ -142,7 +157,16 @@ class TaskRunner:
                         self._on_done(payload)
         except queue.Empty:
             pass
-        self.root.after(self.POLL_MS, self._poll)
+        except Exception as exc:  # 画面更新の失敗でも次の完了通知を受信する
+            tb = traceback.format_exc()
+            if self._panel:
+                self._panel.log("\n" + tb)
+            messagebox.showerror("画面更新エラー", f"{type(exc).__name__}: {exc}")
+        finally:
+            elapsed = int(time.monotonic() - self._started_at) if self._started_at is not None else 0
+            for callback in self._status_listeners:
+                callback(self._busy, elapsed, self._stage, self._fraction)
+            self.root.after(self.POLL_MS, self._poll)
 
 
 class ProgressPanel(ttk.LabelFrame):
@@ -197,7 +221,8 @@ class CheckList(ttk.Frame):
         super().__init__(master)
         self._on_change = on_change
         self.listbox = tk.Listbox(self, selectmode="multiple", exportselection=False,
-                                  height=height, activestyle="none", font=JP_FONT)
+                                  height=height, activestyle="none", font=JP_FONT,
+                                  selectbackground='#174ea6', selectforeground='white')
         scroll = ttk.Scrollbar(self, orient="vertical", command=self.listbox.yview)
         self.listbox.configure(yscrollcommand=scroll.set)
         self.listbox.grid(row=0, column=0, sticky="nsew")
@@ -225,6 +250,13 @@ class CheckList(ttk.Frame):
         self._changed()
 
     def _changed(self):
+        # Windows can hide the selection highlight when the list loses focus.
+        # Set the underlying row colors as well so checked items remain visible.
+        selected = set(self.listbox.curselection())
+        for index in range(len(self._items)):
+            self.listbox.itemconfigure(index,
+                background='#dbeafe' if index in selected else 'white',
+                foreground='#174ea6' if index in selected else '#111111')
         if self._on_change:
             self._on_change(self.get_selected())
 
@@ -239,6 +271,9 @@ class DataTable(ttk.Frame):
 
     def __init__(self, master, height=10):
         super().__init__(master)
+        self._df = pd.DataFrame()
+        self._sort_column = None
+        self._sort_ascending = True
         self.tree = ttk.Treeview(self, show="headings", height=height)
         vs = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
         hs = ttk.Scrollbar(self, orient="horizontal", command=self.tree.xview)
@@ -252,6 +287,10 @@ class DataTable(ttk.Frame):
         self.rowconfigure(0, weight=1)
 
     def show(self, df: pd.DataFrame | None):
+        self._df = df.copy() if df is not None else pd.DataFrame()
+        if self._sort_column not in self._df.columns:
+            self._sort_column = None
+            self._sort_ascending = True
         self.tree.delete(*self.tree.get_children())
         if df is None or df.empty:
             self.tree["columns"] = ()
@@ -267,13 +306,33 @@ class DataTable(ttk.Frame):
         for col, src in zip(columns, df.columns):
             longest = max([text_width(col)] + [text_width(v) for v in sample[src]])
             width = max(60, min(320, 8 * longest + 16))
-            self.tree.heading(col, text=col)
+            self.tree.heading(col, text=col, command=lambda src=src: self._sort_by(src))
             self.tree.column(col, width=width, anchor="w" if col in ("file", "mix_sample") else "e",
                              stretch=False)
-        for row in df.head(self.MAX_ROWS).itertuples(index=False):
-            self.tree.insert("", "end", values=["" if pd.isna(v) else v for v in row])
+        self._render_rows()
         extra = f"（先頭 {self.MAX_ROWS} 行のみ表示）" if len(df) > self.MAX_ROWS else ""
         self.note.configure(text=f"{len(df)} 行 {extra}")
+
+    def _sort_by(self, column):
+        if column == self._sort_column:
+            self._sort_ascending = not self._sort_ascending
+        else:
+            self._sort_column = column
+            self._sort_ascending = True
+        self._render_rows()
+
+    def _render_rows(self):
+        df = self._df
+        if self._sort_column is not None:
+            df = df.sort_values(self._sort_column, ascending=self._sort_ascending,
+                                kind="stable", na_position="last")
+        self.tree.delete(*self.tree.get_children())
+        for col in self._df.columns:
+            arrow = (" ▲" if self._sort_ascending else " ▼") if col == self._sort_column else ""
+            self.tree.heading(str(col), text=f"{col}{arrow}")
+        for row in df.head(self.MAX_ROWS).itertuples(index=False, name=None):
+            self.tree.insert("", "end", values=["" if pd.isna(v) else v for v in row])
+        self.tree.yview_moveto(0)
 
 
 class ScrollableFrame(ttk.Frame):

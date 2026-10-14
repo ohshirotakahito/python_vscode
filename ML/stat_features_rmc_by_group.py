@@ -38,6 +38,8 @@ DEFAULT_MAX_GROUPS_PER_PLOT = 12
 
 
 def find_meta_path(data_root: Path, sample: str) -> Path:
+    from common.feature_store import sample_directory
+    data_root = sample_directory(data_root, sample)
     stem = f"{sample}_10k_Sample_ANAL_meta"
     for suffix in (".parquet", ".csv"):
         candidate = data_root / f"{stem}{suffix}"

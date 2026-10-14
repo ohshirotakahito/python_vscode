@@ -11,6 +11,7 @@
 """
 
 import importlib
+import json
 import tkinter as tk
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tkinter import messagebox, ttk
@@ -84,7 +85,8 @@ class ExtractTab(ttk.Frame):
         form.pack(fill="x", pady=(6, 0))
         form.columnconfigure(1, weight=1)
 
-        self.method = tk.StringVar(value=list(METHODS)[0])
+        self.method = tk.StringVar(value=next(
+            label for label, method in METHODS.items() if method["feature_set"] == "rmc"))
         ttk.Label(form, text="抽出手法").grid(row=0, column=0, sticky="nw", padx=(4, 12), pady=3)
         method_box = ttk.Frame(form)
         method_box.grid(row=0, column=1, sticky="w", pady=3)
@@ -106,6 +108,8 @@ class ExtractTab(ttk.Frame):
                   lambda: self._pick("samples"))
         self.path_label = ttk.Label(form, text="", foreground="#666")
         self.path_label.grid(row=5, column=1, columnspan=2, sticky="w")
+        self.condition_note = tk.StringVar()
+        self._row(form, 6, "条件メモ（処理設定は変更しません）", ttk.Entry(form, textvariable=self.condition_note))
         for var in (self.method, self.server, self.share, self.ex, self.samples):
             var.trace_add("write", lambda *_: self._settings_changed())
         self._update_path()
@@ -264,6 +268,9 @@ class ExtractTab(ttk.Frame):
         vs.pack(side="right", fill="y")
         for status, color in STATUS_COLORS.items():
             self.files.tag_configure(status, foreground=color)
+        self.files.tag_configure('checked', background='#dbeafe')
+        self.files.tag_configure('unchecked', background='#ffffff')
+        ttk.Label(frame, text='淡い青の行：抽出対象（チェック済み）／白の行：対象外').pack(anchor='w')
         self.files.bind("<ButtonRelease-1>", self._on_click)
         self.files.bind("<space>", lambda _e: self._toggle(self.files.selection()))
 
@@ -319,7 +326,7 @@ class ExtractTab(ttk.Frame):
             self.checked = {i for i, r in df.iterrows()
                             if (r["sample"], r["file_key"]) in keep_keys and r["status"] in SELECTABLE}
         for i, r in df.iterrows():
-            self.files.insert("", "end", iid=str(i), tags=(r["status"],), values=(
+            self.files.insert("", "end", iid=str(i), tags=(r["status"], 'checked' if i in self.checked else 'unchecked'), values=(
                 self._mark(i), r["sample"], _fmt_value(r["file_no"], "{:03.0f}"),
                 r["status"] if r["status"] != "Tフォルダなし" else f"Tフォルダなし: {r['raw_name']}",
                 _fmt_time(r["measured_at"]), _fmt_value(r["gap_nm"], "{:.3f}"),
@@ -381,6 +388,7 @@ class ExtractTab(ttk.Frame):
         for i in indices:
             (self.checked.add if check else self.checked.discard)(i)
             self.files.set(str(i), "check", self._mark(i))
+            self.files.item(str(i), tags=(self.scan_df.at[i, 'status'], 'checked' if i in self.checked else 'unchecked'))
         self._update_selection_label()
 
     def _check_where(self, predicate):
@@ -390,6 +398,7 @@ class ExtractTab(ttk.Frame):
                         if r["status"] in SELECTABLE and predicate(r)}
         for i in self.scan_df.index:
             self.files.set(str(i), "check", self._mark(i))
+            self.files.item(str(i), tags=(self.scan_df.at[i, 'status'], 'checked' if i in self.checked else 'unchecked'))
         self._update_selection_label()
 
     def _check_gap(self):
@@ -422,6 +431,9 @@ class ExtractTab(ttk.Frame):
             messagebox.showerror("入力を確認してください", str(e))
             return
         module_name = METHODS[self.method.get()]["module"]
+        feature_set = self._feature_set()
+        extraction_conditions = {"note": self.condition_note.get().strip()}
+        requested_samples = list(samples)
 
         if self.scan_key == self._current_key() and not self.scan_df.empty:
             chosen = self.scan_df.loc[sorted(self.checked)]
@@ -434,10 +446,14 @@ class ExtractTab(ttk.Frame):
             message = f"{len(samples)} サンプル・{len(chosen)} ファイルから特徴量を抽出します。"
             if n_done:
                 message += (f"\n\nうち {n_done} ファイルは抽出済みです"
-                            "（同じイベントは重複として自動でスキップされます）。")
+                            "（選択したファイルから新しい版を作成し、過去の結果は保持します）。")
             if not messagebox.askyesno("抽出の確認", message + "\n\n実行しますか？"):
                 return
         else:
+            if self.scan_key is not None:
+                messagebox.showinfo('ファイルを再確認してください',
+                                    '設定が変わっています。「① ファイルを確認」を押し直してから抽出してください。')
+                return
             if not messagebox.askyesno(
                     "ファイル確認をしていません",
                     "「ファイルを確認」をしていない（または設定を変更した）ため、"
@@ -446,16 +462,37 @@ class ExtractTab(ttk.Frame):
             files_by_sample = None
 
         def task(progress):
+            for sample in requested_samples:
+                if sample not in samples:
+                    print(f'[{sample}] スキップ: 選択されたANALファイルがありません')
             module = importlib.import_module(module_name)
-            return module.run_extraction(samples, server=server, keyfolder=share, ex=ex,
-                                         progress_callback=progress, files_by_sample=files_by_sample)
+            root = paths.feature_dir(feature_set)
+            before = set(root.glob('*/*/extraction_manifest.json'))
+            output_dir = module.run_extraction(samples, server=server, keyfolder=share, ex=ex,
+                                         progress_callback=progress, files_by_sample=files_by_sample,
+                                         extraction_conditions=extraction_conditions)
+            empty_results = []
+            for manifest in set(root.glob('*/*/extraction_manifest.json')) - before:
+                record = json.loads(manifest.read_text(encoding='utf-8'))
+                if record.get('status') == 'failed' and record.get('event_count') == 0:
+                    reasons = {}
+                    for warning in record.get('warnings', []):
+                        reason = warning['reason']
+                        reasons[reason] = reasons.get(reason, 0) + 1
+                    detail = '、'.join(f'{reason}: {count}ファイル' for reason, count in reasons.items())
+                    empty_results.append(f"{record['sample']}: 抽出イベント0件\n{detail}")
+            return output_dir, empty_results
 
-        def done(output_dir):
+        def done(result):
+            output_dir, empty_results = result
             self.output_dir = output_dir
             self.progress.log(f"\n保存先: {output_dir}\n")
             self.refresh_history()
             if self.on_features_changed:
                 self.on_features_changed()
+            if empty_results:
+                messagebox.showwarning('抽出結果の確認', '\n\n'.join(empty_results) +
+                                       '\n\n0件の版は学習候補に含めません。ほかの保存済み結果は使用できます。')
             if files_by_sample is not None:
                 # 抽出後の状態（抽出済み件数・最終抽出日時）に更新する
                 self.after(300, lambda: self._scan(auto=True))
@@ -556,7 +593,10 @@ class ExtractTab(ttk.Frame):
             return
         run_id = self.history_runs.at[int(selection[0]), "run_id"]
         files = self.history_files[self.history_files["run_id"] == run_id]
-        self.run_files.show(files[["file_key", "check", "events", "anal_path"]].rename(columns={
+        self.run_files.show(files[["extracted_at", "server", "share", "ex", "sample",
+                                   "file_number", "file_key", "check", "events", "anal_path"]].rename(columns={
+            "extracted_at": "抽出日時（日本時間）", "server": "サーバー", "share": "共有フォルダ",
+            "ex": "実験", "sample": "サンプル", "file_number": "ファイルナンバー",
             "file_key": "ファイル", "check": "読込結果", "events": "イベント数", "anal_path": "ANALファイル"}))
 
     def refresh_samples(self):

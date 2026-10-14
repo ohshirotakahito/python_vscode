@@ -66,6 +66,7 @@ from imblearn.under_sampling import RandomUnderSampler
 import xgboost as xgb
 
 import common.paths as paths
+from common.feature_store import sample_directory, versioned_training
 from common.eval_viz import conmtx
 
 # 追加解析（SHAP・PCA/UMAP・統計検定・クラス間距離解析）は common/ml_analysis.py に
@@ -142,7 +143,7 @@ def dfdata(smns, data_root=None):
     dnf = pd.DataFrame(columns=columns)
     for smn in smns:
         sam = smn + '_10k_Sample_ANAL_rmb'
-        datum = np.load(f'{data_root}/{sam}.npy', allow_pickle=True)
+        datum = np.load(sample_directory(data_root, smn) / f'{sam}.npy', allow_pickle=True)
         if datum.ndim != 2:
             raise ValueError(f'{sam}.npy must be a 2-D array, got shape {datum.shape}')
 
@@ -158,11 +159,16 @@ def dfdata(smns, data_root=None):
             )
 
         df = pd.DataFrame(data=datum, columns=loaded_columns)
+        from common.training_file_filter import filter_training_rows
+        df = filter_training_rows(df, smn, traditional=True)
         df = df[df['signal_time'].astype(int) > st_l_lmt]
         df = df[df['signal_time'].astype(int) < st_h_lmt]
         df = df[df['signal_baseline'].astype(float) < sb_h_lmt]
         df = df[df['signal_baseline'].astype(float) > sb_l_lmt]
         df = df[df['signal_intensity'].astype(float) < si_h_lmt]
+        from common.training_file_filter import selection_manifest
+        if df.empty and selection_manifest():
+            raise ValueError(f'{smn}: ファイル条件と既存のイベント範囲条件を満たすイベントがありません。')
         df = df[df['signal_intensity'].astype(float) > si_l_lmt]
 
         # --- 派生特徴量の計算（common/data_pipeline.load_meta_data()と同じ定義） ---
@@ -314,6 +320,7 @@ def mapping(data, bst):
 _TOTAL_ANALYSIS_STAGES = 5
 
 
+@versioned_training('rmb')
 def run_analysis(smns, progress_callback=None):
     """指定したクラスの組み合わせについて、学習から結果保存まで実行する。
 

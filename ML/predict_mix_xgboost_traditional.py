@@ -153,7 +153,13 @@ def load_and_filter(path: str, filters: Optional[dict] = None) -> pd.DataFrame:
              呼び出し側で明示的に渡すこと。common/data_pipeline.pyのような
              モジュール変数の暗黙参照はしない設計にしている）。
     """
-    datum = np.load(path, allow_pickle=True)
+    from common.feature_store import sample_directory
+    from pathlib import Path
+    source = Path(path)
+    suffix = '_10k_Sample_ANAL_rmb.npy'
+    if source.name.endswith(suffix):
+        source = sample_directory(source.parent, source.name[:-len(suffix)]) / source.name
+    datum = np.load(source, allow_pickle=True)
     df = pd.DataFrame(data=datum, columns=COLUMNS)
 
     df["signal_time"] = df["signal_time"].astype(float)
@@ -219,10 +225,11 @@ def _source_fingerprints(smns: List[str]) -> Dict[str, Optional[str]]:
     fps: Dict[str, Optional[str]] = {}
     for smn in smns:
         sam = f"{smn}_10k_Sample_ANAL_rmb"
-        npy_path = os.path.join(DATA_DIR, f"{sam}.npy")
+        from common.feature_store import sample_directory
+        npy_path = sample_directory(DATA_DIR, smn) / f"{sam}.npy"
         if os.path.exists(npy_path):
             st = os.stat(npy_path)
-            fps[smn] = f"{st.st_size}_{int(st.st_mtime)}"
+            fps[smn] = f"{npy_path.resolve()}_{st.st_size}_{st.st_mtime_ns}"
         else:
             fps[smn] = None
     return fps
@@ -323,7 +330,8 @@ def train(smns: List[str], filters: Optional[dict] = None) -> TrainArtifacts:
 
     for smn in smns:
         sam = f"{smn}_10k_Sample_ANAL_rmb"
-        npy_path = os.path.join(DATA_DIR, f"{sam}.npy")
+        from common.feature_store import sample_directory
+        npy_path = sample_directory(DATA_DIR, smn) / f"{sam}.npy"
         if not os.path.exists(npy_path):
             print(f"[WARN] missing file: {npy_path} (skip)")
             continue
@@ -512,7 +520,8 @@ def predict_events(test_smn: str, art: TrainArtifacts,
     npyが無い／絞り込み後に空の場合は空のDataFrameを返す。
     """
     sam = f"{test_smn}_10k_Sample_ANAL_rmb"
-    npy_path = os.path.join(DATA_DIR, f"{sam}.npy")
+    from common.feature_store import sample_directory
+    npy_path = sample_directory(DATA_DIR, test_smn) / f"{sam}.npy"
     if not os.path.exists(npy_path):
         print(f"[WARN] missing file: {npy_path} (skip)")
         return pd.DataFrame()

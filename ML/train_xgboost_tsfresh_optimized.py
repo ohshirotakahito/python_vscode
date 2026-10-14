@@ -53,8 +53,10 @@ def load_metadata(args):
     frames, sources = [], {}
     for sample in args.samples:
         stem = sample + '_10k_Sample_ANAL'
-        meta_path = table_path(args.data_root, stem + '_meta')
-        long_path = table_path(args.data_root, stem + '_tsfresh_input')
+        from common.feature_store import sample_directory
+        directory = sample_directory(args.data_root, sample)
+        meta_path = table_path(directory, stem + '_meta')
+        long_path = table_path(directory, stem + '_tsfresh_input')
         if not meta_path.exists() or not long_path.exists():
             raise FileNotFoundError(f'{sample}: {meta_path} / {long_path}')
         frame = read_table(meta_path)

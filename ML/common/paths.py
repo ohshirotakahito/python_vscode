@@ -231,6 +231,15 @@ def write_run_manifest(run_dir, run_timestamp, smns, config=None,
     if extra_info:
         manifest.update(extra_info)
 
+    from common.feature_store import training_inputs
+    selected_inputs = training_inputs()
+    from common.training_file_filter import selection_manifest
+    file_selection = selection_manifest()
+    if file_selection:
+        manifest['training_file_filter'] = file_selection
+    if selected_inputs:
+        manifest['feature_inputs'] = selected_inputs
+
     manifest_path = run_dir / 'run_manifest.json'
     with open(manifest_path, 'w', encoding='utf-8') as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)

@@ -31,7 +31,8 @@ common/extract_catalog.py
 import glob
 import os
 import re
-from datetime import datetime
+import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
@@ -96,9 +97,15 @@ def _experiment_of(ex_id) -> str:
     return m.group("id") if m else ""
 
 
-def extracted_event_counts(feature_set: str, sample: str) -> dict[tuple[str, str], int]:
+def extracted_event_counts(feature_set: str, sample: str, ex=None) -> dict[tuple[str, str], int]:
     """保存済みの特徴量ファイルから、(ファイルキー, 実験ID) ごとのイベント数を返す（無ければ空）。"""
-    data_root = paths.feature_dir(feature_set)
+    from common.feature_store import sample_directory
+    data_root = sample_directory(paths.feature_dir(feature_set), sample)
+    if ex is not None:
+        from common.feature_store import list_versions
+        root = paths.feature_dir(feature_set)
+        matching = list_versions(feature_set, sample, root=root, experiment=ex)
+        data_root = Path(matching[0]['directory']) if matching else root
     stem = f"{sample}_10k_Sample_ANAL"
     try:
         if feature_set == "rmc":
@@ -117,6 +124,11 @@ def extracted_event_counts(feature_set: str, sample: str) -> dict[tuple[str, str
                     array = np.load(path, mmap_mode="r")
                 except ValueError:  # object配列はmmapできない
                     array = np.load(path, allow_pickle=True)
+                # イベントが無い場合、従来の抽出処理は shape=(0,) で保存する。
+                if array.size == 0:
+                    return {}
+                if array.ndim != 2 or array.shape[1] < 3:
+                    raise ValueError(f"特徴量配列の形式が不正です: shape={array.shape}")
                 files = np.asarray(array[:, 1]).astype(str)
                 experiments = [_experiment_of(v) for v in np.asarray(array[:, 2]).astype(str)]
                 return dict(pd.Series(list(zip(files, experiments))).value_counts())
@@ -169,8 +181,8 @@ def scan_sample(server: str, share: str, ex: str, sample: str, feature_set: str)
             if key not in anal or (analyzed and anal[key][1] and analyzed > anal[key][1]):
                 anal[key] = (path, analyzed)
 
-    extracted = extracted_event_counts(feature_set, sample)
-    last_extracted = last_extracted_by_file(feature_set, sample)
+    extracted = extracted_event_counts(feature_set, sample, ex=ex)
+    last_extracted = last_extracted_by_file(feature_set, sample, ex=ex)
 
     rows = []
     for key in sorted(set(raw) | set(anal)):
@@ -209,7 +221,27 @@ def _history_paths(feature_set):
 
 
 def _append_csv(df: pd.DataFrame, path: Path):
+    if path.exists():
+        columns = pd.read_csv(path, nrows=0).columns.tolist()
+        if columns != df.columns.tolist():
+            previous = pd.read_csv(path, dtype={"sample": str, "run_id": str})
+            combined = pd.concat([previous, df], ignore_index=True)
+            if "file_key" in combined:
+                combined = _with_file_numbers(combined)
+            temporary = path.with_suffix(".tmp")
+            combined.to_csv(temporary, index=False, encoding="utf-8-sig")
+            temporary.replace(path)
+            return
     df.to_csv(path, mode="a", header=not path.exists(), index=False, encoding="utf-8-sig")
+
+
+def _with_file_numbers(files):
+    """保存済みのファイルキーから番号を補完する。判別できない番号は空欄。"""
+    derived = pd.to_numeric(files["file_key"].astype(str).str.extract(
+        r"#(\d+)$", expand=False), errors="coerce").astype("Int64")
+    if "file_number" in files:
+        derived = pd.to_numeric(files["file_number"], errors="coerce").astype("Int64").fillna(derived)
+    return files.assign(file_number=derived)
 
 
 def record_extraction(feature_set, server, share, ex, sample, file_log,
@@ -218,9 +250,16 @@ def record_extraction(feature_set, server, share, ex, sample, file_log,
 
     file_log: [(tdmsのパス, tdms_checkerの結果, 抽出したイベント数), ...]
     """
-    run_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-    extracted_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.now(timezone(timedelta(hours=9)))
+    run_id = now.strftime("%Y%m%d_%H%M%S_%f")
+    extracted_at = now.isoformat()
     runs_path, files_path = _history_paths(feature_set)
+    if output_path is not None and (Path(output_path).parent / "extraction_manifest.json").exists():
+        root = Path(output_path).parent
+        version = json.loads((root / "extraction_manifest.json").read_text(encoding="utf-8"))
+        run_id = version["run_id"]
+        extracted_at = version["extracted_at"]
+        runs_path, files_path = root / RUNS_FILE, root / FILES_FILE
     common = {"run_id": run_id, "extracted_at": extracted_at, "feature_set": feature_set,
               "server": server, "share": share, "ex": ex, "sample": sample}
     files = pd.DataFrame([
@@ -229,6 +268,7 @@ def record_extraction(feature_set, server, share, ex, sample, file_log,
          "check": CHECK_LABELS.get(check, str(check)), "events": int(n), "anal_path": p}
         for p, check, n in file_log
     ], columns=list(common) + ["file_key", "check", "events", "anal_path"])
+    files = _with_file_numbers(files)
     runs = pd.DataFrame([{
         **common, "n_files": len(file_log),
         "n_files_ok": sum(1 for _p, check, _n in file_log if check == 1),
@@ -248,19 +288,22 @@ def load_history(feature_set=None) -> tuple[pd.DataFrame, pd.DataFrame]:
     sets = [feature_set] if feature_set else ["rmb", "rmc"]
     runs, files = [], []
     for fs in sets:
-        runs_path, files_path = _history_paths(fs)
-        if runs_path.exists():
-            runs.append(pd.read_csv(runs_path))
-        if files_path.exists():
-            files.append(pd.read_csv(files_path))
+        root = paths.feature_dir(fs)
+        for filename, target in ((RUNS_FILE, runs), (FILES_FILE, files)):
+            candidates = [root / filename, *root.glob(f"*/*/{filename}")]
+            for candidate in candidates:
+                if candidate.exists():
+                    target.append(pd.read_csv(candidate, dtype={"sample": str, "run_id": str}))
     runs_df = pd.concat(runs, ignore_index=True) if runs else pd.DataFrame()
     files_df = pd.concat(files, ignore_index=True) if files else pd.DataFrame()
+    if not files_df.empty:
+        files_df = _with_file_numbers(files_df)
     if not runs_df.empty:
         runs_df = runs_df.sort_values("run_id", ascending=False, ignore_index=True)
     return runs_df, files_df
 
 
-def last_extracted_by_file(feature_set, sample) -> dict[str, str]:
+def last_extracted_by_file(feature_set, sample, ex=None) -> dict[str, str]:
     """履歴から、ファイルキーごとの最終抽出日時を返す。
 
     最後に読んだときに読み込めなかった場合は '2026-09-30 11:49:13（Signal列なし）' のように
@@ -269,6 +312,8 @@ def last_extracted_by_file(feature_set, sample) -> dict[str, str]:
     _runs, files = load_history(feature_set)
     if files.empty:
         return {}
+    if ex is not None:
+        files = files[files['ex'].astype(str) == str(ex)]
     files = files[files["sample"].astype(str) == str(sample)].sort_values("extracted_at")
     latest = files.groupby("file_key").tail(1)
     return {r.file_key: r.extracted_at + ("" if r.check == "OK" else f"（{r.check}）")
