@@ -216,6 +216,7 @@ class TdmsMultiFolderBrowser:
         pad_for_std=500,
         save_subfolder_per_aa=True,
         min_width_ms=0.2,
+        figure_factory=None,
     ):
         if not anal_folders:
             raise RuntimeError("ANALフォルダが1つも見つかりませんでした。")
@@ -278,7 +279,8 @@ class TdmsMultiFolderBrowser:
         self.show_pulse = True
         self.show_peak_value = True
 
-        self.fig, self.ax = plt.subplots(figsize=(14, 7))
+        self.fig, self.ax = (figure_factory() if figure_factory is not None
+                             else plt.subplots(figsize=(14, 7)))
         plt.subplots_adjust(left=0.18, bottom=0.26)
 
         # ==========================
@@ -382,7 +384,12 @@ class TdmsMultiFolderBrowser:
             sample = self.anal_folder_samples[self.folder_idx]
         else:
             anal = Path(self.current_anal_folder())
-            sample = anal.parent.name
+            # ANAL can be nested below T; its immediate parent is not the
+            # sample name. Resolve the measurement's <sample>_10k_Sample folder.
+            measurement = next((parent for parent in anal.parents
+                                if parent.name.endswith("_10k_Sample")), None)
+            sample = (measurement.name[:-len("_10k_Sample")]
+                      if measurement is not None else anal.parent.name)
 
         return f"{self.run_datetime}_{sample}"
 
@@ -682,6 +689,10 @@ class TdmsMultiFolderBrowser:
 
         i0 = int(np.floor(self.sel_tmin / self.dt))
         i1 = int(np.ceil(self.sel_tmax / self.dt))
+        # Embedded previews already resolve exact sample boundaries. Reuse
+        # those indices so floating-point division cannot change export names.
+        if getattr(self, "_save_indices_override", None) is not None:
+            i0, i1 = self._save_indices_override
 
         i0 = max(0, min(i0, self.n - 1))
         i1 = max(0, min(i1, self.n))

@@ -22,6 +22,7 @@ from scipy.ndimage import find_objects, label, percentile_filter
 from scipy.signal import savgol_filter
 
 from view_tdms_signal import TdmsMultiFolderBrowser
+from noise_estimation import lower_mode_noise, analysis_bounds
 
 
 def find_direct_tdms_files(folder):
@@ -164,14 +165,19 @@ def _downsample_indices(y, max_points=12000):
     if n <= max_points:
         return np.arange(n)
 
-    n_buckets = max(1, max_points // 2)
-    bucket = n // n_buckets
-    m = bucket * n_buckets
-    block = np.asarray(y[:m]).reshape(n_buckets, bucket)
-    base = np.arange(n_buckets) * bucket
+    # Ceiling division covers the entire view. Floor division used to drop
+    # the remaining samples and connect the last bucket to the final sample.
+    n_buckets = max(1, (max_points - 2) // 2)
+    bucket = (n + n_buckets - 1) // n_buckets
+    full_buckets = n // bucket
+    m = bucket * full_buckets
+    block = np.asarray(y[:m]).reshape(full_buckets, bucket)
+    base = np.arange(full_buckets) * bucket
     lo = base + block.argmin(axis=1)
     hi = base + block.argmax(axis=1)
-    return np.unique(np.concatenate([lo, hi, (n - 1,)]))
+    tail = np.asarray(y[m:])
+    tail_indices = [m + int(tail.argmin()), m + int(tail.argmax())] if len(tail) else []
+    return np.unique(np.concatenate([lo, hi, tail_indices, (0, n - 1)]).astype(int))
 
 
 class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
@@ -187,8 +193,13 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         overview_candidates=12,
         overview_activity_k=4.0,
         overview_min_activity=0.002,
+        noise_method="mad",
         **kwargs,
     ):
+        if noise_method not in ("mad", "lower_mode"):
+            raise ValueError(f"Unknown noise method: {noise_method}")
+        self.noise_method = noise_method
+        self.noise_estimation_status = "MAD"
         self.baseline_percentile = float(baseline_percentile)
         self.threshold_k1 = float(threshold_k1)
         self.threshold_k2 = float(threshold_k2)
@@ -811,6 +822,10 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
             0.01, 0.99, "", transform=ax.transAxes, fontsize=8,
             verticalalignment="top", bbox=dict(boxstyle="round", alpha=0.2),
         )
+        self._stats_text = ax.text(
+            0.01, 0.93, "", transform=ax.transAxes, fontsize=9,
+            va="top", bbox=dict(boxstyle="round", facecolor="white", alpha=0.9), zorder=10,
+        )
         self._sel_info = ax.text(
             0.99, 0.02, "", transform=ax.transAxes, ha="right", va="bottom",
             fontsize=10, bbox=dict(boxstyle="round", facecolor="#fff3cd", alpha=0.9),
@@ -819,7 +834,7 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         self._sel_info.set_visible(False)
 
         ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Signal Amplitude")
+        ax.set_ylabel("Signal amplitude (nA)")
         ax.grid(True, alpha=0.2)
         self._legend = ax.legend(loc="upper right")
         self._artists_ready = True
@@ -922,7 +937,7 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         self._preview_sel = (self.sel_tmin, self.sel_tmax, self.chunk_idx)
         self._preview_show_pv = bool(self.show_peak_value)
 
-        self._preview_fig = plt.figure(figsize=(12, 6.6))
+        self._preview_fig = self._create_preview_figure()
         try:
             self._preview_fig.canvas.manager.set_window_title("Save preview")
         except Exception:
@@ -948,6 +963,9 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         except Exception:
             pass
         self._preview_fig.canvas.draw_idle()
+
+    def _create_preview_figure(self):
+        return plt.figure(figsize=(12, 6.6))
 
     def _on_preview_toggle(self, label):
         self._preview_show_pv = bool(self._preview_pv_check.get_status()[0])
@@ -1022,6 +1040,9 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         ax.clear()
         y = np.asarray(self.data[i0:i1], dtype=float)
         t = np.arange(i0, i1) * self.dt
+        relative_time = getattr(self, "relative_time", False)
+        if relative_time:
+            t = (np.arange(i1 - i0) * self.dt) * 1000.0
         baseline, _, _, noise = self._compute_baseline_threshold(y, i0)
         pulses, t1, t2 = detect_pulses_hysteresis(
             y, baseline, noise, dt=self.dt,
@@ -1030,7 +1051,7 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
             min_width_ms=self.min_width_ms,
         )
 
-        ax.plot(t, y, color="#1565c0", linewidth=1.0, label="Signal")
+        ax.plot(t, y, color=getattr(self, "signal_color", "#1565c0"), linewidth=1.0, label="Signal")
         ax.plot(t, baseline, color="#2e7d32", linewidth=1.5, label="Baseline")
         ax.plot(t, t1, color="#ef6c00", linestyle="--", linewidth=1.0,
                 label=f"Threshold t1 (+{self.threshold_k1:g} sigma)")
@@ -1059,7 +1080,7 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
             )
             if show_peak_values:
                 ax.annotate(
-                    f"Peak {pulse_number}\nt={peak_time:.6g} s\n"
+                    f"Peak {pulse_number}\nt={peak_time:.6g} {'ms' if relative_time else 's'}\n"
                     f"y={peak_value:.6g}",
                     xy=(peak_time, peak_value),
                     xytext=(6, 12 + 18 * ((pulse_number - 1) % 2)),
@@ -1071,17 +1092,30 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
                 )
 
         ax.set_title(f"Selected TDMS signal | {self.current_base_name()} | "
-                     f"Peaks: {len(pulses)}")
-        ax.set_xlabel("Time (s)")
-        ax.set_ylabel("Signal amplitude")
+                     f"Peaks: {len(pulses)} | Duration: {(i1-i0)*self.dt*1000:.6g} ms")
+        ax.set_xlabel("Time from region start (ms)" if relative_time else "Measurement time (s)")
+        ax.set_ylabel("Signal amplitude (nA)")
+        if getattr(self, "tight_time_edges", False) and len(t) > 1:
+            ax.set_xlim(float(t[0]), float(t[-1]))
         ax.grid(True, alpha=0.25)
         ax.legend(loc="best")
+        peak_values = [float(np.max(y[p["start_index"]:p["end_index"]]))
+                       for p in pulses if p["end_index"] > p["start_index"]]
+        peak_mean = f"{np.mean(peak_values)*1000:.2f} pA" if peak_values else "-"
+        ax.text(0.01, 0.97,
+                f"Waveform σ: {np.std(y)*1000:.2f} pA | Noise σ: {noise*1000:.2f} pA | Mean peak: {peak_mean}\n"
+                f"Noise method: {self.noise_estimation_status}",
+                transform=ax.transAxes, va="top", fontsize=9,
+                bbox=dict(boxstyle="round", facecolor="white", alpha=0.9), zorder=10)
 
         # Carry the main plot's manual axis range into the exported figure so
         # "what you see is what you save".
         if self._xlim_user[0] is not None or self._xlim_user[1] is not None:
             x0 = self._xlim_user[0] if self._xlim_user[0] is not None else float(t[0])
             x1 = self._xlim_user[1] if self._xlim_user[1] is not None else float(t[-1])
+            if relative_time:
+                x0 = (self._xlim_user[0] - i0*self.dt)*1000 if self._xlim_user[0] is not None else float(t[0])
+                x1 = (self._xlim_user[1] - i0*self.dt)*1000 if self._xlim_user[1] is not None else float(t[-1])
             if x1 > x0:
                 ax.set_xlim(x0, x1)
         if self._ylim_user[0] is not None or self._ylim_user[1] is not None:
@@ -1103,8 +1137,12 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         if window % 2 == 0:
             window += 1
         context = max(window // 2 + max(self.sg_window, 1), self.pad_for_std)
-        ext_start = max(0, global_start - context)
-        ext_end = min(self.n, global_start + len(y) + context)
+        view_start = (self._view_start_override if self._view_start_override is not None
+                      else self.chunk_idx * self.chunk_size)
+        analysis_start, analysis_end = analysis_bounds(
+            global_start, len(y), self.n, view_start, self.chunk_size)
+        ext_start = max(0, analysis_start - context)
+        ext_end = min(self.n, analysis_end + context)
         extended = np.asarray(self.data[ext_start:ext_end], dtype=float)
 
         sg_window = int(self.sg_window)
@@ -1133,6 +1171,14 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         offset = global_start - ext_start
         baseline = baseline_ext[offset:offset + len(y)]
         _, noise = robust_baseline_and_std(extended)
+        self.noise_estimation_status = "MAD"
+        if self.noise_method == "lower_mode":
+            try:
+                correction, noise = lower_mode_noise(extended - baseline_ext)
+                baseline = baseline + correction
+                self.noise_estimation_status = "Lower background mode"
+            except ValueError as exc:
+                self.noise_estimation_status = f"MAD fallback: {exc}"
         t1 = baseline + self.threshold_k1 * noise
         t2 = baseline + self.threshold_k2 * noise
         return baseline, t1, t2, noise
@@ -1183,6 +1229,12 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         )
 
         pidx = _downsample_indices(y)
+        peak_values = [float(np.max(y[p["start_index"]:p["end_index"]]))
+                       for p in pulses if p["end_index"] > p["start_index"]]
+        peak_mean = f"{np.mean(peak_values)*1000:.2f} pA" if peak_values else "-"
+        self._stats_text.set_text(
+            f"Waveform σ: {np.std(y)*1000:.2f} pA | Noise σ: {noise*1000:.2f} pA | Mean peak: {peak_mean}\n"
+            f"Noise method: {self.noise_estimation_status}")
         if len(y) > 50000 and len(pidx) < len(y):
             print(f"[INFO] View has {len(y)} samples; plotting a "
                   f"{len(pidx)}-point envelope to keep the UI responsive.")
@@ -1253,6 +1305,10 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         # ----- Axis limits: manual boxes win, blank bounds auto-fit -----
         auto_x0 = float(tp[0]) if len(tp) else 0.0
         auto_x1 = float(tp[-1]) if len(tp) else 1.0
+        if hasattr(self, "tight_time_edges") and not self.tight_time_edges:
+            x_margin = 0.05 * (auto_x1 - auto_x0)
+            auto_x0 -= x_margin
+            auto_x1 += x_margin
         x0 = self._xlim_user[0] if self._xlim_user[0] is not None else auto_x0
         x1 = self._xlim_user[1] if self._xlim_user[1] is not None else auto_x1
 
