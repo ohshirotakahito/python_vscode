@@ -1,44 +1,45 @@
-# Python_VScode — ML特徴量抽出・分類パイプライン
+# Python_VScode — 実験データ管理・ML特徴量抽出・分類
 
-センサ信号データに対して、複数の特徴量抽出手法(従来型 / tsfresh / Chronos)を用いて
-特徴量を作成し、XGBoost / LightGBMで分類モデルを学習・評価するプロジェクト。
+センサ信号(TDMS)データの転送・管理・可視化と、複数の特徴量抽出手法
+(従来型 / tsfresh / Chronos)による XGBoost / LightGBM 分類を行うプロジェクト。
 
 ---
 
 ## 📁 フォルダ構成
 
 ```
-PYTHON_VSCODE/
-├── filemanager/        # ファイル・フォルダ操作系ユーティリティ
-│   ├── cleanup_folders.py
-│   ├── data_transfer_common.py
-│   ├── foldermaking.py
-│   ├── transfer_copy.py
-│   └── zip_stocked.py
-│
-├── ML/                  # 機械学習パイプライン本体
-│   ├── common/           # 共通処理(データ読込・前処理など)
-│   ├── data/              # 入力データ(Git管理外)
-│   ├── models/            # 学習済みモデル(Git管理外)
-│   ├── results/           # 実行結果・レポート(Git管理外)
+Python_VScode/
+├── ML/                     # 機械学習パイプライン本体
+│   ├── app/                # Streamlit UI(streamlit run ML/app/Home.py)
+│   ├── app_tk/             # Tkinter UI(python ML/app_tk/main.py)
+│   ├── common/             # 共通処理(パス・データ読込・前処理・クラスタリング等)
+│   ├── docs/               # 個別機能の説明(特徴量履歴・統計・最適化・クラスタリング)
+│   ├── tests/              # pytest
 │   │
-│   ├── extract_features_traditional.py   # 特徴量抽出(従来型 / 旧rmb)
-│   ├── extract_features_tsfresh.py       # 特徴量抽出(tsfresh / 旧rmc)
-│   ├── extract_features_chronos.py       # 特徴量抽出(Chronos / 旧rmd)
-│   │
-│   ├── train_xgboost_traditional.py      # 学習: XGBoost × 従来型特徴量
-│   ├── train_xgboost_tsfresh.py          # 学習: XGBoost × tsfresh特徴量
-│   ├── train_lightgbm_tsfresh.py         # 学習: LightGBM × tsfresh特徴量
-│   ├── train_xgboost_mix_traditional.py  # 学習: XGBoost × 従来型(mix)
-│   └── train_xgboost_mix_tsfresh.py      # 学習: XGBoost × tsfresh(mix)
+│   ├── check_available_tdms_data.py      # 新規TDMSデータの有無を確認
+│   ├── extract_features_traditional.py   # 特徴量抽出: 従来型(rmb)
+│   ├── extract_features_tsfresh.py       # 特徴量抽出: tsfresh(rmc)
+│   ├── extract_features_chronos.py       # 特徴量抽出: Chronos(rmd)
+│   ├── stat_features_rmc.py              # 特徴量の分布・統計ヒストグラム
+│   ├── stat_features_rmc_by_group.py     # 距離・サンプル別の特徴量比較
+│   ├── train_xgboost_traditional.py      # 学習: XGBoost × 従来型
+│   ├── train_xgboost_tsfresh.py          # 学習: XGBoost × tsfresh
+│   ├── train_xgboost_tsfresh_optimized.py# 学習: XGBoost × tsfresh(ハイパーパラメータ最適化)
+│   ├── train_lightgbm_tsfresh.py         # 学習: LightGBM × tsfresh
+│   ├── predict_mix_xgboost_traditional.py# 混合予測: 従来型
+│   ├── predict_mix_xgboost_tsfresh.py    # 混合予測: tsfresh
+│   └── redraw_confusion_matrix.py        # 既存の学習結果から混同行列を再描画
 │
-└── Viewer/               # 可視化・データ確認用ツール
-    ├── clips_pick/
-    └── view_tdms_signal_tk.py
+├── ML_N/                   # 元TDMSからのsignal検出・特徴量保存の新パイプライン(pyproject管理)
+├── Viewer/                 # TDMS波形の可視化・ノイズ推定(python Viewer/view_tdms_signal_tk.py)
+├── database/               # 各サーバーのファイル保存状況をSQLiteで管理(python database/app.py)
+├── exmanager/              # 実験データの転送・履歴管理(python exmanager/app.py)
+└── filemanager/            # フォルダ作成・転送・リネーム・ZIP化(python filemanager/app.py)
 ```
 
-> **Note:** 上記のファイル名は移行後の命名案です。移行が完了するまでは
-> 実際のファイル名(`TOP_XGboost_rmb.py` 等)と異なる場合があります。
+各フォルダの詳細は、それぞれの `README.md`(ML は `ML/docs/`)を参照。
+ML/ 直下のスクリプトは UI から `importlib` でモジュール名指定で読み込まれるため、
+移動・改名する場合は `ML/app/pages/` と `ML/app_tk/tab_*.py` の参照も合わせて変更すること。
 
 ---
 
@@ -46,9 +47,9 @@ PYTHON_VSCODE/
 
 ### 特徴量抽出方式の略称対応表
 
-| 現行コード | 正式名称 | 説明 |
+| 略称 | 正式名称 | 説明 |
 |---|---|---|
-| `rmb` | traditional | 従来型の手動設計特徴量 |
+| `rmb` | traditional | 従来型の手動設計特徴量(波形12点特徴量) |
 | `rmc` | tsfresh | `tsfresh`ライブラリによる自動特徴量抽出 |
 | `rmd` | chronos | Chronosモデルによる埋め込み表現を特徴量として使用 |
 
@@ -59,46 +60,54 @@ PYTHON_VSCODE/
 ```
 
 - `extract_` : 特徴量抽出スクリプト
+- `stat_`    : 特徴量の統計・分布確認
 - `train_`   : モデル学習スクリプト
+- `predict_` : 学習済みモデルによる予測
 - `view_`    : 可視化・確認用スクリプト
 - モデル名・ライブラリ名は小文字で統一(`xgboost`, `lightgbm` など)
 
 ### `mix`について
 
-*(要記入: mixが何を混合しているかの説明をここに追記してください)*
+純粋分子サンプルで学習したモデルを使い、複数分子が混ざった「混合サンプル」の
+各イベントを分類して、クラスごとの割合を集計する処理を指す。
+結果は `ML/mix_results/` に保存される。
 
 ---
 
 ## ⚙️ 環境構築
 
-```bash
-# 仮想環境の作成
-python -m venv .venv
-.venv\Scripts\activate     # Windows
-# source .venv/bin/activate  # Mac/Linux
-
-# 依存パッケージのインストール
-pip install -r requirements.txt
-```
-
-> `requirements.txt` は `pip freeze > requirements.txt` で書き出して
-> リポジトリに含めてください(まだ作成していない場合)。
+Windows + Anaconda(conda)環境で使用している。
+`database/`・`exmanager/`・`filemanager/` は Python 標準ライブラリ(Tkinter)のみで動作する。
+ML/ は numpy / pandas / tsfresh / xgboost / lightgbm / streamlit 等が必要。
+`ML_N/` は `pip install -e ML_N` でインストールする。
 
 ---
 
-## ▶️ 実行手順
+## ▶️ 実行手順(ML)
+
+UI から一通り実行できる。
+
+```bash
+python ML/app_tk/main.py        # Tkinter 版
+streamlit run ML/app/Home.py    # Streamlit 版
+```
+
+スクリプトを直接実行する場合:
 
 1. `ML/data/` に入力データを配置(データの入手方法は別途共有)
-2. 特徴量抽出スクリプトを実行
-   ```bash
-   python ML/extract_features_traditional.py
-   ```
-3. 学習スクリプトを実行
-   ```bash
-   python ML/train_xgboost_traditional.py
-   ```
-4. 結果は `ML/results/{手法}/{アルゴリズム}/{タイムスタンプ}_...` 以下に
-   自動保存される(このフォルダはGit管理外)
+2. 特徴量抽出: `python ML/extract_features_traditional.py`
+3. 学習: `python ML/train_xgboost_traditional.py`
+4. 結果は `ML/results/{手法}/{アルゴリズム}/{タイムスタンプ}_...` 以下に自動保存される
+
+---
+
+## 🧪 テスト
+
+各フォルダに同名モジュール(`app.py` 等)があるため、フォルダごとに実行する。
+
+```bash
+for d in ML/tests database exmanager filemanager Viewer; do python -m pytest -q $d; done
+```
 
 ---
 
@@ -110,30 +119,18 @@ pip install -r requirements.txt
 
 ---
 
-## 📝 変更履歴 (Changelog)
-
-### 2026-08 — resumable機能の追加
-- `extract_features_traditional.py` / `extract_features_tsfresh.py` /
-  `extract_features_chronos.py` に、処理を中断しても再開できる仕組みを追加
-- 新規データの有無をチェックする `check_available_tdms_data.py` を追加
-- 詳細は [Pull Request一覧](https://github.com/ohshirotakahito/python_vscode/pulls?q=is%3Apr+is%3Aclosed) を参照
-
----
-
-
 ## 🚫 Git管理対象外(.gitignoreで除外)
 
 - `ML/data/` — 入力データ(容量が大きいため。配布方法は別途相談)
 - `ML/models/` — 学習済みモデル
-- `ML/results/` — 実行結果・レポート・zip等の生成物
-- `Viewer/clips_pick/` — 抽出クリップ等の生成物
-- `__pycache__/`, `*.pyc`, `.venv/` — Python環境関連
+- `ML/results/`, `ML/mix_results/`, `ML/cluster_results/`, `ML/hist_results/` — 実行結果
+- `ML_N/data/`, `ML_N/output/`, `ML_N/results/` — ML_N の入出力
+- `Viewer/clips_pick/`, `Viewer/output_pdf/` など — 可視化の生成物
+- `.tmp/`, `__pycache__/`, `.pytest_cache/`, `.venv/` — 一時ファイル・Python環境関連
 
 ---
 
 ## 📝 TODO
 
-- [ ] ファイル名の実移行(旧`TOP_`系 → 新命名規則)
-- [ ] `requirements.txt` の作成
-- [ ] `mix` の意味をこのREADMEに追記
+- [ ] `requirements.txt`(または conda の `environment.yml`)の作成
 - [ ] データ配布方法の決定(共有ドライブ / クラウド等)
