@@ -3,7 +3,7 @@
 
 実行: python ML/train_xgboost_tsfresh_optimized.py
 事前確認: python ML/train_xgboost_tsfresh_optimized.py --check-only
-詳細は README_xgboost_optimized.md を参照。
+詳細は docs/xgboost_optimized.md を参照。
 """
 from __future__ import annotations
 

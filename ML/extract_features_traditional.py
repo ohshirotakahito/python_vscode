@@ -12,7 +12,7 @@ common/feature_store.py により、実行ごとにサンプル別の新しい�
 選択した入力だけで独立した結果を作り、過去の版へは自動追記しない。
 日時・条件・入力・処理コードなどを extraction_manifest.json に記録する。
 内部の merge_new_events() は同一版内での重複除去・再開用。
-旧形式の結果も学習時に選択可能。詳細は README_feature_history.md を参照。
+旧形式の結果も学習時に選択可能。詳細は docs/feature_history.md を参照。
 
 【中断・再開対応】(このバージョンで追加)
 中断した版を再開する場合は、同じ入力・条件で resume_run_ids を指定する。

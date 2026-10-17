@@ -12,7 +12,7 @@ tdmsファイル1つ処理するたびにtsfresh_input.csv / chronos_emb.csvへ
 【中断・再開対応】(このバージョンで追加)
 実行ごとにサンプル別の新しいフォルダへ保存する。
 中断した版の再開は同じ入力・条件で resume_run_ids を指定する。
-通常の再実行は新しい版になる。詳細は README_feature_history.md を参照。
+通常の再実行は新しい版になる。詳細は docs/feature_history.md を参照。
 同一版内での再開には以下の方式を使う。
 
   ・サンプルごとに <SamplePath>_<TargetPath>_checkpoint.json を書き出し、

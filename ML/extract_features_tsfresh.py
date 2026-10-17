@@ -13,7 +13,7 @@ common/feature_store.py により、実行ごとにサンプル別の新しい�
 選択した入力だけで独立した結果を作り、過去の版へは自動追記しない。
 内部の merge_new_events() は同一版内での重複除去・再開用。
 日時・条件・入力・処理コードなどを extraction_manifest.json に記録する。
-旧形式の結果も学習時に選択可能。詳細は README_feature_history.md を参照。
+旧形式の結果も学習時に選択可能。詳細は docs/feature_history.md を参照。
 
 ※ サンプルが大きい場合、ALL_LONG_ROWSを全てメモリに溜め込む方式のため
    メモリ不足になりやすい。その場合は extract_features_chronos.py
