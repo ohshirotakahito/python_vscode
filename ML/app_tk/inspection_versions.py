@@ -39,9 +39,13 @@ class InspectionVersions:
         sample_combo = ttk.Combobox(toolbar, textvariable=sample_var, values=names, state="readonly", width=24)
         sample_combo.pack(side="left", padx=6)
         ttk.Label(toolbar, text="実験群で絞り込み").pack(side="left")
-        experiment_var = tk.StringVar()
+        source_experiment = getattr(self, 'experiment', None)
+        locked_experiment = source_experiment.get() if source_experiment is not None else ''
+        experiment_var = tk.StringVar(value=locked_experiment)
         experiment_entry = ttk.Entry(toolbar, textvariable=experiment_var, width=24)
         experiment_entry.pack(side="left", padx=6)
+        if locked_experiment:
+            experiment_entry.configure(state="readonly")
         condition_bar = ttk.Frame(dialog)
         condition_bar.pack(fill="x", padx=10, pady=4)
         ttk.Label(condition_bar, text="条件IDで絞り込み（空欄はすべて）").pack(side="left")

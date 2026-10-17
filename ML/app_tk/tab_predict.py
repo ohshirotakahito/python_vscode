@@ -7,6 +7,8 @@
 """
 
 import importlib
+import json
+from datetime import datetime
 import tkinter as tk
 from tkinter import messagebox, ttk
 
@@ -14,8 +16,11 @@ import matplotlib
 import pandas as pd
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+from matplotlib.ticker import FuncFormatter, MaxNLocator
 
 from lib.catalog import list_available_samples
+from common import paths
+from common.feature_store import inspection_inputs, list_versions, resolve_version
 from lib.mix_summary import (
     UNIT_FILE, UNIT_TOTAL, UNIT_WINDOW, chart_classes, group_keys, list_mix_runs,
     load_events, summarize, to_long_for_chart,
@@ -51,6 +56,7 @@ class PredictTab(ttk.Frame):
         self.events = pd.DataFrame()
         self.classes = []
         self.table_df = pd.DataFrame()
+        self.mix_file_rules = []
 
         paned = ttk.PanedWindow(self, orient="horizontal")
         paned.pack(fill="both", expand=True)
@@ -58,6 +64,8 @@ class PredictTab(ttk.Frame):
         self._build_result_panel(paned)
 
         runner.add_busy_listener(lambda busy: self.run_button.configure(
+            state="disabled" if busy else "normal"))
+        runner.add_busy_listener(lambda busy: self.filter_button.configure(
             state="disabled" if busy else "normal"))
         self._pipeline_changed()
         self.refresh_runs()
@@ -76,12 +84,25 @@ class PredictTab(ttk.Frame):
         combo.pack(fill="x", pady=(0, 6))
         combo.bind("<<ComboboxSelected>>", lambda _e: self._pipeline_changed())
 
+        ttk.Label(left, text="実験フォルダ（出どころ）").pack(anchor="w")
+        self.experiment = tk.StringVar()
+        self.experiment_combo = ttk.Combobox(left, state="readonly")
+        self.experiment_combo.pack(fill="x")
+        self.experiment_combo.bind("<<ComboboxSelected>>", self._filter_samples)
+        self.source_hint = ttk.Label(left, wraplength=400)
+        self.source_hint.pack(fill="x", pady=(2, 4))
+
         ttk.Label(left, text="学習に使う純粋分子（2つ以上）").pack(anchor="w")
         self.pure = CheckList(left, height=7, on_change=lambda _s: self._update_mix_options())
         self.pure.pack(fill="both", expand=True, pady=2)
         ttk.Label(left, text="予測する混合サンプル（複数可）").pack(anchor="w", pady=(6, 0))
         self.mix = CheckList(left, height=5)
         self.mix.pack(fill="both", expand=True, pady=2)
+        self.filter_button = ttk.Button(left, text="混合サンプルのファイル絞り込みを設定（任意）",
+                                        command=self._choose_mix_filters)
+        self.filter_button.pack(fill="x", pady=2)
+        self.filter_summary = ttk.Label(left, text="混合ファイル絞り込み：なし", wraplength=400)
+        self.filter_summary.pack(fill="x")
 
         opts = ttk.Frame(left)
         opts.pack(fill="x", pady=4)
@@ -100,12 +121,61 @@ class PredictTab(ttk.Frame):
 
     def refresh_samples(self):
         feature_set = PIPELINES[self.pipeline.get()]["feature_set"]
-        self._available = list_available_samples(feature_set)
+        self._sample_names = list_available_samples(feature_set)
+        self._source_versions = {name: list_versions(feature_set, name) for name in self._sample_names}
+        self._experiments = sorted({v['ex'] for versions in self._source_versions.values()
+                                    for v in versions if v.get('ex')})
+        self.experiment_combo.configure(values=['すべて（旧形式を含む）', *self._experiments])
+        experiment = self.experiment.get()
+        self.experiment_combo.current(self._experiments.index(experiment) + 1
+                                      if experiment in self._experiments else 0)
+        self._filter_samples()
+
+    def _filter_samples(self, _event=None):
+        index = self.experiment_combo.current()
+        experiment = self._experiments[index - 1] if index > 0 else ''
+        self.experiment.set(experiment)
+        self._available = [name for name in self._sample_names if not experiment or any(
+            v.get('ex') == experiment for v in self._source_versions[name])]
         self.pure.set_items(self._available)
         self._update_mix_options()
+        self.source_hint.configure(text=(
+            f'{len(self._available)} サンプル：純粋分子・混合とも選択した実験の最新完了版を使用'
+            if experiment else 'すべての出どころを表示。旧形式は出どころ不明です。'))
 
     def _pipeline_changed(self):
+        self._set_mix_filters([])
         self.refresh_samples()
+
+    def _set_mix_filters(self, rules):
+        self.mix_file_rules = list(rules)
+        description = ' AND '.join(f'{c} {op} {v}' for c, op, v in rules) or 'なし'
+        self.filter_summary.configure(text=f'混合ファイル絞り込み：{description}')
+
+    def _choose_mix_filters(self):
+        from common.file_review import load_events, file_statistics
+        from training_filters import FileFilterDialog
+        if self.runner.busy:
+            return
+        names = self.mix.get_selected()
+        if not names:
+            messagebox.showinfo('混合サンプルを選択', '予測する混合サンプルを1つ以上選んでください。')
+            return
+        feature_set = PIPELINES[self.pipeline.get()]['feature_set']
+        experiment = self.experiment.get()
+        def task(progress):
+            versions = {s: resolve_version(feature_set, s, experiment=experiment or None) for s in names}
+            return file_statistics(load_events(feature_set, names, progress, versions))
+        def done(files):
+            if (feature_set != PIPELINES[self.pipeline.get()]['feature_set'] or
+                    experiment != self.experiment.get() or names != self.mix.get_selected()):
+                messagebox.showinfo('再読み込みが必要です', '対象が変更されました。絞り込み設定を開き直してください。')
+                return
+            if files.empty:
+                messagebox.showerror('入力エラー', '絞り込み対象のファイルがありません。')
+                return
+            FileFilterDialog(self, files, self.mix_file_rules, self._set_mix_filters, prediction=True)
+        self.runner.run(task, self.progress, on_done=done)
 
     def _update_mix_options(self):
         chosen = set(self.pure.get_selected())
@@ -116,16 +186,30 @@ class PredictTab(ttk.Frame):
         if len(smns) < 2 or not test_smns:
             messagebox.showerror("入力エラー", "純粋分子を2つ以上、混合サンプルを1つ以上選んでください。")
             return
-        module_name = PIPELINES[self.pipeline.get()]["module"]
+        pipeline = PIPELINES[self.pipeline.get()]
+        module_name = pipeline['module']
+        feature_set = pipeline['feature_set']
+        experiment = self.experiment.get()
         threshold, retrain = float(self.threshold.get()), self.retrain.get()
+        mix_file_rules = list(getattr(self, 'mix_file_rules', []))
 
         def task(progress):
-            module = importlib.import_module(module_name)
-            return module.run_prediction(smns, test_smns, retrain=retrain, threshold=threshold,
-                                         progress_callback=progress)
+            names = list(dict.fromkeys([*smns, *test_smns]))
+            versions = {name: resolve_version(feature_set, name, experiment=experiment or None)['run_id']
+                        for name in names}
+            with inspection_inputs(feature_set, names, paths.feature_dir(feature_set), versions) as selected:
+                module = importlib.import_module(module_name)
+                run_dir = module.run_prediction(smns, test_smns, retrain=retrain, threshold=threshold,
+                                                progress_callback=progress,
+                                                **({'mix_file_rules': mix_file_rules} if mix_file_rules else {}))
+                (run_dir / 'feature_inputs.json').write_text(
+                    json.dumps(selected, ensure_ascii=False, indent=2), encoding='utf-8')
+                return run_dir
 
         def done(run_dir):
+            self.unit.set(next(label for label, value in UNITS.items() if value == UNIT_TOTAL))
             self.refresh_runs(select=run_dir)
+            self._save_view(notify=False)
             if self.on_runs_changed:
                 self.on_runs_changed()
 
@@ -174,12 +258,19 @@ class PredictTab(ttk.Frame):
                                           command=self.update_view)
         self.high_check.pack(side="left", padx=(0, 12))
         ttk.Label(controls2, text="グラフのファイル").pack(side="left")
+        self.previous_file = ttk.Button(controls2, text="◁", width=3, state="disabled",
+                                        command=lambda: self._step_chart_file(-1))
+        self.previous_file.pack(side="left", padx=(4, 0))
         self.chart_file = ttk.Combobox(controls2, state="disabled", width=36)
         self.chart_file.pack(side="left", padx=4)
         self.chart_file.bind("<<ComboboxSelected>>", lambda _e: self.update_view())
+        self.next_file = ttk.Button(controls2, text="▷", width=3, state="disabled",
+                                    command=lambda: self._step_chart_file(1))
+        self.next_file.pack(side="left")
 
         buttons = ttk.Frame(controls2)
         buttons.pack(side="right")
+        ttk.Button(buttons, text="グラフ・集計を保存", command=self._save_view).pack(side="left", padx=4)
         ttk.Button(buttons, text="集計表をCSV保存", command=self._save_csv).pack(side="left")
         ttk.Button(buttons, text="ZIPで保存", command=lambda: self.run and save_zip_dialog(
             self.run["run_dir"])).pack(side="left", padx=4)
@@ -233,6 +324,8 @@ class PredictTab(ttk.Frame):
 
         if self.events.empty:
             self.classes = []
+            self.chart_file.configure(values=[])
+            self.chart_file.set('')
         else:
             self.classes = manifest.get("class_names") or sorted(self.events["pred_label"].unique())
             mixes = sorted(self.events["mix_sample"].unique())
@@ -252,6 +345,16 @@ class PredictTab(ttk.Frame):
         is_window = UNITS[self.unit.get()] == UNIT_WINDOW
         self.window_spin.configure(state="normal" if is_window else "disabled")
         self.chart_file.configure(state="readonly" if is_window and not self.events.empty else "disabled")
+        can_step = is_window and not self.events.empty and len(self.chart_file['values']) > 1
+        for button in (self.previous_file, self.next_file):
+            button.configure(state="normal" if can_step else "disabled")
+        self.update_view()
+
+    def _step_chart_file(self, direction):
+        values = self.chart_file['values']
+        if self.chart_file.instate(['disabled']) or len(values) < 2:
+            return
+        self.chart_file.current((self.chart_file.current() + direction) % len(values))
         self.update_view()
 
     def _window_sec(self):
@@ -332,7 +435,10 @@ class PredictTab(ttk.Frame):
                     for bar, pos, value in zip(bars, positions, values.values):
                         self._bar_info[bar] = f"{pos:g}〜{pos + window_sec:g} 秒\n{cls}: {self._fmt(value)}"
                     bottom += values
-                ax.set_xlabel("ファイル内の経過時間 [秒]")
+                ax.set_xlim(positions[0], positions[-1] + window_sec)
+                ax.xaxis.set_major_locator(MaxNLocator(nbins=6, min_n_ticks=2))
+                ax.xaxis.set_major_formatter(FuncFormatter(lambda value, _pos: f"{value:g}秒"))
+                ax.set_xlabel(f"ファイル内の経過時間（棒1本 = {window_sec:g}秒間の集計）")
                 ax.set_ylabel(value_label)
                 if as_percent:
                     ax.set_ylim(0, 100)
@@ -414,3 +520,35 @@ class PredictTab(ttk.Frame):
         suffix += "_highconf" if self.high_only.get() else ""
         suffix += "_pct" if self.as_percent.get() else "_count"
         save_csv_dialog(self.table_df, f"{self.run['run_dir'].name}_{suffix}.csv")
+
+    def _save_view(self, notify=True):
+        """Keep the chart, its table and display settings together in this prediction run."""
+        if self.run is None or self.table_df.empty:
+            if notify:
+                messagebox.showinfo('保存', '保存する予測結果がありません。')
+            return
+        output = self.run['run_dir'] / 'views' / datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+        try:
+            output.mkdir(parents=True, exist_ok=False)
+            if self._tooltip is not None:
+                visible = self._tooltip.get_visible()
+                self._tooltip.set_visible(False)
+            else:
+                visible = False
+            try:
+                self.figure.savefig(output / 'prediction_chart.png', dpi=180, bbox_inches='tight')
+            finally:
+                if self._tooltip is not None:
+                    self._tooltip.set_visible(visible)
+            self.table_df.to_csv(output / 'prediction_summary.csv', index=False, encoding='utf-8-sig')
+            settings = dict(unit=UNITS[self.unit.get()], window_sec=self._window_sec(),
+                            chart_file=self.chart_file.get(), as_percent=self.as_percent.get(),
+                            high_confidence_only=self.high_only.get(), pmax_threshold=self.threshold_used,
+                            class_names=self.classes, source_run=str(self.run['run_dir']))
+            (output / 'display_settings.json').write_text(
+                json.dumps(settings, ensure_ascii=False, indent=2), encoding='utf-8')
+        except (OSError, ValueError) as exc:
+            messagebox.showerror('予測表示を保存できません', str(exc))
+            return
+        if notify:
+            messagebox.showinfo('予測表示を保存しました', str(output))

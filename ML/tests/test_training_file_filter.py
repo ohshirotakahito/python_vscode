@@ -11,6 +11,27 @@ from common.file_review import file_statistics, filter_files, selected_events
 from common.training_file_filter import _selection, prepare_selection, filter_training_rows
 
 
+@pytest.mark.parametrize('traditional', [False, True])
+def test_prediction_selection_uses_pinned_version_and_restores_after_error(traditional):
+    from common.training_file_filter import prediction_file_selection, selection_manifest
+    record = {'sample': 'A', 'feature_set': 'rmc', 'run_id': 'old-source'}
+    frame = events()
+    with patch('common.feature_store.training_inputs', return_value=[record]), \
+            patch('common.feature_store.resolve_version') as resolve, \
+            patch('common.file_review.load_events', return_value=frame) as load:
+        with pytest.raises(RuntimeError, match='stop'):
+            with prediction_file_selection('rmc', ['A'], [('ex_id', '=', '02')]) as selection:
+                assert load.call_args.args[3] == {'A': record}
+                rows = frame[frame['sample'].eq('A')]
+                if traditional:
+                    rows = rows.rename(columns={'sample_name': 'file', 'ex_id': 'Ex_ID'})
+                assert filter_training_rows(rows, 'A', traditional)['event_id'].tolist() == [2, 3]
+                assert selection['counts']['A']['selected_files'] == 1
+                raise RuntimeError('stop')
+        resolve.assert_not_called()
+    assert selection_manifest() == {}
+
+
 def events():
     return pd.DataFrame({
         'sample': ['A'] * 4 + ['B'] * 2,

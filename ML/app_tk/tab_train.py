@@ -15,7 +15,7 @@ from tkinter import messagebox, ttk
 from lib.catalog import list_available_samples
 from common.feature_store import list_versions, resolve_version
 from tab_browser import RunResultView
-from widgets import CheckList, ProgressPanel
+from widgets import CheckList, ProgressPanel, ScrollableFrame
 
 PIPELINES = {
     "rmc + XGBoost（tsfresh併用）": {
@@ -77,8 +77,17 @@ class TrainTab(ttk.Frame):
         paned.pack(fill="both", expand=True)
 
         # --- 左: 設定 ---
-        left = ttk.Frame(paned, padding=(0, 0, 8, 0))
-        paned.add(left, weight=1)
+        left_panel = ttk.Frame(paned, padding=(0, 0, 8, 0))
+        paned.add(left_panel, weight=1)
+        actions = ttk.LabelFrame(left_panel, text="⑤ 学習を実行", padding=6)
+        actions.pack(side="bottom", fill="x", pady=(6, 0))
+        settings = ScrollableFrame(left_panel)
+        settings.pack(fill="both", expand=True)
+        left = settings.inner
+        ttk.Label(left, text="① クラスを選ぶ → ② 組み合わせに追加\n"
+                  "③ 絞り込みを設定 → ④ 条件を保存して戻る\n"
+                  "⑤ 下の「学習を実行」を押す（③④は任意）", wraplength=420,
+                  font=("Meiryo UI", 10, "bold")).pack(anchor="w", pady=(0, 8))
 
         ttk.Label(left, text="パイプライン").pack(anchor="w")
         self.pipeline = tk.StringVar(value=list(PIPELINES)[0])
@@ -87,7 +96,15 @@ class TrainTab(ttk.Frame):
         combo.pack(fill="x", pady=(0, 6))
         combo.bind("<<ComboboxSelected>>", lambda _e: self._pipeline_changed())
 
-        ttk.Label(left, text="クラス（サンプル）を選んで「組み合わせに追加」").pack(anchor="w")
+        ttk.Label(left, text="実験フォルダ（出どころ）").pack(anchor="w")
+        self.experiment = tk.StringVar()
+        self.experiment_combo = ttk.Combobox(left, state="readonly")
+        self.experiment_combo.pack(fill="x")
+        self.experiment_combo.bind("<<ComboboxSelected>>", self._filter_samples)
+        self.source_hint = ttk.Label(left, wraplength=400)
+        self.source_hint.pack(fill="x", pady=(2, 4))
+
+        ttk.Label(left, text="① クラス（サンプル）を2つ以上選択（クリックで選択・解除）").pack(anchor="w")
         self.sample_selection_summary = tk.StringVar(value="選択中（0件）: なし")
         self.samples = CheckList(left, height=10, on_change=self._samples_changed)
         self.samples.pack(fill="both", expand=True, pady=2)
@@ -100,10 +117,10 @@ class TrainTab(ttk.Frame):
         self.version_summary = ttk.Label(left, text="未指定のサンプルは最新の完了版を使用",
                                          wraplength=340)
         self.version_summary.pack(anchor="w")
-        ttk.Button(left, text="↓ 選択中のサンプルを組み合わせに追加",
+        ttk.Button(left, text="② 選択中のクラスを組み合わせに追加 ↓",
                    command=self._add_combo).pack(fill="x", pady=2)
 
-        ttk.Label(left, text="実行する組み合わせ（1行 = 1回の学習）").pack(anchor="w", pady=(6, 0))
+        ttk.Label(left, text="実行する組み合わせ（1行につき1回の学習）").pack(anchor="w", pady=(6, 0))
         self.combos = tk.Listbox(left, height=5, exportselection=False)
         self.combos.pack(fill="x", pady=2)
         ttk.Button(left, text="選択した組み合わせを削除", command=self._remove_combo).pack(fill="x")
@@ -135,16 +152,22 @@ class TrainTab(ttk.Frame):
         ttk.Entry(range_box, textvariable=self.distance_max, width=8).pack(side="left")
         self.distance_frame.columnconfigure(1, weight=1)
 
-        ttk.Button(left, text="学習ファイルの絞り込み条件を設定",
+        self.settings_end = ttk.Frame(left)
+        self.settings_end.pack(fill="x")
+        ttk.Button(left, text="③ 学習ファイルの絞り込みを設定（任意）",
                    command=self._choose_file_filters).pack(fill="x", pady=2)
         self.file_filter_summary = ttk.Label(left, text="ファイル絞り込み：なし", wraplength=400)
         self.file_filter_summary.pack(fill="x")
-        self.run_button = ttk.Button(left, text="学習を実行", command=self._run)
+        ttk.Label(actions, text="絞り込み条件の保存後、このボタンで学習を開始します。\n"
+                  "組み合わせの登録があれば登録分を順番に実行します。\n"
+                  "未登録なら、現在選択中のサンプルで1回実行します。",
+                  wraplength=400).pack(anchor="w", pady=(0, 4))
+        self.run_button = ttk.Button(actions, text="⑤ 学習を実行", command=self._run)
         self.run_button.pack(fill="x", pady=4)
-        self.cancel_button = ttk.Button(left, text="学習を中止", command=self._cancel,
+        self.cancel_button = ttk.Button(actions, text="学習を中止", command=self._cancel,
                                         state="disabled")
         self.cancel_button.pack(fill="x", pady=(0, 4))
-        self.progress = ProgressPanel(left, log_height=6)
+        self.progress = ProgressPanel(actions, log_height=3)
         self.progress.pack(fill="both", expand=True)
 
         # --- 右: 結果 ---
@@ -175,6 +198,9 @@ class TrainTab(ttk.Frame):
         if self.pipeline.get() not in matching:
             self.pipeline.set(matching[0])
             self._pipeline_changed()
+        # Review may supply versions from a different source, or multiple sources.
+        self.experiment.set('')
+        self.refresh_samples()
         self.feature_versions = dict(versions)
         self.version_feature_set = feature_set
         self.version_summary.configure(text=f'精査で使用した版を固定: {len(versions)} サンプル')
@@ -209,7 +235,8 @@ class TrainTab(ttk.Frame):
             return
         feature_set = PIPELINES[self.pipeline.get()]["feature_set"]
         try:
-            versions = {s: resolve_version(feature_set, s, self.feature_versions.get(s))['run_id']
+            versions = {s: resolve_version(feature_set, s, self.feature_versions.get(s),
+                                           experiment=self.experiment.get() or None)['run_id']
                         for s in names}
         except (OSError, ValueError) as exc:
             messagebox.showerror("抽出結果を確認してください", str(exc))
@@ -237,8 +264,35 @@ class TrainTab(ttk.Frame):
             self.feature_versions = {}
             self.version_feature_set = feature_set
             self._set_file_filters([])
-        self.version_summary.configure(text=f"過去の版を指定: {len(self.feature_versions)} サンプル / その他は最新")
-        self.samples.set_items(list_available_samples(feature_set))
+        self._sample_names = list_available_samples(feature_set)
+        self._source_versions = {name: list_versions(feature_set, name) for name in self._sample_names}
+        self._experiments = sorted({v['ex'] for versions in self._source_versions.values()
+                                    for v in versions if v.get('ex')})
+        self.experiment_combo.configure(values=['すべて（旧形式を含む）', *self._experiments])
+        experiment = self.experiment.get()
+        self.experiment_combo.current(self._experiments.index(experiment) + 1
+                                      if experiment in self._experiments else 0)
+        self._filter_samples()
+
+    def _filter_samples(self, _event=None):
+        index = self.experiment_combo.current()
+        experiment = self._experiments[index - 1] if index > 0 else ''
+        changed = experiment != self.experiment.get()
+        self.experiment.set(experiment)
+        names = [name for name in self._sample_names if not experiment or any(
+            v.get('ex') == experiment for v in self._source_versions[name])]
+        if experiment:
+            self.feature_versions = {name: run_id for name, run_id in self.feature_versions.items()
+                                     if any(v['run_id'] == run_id and v.get('ex') == experiment
+                                            for v in self._source_versions.get(name, []))}
+        if changed:
+            self._set_file_filters([])
+        self.version_summary.configure(text=f'版を指定: {len(self.feature_versions)} サンプル / '
+                                       'その他は選択した出どころの最新完了版')
+        self.samples.set_items(names)
+        self.source_hint.configure(text=(
+            f'{len(names)} サンプル：組み合わせも選択した実験の抽出結果で学習します'
+            if experiment else 'すべての出どころを表示。旧形式は出どころ不明です。'))
 
     def _choose_versions(self):
         feature_set = PIPELINES[self.pipeline.get()]["feature_set"]
@@ -265,9 +319,13 @@ class TrainTab(ttk.Frame):
         sample_combo = ttk.Combobox(toolbar, textvariable=sample_var, values=names, state="readonly", width=24)
         sample_combo.pack(side="left", padx=6)
         ttk.Label(toolbar, text="実験群で絞り込み").pack(side="left")
-        experiment_var = tk.StringVar()
+        source_experiment = getattr(self, 'experiment', None)
+        locked_experiment = source_experiment.get() if source_experiment is not None else ''
+        experiment_var = tk.StringVar(value=locked_experiment)
         experiment_entry = ttk.Entry(toolbar, textvariable=experiment_var, width=24)
         experiment_entry.pack(side="left", padx=6)
+        if locked_experiment:
+            experiment_entry.configure(state="readonly")
         condition_bar = ttk.Frame(dialog)
         condition_bar.pack(fill="x", padx=10, pady=4)
         ttk.Label(condition_bar, text="条件IDで絞り込み（空欄はすべて）").pack(side="left")
@@ -373,7 +431,7 @@ class TrainTab(ttk.Frame):
         self.refresh_samples()
         pipeline = PIPELINES[self.pipeline.get()]
         if pipeline["tsfresh"]:
-            self.tsfresh_frame.pack(fill="x", pady=6, before=self.run_button)
+            self.tsfresh_frame.pack(fill="x", pady=6, before=self.settings_end)
         else:
             self.tsfresh_frame.pack_forget()
         if pipeline.get("distance"):
@@ -381,7 +439,7 @@ class TrainTab(ttk.Frame):
             self.distance_values.set(", ".join(_fmt_number(v) for v in current.get("DISTANCE_VALUES") or []))
             self.distance_min.set(_fmt_number(current.get("DISTANCE_MIN")))
             self.distance_max.set(_fmt_number(current.get("DISTANCE_MAX")))
-            self.distance_frame.pack(fill="x", pady=(0, 6), before=self.run_button)
+            self.distance_frame.pack(fill="x", pady=(0, 6), before=self.settings_end)
         else:
             self.distance_frame.pack_forget()
 
@@ -447,7 +505,8 @@ class TrainTab(ttk.Frame):
         # Resolve on the UI thread once for the whole batch, before imports/calculation.
         try:
             selected_versions = {sample: resolve_version(pipeline['feature_set'], sample,
-                                 self.feature_versions.get(sample))
+                                 self.feature_versions.get(sample),
+                                 experiment=self.experiment.get() or None)
                                  for sample in {s for group in combinations for s in group}}
         except (OSError, ValueError) as error:
             messagebox.showerror("抽出結果を確認してください", str(error))

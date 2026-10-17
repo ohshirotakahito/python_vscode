@@ -9,17 +9,17 @@ from widgets import DataTable
 
 
 class FileFilterDialog(tk.Toplevel):
-    def __init__(self, master, files, rules, on_apply):
+    def __init__(self, master, files, rules, on_apply, prediction=False):
         super().__init__(master)
-        self.title('学習ファイルの絞り込み（すべてAND）')
+        self.title('混合サンプルのファイル絞り込み（すべてAND）' if prediction else '学習ファイルの絞り込み（すべてAND）')
         self.geometry('1000x700')
         self.transient(master.winfo_toplevel())
         self.grab_set()
         self.files = files
         self.rules = list(rules)
         self.on_apply = on_apply
-        ttk.Label(self, text='ファイルごとの統計で選び、そのファイルの全イベントを学習対象にします。'
-                  '学習時には既存のイベント範囲条件も適用します。', wraplength=950).pack(padx=10, pady=8)
+        ttk.Label(self, text=('ファイルごとの統計で選び、そのファイルのイベントだけを予測します。純粋分子の学習には適用しません。'
+                  if prediction else 'ファイルごとの統計で選び、そのファイルの全イベントを学習対象にします。学習時には既存のイベント範囲条件も適用します。'), wraplength=950).pack(padx=10, pady=8)
         bar = ttk.Frame(self)
         bar.pack(fill='x', padx=10)
         self.column = tk.StringVar(value='events')
@@ -44,7 +44,9 @@ class FileFilterDialog(tk.Toplevel):
         self.summary.pack(anchor='w', padx=10, pady=4)
         self.table = DataTable(self, height=10)
         self.table.pack(fill='both', expand=True, padx=10)
-        ttk.Button(self, text='この条件を学習に適用', command=self._apply).pack(pady=10)
+        ttk.Label(self, text=('条件を保存した後、元の画面の「予測を実行」を押してください。' if prediction else
+                             '条件を保存した後、元の画面の「⑤ 学習を実行」で学習を開始します。')).pack(pady=(8, 0))
+        ttk.Button(self, text='条件を保存して戻る' if prediction else '④ 条件を保存して戻る', command=self._apply).pack(pady=10)
         self._column_changed()
         self._refresh()
 

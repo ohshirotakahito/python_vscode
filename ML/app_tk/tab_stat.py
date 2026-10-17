@@ -11,6 +11,7 @@ import pandas as pd
 
 import common.paths as paths
 from inspection_versions import InspectionVersions
+from common.feature_store import list_versions, resolve_version
 from lib.catalog import list_available_samples
 from widgets import CheckList, DataTable, ImageGallery, ProgressPanel, open_path, save_zip_dialog
 
@@ -28,6 +29,15 @@ class StatTab(InspectionVersions, ttk.Frame):
         # --- 左: 設定 ---
         left = ttk.Frame(paned, padding=(0, 0, 8, 0))
         paned.add(left, weight=1)
+        source_bar = ttk.Frame(left)
+        source_bar.pack(fill="x")
+        ttk.Label(source_bar, text="実験フォルダ（出どころ）").pack(side="left")
+        self.experiment = tk.StringVar()
+        self.experiment_combo = ttk.Combobox(source_bar, state="readonly", width=36)
+        self.experiment_combo.pack(side="left", fill="x", expand=True, padx=4)
+        self.experiment_combo.bind("<<ComboboxSelected>>", self._filter_samples)
+        self.source_hint = ttk.Label(left, wraplength=500)
+        self.source_hint.pack(fill="x", pady=4)
         ttk.Label(left, text="サンプル（rmc、複数選択可）").pack(anchor="w")
         self.samples = CheckList(left, height=12)
         self.samples.pack(fill="both", expand=True, pady=4)
@@ -82,7 +92,33 @@ class StatTab(InspectionVersions, ttk.Frame):
         self.refresh_samples()
 
     def refresh_samples(self):
-        self.samples.set_items(list_available_samples("rmc"))
+        self._sample_names = list_available_samples("rmc")
+        self._source_versions = {name: list_versions("rmc", name) for name in self._sample_names}
+        self._experiments = sorted({v['ex'] for versions in self._source_versions.values()
+                                    for v in versions if v.get('ex')})
+        self.experiment_combo.configure(values=["すべて（旧形式を含む）", *self._experiments])
+        if self.experiment.get() not in self._experiments:
+            self.experiment.set("")
+        self.experiment_combo.current(self._experiments.index(self.experiment.get()) + 1
+                                      if self.experiment.get() else 0)
+        self._filter_samples()
+
+    def _filter_samples(self, _event=None):
+        index = self.experiment_combo.current()
+        experiment = self._experiments[index - 1] if index > 0 else ""
+        self.experiment.set(experiment)
+        names = [name for name in self._sample_names if not experiment or any(
+            v.get('ex') == experiment for v in self._source_versions[name])]
+        if experiment:
+            self.feature_versions = {name: run_id for name, run_id in self.feature_versions.items()
+                                     if any(v['run_id'] == run_id and v.get('ex') == experiment
+                                            for v in self._source_versions.get(name, []))}
+        self.version_summary.configure(text=f"版を指定: {len(self.feature_versions)} サンプル / "
+                                       "その他は選択した出どころの最新完了版")
+        self.samples.set_items(names)
+        self.source_hint.configure(text=(
+            f"{len(names)} サンプル：選択した実験の最新完了版を使用（版の個別指定も可）"
+            if experiment else "すべての出どころを表示。旧形式は出どころ不明です。"))
 
     def _toggle_distance(self):
         state = "normal" if self.use_distance.get() else "disabled"
@@ -100,12 +136,18 @@ class StatTab(InspectionVersions, ttk.Frame):
         dmin, dmax = self.dmin.get(), self.dmax.get()
 
         versions = dict(self.feature_versions)
+        experiment = self.experiment.get()
 
         def task(progress):
             from stat_features_rmc import (
                 DEFAULT_LOWER_LIMITS, DEFAULT_OUTPUT_ROOT, DEFAULT_UPPER_LIMITS, create_histograms,
             )
             progress(0, 1, "集計中")
+            if experiment:
+                # Resolve again at execution time and pin matching versions for the whole run.
+                for sample in samples:
+                    versions[sample] = resolve_version(
+                        "rmc", sample, versions.get(sample), experiment=experiment)['run_id']
             return create_histograms(
                 samples=samples, feature_versions=versions, data_root=paths.feature_dir("rmc"),
                 output_root=DEFAULT_OUTPUT_ROOT, bins=bins,

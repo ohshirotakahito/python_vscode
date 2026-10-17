@@ -1,7 +1,22 @@
 """Apply inspection file rules before training preprocessing and feature extraction."""
 from contextvars import ContextVar
+from contextlib import contextmanager
 
 _selection = ContextVar('training_file_selection', default=None)
+
+
+@contextmanager
+def prediction_file_selection(feature_set, samples, rules):
+    """Scope file selection to mixed predictions, after pure-model training."""
+    from common.feature_store import resolve_version, training_inputs
+    pinned = {v['sample']: v for v in training_inputs() if v['feature_set'] == feature_set}
+    versions = {s: pinned[s] if s in pinned else resolve_version(feature_set, s) for s in samples} if rules else {}
+    selection = prepare_selection(feature_set, samples, versions, rules) if rules else None
+    token = _selection.set(selection)
+    try:
+        yield selection or {}
+    finally:
+        _selection.reset(token)
 
 
 def prepare_selection(feature_set, samples, versions, rules):

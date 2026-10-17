@@ -25,6 +25,8 @@ def list_runs() -> list[dict]:
         except (OSError, json.JSONDecodeError):
             continue
         run_dir = manifest_path.parent
+        if manifest.get('run_type') == 'mix' or '_mix_' in run_dir.name:
+            continue
         runs.append({
             "run_dir": run_dir,
             "manifest": manifest,

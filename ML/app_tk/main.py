@@ -32,6 +32,7 @@ import tkinter as tk  # noqa: E402
 from tkinter import messagebox, ttk  # noqa: E402
 
 from widgets import JP_FONT, TaskRunner  # noqa: E402
+from theme import ACCENT, apply_theme  # noqa: E402
 
 
 def main():
@@ -44,13 +45,7 @@ def main():
     except tk.TclError:
         pass
 
-    style = ttk.Style(root)
-    if "vista" in style.theme_names():
-        style.theme_use("vista")
-    root.option_add("*Font", JP_FONT)
-    style.configure(".", font=JP_FONT)
-    style.configure("Treeview", rowheight=22)
-    style.configure("TNotebook.Tab", padding=(14, 4))
+    apply_theme(root, JP_FONT)
 
     runner = TaskRunner(root)
     activity = ttk.LabelFrame(root, text="実行状況", padding=6)
@@ -66,7 +61,7 @@ def main():
         activity_label.configure(
             text=(f"● 処理実行中　経過 {duration}　工程進捗 {fraction:.0%}　{stage}" if busy
                   else f"待機中　直前の処理時間 {duration}"),
-            foreground="#174ea6" if busy else "#555")
+            foreground=ACCENT if busy else "#526557")
     runner.add_status_listener(show_activity)
 
     # 各タブの import は Tk 作成後に行う（重いライブラリの読み込み中もウィンドウを出すため）
@@ -75,6 +70,7 @@ def main():
     from tab_predict import PredictTab
     from tab_stat import StatTab
     from tab_review import ReviewTab
+    from tab_cluster import ClusterTab
     from tab_train import TrainTab
 
     notebook = ttk.Notebook(root)
@@ -89,10 +85,11 @@ def main():
             notebook.select(tabs['train'])
 
     review = ReviewTab(notebook, runner, on_train=open_review_training)
+    cluster = ClusterTab(notebook, runner)
 
     def features_changed():
         # 抽出が終わったら、各タブのサンプル一覧を最新にする
-        for tab in (stat, review, tabs["train"], tabs["predict"]):
+        for tab in (stat, review, cluster, tabs["train"], tabs["predict"]):
             tab.refresh_samples()
 
     def runs_changed():
@@ -105,6 +102,7 @@ def main():
     notebook.add(extract, text="① 特徴量抽出")
     notebook.add(stat, text="② 統計ヒストグラム")
     notebook.add(review, text="抽出ファイル精査")
+    notebook.add(cluster, text="教師なし学習")
     notebook.add(tabs["train"], text="③ 学習・評価")
     notebook.add(browser, text="④ 結果ブラウザ")
     notebook.add(tabs["predict"], text="⑤ 混合予測")

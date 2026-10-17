@@ -38,7 +38,9 @@ def list_mix_runs() -> list[dict]:
     戻り値の各要素: {"run_dir", "feature_set", "algorithm", "manifest"}
     """
     runs = []
-    for run_dir in paths.RESULTS_ROOT.glob("*/*/*_mix_*"):
+    candidates = [*paths.MIX_RESULTS_ROOT.glob("*/*/*_mix_*"),
+                  *paths.RESULTS_ROOT.glob("*/*/*_mix_*")]
+    for run_dir in candidates:
         if not run_dir.is_dir() or not any(run_dir.glob("predict_*.csv")):
             continue
         manifest_path = run_dir / "run_manifest.json"

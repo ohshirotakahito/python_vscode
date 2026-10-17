@@ -59,6 +59,7 @@ MODELS_ROOT = PROJECT_ROOT / 'models'
 
 # 学習・評価結果の置き場所（TOP_LightGBM_*.py / TOP_XGboost_*.py の出力先はこの下に統一する）
 RESULTS_ROOT = PROJECT_ROOT / 'results'
+MIX_RESULTS_ROOT = PROJECT_ROOT / 'mix_results'
 
 
 def feature_dir(feature_set: str) -> Path:
@@ -166,7 +167,8 @@ def new_run(feature_set: str, algorithm: str, smns=None, timestamp: str = None,
     else:
         folder_name = f"{timestamp}_{label}"
 
-    run_dir = RESULTS_ROOT / feature_set / algorithm / folder_name
+    output_root = MIX_RESULTS_ROOT if run_type == 'mix' else RESULTS_ROOT
+    run_dir = output_root / feature_set / algorithm / folder_name
     run_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"結果保存フォルダを作成しました: {run_dir}")

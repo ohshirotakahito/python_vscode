@@ -161,6 +161,9 @@ def load_and_filter(path: str, filters: Optional[dict] = None) -> pd.DataFrame:
         source = sample_directory(source.parent, source.name[:-len(suffix)]) / source.name
     datum = np.load(source, allow_pickle=True)
     df = pd.DataFrame(data=datum, columns=COLUMNS)
+    from common.training_file_filter import filter_training_rows
+    if source.name.endswith(suffix):
+        df = filter_training_rows(df, source.name[:-len(suffix)], traditional=True)
 
     df["signal_time"] = df["signal_time"].astype(float)
     df["signal_baseline"] = df["signal_baseline"].astype(float)
@@ -608,7 +611,8 @@ def run_prediction(smns: List[str], test_smns: List[str], retrain: bool = RETRAI
                    threshold: float = PMAX_THRESHOLD,
                    train_filters: Optional[dict] = TRAIN_FILTERS,
                    mix_filters: Optional[dict] = MIX_FILTERS,
-                   progress_callback: Optional[Callable[[int, int, str], None]] = None) -> Path:
+                   progress_callback: Optional[Callable[[int, int, str], None]] = None,
+                   mix_file_rules=None) -> Path:
     """純粋分子(smns)でモデルを取得（再利用 or 学習）し、混合サンプル(test_smns)の
     比率を予測して results/rmb/xgboost/<timestamp>_mix_<smns>/ に保存する。
 
@@ -646,13 +650,16 @@ def run_prediction(smns: List[str], test_smns: List[str], retrain: bool = RETRAI
     (run_dir / "used_model_version.txt").write_text(str(model_version_dir), encoding="utf-8")
 
     # --- 予測（混合サンプルのファイル単位比率集計） ---
-    save_group_predictions(test_smns, artifacts, smns, run_dir, threshold=threshold,
-                           filters=mix_filters,
-                           progress_callback=lambda i, _n, msg: notify(1 + i, msg))
+    from common.training_file_filter import prediction_file_selection
+    with prediction_file_selection(FEATURE_SET, test_smns, mix_file_rules) as file_selection:
+        save_group_predictions(test_smns, artifacts, smns, run_dir, threshold=threshold,
+                               filters=mix_filters,
+                               progress_callback=lambda i, _n, msg: notify(1 + i, msg))
 
     paths.write_run_manifest(run_dir, run_ts, smns, config={
         "run_type": "mix",
         "test_smns": list(test_smns),
+        "mix_file_selection": file_selection,
         "class_names": list(artifacts.class_names),
         "pmax_threshold": threshold,
         "model_status": model_status,

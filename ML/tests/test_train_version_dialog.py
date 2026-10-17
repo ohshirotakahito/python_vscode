@@ -24,16 +24,50 @@ class Variable:
 
 
 class VersionDialogTests(unittest.TestCase):
+    def test_source_filter_clears_incompatible_versions_and_file_rules(self):
+        tab = SimpleNamespace(experiment=Variable(''), experiment_combo=Mock(),
+            _experiments=['A'], _sample_names=['Glu', 'Lys', 'Legacy'],
+            _source_versions={'Glu': [{'run_id': 'a', 'ex': 'A'}, {'run_id': 'b', 'ex': 'B'}],
+                              'Lys': [{'run_id': 'lys', 'ex': 'B'}],
+                              'Legacy': [{'run_id': 'legacy', 'ex': None}]},
+            feature_versions={'Glu': 'b'}, _set_file_filters=Mock(),
+            version_summary=Mock(), samples=Mock(), source_hint=Mock())
+        tab.experiment_combo.current.return_value = 1
+        tab_train.TrainTab._filter_samples(tab)
+        self.assertEqual(tab.experiment.get(), 'A')
+        tab.samples.set_items.assert_called_once_with(['Glu'])
+        self.assertEqual(tab.feature_versions, {})
+        tab._set_file_filters.assert_called_once_with([])
+        tab.experiment_combo.current.return_value = 0
+        tab_train.TrainTab._filter_samples(tab)
+        tab.samples.set_items.assert_called_with(['Glu', 'Lys', 'Legacy'])
+
+    def test_registered_combination_requires_versions_from_selected_source(self):
+        tab = self.tab([], ('Glu, Lys',))
+        tab.runner = SimpleNamespace(busy=False)
+        tab.experiment = Variable('A')
+        tab._distance_settings = Mock(return_value=([], None, None))
+        tab.fc_mode = Variable('minimal')
+        tab.use_selection = Variable(True)
+        with patch.object(tab_train, 'resolve_version', side_effect=FileNotFoundError('missing')) as resolve, \
+                patch.object(tab_train.messagebox, 'showerror') as error:
+            tab_train.TrainTab._run(tab)
+            self.assertEqual(resolve.call_args.kwargs, {'experiment': 'A'})
+            error.assert_called_once()
+
     def test_review_transfer_replaces_combinations_and_pins_versions(self):
         tab = SimpleNamespace(pipeline=Variable(next(iter(tab_train.PIPELINES))),
             samples=Mock(), combos=Mock(), version_summary=Mock(), progress=Mock(),
-            _set_file_filters=Mock(), _pipeline_changed=Mock())
+            _set_file_filters=Mock(), _pipeline_changed=Mock(),
+            experiment=Variable('Other'), refresh_samples=Mock())
         tab.samples.listbox.get.return_value = ('Other', 'Lys', 'M1Lys')
         versions = {'Lys': 'run-a', 'M1Lys': 'run-b'}
         rules = [('events', '>=', '100'), ('events', '<=', '3000')]
         self.assertTrue(tab_train.TrainTab.apply_review_selection(
             tab, 'rmc', ['Lys', 'M1Lys'], versions, rules))
         self.assertEqual(tab.feature_versions, versions)
+        self.assertEqual(tab.experiment.get(), '')
+        tab.refresh_samples.assert_called_once()
         self.assertIsNot(tab.feature_versions, versions)
         tab.combos.delete.assert_called_once_with(0, 'end')
         tab.combos.insert.assert_called_once_with('end', 'Lys, M1Lys')

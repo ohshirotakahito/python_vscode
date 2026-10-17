@@ -24,6 +24,7 @@ from tkinter.scrolledtext import ScrolledText
 
 import pandas as pd
 from PIL import Image, ImageTk
+from theme import ACCENT, SELECTED, SURFACE, TEXT
 
 JP_FONT = ("Meiryo UI", 10)
 
@@ -222,7 +223,7 @@ class CheckList(ttk.Frame):
         self._on_change = on_change
         self.listbox = tk.Listbox(self, selectmode="multiple", exportselection=False,
                                   height=height, activestyle="none", font=JP_FONT,
-                                  selectbackground='#174ea6', selectforeground='white')
+                                  selectbackground=ACCENT, selectforeground='white')
         scroll = ttk.Scrollbar(self, orient="vertical", command=self.listbox.yview)
         self.listbox.configure(yscrollcommand=scroll.set)
         self.listbox.grid(row=0, column=0, sticky="nsew")
@@ -255,8 +256,8 @@ class CheckList(ttk.Frame):
         selected = set(self.listbox.curselection())
         for index in range(len(self._items)):
             self.listbox.itemconfigure(index,
-                background='#dbeafe' if index in selected else 'white',
-                foreground='#174ea6' if index in selected else '#111111')
+                background=SELECTED if index in selected else SURFACE,
+                foreground=ACCENT if index in selected else TEXT)
         if self._on_change:
             self._on_change(self.get_selected())
 

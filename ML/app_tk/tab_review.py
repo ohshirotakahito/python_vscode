@@ -9,7 +9,7 @@ from matplotlib.widgets import SpanSelector
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 from inspection_versions import InspectionVersions
-from common.feature_store import resolve_version
+from common.feature_store import list_versions, resolve_version
 from lib.catalog import list_available_samples
 from lib.file_review import (comparison, event_histogram, histogram_markers, file_statistics, filter_files,
                              load_events, numeric_features, selected_events)
@@ -21,7 +21,7 @@ SAMPLE_PALETTE = [('青', '#1f77b4'), ('橙', '#e66b00'), ('緑', '#228b22'),
 
 
 class ReviewTab(InspectionVersions, ttk.Frame):
-    def __init__(self, master, runner, on_train=None):
+    def __init__(self, master, runner, on_train=None, *, workspace_tabs=False):
         super().__init__(master, padding=10)
         self.runner = runner
         self.on_train = on_train
@@ -36,7 +36,16 @@ class ReviewTab(InspectionVersions, ttk.Frame):
         self.hist_range = None
         self.range_selectors = []
         self.sample_color_overrides = {}
-        pane = ttk.PanedWindow(self, orient='horizontal')
+        content = self
+        if workspace_tabs:
+            self.workspace_tabs = ttk.Notebook(self)
+            self.workspace_tabs.pack(fill='both', expand=True)
+            self.inspection_page = ttk.Frame(self.workspace_tabs)
+            self.learning_page = ttk.Frame(self.workspace_tabs)
+            self.workspace_tabs.add(self.inspection_page, text='① データ精査・絞り込み')
+            self.workspace_tabs.add(self.learning_page, text='② クラスタリング・評価')
+            content = self.inspection_page
+        pane = ttk.PanedWindow(content, orient='horizontal')
         pane.pack(fill='both', expand=True)
         left = ttk.Frame(pane, width=310)
         right = ttk.Frame(pane)
@@ -47,6 +56,13 @@ class ReviewTab(InspectionVersions, ttk.Frame):
         combo = ttk.Combobox(left, textvariable=self.feature_set, values=['rmb', 'rmc', 'rmd'], state='readonly')
         combo.pack(fill='x')
         combo.bind('<<ComboboxSelected>>', lambda _: self.refresh_samples())
+        ttk.Label(left, text='実験フォルダ（出どころ）').pack(anchor='w', pady=(4, 0))
+        self.experiment = tk.StringVar()
+        self.experiment_combo = ttk.Combobox(left, state='readonly')
+        self.experiment_combo.pack(fill='x')
+        self.experiment_combo.bind('<<ComboboxSelected>>', self._filter_samples)
+        self.source_hint = ttk.Label(left, wraplength=400)
+        self.source_hint.pack(fill='x', pady=(2, 0))
         self.samples = CheckList(left, height=7, on_change=self._samples_selected)
         self.samples.pack(fill='x', pady=4)
         self.sample_selection = ttk.Label(left, text='選択中：0 サンプル', wraplength=400,
@@ -126,6 +142,15 @@ class ReviewTab(InspectionVersions, ttk.Frame):
         self.show_markers = tk.BooleanVar(value=True)
         ttk.Checkbutton(layout_bar, text='統計の縦線・数値を表示', variable=self.show_markers,
                         command=self._draw_plot).pack(side='left')
+        marker_bar = ttk.Frame(right)
+        marker_bar.pack(fill='x', pady=2)
+        ttk.Label(marker_bar, text='表示する統計').pack(side='left', padx=5)
+        self.marker_selection = {}
+        for name, label in [('Mean', 'Mean（平均）'), ('Mode*', 'Mode（最頻ビン）'),
+                            ('Q1', 'Q1（25%）'), ('Median', 'Median / Q2（50%）'), ('Q3', 'Q3（75%）')]:
+            variable = self.marker_selection[name] = tk.BooleanVar(value=True)
+            ttk.Checkbutton(marker_bar, text=label, variable=variable,
+                            command=self._draw_plot).pack(side='left', padx=3)
         visibility_bar = ttk.Frame(right)
         visibility_bar.pack(fill='x', pady=2)
         ttk.Label(visibility_bar, text='ヒストグラムの表示対象').pack(side='left', padx=5)
@@ -184,7 +209,33 @@ class ReviewTab(InspectionVersions, ttk.Frame):
 
     def refresh_samples(self):
         self._refresh_version_set()
-        self.samples.set_items(list_available_samples(self.feature_set.get()))
+        self._sample_names = list_available_samples(self.feature_set.get())
+        self._source_versions = {name: list_versions(self.feature_set.get(), name)
+                                 for name in self._sample_names}
+        self._experiments = sorted({v['ex'] for versions in self._source_versions.values()
+                                    for v in versions if v.get('ex')})
+        self.experiment_combo.configure(values=['すべて（旧形式を含む）', *self._experiments])
+        experiment = self.experiment.get()
+        self.experiment_combo.current(self._experiments.index(experiment) + 1
+                                      if experiment in self._experiments else 0)
+        self._filter_samples()
+
+    def _filter_samples(self, _event=None):
+        index = self.experiment_combo.current()
+        experiment = self._experiments[index - 1] if index > 0 else ''
+        self.experiment.set(experiment)
+        names = [name for name in self._sample_names if not experiment or any(
+            v.get('ex') == experiment for v in self._source_versions[name])]
+        if experiment:
+            self.feature_versions = {name: run_id for name, run_id in self.feature_versions.items()
+                                     if any(v['run_id'] == run_id and v.get('ex') == experiment
+                                            for v in self._source_versions.get(name, []))}
+        self.version_summary.configure(text=f'版を指定: {len(self.feature_versions)} サンプル / '
+                                       'その他は選択した出どころの最新完了版')
+        self.samples.set_items(names)
+        self.source_hint.configure(text=(
+            f'{len(names)} サンプル：選択した実験の最新完了版を使用（版の個別指定も可）'
+            if experiment else 'すべての出どころを表示。旧形式は出どころ不明です。'))
 
     def _samples_selected(self, samples):
         self.sample_selection.configure(text=f'選択中：{len(samples)} サンプル\n' + '、'.join(samples))
@@ -196,13 +247,15 @@ class ReviewTab(InspectionVersions, ttk.Frame):
             return
         feature_set = self.feature_set.get()
         versions = dict(self.feature_versions)
+        experiment = self.experiment.get()
 
         def task(progress):
-            selected = {sample: resolve_version(feature_set, sample, versions.get(sample))
+            selected = {sample: resolve_version(feature_set, sample, versions.get(sample),
+                                                experiment=experiment or None)
                         for sample in samples}
             events = load_events(feature_set, samples, progress, feature_versions=selected)
             return events, file_statistics(events), (feature_set, list(samples), versions,
-                    {sample: version['run_id'] for sample, version in selected.items()})
+                    {sample: version['run_id'] for sample, version in selected.items()}, experiment)
 
         self.runner.run(task, self.progress, on_done=self._loaded)
 
@@ -231,13 +284,14 @@ class ReviewTab(InspectionVersions, ttk.Frame):
         if self.loaded_selection is None or self.files.empty:
             messagebox.showerror('入力エラー', '先に統計を読み込んで精査してください。')
             return
-        feature_set, samples, requested, resolved = self.loaded_selection
+        feature_set, samples, requested, resolved, experiment = self.loaded_selection
         current_versions = {s: self.feature_versions.get(s) for s in samples}
         loaded_versions = {s: requested.get(s) for s in samples}
         if (self.feature_set.get() != feature_set or
+                self.experiment.get() != experiment or
                 set(self.samples.get_selected()) != set(samples) or
                 current_versions != loaded_versions):
-            messagebox.showerror('再読み込みが必要です', 'サンプル・特徴量セット・抽出版が変更されています。統計を読み込み直してください。')
+            messagebox.showerror('再読み込みが必要です', 'サンプル・特徴量セット・実験フォルダ・抽出版が変更されています。統計を読み込み直してください。')
             return
         if len(samples) < 2:
             messagebox.showerror('入力エラー', '学習・評価にはサンプルを2つ以上選んでください。')
@@ -480,15 +534,19 @@ class ReviewTab(InspectionVersions, ttk.Frame):
                     lines = []
                     styles = {'Mean': '-', 'Mode*': ':', 'Q1': '--', 'Median': '-.', 'Q3': '--'}
                     for name, value in markers.items():
+                        if not self.marker_selection[name].get():
+                            continue
                         visible = np.isfinite(value) and edges[0] <= value <= edges[-1]
                         if visible:
                             ax.axvline(value, color=color, linestyle=styles[name], linewidth=1.5,
                                        alpha=1)
                         lines.append(f'{name}={value:.5g}' + (' (outside)' if np.isfinite(value) and not visible else ''))
                     y = (.74 - (index * group_count + group_index) * min(.17, .70 / (len(samples) * group_count))) if overlay else .76 - group_index * .36
-                    info_ax.text(.02, y, f'{sample} {group}\n' + ('\n'.join(lines) if lines else 'No valid events'),
-                            transform=info_ax.transAxes, va='top', fontsize=11, color='#111111',
-                            fontweight='bold',
+                    if not lines:
+                        continue
+                    info_ax.text(.02, y, f'{sample} {group}\n' + '\n'.join(lines),
+                            transform=info_ax.transAxes, va='top', fontsize=9, color='#111111',
+                            fontweight='normal',
                             bbox=dict(facecolor='white', edgecolor=color, linewidth=1.5, alpha=1, pad=4))
                 if self.drag_range.get() and (not overlay or index == 0):
                     selector = SpanSelector(ax, self._drag_hist_range, 'horizontal',

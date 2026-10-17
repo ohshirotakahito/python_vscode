@@ -174,7 +174,7 @@ class BrowserTab(ttk.Frame):
         paned.add(left, weight=1)
         top = ttk.Frame(left)
         top.pack(fill="x")
-        ttk.Label(top, text="過去の実行結果").pack(side="left")
+        ttk.Label(top, text="学習・評価の結果（混合予測は⑤で確認）").pack(side="left")
         ttk.Button(top, text="再読み込み", command=self.refresh).pack(side="right")
         self.filter_text = tk.StringVar()
         entry = ttk.Entry(left, textvariable=self.filter_text)
