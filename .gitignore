@@ -4,6 +4,9 @@ ML/models/
 ML/results/
 ML/hist_results/
 ML/hist_var_resulsts/
+ML/cluster_results/
+ML/mix_results/
+Viewer/output_pdf/
 Viewer/csv_data/
 filemanager/rename_logs/
 Viewer/clips_pick/
@@ -36,6 +39,7 @@ clips_tsfresh/
 analysis_outputs/
 
 # ===== Python =====
+.pytest_cache/
 __pycache__/
 *.pyc
 *.pyo
@@ -62,3 +66,8 @@ Thumbs.db
 
 # ===== ログ =====
 *.log
+database/*.view.json
+database/*.view.json.tmp
+
+# ===== 作業用一時フォルダ =====
+.tmp/
