@@ -13,6 +13,7 @@ from common.feature_store import list_versions, resolve_version
 from lib.catalog import list_available_samples
 from lib.file_review import (comparison, event_histogram, histogram_markers, file_statistics, filter_files,
                              load_events, numeric_features, selected_events)
+from theme import INFO, MUTED, SELECTED, SURFACE, TEXT
 from widgets import CheckList, DataTable, ProgressPanel
 
 SAMPLE_PALETTE = [('青', '#1f77b4'), ('橙', '#e66b00'), ('緑', '#228b22'),
@@ -66,7 +67,7 @@ class ReviewTab(InspectionVersions, ttk.Frame):
         self.samples = CheckList(left, height=7, on_change=self._samples_selected)
         self.samples.pack(fill='x', pady=4)
         self.sample_selection = ttk.Label(left, text='選択中：0 サンプル', wraplength=400,
-                                          foreground='#174ea6')
+                                          foreground=INFO)
         self.sample_selection.pack(fill='x', pady=(0, 4))
         ttk.Button(left, text='サンプルの選択をすべて解除',
                    command=self.samples.clear_selection).pack(fill='x', pady=(0, 4))
@@ -386,8 +387,8 @@ class ReviewTab(InspectionVersions, ttk.Frame):
         self.stat_table = DataTable(views)
         views.add(self.file_table, text='全ファイルの統計・選択状態')
         views.add(self.stat_table, text='全体との統計比較')
-        self.file_table.tree.tag_configure('included', background='#dbeafe', foreground='#174ea6')
-        self.file_table.tree.tag_configure('excluded', background='#f1f1f1', foreground='#777777')
+        self.file_table.tree.tag_configure('included', background=SELECTED, foreground=TEXT)
+        self.file_table.tree.tag_configure('excluded', background=SURFACE, foreground=MUTED)
         self._update_tables()
 
     def _update_tables(self):

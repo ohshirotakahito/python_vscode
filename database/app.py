@@ -8,6 +8,10 @@ import time
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from tkinter import font as tkfont
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import ui_theme  # noqa: E402
 
 try:
     from . import catalog, inventory_views, recent_progress, sq_workflow, rackstation_view
@@ -52,26 +56,10 @@ class App(tk.Tk):
         super().__init__()
         self.title('実験ファイル データベース')
         self.geometry('1450x950')
-        self.configure(background='#eaf4fc')
-        self.option_add('*Toplevel.background', '#eaf4fc')
-        style = ttk.Style(self)
-        style.theme_use('clam')
-        style.configure('.', background='#eaf4fc', foreground='#203548')
-        style.configure('TFrame', background='#eaf4fc')
-        style.configure('TLabel', background='#eaf4fc')
-        style.configure('TLabelframe', background='#eaf4fc')
-        style.configure('TLabelframe.Label', background='#eaf4fc')
-        style.configure('TButton', background='#d6eafa')
-        style.map('TButton', background=[('active', '#c3dff4')])
-        style.configure('TEntry', fieldbackground='#ffffff')
-        style.configure('TCombobox', fieldbackground='#ffffff')
-        style.map('TCombobox', fieldbackground=[('readonly', '#ffffff')])
-        style.configure('TNotebook', background='#eaf4fc')
-        style.configure('TNotebook.Tab', background='#d6eafa')
-        style.map('TNotebook.Tab', background=[('selected', '#ffffff'), ('active', '#c3dff4')])
-        style.configure('Treeview', rowheight=26, background='#ffffff', fieldbackground='#ffffff')
-        style.configure('Treeview.Heading', background='#d6eafa', foreground='#203548')
-        style.map('Treeview', background=[('selected', '#3976a8')], foreground=[('selected', '#ffffff')])
+        style = ui_theme.apply(self, ui_theme.DATABASE)
+        style.configure('Treeview', rowheight=26)
+        ui_theme.header(self, '実験ファイル データベース', 'サーバーごとのファイル保存状況と解析着手状況',
+                        '\uEE94', ui_theme.DATABASE, on_close=lambda: self.close()).pack(fill='x')
         self.db_path = catalog.DEFAULT_DB
         catalog.initialize(self.db_path)
         self.configured = DEFAULTS
@@ -176,12 +164,13 @@ class App(tk.Tk):
             tab = ttk.Frame(self.notebook)
             self.notebook.add(tab, text=title)
             if key == 'sq_entries':
-                ttk.Label(tab, text='薄赤：未着手・TDMS件数あり（優先処理）　灰：未着手・TDMS未作成　薄緑：着手済み　白：確認不可・対象外',
+                ttk.Label(tab, text='赤：未着手・TDMS件数あり（優先処理）　灰：未着手・TDMS未作成　緑：着手済み　無地：確認不可・対象外',
                           padding=(8, 4)).pack(fill='x')
             tree = self.table(columns, titles, 14, True, parent=tab)
             if key == 'sq_entries':
-                for tag, color in [('sq_needs_action', '#ffcaca'), ('sq_no_tdms', '#eeeeee'),
-                                   ('sq_started', '#e3f3e7'), ('sq_unknown', '#ffffff')]:
+                for tag, color in [('sq_needs_action', ui_theme.row('danger', 0.3)),
+                                   ('sq_no_tdms', ui_theme.row('neutral', 0.16)),
+                                   ('sq_started', ui_theme.row('success')), ('sq_unknown', ui_theme.FIELD)]:
                     tree.tag_configure(tag, background=color)
             self.views[key] = dict(tab=tab, tree=tree, columns=columns, rows=[])
             tree.bind('<Double-1>', lambda event, current=tree: self.show_row_details(current))
@@ -199,11 +188,11 @@ class App(tk.Tk):
         frame = ttk.Frame(parent if parent is not None else self.sq_panel, padding=(8, 0))
         frame.pack(fill='both' if expand else 'x', expand=expand)
         tree = ttk.Treeview(frame, columns=columns, show='headings', height=height)
-        tree.tag_configure('even', background='#f0f7fd')
-        tree.tag_configure('完了', background='#e3f3e7')
-        tree.tag_configure('実行中', background='#e0efff')
-        tree.tag_configure('失敗', background='#ffe4e4')
-        tree.tag_configure('中止', background='#fff0cf')
+        tree.tag_configure('even', background=ui_theme.STRIPE)
+        tree.tag_configure('完了', background=ui_theme.row('success'))
+        tree.tag_configure('実行中', background=ui_theme.row('info'))
+        tree.tag_configure('失敗', background=ui_theme.row('danger'))
+        tree.tag_configure('中止', background=ui_theme.row('warning'))
         for col, title in zip(columns, titles):
             tree.heading(col, text=title)
             tree.column(col, width=300 if col in ('root', 'error', 'scope') else 140, stretch=False)

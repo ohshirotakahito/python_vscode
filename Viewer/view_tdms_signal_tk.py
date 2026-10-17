@@ -25,6 +25,7 @@ SIGNAL_COLORS = {
 
 # Reuse the ML application's asynchronous server folder picker.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import ui_theme  # noqa: E402
 from ML.app_tk.server_browse import (
     SERVERS, FolderPickerDialog, check_component, list_server_shares, list_subfolders,
 )
@@ -1120,13 +1121,13 @@ def main():
     root.title("TDMS 波形ビューア")
     root.geometry("1400x900")
     root.minsize(900, 650)
-    style = ttk.Style(root)
+    style = ui_theme.apply(root, ui_theme.VIEWER)
     style.configure("TButton", padding=(10, 6))
     style.configure("TNotebook.Tab", padding=(18, 8))
-    style.configure("TLabelframe.Label", font=("Yu Gothic UI", 10, "bold"))
     style.configure("Heading.TLabel", font=("Yu Gothic UI", 12, "bold"))
     style.configure("Primary.TButton", font=("Yu Gothic UI", 10, "bold"))
-    style.configure("Status.TLabel", background="#eaf1f8", foreground="#244361")
+    ui_theme.header(root, "TDMS 波形ビューア", "TDMS 波形の表示・ノイズ推定・PDF 出力",
+                    "\uE9D9", ui_theme.VIEWER, on_close=lambda: close()).pack(fill="x")
     workspace = ttk.Notebook(root)
     workspace.pack(fill="both", expand=True)
     waveform_frame = ttk.Frame(workspace)

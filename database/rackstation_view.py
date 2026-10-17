@@ -5,12 +5,16 @@ import threading
 import time
 import os
 import shutil
+import sys
 import tkinter as tk
 from tkinter import ttk, messagebox
 try:
     from . import catalog, inventory_views
 except ImportError:
     import catalog, inventory_views
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import ui_theme  # noqa: E402
 
 
 def inventory(path, root=None):
@@ -263,7 +267,7 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
     capacity_tree = parent.table(CAPACITY_COLUMNS, CAPACITY_TITLES, len(groups) + 1, parent=window)
     for col in CAPACITY_COLUMNS:
         capacity_tree.column(col, width=260 if col in ('root', 'error') else 200 if col in ('tdms_bytes', 'volume') else 130)
-    capacity_tree.tag_configure('total', background='#d6eafa')
+    capacity_tree.tag_configure('total', background=ui_theme.row('violet', 0.2))
     capacity_tree.bind('<Double-1>', lambda event: parent.show_row_details(capacity_tree))
     tabs = ttk.Notebook(window)
     tabs.pack(fill='both', expand=True, padx=8, pady=4)
@@ -272,8 +276,9 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
         tree = parent.table(columns, titles, 18, True, parent=tab)
         for col in columns:
             tree.column(col, width=220 if col in ('experiment', 'last_success') else 140, stretch=True)
-        for tag, color in [('unstarted', '#ffe4e4'), ('partial', '#fff0cf'), ('complete', '#e3f3e7'),
-                           ('excess', '#eadffc'), ('unknown', '#edf0f3')]:
+        for tag, color in [('unstarted', ui_theme.row('danger')), ('partial', ui_theme.row('warning')),
+                           ('complete', ui_theme.row('success')), ('excess', ui_theme.row('violet')),
+                           ('unknown', ui_theme.row('neutral', 0.16))]:
             tree.tag_configure(tag, background=color)
         tree.bind('<Double-1>', lambda event: parent.show_row_details(tree))
         return tree

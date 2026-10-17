@@ -37,6 +37,10 @@ Python_VScode/
 └── filemanager/            # フォルダ作成・転送・リネーム・ZIP化(python filemanager/app.py)
 ```
 
+Tkinter アプリ(exmanager / ML パネル / filemanager / Viewer / database)は、
+ルートの `launch_apps.bat`(ランチャー画面 `launcher.py`)から起動できる。
+画面の配色・ヘッダーはルートの `ui_theme.py`(共通ダークテーマ、標準ライブラリのみ)で統一している。
+
 各フォルダの詳細は、それぞれの `README.md`(ML は `ML/docs/`)を参照。
 ML/ 直下のスクリプトは UI から `importlib` でモジュール名指定で読み込まれるため、
 移動・改名する場合は `ML/app/pages/` と `ML/app_tk/tab_*.py` の参照も合わせて変更すること。

@@ -14,6 +14,7 @@ from tkinter.scrolledtext import ScrolledText
 import pandas as pd
 
 from lib.runs import list_runs
+from theme import MUTED
 from widgets import DataTable, ImageGallery, open_path, save_zip_dialog
 
 
@@ -26,7 +27,7 @@ class RunResultView(ttk.Frame):
 
         bar = ttk.Frame(self)
         bar.pack(fill="x")
-        self.title = ttk.Label(bar, text="結果を選んでください", foreground="#666")
+        self.title = ttk.Label(bar, text="結果を選んでください", foreground=MUTED)
         self.zip_button = ttk.Button(bar, text="ZIPで保存", state="disabled",
                                      command=lambda: save_zip_dialog(self.run_dir))
         self.zip_button.pack(side="right")
@@ -180,7 +181,7 @@ class BrowserTab(ttk.Frame):
         entry = ttk.Entry(left, textvariable=self.filter_text)
         entry.pack(fill="x", pady=4)
         entry.bind("<KeyRelease>", lambda _e: self._fill())
-        ttk.Label(left, text="↑ サンプル名などで絞り込み", foreground="#666").pack(anchor="w")
+        ttk.Label(left, text="↑ サンプル名などで絞り込み", foreground=MUTED).pack(anchor="w")
 
         self.tree = ttk.Treeview(left, columns=("time", "kind", "smns"), show="headings")
         for col, text, width in (("time", "日時", 130), ("kind", "特徴量/手法", 110),

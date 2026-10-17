@@ -12,6 +12,7 @@ try:
 except ModuleNotFoundError:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from exmanager import core
+import ui_theme  # noqa: E402  (リポジトリ直下。上の try で sys.path に追加済み)
 
 
 def inspect_recent(machine_csv, legacy, local):
@@ -131,7 +132,7 @@ def open_window(parent):
     details = parent.table(('backup', 'name', 'state', 'count', 'latest', 'destination', 'root'),
                            ('backup', '実験フォルダ名', '着手状況', '履歴件数', '最終コピー履歴', '保存先実験／サンプル', '確認元'),
                            16, True, parent=window)
-    details.tag_configure('pending', background='#fff0cf')
+    details.tag_configure('pending', background=ui_theme.row('warning'))
     results = queue.Queue()
     data = []
 

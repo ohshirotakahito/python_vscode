@@ -25,6 +25,7 @@ from lib.mix_summary import (
     UNIT_FILE, UNIT_TOTAL, UNIT_WINDOW, chart_classes, group_keys, list_mix_runs,
     load_events, summarize, to_long_for_chart,
 )
+from theme import MUTED
 from widgets import CheckList, DataTable, ProgressPanel, ScrollableFrame, open_path, save_csv_dialog, save_zip_dialog
 
 PIPELINES = {
@@ -229,7 +230,7 @@ class PredictTab(ttk.Frame):
         self.run_choice.pack(side="left", fill="x", expand=True, padx=6)
         self.run_choice.bind("<<ComboboxSelected>>", lambda _e: self._load_selected_run())
         ttk.Button(top, text="再読み込み", command=self.refresh_runs).pack(side="left")
-        self.info = ttk.Label(right, text="", foreground="#555")
+        self.info = ttk.Label(right, text="", foreground=MUTED)
         self.info.pack(anchor="w", pady=(2, 4))
 
         controls = ttk.Frame(right)

@@ -10,3 +10,6 @@
 *.zip binary
 *.npy binary
 *.pkl binary
+
+# バッチファイルはCRLFでないとラベル(goto/call)が誤動作するため例外にする
+*.bat text eol=crlf

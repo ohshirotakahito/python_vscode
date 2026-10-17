@@ -13,6 +13,7 @@ import common.paths as paths
 from inspection_versions import InspectionVersions
 from common.feature_store import list_versions, resolve_version
 from lib.catalog import list_available_samples
+from theme import MUTED
 from widgets import CheckList, DataTable, ImageGallery, ProgressPanel, open_path, save_zip_dialog
 
 
@@ -73,7 +74,7 @@ class StatTab(InspectionVersions, ttk.Frame):
         paned.add(right, weight=3)
         bar = ttk.Frame(right)
         bar.pack(fill="x")
-        self.result_label = ttk.Label(bar, text="結果はまだありません", foreground="#666")
+        self.result_label = ttk.Label(bar, text="結果はまだありません", foreground=MUTED)
         self.zip_button = ttk.Button(bar, text="ZIPで保存", state="disabled",
                                      command=lambda: save_zip_dialog(self.output_dir))
         self.zip_button.pack(side="right")

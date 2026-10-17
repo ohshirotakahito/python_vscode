@@ -22,6 +22,7 @@ import common.paths as paths
 from common.extract_catalog import load_history, scan_sample
 from lib.catalog import list_available_samples
 from server_browse import SERVERS, FolderPickerDialog, check_component, list_server_shares, list_subfolders
+from theme import DANGER, INFO, MUTED, SELECTED, SUCCESS, SURFACE, TEXT, WARNING
 from widgets import DataTable, ProgressPanel, open_path
 
 METHODS = {
@@ -35,8 +36,8 @@ METHODS = {
 
 SELECTABLE = ("未抽出", "未抽出（同名の別実験あり）", "抽出済み")
 STATUS_COLORS = {
-    "未抽出": "#1a5fb4", "未抽出（同名の別実験あり）": "#1a5fb4", "抽出済み": "#2e7d32",
-    "ANAL未処理": "#b35c00", "測定ファイルなし": "#b35c00", "Tフォルダなし": "#c0392b",
+    "未抽出": INFO, "未抽出（同名の別実験あり）": INFO, "抽出済み": SUCCESS,
+    "ANAL未処理": WARNING, "測定ファイルなし": WARNING, "Tフォルダなし": DANGER,
 }
 CHECKED, UNCHECKED, NA = "☑", "☐", "－"
 ALL_GAPS = "すべてのGap"
@@ -106,7 +107,7 @@ class ExtractTab(ttk.Frame):
                   lambda: self._pick("ex"))
         self._row(form, 4, "サンプル名（カンマ区切り）", ttk.Entry(form, textvariable=self.samples),
                   lambda: self._pick("samples"))
-        self.path_label = ttk.Label(form, text="", foreground="#666")
+        self.path_label = ttk.Label(form, text="", foreground=MUTED)
         self.path_label.grid(row=5, column=1, columnspan=2, sticky="w")
         self.condition_note = tk.StringVar()
         self._row(form, 6, "条件メモ（処理設定は変更しません）", ttk.Entry(form, textvariable=self.condition_note))
@@ -130,7 +131,7 @@ class ExtractTab(ttk.Frame):
         self._update_path()
         if self.scan_key is not None and self.scan_key != self._current_key():
             self.scan_status.configure(
-                text="設定が変わりました。「ファイルを確認」を押し直してください。", foreground="#b35c00")
+                text="設定が変わりました。「ファイルを確認」を押し直してください。", foreground=WARNING)
 
     def _build_actions(self):
         bar = ttk.Frame(self)
@@ -144,7 +145,7 @@ class ExtractTab(ttk.Frame):
         self.open_button.pack(side="left")
         self.scan_status = ttk.Label(bar, text="サンプルを選んで「ファイルを確認」を押すと、"
                                                "抽出できるファイルと抽出済みかどうかを一覧表示します。",
-                                     foreground="#555")
+                                     foreground=MUTED)
         self.scan_status.pack(side="left", padx=12)
 
     def _on_busy(self, busy):
@@ -248,12 +249,12 @@ class ExtractTab(ttk.Frame):
         self.gap_choice.set(ALL_GAPS)
         self.gap_choice.pack(side="left", padx=2)
         ttk.Button(tools, text="このGapだけ選択", command=self._check_gap).pack(side="left", padx=2)
-        self.selection_label = ttk.Label(tools, text="", foreground="#333")
+        self.selection_label = ttk.Label(tools, text="", foreground=TEXT)
         self.selection_label.pack(side="right")
 
         ttk.Label(frame, text="行をクリックすると抽出する／しないが切り替わります（Shift/Ctrlで複数行を選んで"
                               "Spaceキーでまとめて切り替え）。ANALが無いファイルは選べません。",
-                  foreground="#666").pack(anchor="w")
+                  foreground=MUTED).pack(anchor="w")
 
         table = ttk.Frame(frame)
         table.pack(fill="both", expand=True, pady=(4, 0))
@@ -268,9 +269,9 @@ class ExtractTab(ttk.Frame):
         vs.pack(side="right", fill="y")
         for status, color in STATUS_COLORS.items():
             self.files.tag_configure(status, foreground=color)
-        self.files.tag_configure('checked', background='#dbeafe')
-        self.files.tag_configure('unchecked', background='#ffffff')
-        ttk.Label(frame, text='淡い青の行：抽出対象（チェック済み）／白の行：対象外').pack(anchor='w')
+        self.files.tag_configure('checked', background=SELECTED)
+        self.files.tag_configure('unchecked', background=SURFACE)
+        ttk.Label(frame, text='緑の行：抽出対象（チェック済み）／無地の行：対象外').pack(anchor='w')
         self.files.bind("<ButtonRelease-1>", self._on_click)
         self.files.bind("<space>", lambda _e: self._toggle(self.files.selection()))
 
@@ -340,7 +341,7 @@ class ExtractTab(ttk.Frame):
         self._fill_summary()
         self._update_selection_label()
         self.scan_status.configure(text="確認済み（下の一覧で抽出するファイルを選んでください）",
-                                   foreground="#2e7d32")
+                                   foreground=SUCCESS)
 
     def _fill_summary(self):
         rows = []
@@ -532,7 +533,7 @@ class ExtractTab(ttk.Frame):
         ttk.Label(frame, text="抽出を実行するたびに data/features/<rmb|rmc>/extraction_runs.csv・"
                               "extraction_files.csv に記録されます（この機能を入れる前の抽出は記録されていません。"
                               "過去分の有無は「ファイル確認・選択」の抽出済み件数で確認できます）。",
-                  foreground="#666", wraplength=1200).pack(anchor="w", pady=(4, 4))
+                  foreground=MUTED, wraplength=1200).pack(anchor="w", pady=(4, 4))
 
         paned = ttk.PanedWindow(frame, orient="vertical")
         paned.pack(fill="both", expand=True)

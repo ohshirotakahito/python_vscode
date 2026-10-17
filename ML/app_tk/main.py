@@ -32,7 +32,7 @@ import tkinter as tk  # noqa: E402
 from tkinter import messagebox, ttk  # noqa: E402
 
 from widgets import JP_FONT, TaskRunner  # noqa: E402
-from theme import ACCENT, apply_theme  # noqa: E402
+from theme import ACCENT, MUTED, apply_theme  # noqa: E402
 
 
 def main():
@@ -45,7 +45,8 @@ def main():
     except tk.TclError:
         pass
 
-    apply_theme(root, JP_FONT)
+    # on_close はこの関数の後半で定義する(クリック時に解決される)
+    apply_theme(root, JP_FONT, on_close=lambda: on_close())
 
     runner = TaskRunner(root)
     activity = ttk.LabelFrame(root, text="実行状況", padding=6)
@@ -61,7 +62,7 @@ def main():
         activity_label.configure(
             text=(f"● 処理実行中　経過 {duration}　工程進捗 {fraction:.0%}　{stage}" if busy
                   else f"待機中　直前の処理時間 {duration}"),
-            foreground=ACCENT if busy else "#526557")
+            foreground=ACCENT if busy else MUTED)
     runner.add_status_listener(show_activity)
 
     # 各タブの import は Tk 作成後に行う（重いライブラリの読み込み中もウィンドウを出すため）
@@ -121,7 +122,6 @@ def main():
     bottom.pack(fill="x", side="bottom", before=notebook)
     status = ttk.Label(bottom, text="待機中", anchor="w")
     status.pack(side="left", fill="x", expand=True)
-    ttk.Button(bottom, text="アプリを終了", command=on_close).pack(side="right")
     runner.add_busy_listener(lambda busy: status.configure(
         text="処理を実行中です…（完了まで他の実行ボタンは押せません）" if busy else "待機中"))
 

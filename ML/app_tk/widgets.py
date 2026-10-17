@@ -24,7 +24,7 @@ from tkinter.scrolledtext import ScrolledText
 
 import pandas as pd
 from PIL import Image, ImageTk
-from theme import ACCENT, SELECTED, SURFACE, TEXT
+from theme import ACCENT, DANGER, MUTED, SELECTED, SURFACE, TEXT
 
 JP_FONT = ("Meiryo UI", 10)
 
@@ -209,7 +209,7 @@ class ProgressPanel(ttk.LabelFrame):
     def finish(self, message, ok=True):
         self.bar.stop()
         self.bar.configure(mode="determinate", value=100 if ok else 0)
-        self.message.configure(text=message, foreground="" if ok else "#c0392b")
+        self.message.configure(text=message, foreground="" if ok else DANGER)
 
 
 # =====================
@@ -223,7 +223,7 @@ class CheckList(ttk.Frame):
         self._on_change = on_change
         self.listbox = tk.Listbox(self, selectmode="multiple", exportselection=False,
                                   height=height, activestyle="none", font=JP_FONT,
-                                  selectbackground=ACCENT, selectforeground='white')
+                                  selectbackground=SELECTED, selectforeground=TEXT)
         scroll = ttk.Scrollbar(self, orient="vertical", command=self.listbox.yview)
         self.listbox.configure(yscrollcommand=scroll.set)
         self.listbox.grid(row=0, column=0, sticky="nsew")
@@ -282,7 +282,7 @@ class DataTable(ttk.Frame):
         self.tree.grid(row=0, column=0, sticky="nsew")
         vs.grid(row=0, column=1, sticky="ns")
         hs.grid(row=1, column=0, sticky="ew")
-        self.note = ttk.Label(self, text="", foreground="#666")
+        self.note = ttk.Label(self, text="", foreground=MUTED)
         self.note.grid(row=2, column=0, sticky="w")
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -375,7 +375,7 @@ class ImageGallery(ScrollableFrame):
             child.destroy()
         self._photos.clear()
         if not image_paths:
-            ttk.Label(self.inner, text="（画像なし）", foreground="#666").grid(row=0, column=0)
+            ttk.Label(self.inner, text="（画像なし）", foreground=MUTED).grid(row=0, column=0)
             return
         for i, path in enumerate(image_paths):
             try:
@@ -390,7 +390,7 @@ class ImageGallery(ScrollableFrame):
             label = ttk.Label(cell, image=photo, cursor="hand2")
             label.pack()
             label.bind("<Button-1>", lambda _e, p=path: open_path(p))
-            ttk.Label(cell, text=Path(path).name, foreground="#555").pack()
+            ttk.Label(cell, text=Path(path).name, foreground=MUTED).pack()
 
 
 # =====================

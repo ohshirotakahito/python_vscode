@@ -1,12 +1,16 @@
 """Run with: python exmanager/app.py"""
 from pathlib import Path
 import queue
+import sys
 import threading
 import tkinter as tk
 from tkinter import ttk, messagebox
 import core
 import pc_config
 from csv_editor import CsvEditor
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import ui_theme  # noqa: E402
 
 
 def experiment_data_counts(folder):
@@ -50,7 +54,10 @@ class App(tk.Tk):
         self.boxes = {}
         self.pc = pc_config.load()
         self.restore_initial = True
-        self.main_split = tk.PanedWindow(self, orient='vertical', sashwidth=8, sashrelief='raised', opaqueresize=True)
+        ui_theme.header(self, '実験データ整理', '元実験の転送セット作成・照合・コピーと履歴管理',
+                        '\uE8AB', ui_theme.EXMANAGER, on_close=self.close).pack(fill='x')
+        self.main_split = tk.PanedWindow(self, orient='vertical', sashwidth=6, sashrelief='flat',
+                                         background=ui_theme.BORDER, borderwidth=0, opaqueresize=True)
         self.main_split.pack(fill='both', expand=True)
         upper = ttk.Frame(self.main_split)
         lower = ttk.Frame(self.main_split)
@@ -61,7 +68,6 @@ class App(tk.Tk):
         self.pc_label = ttk.Label(pc_panel)
         self.pc_label.pack(side='left')
         ttk.Button(pc_panel, text='このPCの設定', command=self.configure_pc).pack(side='right')
-        ttk.Button(pc_panel, text='終了', command=self.close).pack(side='right', padx=8)
         select = ttk.LabelFrame(upper, text='1. コピー元の設定・確認', padding=8)
         select.pack(fill='x', padx=10)
         for n, (key, label) in enumerate([('machine','装置'), ('selection','コピー元'), ('uploader','アップロード担当者')]):
@@ -77,7 +83,7 @@ class App(tk.Tk):
         ttk.Button(select, text='保存履歴を開く', command=self.open_history_window).grid(row=1, column=5, sticky='w', padx=4)
         ttk.Button(select, text='装置CSVを閲覧・編集', command=lambda: self.edit_csv('machine')).grid(row=1, column=6, sticky='w', padx=4)
         ttk.Button(select, text='担当者CSVを閲覧・編集', command=lambda: self.edit_csv('operator')).grid(row=1, column=7, sticky='w', padx=4)
-        self.source_label = ttk.Label(upper, text='淡い黄色：履歴あり ／ アイボリー：履歴なし（履歴だけではスキップしません）')
+        self.source_label = ttk.Label(upper, text='黄色の行：履歴あり ／ 無地の行：履歴なし（履歴だけではスキップしません）')
         self.source_label.pack(anchor='w', padx=10)
         tree_frame = ttk.Frame(upper)
         tree_frame.pack(fill='x', padx=10)
@@ -96,8 +102,8 @@ class App(tk.Tk):
         self.tree.column('history', width=90, stretch=False)
         self.tree.column('destinations', width=90, stretch=False)
         self.tree.column('latest', width=180, stretch=False)
-        self.tree.tag_configure('yes', background='#f5e2ad', foreground='#3f3428')
-        self.tree.tag_configure('no', background='#fffdf7', foreground='#3f3428')
+        self.tree.tag_configure('yes', background=ui_theme.row('warning', 0.2), foreground=ui_theme.TEXT)
+        self.tree.tag_configure('no', background=ui_theme.FIELD, foreground=ui_theme.TEXT)
         self.tree.grid(row=0, column=0, sticky='nsew')
         self.add_scrollbars(tree_frame, self.tree)
         self.source_histories = {}
@@ -181,9 +187,9 @@ class App(tk.Tk):
         ttk.Label(lower, text='通常：① コピー元一覧を更新 → ② セットに追加 → ③ 予定作成 → ④ 予定表を確認 → ⑤ コピー開始', wraplength=1000).pack(anchor='w', padx=10)
         legend = ttk.Frame(lower)
         legend.pack(fill='x', padx=10)
-        for text, color in [('青：通常の手順', '#d7e7f5'), ('緑：実行', '#d6ead9'),
-                            ('橙：必要に応じて操作', '#f5dfbf'), ('灰：閲覧・編集・設定', '#e7e7e7')]:
-            tk.Label(legend, text=text, background=color, foreground='#302a25', padx=6).pack(side='left', padx=(0, 6))
+        for text, color in [('青：通常の手順', ui_theme.row('info', 0.22)), ('緑：実行', ui_theme.row('success', 0.22)),
+                            ('橙：必要に応じて操作', ui_theme.row('warning', 0.22)), ('灰：閲覧・編集・設定', '#1d2730')]:
+            tk.Label(legend, text=text, background=color, foreground=ui_theme.TEXT, padx=6).pack(side='left', padx=(0, 6))
         self.update_pc_display()
         progress_frame = ttk.Frame(lower, padding=(10, 0))
         progress_frame.pack(fill='x')
@@ -203,18 +209,16 @@ class App(tk.Tk):
         for key, title, width in [('set','セット',55), ('action','コピー予定',180), ('rate','区分',90), ('source','保存元ファイル',450), ('destination','保存先ファイル',450)]:
             self.plan_tree.heading(key, text=title)
             self.plan_tree.column(key, width=width)
-        for tag, color in [('new','#e0f0dc'), ('skip','#e0eafa'), ('conflict','#f8d5d0'), ('pending','#fff0c8')]:
-            self.plan_tree.tag_configure(tag, background=color, foreground='#302a25')
+        for tag, kind in [('new', 'success'), ('skip', 'info'), ('conflict', 'danger'), ('pending', 'warning')]:
+            self.plan_tree.tag_configure(tag, background=ui_theme.row(kind), foreground=ui_theme.TEXT)
         self.plan_tree.grid(row=0, column=0, sticky='nsew')
         self.add_scrollbars(plan_frame, self.plan_tree)
         output_frame = ttk.Frame(lower)
         output_frame.pack(fill='both', expand=True, padx=10, pady=(4, 5))
         output_frame.rowconfigure(0, weight=1)
         output_frame.columnconfigure(0, weight=1)
-        self.output = tk.Text(output_frame, height=4, wrap='none',
-                              background='#fffdf7', foreground='#3f3428',
-                              insertbackground='#3f3428', selectbackground='#795638',
-                              selectforeground='#fffdf7')
+        self.output = tk.Text(output_frame, height=4, wrap='none')
+        ui_theme.style_text(self.output)
         self.output.grid(row=0, column=0, sticky='nsew')
         self.add_scrollbars(output_frame, self.output)
         for key, value in self.pc.get('last_selection', {}).items():
@@ -230,45 +234,8 @@ class App(tk.Tk):
         self.after(200, self.load)
 
     def configure_colors(self):
-        """Apply a light palette with readable text and distinct selection colors."""
-        background = '#f7f0df'
-        foreground = '#3f3428'
-        self.configure(background=background)
-        self.option_add('*Toplevel.background', background)
-        self.option_add('*TCombobox*Listbox.background', '#fffdf7')
-        self.option_add('*TCombobox*Listbox.foreground', foreground)
-        self.option_add('*TCombobox*Listbox.selectBackground', '#795638')
-        self.option_add('*TCombobox*Listbox.selectForeground', '#fffdf7')
-        style = ttk.Style(self)
-        style.theme_use('clam')
-        style.configure('.', background=background, foreground=foreground)
-        style.configure('TButton', background='#eaddbd', foreground=foreground)
-        style.map('TButton', background=[('disabled', '#e9e3d5'),
-                                       ('pressed', '#d8c394'), ('active', '#e2d0a7')],
-                  foreground=[('disabled', '#776e60')])
-        for name, normal, active, pressed in [
-                ('TButton', '#e7e7e7', '#f0f0f0', '#cecece'),
-                ('Primary.TButton', '#d7e7f5', '#e5f1fc', '#b5cfe5'),
-                ('Execute.TButton', '#d6ead9', '#e4f3e6', '#b5d5bb'),
-                ('Conditional.TButton', '#f5dfbf', '#fbead2', '#e5c596')]:
-            style.configure(name, background=normal, foreground='#302a25')
-            style.map(name, background=[('disabled', '#e9e3d5'), ('pressed', pressed), ('active', active)],
-                      foreground=[('disabled', '#776e60')])
-        for widget in ('TEntry', 'TCombobox'):
-            style.configure(widget, fieldbackground='#fffdf7', foreground=foreground)
-            style.map(widget, fieldbackground=[('disabled', '#e9e3d5'),
-                                               ('readonly', '#faf5e9')],
-                      foreground=[('disabled', '#776e60'), ('readonly', foreground)],
-                      selectbackground=[('!disabled', '#795638')],
-                      selectforeground=[('!disabled', '#fffdf7')])
-        style.configure('Treeview', background='#fffdf7', fieldbackground='#fffdf7',
-                        foreground=foreground)
-        style.configure('Treeview.Heading', background='#eaddbd', foreground=foreground)
-        style.map('Treeview', background=[('selected', '#795638')],
-                  foreground=[('selected', '#fffdf7')])
-        style.map('Treeview.Heading', background=[('active', '#e2d0a7')])
-        style.configure('Horizontal.TProgressbar', background='#9a753b',
-                        troughcolor='#eaddbd')
+        """Apply the shared dark theme used by the project launcher."""
+        ui_theme.apply(self, ui_theme.EXMANAGER)
 
     def load_roots(self):
         try:
@@ -572,7 +539,7 @@ class App(tk.Tk):
                 self.source_histories[str(n)] = records
                 self.tree.insert('', 'end', iid=str(n), values=(p.name, *data[2][p], *history_summary(records)), tags=('yes' if records else 'no',))
                 self.source_paths[str(n)] = p
-            self.source_label.configure(text=f'{root} — 淡い黄色：履歴あり ／ アイボリー：履歴なし')
+            self.source_label.configure(text=f'{root} — 黄色の行：履歴あり ／ 無地の行：履歴なし')
         self.run(work, done)
 
     def open_history_window(self):
@@ -669,7 +636,7 @@ class App(tk.Tk):
         # Keep the reference layout when dragging column separators as well.
         tree.bind('<Button-1>', lambda event: 'break' if tree.identify_region(event.x, event.y) == 'separator' else None)
         for tag in ('new', 'skip', 'conflict', 'pending'):
-            tree.tag_configure(tag, background=self.plan_tree.tag_configure(tag, 'background'), foreground='#302a25')
+            tree.tag_configure(tag, background=self.plan_tree.tag_configure(tag, 'background'), foreground=ui_theme.TEXT)
         tree.grid(row=0, column=0, sticky='nsew')
         self.add_scrollbars(frame, tree)
         def render(event=None):

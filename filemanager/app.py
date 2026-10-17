@@ -19,6 +19,8 @@ from tkinter import filedialog, messagebox, ttk
 from tkinter.scrolledtext import ScrolledText
 
 BASE = Path(__file__).resolve().parent
+sys.path.insert(0, str(BASE.parent))
+import ui_theme  # noqa: E402
 ERROR_PREFIX = '__FILEMANAGER_ERROR__'
 PROGRESS_PREFIX = '__FILEMANAGER_PROGRESS__'
 
@@ -484,15 +486,17 @@ def copy_selected_targets(d, samples, common, create_folders):
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
+        ui_theme.apply(self, ui_theme.FILEMANAGER)
         self.title('File Manager — 実験ファイル管理')
-        self.geometry('1000x850')
-        self.minsize(820, 740)
+        self.geometry('1000x930')
+        self.minsize(820, 800)
         self.events = queue.Queue()
         self.busy = False
         self.preview_signature = None
         self.fields = {}
         self.buttons = []
-        ttk.Label(self, text='実験ファイル管理', font=('', 17, 'bold')).pack(anchor='w', padx=16, pady=12)
+        ui_theme.header(self, '実験ファイル管理', 'フォルダ作成・転送・stocked 取り出し・リネーム',
+                        '\uE8B7', ui_theme.FILEMANAGER, on_close=self.close).pack(fill='x', pady=(0, 10))
         self.tabs = ttk.Notebook(self)
         self.tabs.pack(fill='x', padx=12)
         self.copy_tab()
@@ -508,6 +512,7 @@ class App(tk.Tk):
         ttk.Label(self, textvariable=self.timing).pack(anchor='w', padx=12)
         ttk.Label(self, text='実行ログ / 変更予定（名前変更の前に確認してください）').pack(anchor='w', padx=12)
         self.log = ScrolledText(self, height=12, wrap='none', state='disabled')
+        ui_theme.style_text(self.log)
         self.log.pack(fill='both', expand=True, padx=12, pady=(5, 12))
         self.protocol('WM_DELETE_WINDOW', self.close)
         self.after(80, self.poll)
