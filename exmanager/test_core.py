@@ -6,6 +6,100 @@ import core
 
 
 class CopyTest(unittest.TestCase):
+    def test_existing_raw_is_verified_on_retry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            src, dst = root / 'source', root / 'target'
+            src.mkdir()
+            dst.mkdir()
+            source, destination = src / 'data.tdms', dst / 'data.tdms'
+            source.write_bytes(b'abc')
+            destination.write_bytes(b'abc')
+            item = core.Item(source, destination, '', '新規', True, None)
+            plan = core.Plan([item], [], src, dst, {})
+            core.execute(plan, lambda s: None)
+            self.assertEqual(item.execution_status, '既存一致スキップ')
+            destination.write_bytes(b'xyz')
+            with self.assertRaisesRegex(ValueError, '競合'):
+                core.execute(plan, lambda s: None)
+            self.assertEqual(destination.read_bytes(), b'xyz')
+
+    def test_review_prioritizes_preserved_original_name(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            src, dst = root / 'source', root / 'target'
+            src.mkdir()
+            dst.mkdir()
+            source = src / 'original.tdms'
+            source.write_bytes(b'abc')
+            unrelated = dst / 'unrelated.tdms'
+            unrelated.write_bytes(b'xyz')
+            existing = dst / 'sample#001 original.tdms'
+            existing.write_bytes(b'abc')
+            item = core.Item(source, dst / 'new.tdms', '', '新規', False, None)
+            with patch.object(core, 'sampled_signature', wraps=core.sampled_signature) as sampled:
+                core.review_batch_duplicates([(1, core.Plan([item], [], src, dst, {}), {})])
+            self.assertEqual(item.destination, existing)
+            self.assertNotIn(unrelated, [call.args[0] for call in sampled.call_args_list])
+
+    def test_review_progress_separates_tdms_and_txt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            src, dst = root / 'source', root / 'target'
+            src.mkdir()
+            dst.mkdir()
+            items = []
+            for name in ('ten.txt', 'ten.tdms', 'hundred.tdms'):
+                source = src / name
+                source.write_bytes(name.encode())
+                items.append(core.Item(source, dst / name, '', '新規', False, None))
+            events = []
+            core.review_batch_duplicates([(1, core.Plan(items, [], src, dst, {}), {})], lambda *args: events.append(args))
+            tdms = [e for e in events if e[0] == 'コピー予定・TDMS照合']
+            companions = [e for e in events if e[0] == 'コピー予定・付随ファイル照合（TXT等）']
+            self.assertEqual(tdms[-1][1:3], (2, 2))
+            self.assertEqual(companions[-1][1:3], (1, 1))
+
+    def test_review_lists_new_skip_and_conflict_without_copying(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            src, dst = root / 'source', root / 'target'
+            src.mkdir()
+            dst.mkdir()
+            (dst / 'renamed.tdms').write_bytes(b'abc')
+            (dst / 'conflict.tdms').write_bytes(b'xxx')
+            items = []
+            for name, content in [('skip.tdms', b'abc'), ('new.tdms', b'new!'), ('conflict.tdms', b'def')]:
+                source = src / name
+                source.write_bytes(content)
+                stat = source.stat()
+                items.append(core.Item(source, dst / name, '', '新規', False, (stat.st_size, stat.st_mtime_ns)))
+            plan = core.Plan(items, [], src, dst, {})
+            jobs = [(1, plan, {})]
+            self.assertIs(core.review_batch_duplicates(jobs), jobs)
+            self.assertEqual([i.status for i in items], ['内容重複スキップ', '新規', '競合'])
+            self.assertEqual(items[0].destination, dst / 'renamed.tdms')
+            self.assertFalse((dst / 'skip.tdms').exists())
+            self.assertFalse((dst / 'new.tdms').exists())
+
+    def test_renamed_content_duplicate_is_reused(self):
+        for same in (True, False):
+            with self.subTest(same=same), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                src, dst = root / 'source', root / 'target'
+                src.mkdir()
+                dst.mkdir()
+                source, existing, planned = src / 'new.tdms', dst / 'old.tdms', dst / 'new.tdms'
+                source.write_bytes(b'abc')
+                existing.write_bytes(b'abc' if same else b'xyz')
+                stat = source.stat()
+                item = core.Item(source, planned, '', '新規', False, (stat.st_size, stat.st_mtime_ns))
+                plan = core.Plan([item], [], src, dst, {})
+                core.execute(plan, lambda s: None)
+                self.assertEqual(planned.exists(), not same)
+                self.assertEqual(item.destination, existing if same else planned)
+                self.assertEqual(existing.read_bytes(), b'abc' if same else b'xyz')
+
     def test_new_copy_hashes_during_copy_existing_reads_once(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -109,7 +203,7 @@ class CopyTest(unittest.TestCase):
                 sources.append(src)
             legacy, local = root/'legacy.csv', root/'logs'/'history.csv'
             core.write_csv(legacy, ['']*17, [])
-            context = dict(operator='TO', uploader='SS', machine='AXN3', selection='Recent_Data', kind='Sample')
+            context = dict(uploader='SS', machine='AXN3', selection='Recent_Data', kind='Sample')
             specs = [dict(sources=[src], target=target, context=context, legacy=legacy, local=local) for src in sources]
             with patch.object(core, 'signature', side_effect=AssertionError('preview must not hash')):
                 jobs = core.plan_batch(specs)
@@ -118,6 +212,8 @@ class CopyTest(unittest.TestCase):
             results = core.execute_batch(jobs, lambda s: None)
             self.assertEqual([r[3] for r in results], ['完了','完了'])
             self.assertEqual(len(core.history(legacy, local)), 2)
+            for row in core.history(legacy, local):
+                self.assertEqual((row[1], row[5]), ('SS', 'SS'))
             with self.assertRaises(ValueError):
                 core.plan_batch([specs[0], specs[0]])
             # Existing equal-sized but different content is detected only on execution.

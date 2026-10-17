@@ -15,6 +15,83 @@ DB = Path(r'D:\My_Dropbox\ou&t\machinedb\SEQ')
 HEADERS = 'uploaded_at operator_code machine_code data_selection experiment_at uploader_code source_experiment destination_experiment sample folder_10k prefix_10k start_10k end_10k folder_100k prefix_100k start_100k end_100k'.split()
 
 
+def sampled_signature(path):
+    """Hash size and three 64 KiB samples; equality indicates a candidate only."""
+    before = path.stat()
+    size, block = before.st_size, 64 * 1024
+    result = hashlib.sha256(str(size).encode('ascii'))
+    with path.open('rb') as stream:
+        for offset in sorted({0, max(0, (size - block) // 2), max(0, size - block)}):
+            stream.seek(offset)
+            result.update(stream.read(block))
+    after = path.stat()
+    if (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
+        raise ValueError(f'読み取り中に変更されました: {path}')
+    return result.hexdigest()
+
+
+def inspect_set_data(spec, check_duplicates=False, progress=None, quick=False):
+    """Inspect direct acquisition TDMS files, including renamed destination files."""
+    def files(folder):
+        try:
+            return [p for p in folder.iterdir() if p.is_file() and p.suffix.lower() == '.tdms']
+        except FileNotFoundError:
+            return []
+
+    counts, duplicates = [], []
+    target = Path(spec['target'])
+    for rate, relative in [('10k', 'EXSV/T'), ('100k', 'EXZSV')]:
+        sources = [p for source in spec['sources'] for p in files(Path(source) / relative)]
+        destination = target / f"{target.name}_{rate}_{spec['context']['kind']}"
+        if rate == '10k':
+            destination /= 'T'
+        targets = files(destination)
+        counts.extend((len(sources), len(targets)))
+        if not check_duplicates:
+            continue
+        by_size = {}
+        for p in targets:
+            by_size.setdefault(p.stat().st_size, []).append(p)
+        hashes = {}
+        for pos, source in enumerate(sources):
+            candidates = by_size.get(source.stat().st_size, [])
+            if progress:
+                progress('TDMS重複確認', pos, len(sources), str(source))
+            if candidates:
+                fingerprint = sampled_signature if quick else signature
+                source_hash = fingerprint(source)
+                for dest in candidates:
+                    if dest not in hashes:
+                        hashes[dest] = fingerprint(dest)
+                    if hashes[dest] == source_hash:
+                        duplicates.append((rate, source, dest))
+        if progress:
+            progress('TDMS重複確認', len(sources), len(sources), rate)
+    return tuple(counts), duplicates
+
+
+def create_destinations(root, experiment, samples):
+    """Use filemanager's standard folder layout for new destinations."""
+    import importlib.util
+    names = [experiment, *samples]
+    if not samples:
+        raise ValueError('サンプル名を入力してください。')
+    for name in names:
+        if (not name or name in ('.', '..') or name.endswith((' ', '.'))
+                or re.search(r'[<>:"/\\|?*\x00-\x1f]', name)
+                or re.fullmatch(r'(?i:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\..*)?', name)):
+            raise ValueError(f'使用できないフォルダ名です: {name!r}')
+    root = Path(root)
+    if not root.is_dir():
+        raise ValueError(f'保存先解析ルートが存在しません: {root}')
+    spec = importlib.util.spec_from_file_location('destination_folders', BASE.parent / 'filemanager' / 'create_folders.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    for sample in samples:
+        module.create_sample_folders(root, experiment, sample)
+    return sorted(p.name for p in root.iterdir() if p.is_dir()), sorted(p.name for p in (root / experiment).iterdir() if p.is_dir())
+
+
 def rows(path):
     data = Path(path).read_bytes()
     for encoding in ('utf-8-sig', 'cp932'):
@@ -220,6 +297,67 @@ def plan(source, target, sample, kind, progress=None, verify=False, reserved=Non
     return Plan(items, warnings, source, target, numbers)
 
 
+def review_batch_duplicates(jobs, progress=None):
+    """Resolve analysis destinations by full content without copying files."""
+    samples, hashes, directories = {}, {}, {}
+    def cached(cache, path, read):
+        stat = path.stat()
+        key = (path, stat.st_size, stat.st_mtime_ns)
+        if key not in cache:
+            cache[key] = read(path)
+        return cache[key]
+    items = [item for _, plan, _ in jobs for item in plan.items if not item.raw]
+    # Acquisition counts refer to TDMS; report companion TXT separately.
+    items.sort(key=lambda item: item.source.suffix.lower() != '.tdms')
+    tdms_total = sum(item.source.suffix.lower() == '.tdms' for item in items)
+    totals = {True: tdms_total, False: len(items) - tdms_total}
+    completed = {True: 0, False: 0}
+    for item in items:
+        is_tdms = item.source.suffix.lower() == '.tdms'
+        phase = 'コピー予定・TDMS照合' if is_tdms else 'コピー予定・付随ファイル照合（TXT等）'
+        if progress:
+            progress(phase, completed[is_tdms], totals[is_tdms], str(item.source))
+        stat = item.source.stat()
+        if item.snapshot and (stat.st_size, stat.st_mtime_ns) != item.snapshot:
+            raise ValueError(f'プレビュー後にコピー元が変わりました: {item.source}')
+        dst = item.destination
+        if dst.exists():
+            candidates = [dst] if dst.is_file() else []
+        else:
+            if dst.parent not in directories:
+                # scandir reuses directory-entry metadata instead of issuing
+                # several network stat calls for every source/target pair.
+                index = {}
+                if dst.parent.is_dir():
+                    with os.scandir(dst.parent) as entries:
+                        for entry in entries:
+                            if entry.is_file(follow_symlinks=False):
+                                path = Path(entry.path)
+                                key = (path.suffix.lower(), entry.stat().st_size)
+                                index.setdefault(key, []).append(path)
+                directories[dst.parent] = index
+            candidates = directories[dst.parent].get((item.source.suffix.lower(), stat.st_size), [])
+            # Copy naming preserves the original name after the sequence number.
+            # Try that match before reading samples from unrelated TDMS files.
+            candidates = sorted(candidates, key=lambda path: not path.name.endswith(' ' + item.source.name))
+        item.status = '競合' if dst.exists() else '新規'
+        for candidate in candidates:
+            if candidate.stat().st_size != stat.st_size:
+                continue
+            if cached(samples, item.source, sampled_signature) != cached(samples, candidate, sampled_signature):
+                continue
+            sha = cached(hashes, item.source, signature)
+            if sha == cached(hashes, candidate, signature):
+                item.destination = candidate
+                item.sha256 = sha
+                item.status = '内容重複スキップ'
+                break
+        completed[is_tdms] += 1
+        if progress:
+            progress(phase, completed[is_tdms], totals[is_tdms], str(item.source))
+    return jobs
+
+
 def execute(plan, log=print, progress=None):
     if any(i.status == '競合' for i in plan.items):
         raise ValueError('競合があります。コピーは開始しません')
@@ -231,9 +369,11 @@ def execute(plan, log=print, progress=None):
         return update
 
     for pos, item in enumerate(plan.items):
+        item.execution_status = '確認中'
         if item.raw:
             if item.destination.exists() and not item.destination.is_file():
                 raise ValueError(f'保存先がファイルではありません: {item.destination}')
+            item.execution_status = '未処理'
             continue
         stat = item.source.stat()
         if item.snapshot and (stat.st_size, stat.st_mtime_ns) != item.snapshot:
@@ -242,8 +382,32 @@ def execute(plan, log=print, progress=None):
             raise ValueError(f'保存先がファイルではありません: {item.destination}')
         if progress:
             progress('サイズ・更新日時確認', pos + 1, len(plan.items), str(item.source))
+        item.execution_status = '未処理'
     for pos, item in enumerate(plan.items, 1):
+        item.execution_status = '処理中'
         dst = item.destination
+        # Renamed analysis files can already exist under another sequence number.
+        # A sampled match only narrows candidates; full hashes decide reuse.
+        if not item.raw and not dst.exists() and dst.parent.is_dir():
+            candidates = [p for p in dst.parent.iterdir()
+                          if p.is_file() and not p.is_symlink()
+                          and p.suffix.lower() == item.source.suffix.lower()
+                          and p.stat().st_size == item.source.stat().st_size]
+            if candidates:
+                if progress:
+                    progress('重複候補確認', pos - 1, len(plan.items), str(item.source))
+                sample_hash = sampled_signature(item.source)
+                for candidate in candidates:
+                    if sampled_signature(candidate) != sample_hash:
+                        continue
+                    sha = signature(item.source, report('重複照合・コピー元', pos - 1, item.source))
+                    if item.sha256 and sha != item.sha256:
+                        raise ValueError(f'プレビュー後にコピー元が変わりました: {item.source}')
+                    if signature(candidate, report('重複照合・保存先', pos - 1, candidate)) == sha:
+                        item.destination = dst = candidate
+                        item.sha256 = sha
+                        item.status = '内容重複スキップ'
+                        break
         if progress:
             progress('コピー・検証', pos - 1, len(plan.items), str(dst))
         dst.parent.mkdir(parents=True, exist_ok=True)
@@ -254,14 +418,14 @@ def execute(plan, log=print, progress=None):
         if dst.exists():
             if not dst.is_file():
                 raise ValueError(f'競合: {dst}')
-            if not item.raw:
-                sha = signature(item.source, report('既存比較・コピー元', pos - 1, item.source))
-                if item.sha256 and sha != item.sha256:
-                    raise ValueError(f'プレビュー後にコピー元が変わりました: {item.source}')
-                if signature(dst, report('既存比較・保存先', pos - 1, dst)) != sha:
-                    raise ValueError(f'競合: {dst}')
-                item.sha256 = sha
-            log(f'{"既存raw dataスキップ（内容未検証）" if item.raw else "重複スキップ"}: {dst}')
+            sha = signature(item.source, report('既存比較・コピー元', pos - 1, item.source))
+            if item.sha256 and sha != item.sha256:
+                raise ValueError(f'プレビュー後にコピー元が変わりました: {item.source}')
+            if signature(dst, report('既存比較・保存先', pos - 1, dst)) != sha:
+                raise ValueError(f'競合: {dst}')
+            item.sha256 = sha
+            item.execution_status = '既存一致スキップ'
+            log(f'既存一致スキップ: {dst}')
             if progress:
                 progress('コピー・検証', pos, len(plan.items), str(dst))
             continue
@@ -302,6 +466,7 @@ def execute(plan, log=print, progress=None):
                 temp.unlink()
         finally:
             temp.unlink(missing_ok=True)
+        item.execution_status = 'コピー完了'
         log(f'{pos}/{len(plan.items)} コピー完了: {dst.name}')
         if progress:
             progress('コピー・検証', pos, len(plan.items), str(dst))
@@ -313,7 +478,8 @@ def record(plan, context, legacy, local):
     now = datetime.now().strftime('%Y/%m/%d_%H:%M')
     match = re.match(r'(\d{8})_(\d{4})', plan.source.name)
     date = datetime.strptime(''.join(match.groups()), '%Y%m%d%H%M').strftime('%Y/%m/%d_%H:%M') if match else ''
-    row = [now, context['operator'], context['machine'], context['selection'], date, context['uploader'], plan.source.name, plan.target.parent.name, plan.target.name]
+    # Preserve the legacy columns, recording the uploader in both person fields.
+    row = [now, context['uploader'], context['machine'], context['selection'], date, context['uploader'], plan.source.name, plan.target.parent.name, plan.target.name]
     for rate in ('10k', '100k'):
         name = f"{plan.target.name}_{rate}_{context['kind']}"
         nums = plan.numbers[rate]
@@ -369,6 +535,13 @@ def execute_batch(jobs, log=print, progress=None):
                 detail = ' / '.join(p.warnings)
             except Exception as exc:
                 state, detail, stopped = '失敗（以降停止）', str(exc), True
+                for item in p.items:
+                    if getattr(item, 'execution_status', '') in ('確認中', '処理中'):
+                        item.execution_status = '停止箇所'
+        file_report = report_path.with_name(f'{report_path.stem}_{number}_files.csv')
+        write_csv(file_report, ['source', 'destination', 'result'],
+                  [(i.source, i.destination, getattr(i, 'execution_status', '未処理')) for i in p.items])
+        log(f'ファイル別結果: {file_report}')
         results.append((set_no, str(p.source), str(p.target), state, detail))
         log(f'{number}/{len(jobs)} {state}: {p.source} → {p.target} {detail}')
         write_csv(report_path, ['set','source','target','result','detail'], results)

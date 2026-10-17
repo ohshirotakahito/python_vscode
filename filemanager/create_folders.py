@@ -19,47 +19,31 @@ zip_stocked.py	溜まったフォルダをZIP圧縮して元を削除	✅
 import os
 
 
+def create_sample_folders(root, ex, sample):
+    """Create the standard sample tree under an arbitrary analysis root."""
+    base = os.path.join(root, ex, sample)
+    folders = [base, os.path.join(base, 'raw data')]
+    for rate in ('10k', '100k'):
+        for kind in ('Sample', 'Blank'):
+            folder = os.path.join(base, f'{sample}_{rate}_{kind}')
+            folders.append(folder)
+            if rate == '10k':
+                folders.extend(os.path.join(folder, *parts) for parts in
+                               [('T',), ('stocked',), ('T', 'ANAL'), ('T', 'stocked')])
+    for folder in folders:
+        os.makedirs(folder, exist_ok=True)
+    return folders
+
+
 def fo_xx(server, keyfolder, ex, sample):
     #対象となるフォルダを指定する．
     try:
         from .data_transfer_common import server_path
     except ImportError:
         from data_transfer_common import server_path
-    ServerPath = server_path(server, keyfolder) + '/'
-    DataPath = ex +'/'+sample
-    SamplePath = sample+'_10k_Sample'
-    BlankPath = sample+'_10k_Blank'
-    SamplePath1 = sample+'_100k_Sample'
-    BlankPath2 = sample+'_100k_Blank'
-    RawPath = 'raw data'
-    
-    #対象となるフォルダパスを作成
-    #Folderpath0 = ServerPath + ex
-    Folderpath1 = ServerPath + DataPath
-    Folderpath2 = ServerPath + DataPath +'/'+ SamplePath
-    Folderpath3 = ServerPath + DataPath +'/'+ SamplePath1
-    Folderpath4 = ServerPath + DataPath +'/'+ BlankPath
-    Folderpath5 = ServerPath + DataPath +'/'+ BlankPath2
-    Folderpath6 = ServerPath + DataPath +'/'+ RawPath
-    Folderpath7 = ServerPath + DataPath +'/'+ SamplePath+'/T'
-    Folderpath8 = ServerPath + DataPath +'/'+ BlankPath+'/T'
-    Folderpath9 = ServerPath + DataPath +'/'+ SamplePath+'/stocked'
-    Folderpath10 = ServerPath + DataPath +'/'+ BlankPath+'/stocked'
-    Folderpath11 = ServerPath + DataPath +'/'+ SamplePath+'/T/ANAL'
-    Folderpath12 = ServerPath + DataPath +'/'+ SamplePath+'/T/stocked'
-    Folderpath13 = ServerPath + DataPath +'/'+ BlankPath+'/T/ANAL'
-    Folderpath14 = ServerPath + DataPath +'/'+ BlankPath+'/T/stocked'
-    
-    #対象となるフォルダパスをリスト作成
-    Folders = [Folderpath1,Folderpath2,Folderpath3,Folderpath4,Folderpath5,
-               Folderpath6,Folderpath7,Folderpath8,Folderpath9,Folderpath10,
-               Folderpath11,Folderpath12,Folderpath13,Folderpath14]
-    
-    #対象となるフォルダの作成
-    for folder in Folders:
-        os.makedirs(folder, exist_ok=True)
-        print(folder)   
-            
+    for folder in create_sample_folders(server_path(server, keyfolder), ex, sample):
+        print(folder)
+
 if __name__ =='__main__':
     #ターゲットサーバー名
     server = 'Rackstation'
