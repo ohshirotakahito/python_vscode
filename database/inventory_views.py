@@ -6,9 +6,9 @@ import re
 import unicodedata
 
 try:
-    from .catalog import DEFAULT_DB, connect, scope_state
+    from .catalog import DEFAULT_DB, connect, scope_state, root_identity
 except ImportError:
-    from catalog import DEFAULT_DB, connect, scope_state
+    from catalog import DEFAULT_DB, connect, scope_state, root_identity
 
 ARCHIVES = ('.tar.gz', '.tar.bz2', '.tar.xz', '.zip', '.7z', '.rar', '.tar', '.tgz', '.gz', '.bz2', '.xz', '.lzh')
 SQ_KINDS = ('experiment', 'sq_recent', 'sq_data', 'sq_stocked')
@@ -45,12 +45,14 @@ def parse_experiment_name(name, archive=False):
     return result
 
 
-def _snapshots(path, kinds):
+def _snapshots(path, kinds, root=None):
     # One read transaction keeps folder/file counts consistent during a refresh.
     with connect(path, readonly=True) as db:
         db.execute('BEGIN')
         for source in db.execute('SELECT * FROM sources ORDER BY server,root').fetchall():
             if source['kind'] not in kinds:
+                continue
+            if root is not None and root_identity(source['root']) != root_identity(root):
                 continue
             folders = {r[0] for r in db.execute('SELECT relative_path FROM folders WHERE source_id=?', (source['id'],))}
             counts = {r['folder']: dict(r) for r in db.execute('''
@@ -80,9 +82,9 @@ def _matches(row, search):
     return search.casefold() in ' '.join(str(v) for v in row.values()).casefold()
 
 
-def analysis_inventory(path=DEFAULT_DB, search=''):
+def analysis_inventory(path=DEFAULT_DB, search='', root=None):
     rows = []
-    for source, folders, counts, _ in _snapshots(path, ('analysis',)):
+    for source, folders, counts, _ in _snapshots(path, ('analysis',), root):
         children = _children(folders)
         for sample_path in sorted(f for f in folders if len(PurePosixPath(f).parts) == 2):
             experiment, sample = PurePosixPath(sample_path).parts
@@ -160,10 +162,6 @@ def sq_inventory(path=DEFAULT_DB, search=''):
                 if backups:
                     del anchors[anchor]
                     anchors.update({f: group for f in backups})
-        archive_files = defaultdict(list)
-        for record in db.execute('SELECT relative_path,folder FROM files WHERE source_id=? ORDER BY relative_path', (source['id'],)):
-            if archive_stem(PurePosixPath(record['relative_path']).name) is not None:
-                archive_files[record['folder']].append(record['relative_path'])
         containers = []
         for anchor, group in anchors.items():
             if group == 'Recent data':
@@ -173,6 +171,22 @@ def sq_inventory(path=DEFAULT_DB, search=''):
         # An AN folder itself can also be configured as a source with an explicit kind.
         if explicit in ('data', 'data_stocked') and re.fullmatch(r'AN#?\d+', root_name, re.I):
             containers = [('.', explicit)]
+        # Only direct files of a displayed container can be archive entries.
+        # Filter in SQLite so millions of nested measurement files never need
+        # to be materialized or parsed as Python paths during startup.
+        archive_files = defaultdict(list)
+        container_paths = {container for container, _ in containers}
+        if container_paths:
+            suffixes = tuple(sorted({suffix.rsplit('.', 1)[-1] for suffix in ARCHIVES}))
+            placeholders = ','.join('?' for _ in suffixes)
+            for record in db.execute(
+                f'''SELECT relative_path,folder FROM files
+                    WHERE source_id=? AND lower(extension) IN ({placeholders})
+                    ORDER BY relative_path''',
+                (source['id'], *('.' + suffix for suffix in suffixes)),
+            ):
+                if record['folder'] in container_paths and archive_stem(record['relative_path'].rsplit('/', 1)[-1]) is not None:
+                    archive_files[record['folder']].append(record['relative_path'])
         for container, group in sorted(set(containers)):
             common = dict(server=source['server'], root=source['root'], group=group,
                           container=root_name if container == '.' else container,
@@ -189,12 +203,12 @@ def sq_inventory(path=DEFAULT_DB, search=''):
                            remaining_path=remainder if separator else '' if entry_type == 'フォルダ' else first,
                            child_folders='')
                 row.update(scope_state(source, relative, source['_updates']))
-                row.update(exsv_tdms='', exsv_t_tdms='', exsvz_tdms='', exsvz_t_tdms='')
+                row.update(exsv_tdms='', exsv_t_tdms='', exzsv_tdms='', exzsv_t_tdms='')
                 if entry_type == 'フォルダ':
                     direct = {PurePosixPath(f).name.casefold(): f for f in children[relative]}
                     row['child_folders'] = '; '.join(PurePosixPath(direct[key]).name
-                                                    for key in ('exsv', 'exsvz') if key in direct)
-                    for key in ('exsv', 'exsvz'):
+                                                    for key in ('exsv', 'exzsv') if key in direct)
+                    for key in ('exsv', 'exzsv'):
                         target = direct.get(key, relative + '/' + key.upper())
                         inside = {PurePosixPath(f).name.casefold(): f for f in children[target]}
                         row[key + '_tdms'] = _count(folders, counts, target)

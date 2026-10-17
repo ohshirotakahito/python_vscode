@@ -7,12 +7,16 @@ import threading
 import time
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+from tkinter import font as tkfont
 
 try:
-    from . import catalog, inventory_views
+    from . import catalog, inventory_views, recent_progress, sq_workflow, rackstation_view
 except ImportError:
     import catalog
     import inventory_views
+    import recent_progress
+    import sq_workflow
+    import rackstation_view
 
 BASE = Path(__file__).resolve().parent
 CONFIG = BASE / 'sources.json'
@@ -31,12 +35,43 @@ def selected_source_kind(server, root):
     return {'data': 'sq_data', 'data_stocked': 'sq_stocked'}.get(name, 'experiment')
 
 
+def sq_entry_tag(row):
+    if row.get('analysis_state') == '着手済み':
+        return 'sq_started'
+    if row.get('analysis_state') == '未着手':
+        if any(isinstance(row.get(key), (int, float))
+               for key in ('exsv_t_tdms', 'exzsv_tdms')):
+            return 'sq_needs_action'
+        if all(row.get(key) is None for key in ('exsv_t_tdms', 'exzsv_tdms')):
+            return 'sq_no_tdms'
+    return 'sq_unknown'
+
+
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title('実験ファイル データベース')
         self.geometry('1450x950')
-        ttk.Style(self).configure('Treeview', rowheight=26)
+        self.configure(background='#eaf4fc')
+        self.option_add('*Toplevel.background', '#eaf4fc')
+        style = ttk.Style(self)
+        style.theme_use('clam')
+        style.configure('.', background='#eaf4fc', foreground='#203548')
+        style.configure('TFrame', background='#eaf4fc')
+        style.configure('TLabel', background='#eaf4fc')
+        style.configure('TLabelframe', background='#eaf4fc')
+        style.configure('TLabelframe.Label', background='#eaf4fc')
+        style.configure('TButton', background='#d6eafa')
+        style.map('TButton', background=[('active', '#c3dff4')])
+        style.configure('TEntry', fieldbackground='#ffffff')
+        style.configure('TCombobox', fieldbackground='#ffffff')
+        style.map('TCombobox', fieldbackground=[('readonly', '#ffffff')])
+        style.configure('TNotebook', background='#eaf4fc')
+        style.configure('TNotebook.Tab', background='#d6eafa')
+        style.map('TNotebook.Tab', background=[('selected', '#ffffff'), ('active', '#c3dff4')])
+        style.configure('Treeview', rowheight=26, background='#ffffff', fieldbackground='#ffffff')
+        style.configure('Treeview.Heading', background='#d6eafa', foreground='#203548')
+        style.map('Treeview', background=[('selected', '#3976a8')], foreground=[('selected', '#ffffff')])
         self.db_path = catalog.DEFAULT_DB
         catalog.initialize(self.db_path)
         self.configured = DEFAULTS
@@ -52,20 +87,27 @@ class App(tk.Tk):
             except (OSError, ValueError) as exc:
                 messagebox.showerror('設定の読み込み', str(exc))
         self.events = queue.Queue()
+        self.refresh_version = 0
         self.cancel = threading.Event()
         self.busy = False
-        bar = ttk.Frame(self, padding=8)
+        self.main_tabs = ttk.Notebook(self)
+        self.main_tabs.pack(fill='both', expand=True)
+        self.sq_panel = ttk.Frame(self.main_tabs)
+        self.analysis_panel = ttk.Frame(self.main_tabs)
+        self.main_tabs.add(self.sq_panel, text='Data_server')
+        self.main_tabs.add(self.analysis_panel, text='Analysis_server')
+        bar = ttk.LabelFrame(self.sq_panel, text='SQserver', padding=8)
         bar.pack(fill='x')
         self.buttons = []
-        for label, command in [('保存先設定', self.settings),
-                               ('ローカルDBを表示', self.local), ('別のDBを開く', self.open_db),
-                               ('配布用DBを保存', self.backup), ('集計CSVを保存', self.export_csv)]:
+        for label, command in [('保存先設定', self.settings)]:
             button = ttk.Button(bar, text=label, command=command)
             button.pack(side='left', padx=3)
             self.buttons.append(button)
         self.stop_button = ttk.Button(bar, text='更新を中止', command=self.cancel.set, state='disabled')
         self.stop_button.pack(side='left', padx=3)
-        target = ttk.LabelFrame(self, text='更新する範囲を選択（ほかの範囲の記録は保持します）', padding=8)
+        ttk.Button(bar, text='Recent_Data 着手状況',
+                   command=lambda: recent_progress.open_window(self)).pack(side='left', padx=6)
+        target = ttk.LabelFrame(self.sq_panel, text='更新する範囲を選択（ほかの範囲の記録は保持します）', padding=8)
         target.pack(fill='x', padx=8)
         self.target_server = tk.StringVar()
         self.target_root = tk.StringVar()
@@ -75,31 +117,36 @@ class App(tk.Tk):
         self.server_box.grid(row=0, column=1, padx=5)
         self.server_box.bind('<<ComboboxSelected>>', lambda _: self.select_server())
         ttk.Label(target, text='共有').grid(row=0, column=2)
-        self.root_box = ttk.Combobox(target, textvariable=self.target_root, state='readonly', width=55)
+        self.root_box = ttk.Combobox(target, textvariable=self.target_root, state='readonly', width=35)
         self.root_box.grid(row=0, column=3, sticky='ew', padx=5)
         self.root_box.bind('<<ComboboxSelected>>', self.change_root)
-        ttk.Label(target, text='実験の相対パス').grid(row=1, column=0, sticky='w', pady=6)
-        self.scope_box = ttk.Combobox(target, textvariable=self.target_scope, width=85)
-        self.scope_box.grid(row=1, column=1, columnspan=3, sticky='ew', padx=5)
         for label, command, row, col in [
             ('このサーバーを更新', self.update_server, 0, 4),
-            ('この共有を更新', self.update_root, 0, 5),
-            ('この実験を更新', self.update_scope, 1, 4),
-            ('一覧の選択実験を更新', self.update_selected, 1, 5)]:
+            ('この共有を更新', self.update_root, 0, 7)]:
             button = ttk.Button(target, text=label, command=command)
             button.grid(row=row, column=col, padx=4)
             self.buttons.append(button)
         target.columnconfigure(3, weight=1)
-        ttk.Label(target, text='実験はDBの候補から選択、または相対パスを入力。解析/SQ一覧はCtrl・Shiftで複数選択できます。').grid(row=2, column=0, columnspan=6, sticky='w')
-        self.progress_bar = ttk.Progressbar(self, mode='indeterminate')
+        for col, stage in [(5, 'Archived_Data'), (6, 'Stocked_Data')]:
+            button = ttk.Button(target, text=stage + ' を更新',
+                                command=lambda stage=stage: self.run_jobs(sq_workflow.jobs_for_stage(self.configured, stage)))
+            button.grid(row=0, column=col, padx=4)
+            self.buttons.append(button)
+        self.progress_bar = ttk.Progressbar(self.sq_panel, mode='indeterminate')
         self.progress_bar.pack(fill='x', padx=8, pady=4)
+        self.read_progress = ttk.Progressbar(self.sq_panel, mode='indeterminate')
+        self.read_progress.pack(fill='x', padx=8)
+        self.read_status = tk.StringVar(value='')
+        ttk.Label(self.sq_panel, textvariable=self.read_status, padding=(8, 2)).pack(fill='x')
+        self.reading = False
         self.live_jobs = {}
-        self.db_label = ttk.Label(self, padding=8)
+        self.recent_counts = {}
+        self.db_label = ttk.Label(self.sq_panel, padding=8)
         self.db_label.pack(anchor='w')
-        ttk.Label(self, text='保存先の状態（日時はUTC／接続失敗・中止時は前回の記録を表示）').pack(anchor='w', padx=8)
+        ttk.Label(self.sq_panel, text='保存先の状態（日時はUTC／接続失敗・中止時は前回の記録を表示）').pack(anchor='w', padx=8)
         self.source_tree = self.table(('server', 'root', 'status', 'file_count', 'bytes', 'folder_count', 'last_success', 'last_attempt', 'error'),
-                                      ('サーバー', '保存先', '状態', '件数', '容量(bytes)', 'フォルダ数', '最終全体取得 UTC', '最終試行 UTC', 'エラー・除外'), 3)
-        search_bar = ttk.Frame(self, padding=8)
+                                      ('サーバー', '保存先', '状態', '件数', '容量 (GB / TB)', 'フォルダ数', '最終全体取得 UTC', '最終試行 UTC', 'エラー・除外'), 8)
+        search_bar = ttk.Frame(self.sq_panel, padding=8)
         search_bar.pack(fill='x')
         ttk.Label(search_bar, text='パス・実験・サンプル名で検索').pack(side='left')
         self.search = tk.StringVar()
@@ -111,46 +158,48 @@ class App(tk.Tk):
         self.total = ttk.Label(search_bar)
         self.total.pack(side='left', padx=10)
         self.columns = ('server', 'root', 'experiment', 'sample', 'frequency', 'specimen', 'category', 'file_count', 'bytes', 'last_success')
-        self.notebook = ttk.Notebook(self)
+        self.notebook = ttk.Notebook(self.sq_panel)
         self.notebook.pack(fill='both', expand=True, padx=8)
         self.views = {}
         specifications = [
-            ('updates', '更新状況・履歴',
-             ('server', 'scope', 'status', 'file_count', 'folder_count', 'elapsed', 'started', 'finished', 'error', 'root'),
-             ('サーバー', '更新範囲（.＝共有全体）', '状態', '確認ファイル数', '確認フォルダ数', '経過秒', '開始 UTC', '終了 UTC', '処理中の場所・エラー', '共有')),
-            ('analysis', '解析用4台',
-             ('server', 'experiment', 'sample', 'frequency', 'specimen', 'folder_state', 't_tdms', 'sibling_stocked', 't_stocked', 'anal_tdms', 'anal_stocked', 'bnal_folders', 'bnal_tdms', 'bnal_details', 'raw_folders', 'folder', 'root', 'last_success', 'status'),
-             ('サーバー', '実験', 'サンプル', '周波数', '区分', 'フォルダ', 'T TDMS', 'Tと同階層stocked 全件', 'T/stocked 全件', 'ANAL TDMS', 'ANAL/stocked 全件', 'BNALフォルダ数', 'BNAL TDMS合計', 'BNAL名: TDMS件数', 'raw dataパス', '対象フォルダ', '保存先', '最終取得 UTC', '取得状態')),
             ('sq_groups', 'SQserver グループ集計',
-             ('server', 'group', 'container', 'folder_count', 'archive_count', 'folder_names', 'archive_names', 'root', 'last_success', 'status'),
-             ('サーバー', 'グループ', 'backup / ANフォルダ', '直下フォルダ数', '直下圧縮ファイル数', 'フォルダ名一覧', '圧縮ファイル名一覧', '保存先', '最終取得 UTC', '取得状態')),
+             ('server', 'group', 'container', 'folder_count', 'archive_count', 'started_count', 'pending_count', 'started_rate', 'history_note', 'root', 'last_success', 'status'),
+             ('サーバー', 'グループ', 'backup / ANフォルダ', '直下フォルダ数', '圧縮ファイル数', '着手数', '未着手数', '着手率', '履歴照合の確認事項', '保存先', '最終取得 UTC', '取得状態')),
             ('sq_entries', 'SQserver 実験一覧',
-             ('group', 'container', 'entry_type', 'name', 'experiment_at', 'operator', 'machine', 'experiment_number', 'repeat_number', 'experiment_name', 'parse_status', 'first_folder', 'remaining_path', 'child_folders', 'exsv_t_tdms', 'exsv_tdms', 'exsvz_t_tdms', 'exsvz_tdms', 'root', 'last_success', 'status'),
-             ('グループ', 'backup / ANフォルダ', '種類', '元の名前', '実験日時', '操作者', '装置', '実験回数', '繰返し回数', '実験名', '名前解析', '相対パスの先頭フォルダ', '残りの相対パス', '実験直下（EXSV / EXSVZ）', 'EXSV/T TDMS', 'EXSV直下 TDMS', 'EXSVZ/T TDMS', 'EXSVZ直下 TDMS', '保存先', '最終取得 UTC', '取得状態')),
-            ('summary', '全ファイル集計', self.columns,
-             ('サーバー', '保存先', '実験／最上位フォルダ', 'サンプル', '周波数', '区分', '保存分類', '件数', '容量(bytes)', '最終取得 UTC')),
+             ('group', 'container', 'machine', 'name', 'analysis_state', 'exsv_t_tdms', 'exzsv_tdms', 'experiment_at', 'analysis_started_at', 'last_success', 'status'),
+             ('グループ', 'backup / ANフォルダ', '装置', '元の名前', '解析着手', 'EXSV/T TDMS数', 'EXZSV TDMS数', '実験日時', '解析着手日時', '最終取得 UTC', '取得状態')),
+            ('updates', '更新状況・履歴',
+             ('server', 'share_name', 'status', 'direct_folders', 'analysis_started', 'analysis_pending', 'analysis_rate', 'folder_count', 'elapsed', 'started', 'finished', 'error', 'count_note', 'root'),
+             ('サーバー', '共有名', '状態', '直下実験フォルダ総数', '解析着手数', '未着手数', '着手率', '確認フォルダ数（全階層）', '経過秒', '開始 UTC', '終了 UTC', '処理中の場所・エラー', '着手照合の確認事項', '共有')),
         ]
         for key, title, columns, titles in specifications:
             tab = ttk.Frame(self.notebook)
             self.notebook.add(tab, text=title)
+            if key == 'sq_entries':
+                ttk.Label(tab, text='薄赤：未着手・TDMS件数あり（優先処理）　灰：未着手・TDMS未作成　薄緑：着手済み　白：確認不可・対象外',
+                          padding=(8, 4)).pack(fill='x')
             tree = self.table(columns, titles, 14, True, parent=tab)
+            if key == 'sq_entries':
+                for tag, color in [('sq_needs_action', '#ffcaca'), ('sq_no_tdms', '#eeeeee'),
+                                   ('sq_started', '#e3f3e7'), ('sq_unknown', '#ffffff')]:
+                    tree.tag_configure(tag, background=color)
             self.views[key] = dict(tab=tab, tree=tree, columns=columns, rows=[])
             tree.bind('<Double-1>', lambda event, current=tree: self.show_row_details(current))
-        self.summary_tree = self.views['summary']['tree']
         self.notebook.bind('<<NotebookTabChanged>>', lambda _: self.update_total())
-        ttk.Label(self, text='未作成＝フォルダなし / 0＝存在して0件。TDMS・stockedは各フォルダ直下のみ。行をダブルクリックすると詳細を表示します。').pack(anchor='w', padx=8)
+        ttk.Label(self.sq_panel, text='未作成＝フォルダなし / 0＝存在して0件。TDMS・stockedは各フォルダ直下のみ。行をダブルクリックすると詳細を表示します。').pack(anchor='w', padx=8)
         self.status = tk.StringVar(value='サーバー・共有・実験を選んで個別に更新できます。閲覧のみなら接続しません。')
-        ttk.Label(self, textvariable=self.status, padding=8, wraplength=1300).pack(fill='x')
+        ttk.Label(self.sq_panel, textvariable=self.status, padding=8, wraplength=1300).pack(fill='x')
         self.protocol('WM_DELETE_WINDOW', self.close)
         self.after(150, self.poll)
         self.select_server()
+        rackstation_view.create_panel(self, self.analysis_panel)
         self.refresh()
 
     def table(self, columns, titles, height, expand=False, parent=None):
-        frame = ttk.Frame(parent if parent is not None else self, padding=(8, 0))
+        frame = ttk.Frame(parent if parent is not None else self.sq_panel, padding=(8, 0))
         frame.pack(fill='both' if expand else 'x', expand=expand)
         tree = ttk.Treeview(frame, columns=columns, show='headings', height=height)
-        tree.tag_configure('even', background='#f0f4f8')
+        tree.tag_configure('even', background='#f0f7fd')
         tree.tag_configure('完了', background='#e3f3e7')
         tree.tag_configure('実行中', background='#e0efff')
         tree.tag_configure('失敗', background='#ffe4e4')
@@ -169,47 +218,173 @@ class App(tk.Tk):
         return tree
 
     def refresh(self):
-        try:
-            source_rows = catalog.sources(self.db_path)
-            if self.db_path == catalog.DEFAULT_DB:
-                for source in self.configured:
-                    if not any(Path(r['root']) == Path(source['root']) for r in source_rows):
-                        source_rows.append(dict(source, status='未取得' if source['root'] else '共有パス未設定',
-                                                file_count='', bytes='', folder_count='', last_success=None,
-                                                last_attempt=None, error=''))
-            rows = catalog.summary(self.db_path, self.search.get())
-            analysis = inventory_views.analysis_inventory(self.db_path, self.search.get())
-            groups, entries = inventory_views.sq_inventory(self.db_path, self.search.get())
-            history = catalog.update_history(self.db_path)
-            if not self.busy:
-                for row in history:
-                    if row['status'] == '実行中':
-                        row['status'] = '実行中／終了未確認'
-        except Exception as exc:
-            messagebox.showerror('データベースを読めません', str(exc))
+        self.refresh_version += 1
+        version = self.refresh_version
+        path, search = self.db_path, self.search.get()
+        configured = [dict(source) for source in self.configured]
+        self.db_label.config(text=f'読み込み中: {path}')
+        self.reading = True
+        self.read_started = time.monotonic()
+        self.read_phase = '前回の表示データを読み込み中'
+        self.read_status.set('読み込み中：前回の表示データを確認しています…')
+        self.read_progress.start(15)
+
+        def worker():
+            try:
+                cache = path.with_suffix('.view.json')
+                try:
+                    saved = json.loads(cache.read_text(encoding='utf-8'))
+                    inventory = saved.get('inventory')
+                    if (saved.get('format') == 1 and saved.get('search') == search
+                            and isinstance(inventory, list) and len(inventory) == 7
+                            and all(isinstance(rows, list) for rows in inventory[:6])
+                            and isinstance(inventory[6], dict)):
+                        self.events.put(('cached_refresh', (version, saved['inventory'], None)))
+                except (OSError, ValueError, TypeError, AttributeError):
+                    pass
+                # Show acquisition dates immediately, even before large file tables
+                # have finished aggregating on the first launch without a cache.
+                with catalog.connect(path, readonly=True) as db:
+                    sources = [dict(r) for r in db.execute(
+                        "SELECT * FROM sources WHERE lower(server)='sqserver' ORDER BY root")]
+                self.events.put(('saved_sources', (version, sources)))
+                result = self.read_inventory(path, search, configured,
+                    lambda phase: self.events.put(('read_phase', (version, phase))))
+                self.events.put(('refresh', (version, result, None)))
+                if path == catalog.DEFAULT_DB and not search and version == self.refresh_version:
+                    try:
+                        temporary = cache.with_suffix('.json.tmp')
+                        temporary.write_text(json.dumps(dict(format=1, search=search, inventory=result),
+                                                        ensure_ascii=False), encoding='utf-8')
+                        temporary.replace(cache)
+                    except OSError:
+                        pass
+            except Exception as exc:
+                self.events.put(('refresh', (version, None, str(exc))))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    @staticmethod
+    def read_inventory(path, search, configured, progress=lambda phase: None):
+        progress('保存済みDBの件数・容量を集計中')
+        source_rows = catalog.sources(path)
+        if path == catalog.DEFAULT_DB:
+            for source in configured:
+                if not any(Path(r['root']) == Path(source['root']) for r in source_rows):
+                    source_rows.append(dict(source, status='未取得' if source['root'] else '共有パス未設定',
+                                            file_count='', bytes='', folder_count='', last_success=None,
+                                            last_attempt=None, error=''))
+        rows, analysis = [], []
+        source_rows = [r for r in source_rows if r['server'].casefold() == 'sqserver']
+        progress('保存済みDBのグループ・実験一覧を集計中')
+        groups, entries = inventory_views.sq_inventory(path)
+        groups = [r for r in groups if r['server'].casefold() == 'sqserver']
+        entries = [r for r in entries if r['server'].casefold() == 'sqserver']
+        progress('コピー履歴と解析着手状況を照合中')
+        sq_workflow.enrich(groups, entries)
+        counts = recent_progress.inventory_counts(path)
+        by_root = {}
+        for group in groups:
+            by_root.setdefault(group['root'], []).append(group)
+        for root, root_groups in by_root.items():
+            valid = [g for g in root_groups if g['folder_count'] is not None]
+            total = sum(g['folder_count'] for g in valid)
+            counted = valid and all(isinstance(g['started_count'], int) for g in valid)
+            started = sum(g['started_count'] for g in valid) if counted else None
+            stocked = all(g['group'] == 'Stocked_Data' for g in root_groups)
+            counts[str(PureWindowsPath(root)).casefold()] = dict(
+                direct_folders=total if valid else '未取得',
+                analysis_started='' if stocked else started if counted else '確認不可',
+                analysis_pending='' if stocked else total-started if counted else '確認不可',
+                analysis_rate=f'{started / total:.1%}' if counted and total else '',
+                count_note='; '.join(sorted({g['history_note'] for g in root_groups if g['history_note']})))
+        if search:
+            groups = [r for r in groups if search.casefold() in ' '.join(str(v) for v in r.values()).casefold()]
+            entries = [r for r in entries if search.casefold() in ' '.join(str(v) for v in r.values()).casefold()]
+        history = [r for r in catalog.update_history(path) if r['server'].casefold() == 'sqserver']
+        return source_rows, rows, analysis, groups, entries, history, counts
+
+    def finish_refresh(self, version, result, error, final=True):
+        if version != self.refresh_version:
             return
+        if final:
+            self.reading = False
+            self.read_progress.stop()
+            elapsed = time.monotonic() - self.read_started
+            self.read_status.set(f'読み込み失敗（{elapsed:.1f}秒）' if error else
+                                 f'読み込み完了（{elapsed:.1f}秒）')
+        else:
+            self.read_phase = '前回の一覧を表示済み／保存済みDBを再集計中'
+        if error is not None:
+            self.db_label.config(text=f'読み込み失敗: {self.db_path}')
+            messagebox.showerror('データベースを読めません', error)
+            return
+        source_rows, rows, analysis, groups, entries, history, self.recent_counts = result
+        if not self.busy:
+            for row in history:
+                if row['status'] == '実行中':
+                    row['status'] = '実行中／終了未確認'
         self.display_rows = rows
-        datasets = dict(summary=rows, analysis=analysis, sq_groups=groups, sq_entries=entries, updates=history)
+        datasets = dict(sq_groups=groups, sq_entries=entries, updates=history)
         if self.busy:
             datasets['updates'] = self.views['updates']['rows']
         else:
             datasets['updates'] = [r for r in self.live_jobs.values() if r['status'] == '未実行'] + history
         for key, records in datasets.items():
             self.views[key]['rows'] = records
+        for row in datasets['updates']:
+            self.decorate_update(row)
         for tree, records in [(self.source_tree, source_rows)] + [(v['tree'], v['rows']) for v in self.views.values()]:
             if self.busy and tree is self.views['updates']['tree']:
                 continue
             tree.delete(*tree.get_children())
             for index, row in enumerate(records):
+                tag = (sq_entry_tag(row) if tree is self.views['sq_entries']['tree'] else
+                       row.get('status') if row.get('status') in ('完了', '失敗', '中止', '実行中') else
+                       'even' if index % 2 == 0 else '')
                 tree.insert('', 'end', iid=str(index), values=[self.cell(row, key) for key in tree['columns']],
-                            tags=(row.get('status') if row.get('status') in ('完了', '失敗', '中止', '実行中') else 'even' if index % 2 == 0 else '',))
-        self.db_label.config(text=f'表示中: {self.db_path}')
+                            tags=(tag,))
+        dates = sorted({r['last_success'] for r in source_rows + groups + entries if r.get('last_success')})
+        acquired = f'{dates[0]} ～ {dates[-1]}' if len(dates) > 1 else dates[0] if dates else '未取得'
+        self.db_label.config(text=f'保存済み情報を表示中: {self.db_path}\n取得日時 UTC: {acquired}（対象ごとの日時は一覧で確認できます）')
+        self.fit_sq_columns()
         self.update_total()
         self.scope_candidates()
+
+    def show_saved_sources(self, version, records):
+        if version != self.refresh_version or self.source_tree.get_children():
+            return
+        for index, row in enumerate(records):
+            values = [self.cell(row, key) if key in row else '集計中'
+                      for key in self.source_tree['columns']]
+            self.source_tree.insert('', 'end', iid=str(index), values=values)
+        self.db_label.config(text=f'保存済みの取得日時を表示中: {self.db_path}（一覧を読み込み中）')
+
+    def fit_sq_columns(self):
+        view = self.views['sq_entries']
+        tree = view['tree']
+        font = tkfont.nametofont('TkDefaultFont')
+        heading_font = tkfont.nametofont('TkHeadingFont')
+        for column in view['columns']:
+            width = max([heading_font.measure(tree.heading(column, 'text'))] +
+                        [font.measure(str(self.cell(row, column))) for row in view['rows']]) + 20
+            tree.column(column, width=width, minwidth=width, stretch=column == 'name',
+                        anchor='e' if column in ('exsv_t_tdms', 'exzsv_tdms') else 'w')
+
+    def decorate_update(self, row):
+        root = str(PureWindowsPath(row['root'])).casefold()
+        row['share_name'] = row['root'].replace('\\', '/').rstrip('/').rsplit('/', 1)[-1]
+        row.update(direct_folders='対象外', analysis_started='', analysis_pending='', analysis_rate='', count_note='')
+        row.update(self.recent_counts.get(root, {}))
 
     @staticmethod
     def cell(row, key):
         value = row.get(key)
+        if key == 'bytes' and isinstance(value, (int, float)):
+            unit, divisor = ('TB', 10**12) if value >= 10**12 else ('GB', 10**9)
+            if 0 < value < divisor / 1000:
+                return f'<0.001 {unit}'
+            return f'{value / divisor:,.3f} {unit}'
         if key == 'elapsed' and value is not None:
             return f'{value:.1f}'
         if value is not None:
@@ -244,10 +419,7 @@ class App(tk.Tk):
     def update_total(self):
         view = self.active_view()
         rows = view['rows']
-        if view is self.views['summary']:
-            text = f"{sum(r['file_count'] for r in rows):,}件 / {sum(r['bytes'] for r in rows) / 1024**3:,.3f} GiB"
-        else:
-            text = f'{len(rows):,}行（現在の検索条件）'
+        text = f'{len(rows):,}'
         self.total.config(text=text)
 
     def settings(self):
@@ -329,11 +501,12 @@ class App(tk.Tk):
         ttk.Button(dialog, text='保存', command=save).pack(pady=10)
 
     def select_server(self):
-        names = list(dict.fromkeys(s['server'] for s in self.configured))
+        names = list(dict.fromkeys(s['server'] for s in self.configured if s['server'].casefold() == 'sqserver'))
         self.server_box['values'] = names
         if self.target_server.get() not in names:
             self.target_server.set(names[0] if names else '')
-        roots = [s['root'] for s in self.configured if s['server'] == self.target_server.get() and s['root']]
+        roots = [s['root'] for s in self.configured if s['server'] == self.target_server.get() and s['root']
+                 and (s['server'].casefold() != 'sqserver' or sq_workflow.stage(s) == 'Recent_Data')]
         self.root_box['values'] = roots
         if self.target_root.get() not in roots:
             self.target_root.set(roots[0] if roots else '')
@@ -345,13 +518,12 @@ class App(tk.Tk):
             return
         root = Path(self.target_root.get())
         candidates = set()
-        for row in self.views['analysis']['rows']:
+        for row in self.views.get('analysis', {'rows': []})['rows']:
             if Path(row['root']) == root:
                 candidates.add(row['experiment'])
         for row in self.views['sq_entries']['rows']:
             if Path(row['root']) == root:
                 candidates.add(row['relative_path'])
-        self.scope_box['values'] = sorted(candidates)
 
     def change_root(self, event=None):
         self.target_scope.set('')
@@ -361,6 +533,9 @@ class App(tk.Tk):
         return next((dict(s) for s in self.configured if s['root'] and Path(s['root']) == Path(root)), None)
 
     def update_server(self):
+        if self.target_server.get().casefold() == 'sqserver':
+            self.run_jobs(sq_workflow.jobs_for_stage(self.configured, 'Recent_Data'))
+            return
         if any(s['server'] == self.target_server.get() and not s['root'].strip() for s in self.configured):
             messagebox.showinfo('共有パス未設定', '選択サーバーにパス未設定の行があります。保存先設定を確認してください。')
             return
@@ -404,7 +579,7 @@ class App(tk.Tk):
         self.run_jobs(jobs)
 
     def run_jobs(self, jobs):
-        if self.busy:
+        if self.busy or getattr(self, 'rack_busy', False):
             return
         if not jobs:
             messagebox.showinfo('更新対象なし', '保存先の共有パスを設定し、更新するサーバー・共有・実験を選んでください。')
@@ -418,7 +593,7 @@ class App(tk.Tk):
                           for i, (s, p) in enumerate(jobs)}
         for button in self.buttons:
             button.config(state='disabled')
-        for box in (self.server_box, self.root_box, self.scope_box):
+        for box in (self.server_box, self.root_box):
             box.config(state='disabled')
         self.stop_button.config(state='normal')
         self.progress_bar.start(12)
@@ -461,6 +636,7 @@ class App(tk.Tk):
         tree = view['tree']
         # Update in place so scrolling and selection remain stable during a scan.
         for key, row in self.live_jobs.items():
+            self.decorate_update(row)
             values = [self.cell(row, col) for col in tree['columns']]
             if tree.exists('job_' + key):
                 tree.item('job_' + key, values=values, tags=(row['status'],))
@@ -471,6 +647,20 @@ class App(tk.Tk):
         try:
             while True:
                 event, text = self.events.get_nowait()
+                if event == 'read_phase':
+                    version, phase = text
+                    if version == self.refresh_version:
+                        self.read_phase = phase
+                    continue
+                if event == 'cached_refresh':
+                    self.finish_refresh(*text, final=False)
+                    continue
+                if event == 'saved_sources':
+                    self.show_saved_sources(*text)
+                    continue
+                if event == 'refresh':
+                    self.finish_refresh(*text)
+                    continue
                 if event == 'job':
                     key, changes = text
                     self.live_jobs[key].update(changes)
@@ -485,10 +675,12 @@ class App(tk.Tk):
                     self.progress_bar.stop()
                     self.server_box.config(state='readonly')
                     self.root_box.config(state='readonly')
-                    self.scope_box.config(state='normal')
                     self.refresh()
         except queue.Empty:
             pass
+        if self.reading:
+            elapsed = time.monotonic() - self.read_started
+            self.read_status.set(f'読み込み中：{self.read_phase}… ／ 経過 {elapsed:.0f}秒（サーバーの再取得は行っていません）')
         if self.busy:
             for row in self.live_jobs.values():
                 if row['status'] == '実行中' and '_started' in row:
@@ -593,6 +785,11 @@ class App(tk.Tk):
                 messagebox.showerror('保存失敗', str(exc))
 
     def close(self):
+        if getattr(self, 'rack_busy', False):
+            self.rack_cancel.set()
+            self.main_tabs.select(self.active_analysis_panel)
+            self.status.set('中止を要求しました。Analysis_serverの処理終了後に閉じてください。')
+            return
         if self.busy:
             self.cancel.set()
             self.status.set('中止を要求しました。ネットワークの応答と終了を待ってから閉じてください。')

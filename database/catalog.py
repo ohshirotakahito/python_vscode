@@ -11,6 +11,11 @@ DEFAULT_DB = Path(__file__).resolve().parent / 'inventory.sqlite3'
 SOURCE_KINDS = ('analysis', 'experiment', 'sq_recent', 'sq_data', 'sq_stocked')
 
 
+def root_identity(root):
+    """Compare saved roots without UNC-share trailing separator differences."""
+    return os.path.normcase(os.path.normpath(str(root))).rstrip('/\\')
+
+
 def now():
     return datetime.now(timezone.utc).isoformat(timespec='seconds')
 

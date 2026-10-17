@@ -117,6 +117,21 @@ updates = update_history(DEFAULT_DB)
 SQLiteの `PRAGMA user_version` は2です。起動時にローカルv1 DBへupdatesテーブルを追加し、既存の記録を保持します。読み取り用の旧v1 DBも表示できます。DB本体と個人設定はGit対象外です。
 専門集計は既存のfiles/folders記録から算出します。sources.last_successと従来のsummary/find_filesのlast_successは共有全体の取得日時です。範囲別の日時・状態には専門APIとupdate_historyを利用してください。
 
+## Recent_Dataの解析着手状況
+
+上部の「Recent_Data 着手状況」で専用画面を開き、「現状を照合」を押します。
+装置CSV（exmanagerと同じMachine_N.csv）のTmp_backupからbackup_01〜backup_08を選び、
+各フォルダ直下の現存する実験フォルダを読み取ります。ファイル本体は読みません。
+装置CSV、LabVIEW版・Python版履歴CSVは画面で選択できます。
+
+exmanagerと同じく、装置コードと元実験フォルダ名が履歴に一致すれば「着手済み」とします。
+backup別の現存数・着手済み数・未着手数・着手率と、実験別の履歴件数・最終日時・保存先を表示します。
+「未着手のみ表示」で未着手フォルダを絞り込めます。
+これはコピー履歴に基づく着手判定で、コピー全件完了や解析完了の判定ではありません。
+装置設定がないbackupは「未設定」、フォルダや履歴が読めない場合は「確認不可」とし、未着手に含めません。
+この照合は表示中のSQLite DBとは別に現在のSQserverとCSVを読みます。サーバー接続が必要です。
+移動・圧縮・履歴CSVへの書き込みは行いません。
+
 ## 検証
 
 ```powershell
