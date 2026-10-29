@@ -14,19 +14,25 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import ui_theme  # noqa: E402
 
 try:
-    from . import catalog, inventory_views, recent_progress, sq_workflow, rackstation_view
+    from . import catalog, inventory_views, recent_progress, sq_workflow, rackstation_view, bnal_progress, anal_progress
 except ImportError:
     import catalog
     import inventory_views
     import recent_progress
     import sq_workflow
     import rackstation_view
+    import bnal_progress
+    import anal_progress
 
 BASE = Path(__file__).resolve().parent
 CONFIG = BASE / 'sources.json'
 DEFAULTS = [dict(server=name, root='\\\\' + name + '\\analysis', kind='analysis')
             for name in ('Rackstation', 'QTserver', 'QDserver', 'QKserver')]
 DEFAULTS.append(dict(server='SQserver', root='', kind='experiment'))
+# 「保存先の状態」表の列幅（px）
+SOURCE_COLUMN_WIDTHS = {'server': 140, 'root': 300, 'status': 140, 'file_count': 140, 'bytes': 140,
+                        'volume': 200, 'volume_rate': 80, 'folder_count': 140, 'last_success': 195,
+                        'last_attempt': 208, 'error': 185}
 
 
 def selected_source_kind(server, root):
@@ -84,17 +90,11 @@ class App(tk.Tk):
         self.analysis_panel = ttk.Frame(self.main_tabs)
         self.main_tabs.add(self.sq_panel, text='Data_server')
         self.main_tabs.add(self.analysis_panel, text='Analysis_server')
-        bar = ttk.LabelFrame(self.sq_panel, text='SQserver', padding=8)
-        bar.pack(fill='x')
+        self.anal_panel = ttk.Frame(self.main_tabs)
+        self.main_tabs.add(self.anal_panel, text='ANAL進捗')
+        self.bnal_panel = ttk.Frame(self.main_tabs)
+        self.main_tabs.add(self.bnal_panel, text='BNAL進捗')
         self.buttons = []
-        for label, command in [('保存先設定', self.settings)]:
-            button = ttk.Button(bar, text=label, command=command)
-            button.pack(side='left', padx=3)
-            self.buttons.append(button)
-        self.stop_button = ttk.Button(bar, text='更新を中止', command=self.cancel.set, state='disabled')
-        self.stop_button.pack(side='left', padx=3)
-        ttk.Button(bar, text='Recent_Data 着手状況',
-                   command=lambda: recent_progress.open_window(self)).pack(side='left', padx=6)
         target = ttk.LabelFrame(self.sq_panel, text='更新する範囲を選択（ほかの範囲の記録は保持します）', padding=8)
         target.pack(fill='x', padx=8)
         self.target_server = tk.StringVar()
@@ -104,26 +104,54 @@ class App(tk.Tk):
         self.server_box = ttk.Combobox(target, textvariable=self.target_server, state='readonly', width=18)
         self.server_box.grid(row=0, column=1, padx=5)
         self.server_box.bind('<<ComboboxSelected>>', lambda _: self.select_server())
-        ttk.Label(target, text='共有').grid(row=0, column=2)
-        self.root_box = ttk.Combobox(target, textvariable=self.target_root, state='readonly', width=35)
-        self.root_box.grid(row=0, column=3, sticky='ew', padx=5)
-        self.root_box.bind('<<ComboboxSelected>>', self.change_root)
-        for label, command, row, col in [
-            ('このサーバーを更新', self.update_server, 0, 4),
-            ('この共有を更新', self.update_root, 0, 7)]:
-            button = ttk.Button(target, text=label, command=command)
-            button.grid(row=row, column=col, padx=4)
-            self.buttons.append(button)
-        target.columnconfigure(3, weight=1)
-        for col, stage in [(5, 'Archived_Data'), (6, 'Stocked_Data')]:
-            button = ttk.Button(target, text=stage + ' を更新',
+        # サーバー選択欄の右に、段階ごとの更新ボタン（Recent → Archived → Stocked）を並べる。
+        # SQserverの「サーバーの更新」は Recent_Data（backup_01〜08）の更新にあたる。
+        # 色はアプリ共通の役割色: 青＝通常の更新、橙＝範囲を絞った更新、灰（既定）＝設定・状況確認。
+        recent = ttk.Button(target, text='Recent_Data を更新', command=self.update_server,
+                            style='Primary.TButton')
+        recent.grid(row=0, column=2, padx=4)
+        self.buttons.append(recent)
+        for col, stage in [(3, 'Archived_Data'), (4, 'Stocked_Data')]:
+            button = ttk.Button(target, text=stage + ' を更新', style='Primary.TButton',
                                 command=lambda stage=stage: self.run_jobs(sq_workflow.jobs_for_stage(self.configured, stage)))
             button.grid(row=0, column=col, padx=4)
             self.buttons.append(button)
-        self.progress_bar = ttk.Progressbar(self.sq_panel, mode='indeterminate')
-        self.progress_bar.pack(fill='x', padx=8, pady=4)
-        self.read_progress = ttk.Progressbar(self.sq_panel, mode='indeterminate')
-        self.read_progress.pack(fill='x', padx=8)
+        ttk.Label(target, text='共有').grid(row=0, column=5, padx=(16, 0))
+        self.root_box = ttk.Combobox(target, textvariable=self.target_root, state='readonly', width=48)
+        self.root_box.grid(row=0, column=6, sticky='w', padx=5)
+        self.root_box.bind('<<ComboboxSelected>>', self.change_root)
+        root_button = ttk.Button(target, text='この共有を更新', command=self.update_root,
+                                 style='Conditional.TButton')
+        root_button.grid(row=0, column=7, padx=4)
+        self.buttons.append(root_button)
+        # 更新中だけ押せる中止ボタンは、更新ボタンのすぐ右に置く
+        self.stop_button = ttk.Button(target, text='更新を中止', command=self.cancel.set, state='disabled')
+        self.stop_button.grid(row=0, column=8, padx=4)
+        settings_button = ttk.Button(target, text='保存先設定', command=self.settings)
+        settings_button.grid(row=0, column=9, padx=(20, 4))
+        self.buttons.append(settings_button)
+        ttk.Button(target, text='Recent_Data 着手状況',
+                   command=lambda: recent_progress.open_window(self)).grid(row=0, column=10, padx=4)
+        target.columnconfigure(11, weight=1)  # 入力欄は固定幅。余白は右端へ
+        # 2本のバーを見出しと色で区別する（サーバー更新＝アプリの紫、表示の読み込み＝紫寄りの青）
+        style = ttk.Style(self)
+        bars = ttk.Frame(self.sq_panel)
+        bars.pack(fill='x', padx=8, pady=(4, 0))
+        bars.columnconfigure(1, weight=1)
+        for row, (name, title, color) in enumerate((
+                ('Update', 'サーバー更新', ui_theme.DATABASE),
+                ('Read', '表示の読み込み', ui_theme.mix(ui_theme.DATABASE, '#5b9dff', 0.6)))):
+            style.configure(f'{name}.Horizontal.TProgressbar', background=color, lightcolor=color,
+                            darkcolor=color, troughcolor=ui_theme.FIELD, bordercolor=ui_theme.BORDER)
+            style.configure(f'{name}.TLabel', foreground=color)
+            ttk.Label(bars, text=title, style=f'{name}.TLabel', width=12).grid(
+                row=row, column=0, sticky='w', pady=2)
+            bar = ttk.Progressbar(bars, mode='indeterminate', style=f'{name}.Horizontal.TProgressbar')
+            bar.grid(row=row, column=1, sticky='ew', pady=2)
+            if name == 'Update':
+                self.progress_bar = bar
+            else:
+                self.read_progress = bar
         self.read_status = tk.StringVar(value='')
         ttk.Label(self.sq_panel, textvariable=self.read_status, padding=(8, 2)).pack(fill='x')
         self.reading = False
@@ -132,8 +160,16 @@ class App(tk.Tk):
         self.db_label = ttk.Label(self.sq_panel, padding=8)
         self.db_label.pack(anchor='w')
         ttk.Label(self.sq_panel, text='保存先の状態（日時はUTC／接続失敗・中止時は前回の記録を表示）').pack(anchor='w', padx=8)
-        self.source_tree = self.table(('server', 'root', 'status', 'file_count', 'bytes', 'folder_count', 'last_success', 'last_attempt', 'error'),
-                                      ('サーバー', '保存先', '状態', '件数', '容量 (GB / TB)', 'フォルダ数', '最終全体取得 UTC', '最終試行 UTC', 'エラー・除外'), 8)
+        self.source_tree = self.table(('server', 'root', 'status', 'file_count', 'bytes', 'volume', 'volume_rate', 'folder_count', 'last_success', 'last_attempt', 'error'),
+                                      ('サーバー', '保存先', '状態', '件数', '容量 (GB / TB)', 'ボリューム使用量 / 全体', '使用率', 'フォルダ数', '最終全体取得 UTC', '最終試行 UTC', 'エラー・除外'), 8)
+        rackstation_view.tag_volume_rows(self.source_tree)
+        ttk.Label(self.sq_panel, text=rackstation_view.VOLUME_LEGEND, style='Muted.TLabel',
+                  padding=(8, 2)).pack(anchor='w')
+        # 保存先の状態の列幅は固定（ドラッグでも変えない）
+        for col, width in SOURCE_COLUMN_WIDTHS.items():
+            self.source_tree.column(col, width=width, minwidth=width, stretch=False)
+        self.source_tree.bind('<Button-1>', lambda event: 'break'
+                              if self.source_tree.identify_region(event.x, event.y) == 'separator' else None)
         search_bar = ttk.Frame(self.sq_panel, padding=8)
         search_bar.pack(fill='x')
         ttk.Label(search_bar, text='パス・実験・サンプル名で検索').pack(side='left')
@@ -182,6 +218,8 @@ class App(tk.Tk):
         self.after(150, self.poll)
         self.select_server()
         rackstation_view.create_panel(self, self.analysis_panel)
+        anal_progress.create_panel(self, self.anal_panel)
+        bnal_progress.create_panel(self, self.bnal_panel)
         self.refresh()
 
     def table(self, columns, titles, height, expand=False, parent=None):
@@ -328,9 +366,10 @@ class App(tk.Tk):
                 continue
             tree.delete(*tree.get_children())
             for index, row in enumerate(records):
+                volume_tag = rackstation_view.volume_rate(row)[1] if tree is self.source_tree else ''
                 tag = (sq_entry_tag(row) if tree is self.views['sq_entries']['tree'] else
                        row.get('status') if row.get('status') in ('完了', '失敗', '中止', '実行中') else
-                       'even' if index % 2 == 0 else '')
+                       volume_tag or ('even' if index % 2 == 0 else ''))
                 tree.insert('', 'end', iid=str(index), values=[self.cell(row, key) for key in tree['columns']],
                             tags=(tag,))
         dates = sorted({r['last_success'] for r in source_rows + groups + entries if r.get('last_success')})
@@ -344,7 +383,7 @@ class App(tk.Tk):
         if version != self.refresh_version or self.source_tree.get_children():
             return
         for index, row in enumerate(records):
-            values = [self.cell(row, key) if key in row else '集計中'
+            values = [self.cell(row, key) if key in row or key in ('volume', 'volume_rate') else '集計中'
                       for key in self.source_tree['columns']]
             self.source_tree.insert('', 'end', iid=str(index), values=values)
         self.db_label.config(text=f'保存済みの取得日時を表示中: {self.db_path}（一覧を読み込み中）')
@@ -368,6 +407,13 @@ class App(tk.Tk):
 
     @staticmethod
     def cell(row, key):
+        if key == 'volume':
+            # 共有が載っているディスク全体（同じディスク上の共有は同じ値になる）
+            if row.get('volume_total') is None:
+                return '未取得（要更新）'
+            return f"{App.cell(dict(bytes=row['volume_used']), 'bytes')} / {App.cell(dict(bytes=row['volume_total']), 'bytes')}"
+        if key == 'volume_rate':
+            return rackstation_view.volume_rate(row)[0]
         value = row.get(key)
         if key == 'bytes' and isinstance(value, (int, float)):
             unit, divisor = ('TB', 10**12) if value >= 10**12 else ('GB', 10**9)
@@ -494,8 +540,8 @@ class App(tk.Tk):
         self.server_box['values'] = names
         if self.target_server.get() not in names:
             self.target_server.set(names[0] if names else '')
-        roots = [s['root'] for s in self.configured if s['server'] == self.target_server.get() and s['root']
-                 and (s['server'].casefold() != 'sqserver' or sq_workflow.stage(s) == 'Recent_Data')]
+        # 保存先設定に登録した共有をすべて選べるようにする（backup_*・data・data_stocked など、設定の順）
+        roots = [s['root'] for s in self.configured if s['server'] == self.target_server.get() and s['root']]
         self.root_box['values'] = roots
         if self.target_root.get() not in roots:
             self.target_root.set(roots[0] if roots else '')

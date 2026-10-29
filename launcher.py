@@ -51,6 +51,8 @@ APPS = [
         r'Viewer\view_tdms_signal_tk.py', '.', '\uE9D9', ui_theme.VIEWER),
     App('5', '実験ファイルDB', 'サーバーごとのファイル保存状況と解析着手状況',
         r'database\app.py', '.', '\uEE94', ui_theme.DATABASE),
+    App('6', 'BNAL\u30D7\u30ED\u30C3\u30C8', 'BNAL@ \u306E TDMS \u8AAD\u307F\u8FBC\u307F\u30FB\u4F4D\u7F6E\u3054\u3068\u306E\u5206\u5E03\u306E\u53EF\u8996\u5316\u3068\u6BD4\u8F03',
+        r'Plotting\app.py', '.', '\uE9D2', ui_theme.PLOTTING),
 ]
 
 
@@ -117,7 +119,7 @@ class Launcher(tk.Tk):
 
     def __init__(self):
         super().__init__()
-        self.title('Python_VScode ランチャー')
+        self.title('Quantum Workbench ランチャー')
         self.configure(bg=BG)
         self.resizable(False, False)
         self.python = python_for_gui()
@@ -137,8 +139,8 @@ class Launcher(tk.Tk):
         header.pack()
         for x in range(w):
             header.create_line(x, 0, x, 112, fill=mix(HEADER_FROM, HEADER_TO, x / w))
-        header.create_text(32, 40, text='Python_VScode', anchor='w',
-                           font=('Segoe UI Semibold', 22), fill=TEXT)
+        header.create_text(32, 40, text='Quantum Workbench', anchor='w',
+                           font=('Segoe UI Semibold', 20), fill=TEXT)
         header.create_text(34, 76, text='アプリランチャー  ·  カードをクリック、または数字キーで起動',
                            anchor='w', font=(UI, 10), fill='#a9c4b2')
         btn = round_rect(header, w - 268, 38, w - 132, 74, 18, fill='#3c6b4b', outline='#5d9a6f')
@@ -173,6 +175,9 @@ class Launcher(tk.Tk):
         self.geometry(f'+{x}+{y}')
 
     def launch(self, app):
+        if any(proc.poll() is None for proc, _ in self.processes[app.key]):
+            self._set_status(f'{app.title} はすでに起動しています', app.accent)
+            return
         script = ROOT / app.cwd / app.script
         if not script.exists():
             messagebox.showerror('起動できません', f'ファイルが見つかりません:\n{script}', parent=self)

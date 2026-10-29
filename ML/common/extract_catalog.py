@@ -149,7 +149,9 @@ def scan_sample(server: str, share: str, ex: str, sample: str, feature_set: str)
 
     列: sample, file_key, file_no, status, measured_at, gap_nm, machine, analyzed_at,
         extracted_events, last_extracted_at, raw_name, anal_path
-    status: '未抽出' / '抽出済み' / 'ANAL未処理'（測定のみ） / '測定ファイルなし'（ANALのみ）
+    status: '未抽出' / '抽出済み' / 'ANAL未処理'（測定のみ）
+            / '未抽出（測定ファイルなし）' / '抽出済み（測定ファイルなし）'（ANALのみ。抽出はANALだけで
+              できるが、測定日時・Gap・実験IDは測定ファイル名から読めないので空欄）
             / 'Tフォルダなし'（そもそも測定データが無い）
             / '未抽出（同名の別実験あり）'（同じファイル名で別の実験IDのデータだけが保存済み）
     """
@@ -191,7 +193,9 @@ def scan_sample(server: str, share: str, ex: str, sample: str, feature_set: str)
         n_extracted = int(extracted.get((key, info["experiment_id"] or ""), 0))
         n_same_name = sum(n for (k, _e), n in extracted.items() if k == key)
         if key not in raw:
-            status = "測定ファイルなし"
+            # 実験IDが分からないので、同じファイルキーの保存済みイベントを抽出済みとみなす
+            n_extracted = n_same_name
+            status = "抽出済み（測定ファイルなし）" if n_extracted > 0 else "未抽出（測定ファイルなし）"
         elif anal_path is None:
             status = "ANAL未処理"
         elif n_extracted > 0:

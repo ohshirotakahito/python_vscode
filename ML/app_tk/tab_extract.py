@@ -26,18 +26,20 @@ from theme import DANGER, INFO, MUTED, SELECTED, SUCCESS, SURFACE, TEXT, WARNING
 from widgets import DataTable, ProgressPanel, open_path
 
 METHODS = {
-    "traditional（波形12点特徴量 → data/features/rmb）": {
-        "module": "extract_features_traditional", "feature_set": "rmb",
-    },
     "tsfresh（→ data/features/rmc）": {
         "module": "extract_features_tsfresh", "feature_set": "rmc",
     },
+    "traditional（波形12点特徴量 → data/features/rmb）": {
+        "module": "extract_features_traditional", "feature_set": "rmb",
+    },
 }
 
-SELECTABLE = ("未抽出", "未抽出（同名の別実験あり）", "抽出済み")
+SELECTABLE = ("未抽出", "未抽出（同名の別実験あり）", "未抽出（測定ファイルなし）",
+              "抽出済み", "抽出済み（測定ファイルなし）")
 STATUS_COLORS = {
-    "未抽出": INFO, "未抽出（同名の別実験あり）": INFO, "抽出済み": SUCCESS,
-    "ANAL未処理": WARNING, "測定ファイルなし": WARNING, "Tフォルダなし": DANGER,
+    "未抽出": INFO, "未抽出（同名の別実験あり）": INFO, "未抽出（測定ファイルなし）": INFO,
+    "抽出済み": SUCCESS, "抽出済み（測定ファイルなし）": SUCCESS,
+    "ANAL未処理": WARNING, "Tフォルダなし": DANGER,
 }
 CHECKED, UNCHECKED, NA = "☑", "☐", "－"
 ALL_GAPS = "すべてのGap"
@@ -253,7 +255,7 @@ class ExtractTab(ttk.Frame):
         self.selection_label.pack(side="right")
 
         ttk.Label(frame, text="行をクリックすると抽出する／しないが切り替わります（Shift/Ctrlで複数行を選んで"
-                              "Spaceキーでまとめて切り替え）。ANALが無いファイルは選べません。",
+                              "Spaceキーでまとめて切り替え）。ANALが無いファイルは選べません（測定ファイルが無くてもANALがあれば抽出できます）。",
                   foreground=MUTED).pack(anchor="w")
 
         table = ttk.Frame(frame)
@@ -358,12 +360,17 @@ class ExtractTab(ttk.Frame):
                 "サンプル": sample,
                 "測定ファイル": int(g["raw_name"].notna().sum()),
                 "ANAL済み": int(g["anal_path"].notna().sum()),
-                "抽出済み": int(counts.get("抽出済み", 0)),
-                "未抽出": int(counts.get("未抽出", 0) + counts.get("未抽出（同名の別実験あり）", 0)),
+                "抽出済み": int(g["status"].str.startswith("抽出済み").sum()),
+                "未抽出": int(g["status"].str.startswith("未抽出").sum()),
                 "ANAL未処理": int(counts.get("ANAL未処理", 0)),
                 "Gap(nm)": ", ".join(f"{x:.3f}" for x in sorted(g["gap_nm"].dropna().unique())),
                 "測定日": ", ".join(days),
-                "備考": ("同名の別実験データあり" if counts.get("未抽出（同名の別実験あり）") else ""),
+                "備考": "、".join(
+                    note for note, present in (
+                        ("同名の別実験データあり", counts.get("未抽出（同名の別実験あり）")),
+                        ("測定ファイルなし（ANALのみで抽出）",
+                         counts.get("未抽出（測定ファイルなし）") or counts.get("抽出済み（測定ファイルなし）")))
+                    if present),
             })
         self.summary.show(pd.DataFrame(rows))
 
@@ -416,7 +423,7 @@ class ExtractTab(ttk.Frame):
             self.selection_label.configure(text="")
             return
         chosen = df.loc[sorted(self.checked)]
-        n_done = int((chosen["status"] == "抽出済み").sum())
+        n_done = int(chosen["status"].str.startswith("抽出済み").sum())
         text = f"抽出するファイル: {len(chosen)} 件"
         if n_done:
             text += f"（うち抽出済み {n_done} 件）"
@@ -443,7 +450,7 @@ class ExtractTab(ttk.Frame):
                 return
             files_by_sample = {s: g["anal_path"].tolist() for s, g in chosen.groupby("sample")}
             samples = [s for s in samples if s in files_by_sample]
-            n_done = int((chosen["status"] == "抽出済み").sum())
+            n_done = int(chosen["status"].str.startswith("抽出済み").sum())
             message = f"{len(samples)} サンプル・{len(chosen)} ファイルから特徴量を抽出します。"
             if n_done:
                 message += (f"\n\nうち {n_done} ファイルは抽出済みです"

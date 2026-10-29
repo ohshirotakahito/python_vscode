@@ -3,9 +3,42 @@ import unittest
 from pathlib import Path
 from csv_editor import read_document, save_document, split_header, move_selected_rows, sort_rows, missing_history_rows
 from core import HEADERS
+from csv_editor import duplicate_history_groups
 
 
 class CsvDocumentTest(unittest.TestCase):
+    def test_duplicates_require_all_fields_and_preserve_input(self):
+        record = ['2026/10/17_10:00'] + ['value'] * 16
+        changed = record[:-1] + ['different']
+        rows = [record, changed, record.copy(), [], [''] * 17,
+                record + ['extra'], record.copy(), [''] * 17, record[:-1]]
+        snapshot = [row.copy() for row in rows]
+        self.assertEqual(duplicate_history_groups(rows), [[0, 2, 6]])
+        self.assertEqual(rows, snapshot)
+        self.assertEqual(duplicate_history_groups([record, changed]), [])
+
+    def test_import_legacy_into_python_preserves_header_and_source(self):
+        import csv
+        with tempfile.TemporaryDirectory() as folder:
+            legacy = Path(folder) / 'Uploader.csv'
+            local = Path(folder) / 'Uploader_python.csv'
+            existing = ['2026/10/15_14:59'] + ['既存'] * 16
+            added = ['2026/10/17_10:00'] + ['追加'] * 16
+            with legacy.open('w', encoding='cp932', newline='') as stream:
+                csv.writer(stream).writerows([existing, added, added])
+            with local.open('w', encoding='utf-8-sig', newline='') as stream:
+                csv.writer(stream).writerows([HEADERS, existing])
+            source_snapshot = legacy.read_bytes()
+            original, encoding, rows, newline = read_document(local)
+            header, rows = split_header(rows, HEADERS)
+            missing = missing_history_rows(rows, legacy, HEADERS)
+            self.assertEqual(missing, [added])
+            merged = sort_rows(rows + missing, 0, descending=True)
+            save_document(local, original, encoding, [header] + merged, newline)
+            self.assertEqual(read_document(local)[2], [HEADERS, added, existing])
+            self.assertEqual(legacy.read_bytes(), source_snapshot)
+            self.assertEqual(missing_history_rows(merged, legacy, HEADERS), [])
+
     def test_import_missing_history_preserves_legacy_format_and_backup(self):
         import csv
         with tempfile.TemporaryDirectory() as folder:

@@ -1,10 +1,26 @@
 import tempfile
 import unittest
 from pathlib import Path
-from core import inspect_set_data, sampled_signature, signature
+from core import inspect_set_data, sampled_signature, signature, destination_warnings
 
 
 class SetDataTest(unittest.TestCase):
+    def test_destination_archive_and_analysis_warnings(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'sample'
+            folder = target / 'sample_10k_Sample'
+            for relative in ('stocked/nested', 'T/stocked', 'T/ANAL'):
+                (folder / relative).mkdir(parents=True)
+            self.assertEqual(destination_warnings(target, 'Sample'), [])
+            (folder / 'stocked/nested/old.txt').touch()
+            (folder / 'T/stocked/old.tdms').touch()
+            (folder / 'T/ANAL/result.TDMS').touch()
+            warnings = destination_warnings(target, 'Sample')
+            self.assertEqual(len(warnings), 3)
+            self.assertEqual(sum('退避ファイルあり' in w for w in warnings), 2)
+            self.assertIn('解析進行中', warnings[2])
+            self.assertEqual(destination_warnings(target, 'Blank'), [])
+
     def test_quick_check_is_partial(self):
         with tempfile.TemporaryDirectory() as tmp:
             first, second = Path(tmp) / 'first', Path(tmp) / 'second'

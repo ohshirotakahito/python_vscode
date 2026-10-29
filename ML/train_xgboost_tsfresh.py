@@ -9,6 +9,7 @@ TOP_XGboost_rmc.py
 """
 
 import os
+import functools
 import gc
 import time
 import math
@@ -76,17 +77,11 @@ WAVE_COLUMNS = [f'wave_{i}' for i in range(12)]
 META_FEATURE_COLUMNS = ['absolute_signal', 'relative_signal', 'duration'] + WAVE_COLUMNS
 
 # --- データの絞り込み条件（ここでまとめて指定） ---
-DURATION_LIMIT = (5, 1000)
-BASELINE_LIMIT = (-300, 1000)
-SIGNAL_LIMIT = (0, 1000)
-#DURATION_LIMIT = (5, 200)
-#BASELINE_LIMIT = (-300, 200)
-#SIGNAL_LIMIT = (0, 200)
+# イベントの範囲条件は全パイプライン共通（common/event_limits.py で変更する）
+from common.event_limits import DURATION_LIMIT, BASELINE_LIMIT, SIGNAL_LIMIT  # noqa: E402
 
-# distanceはすべてNoneなら全対象。値指定と上下限の併用はAND条件。
-DISTANCE_VALUES = None  # 全距離を使用。AspPhe/PheAspで絞る場合は [0.54] または [0.56]
-DISTANCE_MIN = None     # 下限（含む）。例: 0.5
-DISTANCE_MAX = None     # 上限（含む）。例: 1.0
+# distanceの絞り込みは、画面の「③ 学習ファイルの絞り込み」で distance.mean などを
+# 条件にして行う（全パイプライン共通のデータ条件。旧 DISTANCE_VALUES 等は廃止）。
 
 # ファイル番号・装置・計測日時などの追加条件（未指定ならNone）。
 # 詳細な条件の書き方は common/filters.py の docstring を参照。
@@ -103,7 +98,10 @@ FILTERS = None
 # 重要: 全サンプルで必ず同じfc_parametersを使うこと（結合時の列不一致でMemoryErrorになるため）。
 # 今回のデータ規模（十万イベント/数百万〜数千万行）では EfficientFCParameters は重すぎるため
 # まずは MinimalFCParameters で通すことを推奨。物足りなければ後で変更可。
-FC_PARAMETERS = MinimalFCParameters()
+# 'minimal' / 'curated' / 'efficient'（common/fc_parameters.py 参照）
+FC_PARAMETERS_MODE = 'minimal'
+from common.fc_parameters import fc_parameters_for  # noqa: E402
+FC_PARAMETERS = fc_parameters_for(FC_PARAMETERS_MODE)
 
 USE_TSFRESH_FEATURE_SELECTION = True
 
@@ -120,6 +118,10 @@ CACHE_DIR = paths.cache_dir(FEATURE_SET)
 
 N_JOBS = 4
 CHUNKSIZE = 50
+
+# Step2（Permutation Importance）に使うテストデータの上限件数（LightGBM版と同じ）。
+# 計算量・メモリがテスト件数×特徴量数×繰り返し回数に比例するため。Noneで全件。
+PERM_IMPORTANCE_MAX_SAMPLES = 3000
 
 # --- サンプル内バッチ分割設定 ---
 # tsfreshはextract_featuresに渡された全データに対し、ワーカーへ分配する前に
@@ -221,236 +223,15 @@ dp.FILTERS = FILTERS
 # 学習・評価
 # ============================================================
 
-def learn_dataset(dnf, feature_columns, max_depth=6, eta=0.1, num_round=500,
-                   early_stopping_rounds=20, val_size=0.15, verbose_eval=False):
+def train_xgb_classifier(dnf, feature_columns, feature_set_name="model", n_jobs=N_JOBS, split=None):
+    """イベント単位の分割・CV・（任意）ハイパーパラメータ探索で学習する（common/training_core.py）。
+
+    split は run_analysis() で1回だけ作った分割（全特徴量セットで共通）。未指定ならここで作る。
     """
-    XGBoostによる学習（見直し版）。
-
-    【変更点】
-    - max_depth を 100 -> 6 に変更（100は木がほぼ無制限に伸びて過学習必至だったため）
-    - eta を 1 -> 0.1 に変更（1は学習率として大きすぎ、過学習・不安定の原因になっていた）
-    - eta を下げた分、num_round を 200 -> 500 に増やし、
-      early_stopping_rounds で検証データのlossが改善しなくなったら自動的に打ち切るようにした
-      （過学習を防ぎつつ、無駄に多いラウンド数を使い切らないようにする）
-    - train_test_split を2段階にして、train内からさらにvalidationを切り出し、
-      test setは最後の評価にのみ使う（early stoppingにtestを使うとリークになるため）
-    """
-    y_labels = dnf['sample'].astype(str).tolist()
-
-    x = dnf[feature_columns]
-    X = preprocessing.scale(x)
-
-    le = LabelEncoder()
-    le = le.fit(y_labels)
-    y = le.transform(y_labels)
-
-    num_class = max(y) + 1
-
-    test_size = 0.2
-    X_train_full, X_test, y_train_full, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=0, stratify=y
-    )
-
-    # --- train内からさらにvalidationを切り出す（early stopping用） ---
-    X_train, X_val, y_train, y_val = train_test_split(
-        X_train_full, y_train_full, test_size=val_size, random_state=0,
-        stratify=y_train_full
-    )
-
-    # --- アンダーサンプリングはtrainのみに適用（val/testはそのままの分布で評価） ---
-    cn = [len(y_train[y_train == i]) for i in range(num_class)]
-    counts = [min(cn) for _ in range(len(cn))]
-    keys = list(range(len(cn)))
-    strategy = {key: count for key, count in zip(keys, counts)}
-
-    rus = RandomUnderSampler(random_state=0, sampling_strategy=strategy)
-    X_train, y_train = rus.fit_resample(X_train, y_train)
-
-    dtrain = xgb.DMatrix(X_train, label=y_train)
-    dval = xgb.DMatrix(X_val, label=y_val)
-    dtest = xgb.DMatrix(X_test)
-
-    params = {
-        'max_depth': max_depth,
-        'eta': eta,
-        'eval_metric': 'mlogloss',
-        'num_class': num_class,
-        'objective': 'multi:softprob',
-    }
-
-    evals_result = {}
-    bst = xgb.train(
-        params, dtrain, num_boost_round=num_round,
-        evals=[(dtrain, 'train'), (dval, 'val')],
-        early_stopping_rounds=early_stopping_rounds,
-        evals_result=evals_result,
-        verbose_eval=verbose_eval,
-    )
-
-    print(f"early stoppingで停止したラウンド: {bst.best_iteration} / {num_round}")
-
-    y_pred_proba = bst.predict(dtest, iteration_range=(0, bst.best_iteration + 1))
-    y_pred = y_pred_proba.argmax(axis=1)
-
-    acc = f1_score(y_test, y_pred, average='micro')
-    print('f-measure_value:', acc)
-
-    return X_test, y_test, y_pred, bst, le, evals_result
-
-
-def train_xgb_classifier(dnf, feature_columns, feature_set_name="model",
-                          n_jobs=N_JOBS,
-                          max_depth=6, eta=0.1, num_round=500,
-                          early_stopping_rounds=20, val_size=0.15,
-                          test_size=0.2, random_state=0, verbose_eval=False,
-                          n_cv_folds=10):
-    """
-    評価フロー:
-      1) 全データを 80% training / 20% held-out test に分割
-      2) training 80% の中で 10-fold CV によりモデル選択
-      3) 最後に held-out 20% test で最終評価
-
-    既存の result 辞書のキー構造は維持し、Step1〜5 の共通関数との互換性を保つ。
-    """
-    y_labels = dnf['sample'].astype(str).tolist()
-    x = dnf[feature_columns]
-
-    le = LabelEncoder()
-    le = le.fit(y_labels)
-    y = le.transform(y_labels)
-    num_class = max(y) + 1
-    class_names = list(le.classes_)
-
-    row_positions = np.arange(len(dnf))
-    idx_train_full, idx_test = train_test_split(
-        row_positions, test_size=test_size, random_state=random_state, stratify=y
-    )
-
-    x_train_full_raw = x.iloc[idx_train_full]
-    x_test_raw = x.iloc[idx_test]
-    y_train_full = y[idx_train_full]
-    y_test = y[idx_test]
-
-    feature_columns = list(feature_columns)
-    params = {
-        'max_depth': max_depth, 'eta': eta, 'eval_metric': 'mlogloss',
-        'num_class': num_class, 'objective': 'multi:softprob',
-    }
-
-    min_class_count = min(np.bincount(y_train_full).min(), n_cv_folds)
-    n_splits = max(2, min(n_cv_folds, min_class_count))
-    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
-
-    fold_scores = []
-    fold_best_rounds = []
-
-    for train_idx, valid_idx in skf.split(x_train_full_raw, y_train_full):
-        x_train_fold = x_train_full_raw.iloc[train_idx]
-        x_valid_fold = x_train_full_raw.iloc[valid_idx]
-        y_train_fold = y_train_full[train_idx]
-        y_valid_fold = y_train_full[valid_idx]
-
-        scaler_fold = StandardScaler()
-        X_train_fold = scaler_fold.fit_transform(x_train_fold)
-        X_valid_fold = scaler_fold.transform(x_valid_fold)
-
-        cn = [len(y_train_fold[y_train_fold == i]) for i in range(num_class)]
-        counts = [min(cn) for _ in range(len(cn))]
-        keys = list(range(len(cn)))
-        strategy = {key: count for key, count in zip(keys, counts)}
-        rus = RandomUnderSampler(random_state=random_state, sampling_strategy=strategy)
-        X_train_res, y_train_res = rus.fit_resample(X_train_fold, y_train_fold)
-
-        dtrain = xgb.DMatrix(X_train_res, label=y_train_res, feature_names=feature_columns)
-        dvalid = xgb.DMatrix(X_valid_fold, label=y_valid_fold, feature_names=feature_columns)
-
-        evals_result_fold = {}
-        bst_fold = xgb.train(
-            params, dtrain, num_boost_round=num_round,
-            evals=[(dtrain, 'train'), (dvalid, 'val')],
-            early_stopping_rounds=early_stopping_rounds,
-            evals_result=evals_result_fold,
-            verbose_eval=False,
-        )
-
-        y_valid_proba = bst_fold.predict(
-            dvalid, iteration_range=(0, bst_fold.best_iteration + 1)
-        )
-        y_valid_pred = y_valid_proba.argmax(axis=1)
-        fold_score = f1_score(y_valid_fold, y_valid_pred, average='macro')
-        fold_scores.append(fold_score)
-        fold_best_rounds.append(bst_fold.best_iteration)
-
-    cv_macro_f1 = float(np.mean(fold_scores))
-    selected_rounds = int(round(np.median(fold_best_rounds)))
-    print(f"[{feature_set_name}] 80% training 内 {n_splits}-fold CV: mean Macro F1={cv_macro_f1:.4f}, selected_rounds={selected_rounds}")
-
-    scaler = StandardScaler()
-    X_train = scaler.fit_transform(x_train_full_raw)
-    X_test = scaler.transform(x_test_raw)
-
-    cn = [len(y_train_full[y_train_full == i]) for i in range(num_class)]
-    counts = [min(cn) for _ in range(len(cn))]
-    keys = list(range(len(cn)))
-    strategy = {key: count for key, count in zip(keys, counts)}
-    rus = RandomUnderSampler(random_state=random_state, sampling_strategy=strategy)
-    X_train_res, y_train_res = rus.fit_resample(X_train, y_train_full)
-
-    dtrain = xgb.DMatrix(X_train_res, label=y_train_res, feature_names=feature_columns)
-    dtest = xgb.DMatrix(X_test, feature_names=feature_columns)
-
-    evals_result = {}
-    t0 = time.time()
-    bst = xgb.train(
-        params, dtrain, num_boost_round=selected_rounds,
-        evals=[(dtrain, 'train')],
-        evals_result=evals_result,
-        verbose_eval=verbose_eval,
-    )
-    final_rounds = selected_rounds if selected_rounds is not None else bst.num_boosted_rounds()
-    print(f"[{feature_set_name}] final model fit 完了 ({time.time() - t0:.1f}秒, best_iteration={final_rounds}/{selected_rounds})")
-
-    y_pred_proba = bst.predict(dtest, iteration_range=(0, final_rounds))
-    y_pred = y_pred_proba.argmax(axis=1)
-
-    macro_f1 = f1_score(y_test, y_pred, average='macro')
-    per_class_f1 = f1_score(y_test, y_pred, average=None, labels=range(num_class))
-    per_class_f1 = {cls: score for cls, score in zip(class_names, per_class_f1)}
-
-    cm = confusion_matrix(y_test, y_pred, labels=range(num_class))
-    cm_df = pd.DataFrame(cm, index=[f'Actual_{c}' for c in class_names],
-                          columns=[f'Pred_{c}' for c in class_names])
-
-    print(f"[{feature_set_name}] Held-out test Macro F1: {macro_f1:.4f}")
-
-    wrapper = BoosterClassifierWrapper(bst, num_class=num_class, feature_names=feature_columns)
-    wrapper.fit(X_train_res, y_train_res)
-
-    result = {
-        'name': feature_set_name,
-        'clf': wrapper,
-        'booster': bst,
-        'le': le,
-        'scaler': scaler,
-        'feature_columns': feature_columns,
-        'class_names': class_names,
-        'num_class': num_class,
-        'X_train': X_train_res,
-        'y_train': y_train_res,
-        'X_test': X_test,
-        'X_test_raw': x_test_raw,
-        'y_test': y_test,
-        'y_pred': y_pred,
-        'test_global_ids': list(dnf.index[idx_test]),
-        'macro_f1': macro_f1,
-        'per_class_f1': per_class_f1,
-        'confusion_matrix': cm_df,
-        'evals_result': evals_result,
-        'cv_macro_f1': cv_macro_f1,
-        'n_cv_folds': n_splits,
-        'cv_best_rounds': fold_best_rounds,
-    }
-    return result
+    from common import training_core
+    split = split or training_core.make_split(dnf)
+    return training_core.train_classifier(dnf, feature_columns, 'xgboost', split,
+                                          feature_set_name=feature_set_name, n_jobs=n_jobs)
 
 
 # ============================================================
@@ -479,43 +260,6 @@ for _i in range(12):
 
 
 _TOTAL_ANALYSIS_STAGES = 10
-
-
-def filter_distance(dnf):
-    """設定したdistance条件で絞り込む。未指定なら全行を返す。"""
-    if not DISTANCE_VALUES and DISTANCE_MIN is None and DISTANCE_MAX is None:
-        return dnf
-    if 'distance' not in dnf.columns:
-        raise ValueError("distance条件が指定されていますが、データにdistance列がありません。")
-    if DISTANCE_MIN is not None and DISTANCE_MAX is not None and DISTANCE_MIN > DISTANCE_MAX:
-        raise ValueError("DISTANCE_MINはDISTANCE_MAX以下にしてください。")
-
-    distance = pd.to_numeric(dnf['distance'], errors='coerce')
-    mask = distance.notna()
-    if DISTANCE_VALUES:
-        selected = np.zeros(len(dnf), dtype=bool)
-        for value in DISTANCE_VALUES:
-            selected |= np.isclose(distance, value, rtol=1e-7, atol=1e-9)
-        mask &= selected
-    if DISTANCE_MIN is not None:
-        mask &= distance >= DISTANCE_MIN
-    if DISTANCE_MAX is not None:
-        mask &= distance <= DISTANCE_MAX
-
-    filtered = dnf.loc[mask].copy()
-    print(f"distance条件適用: {len(dnf)}件 -> {len(filtered)}件")
-    if filtered.empty:
-        available = sorted(distance.dropna().unique().tolist())
-        raise ValueError(
-            "distance条件を満たすデータがありません。"
-            f"設定: DISTANCE_VALUES={DISTANCE_VALUES}, "
-            f"DISTANCE_MIN={DISTANCE_MIN}, DISTANCE_MAX={DISTANCE_MAX}。"
-            f"利用可能なdistance値: {available}。"
-            f"欠損・数値変換不可: {int(distance.isna().sum())}件。"
-            "全距離を使う場合はDISTANCE_VALUES/DISTANCE_MIN/DISTANCE_MAXを"
-            "すべてNoneにしてください。"
-        )
-    return filtered
 
 
 from common.feature_store import versioned_training
@@ -559,12 +303,16 @@ def run_analysis(smns, progress_callback=None):
         n_jobs=N_JOBS, chunksize=CHUNKSIZE,
         progress_callback=lambda current, total, message: _report(current / max(total, 1), message),
     )
-    dnf = filter_distance(dnf)
 
-    _report(1, "tsfresh特徴量を選択中...")
+    # 学習用/テスト用はイベント単位で1回だけ決め、全特徴量セットで共通に使う
+    from common import training_core
+    split = training_core.make_split(dnf)
+
+    _report(1, "tsfresh特徴量を選択中（学習用イベントのみ使用）...")
     if USE_TSFRESH_FEATURE_SELECTION:
+        # テスト用の情報が特徴量選択に混ざらないよう、学習用の行だけで選ぶ
         tsfresh_feature_cols = apply_tsfresh_feature_selection(
-            dnf, tsfresh_feature_cols_all, n_jobs=N_JOBS, chunksize=CHUNKSIZE
+            dnf.iloc[split['train']], tsfresh_feature_cols_all, n_jobs=N_JOBS, chunksize=CHUNKSIZE
         )
     else:
         tsfresh_feature_cols = tsfresh_feature_cols_all
@@ -574,9 +322,11 @@ def run_analysis(smns, progress_callback=None):
     # ---------------------------------------------------------
     _report(2, "Step1: 特徴量セットを比較・学習中...")
     step1_results, step1_comparison_df, step1_feature_set_names = compare_feature_sets(
-        dnf, META_FEATURE_COLUMNS, tsfresh_feature_cols, train_fn=train_xgb_classifier,
+        dnf, META_FEATURE_COLUMNS, tsfresh_feature_cols,
+        train_fn=functools.partial(train_xgb_classifier, split=split),
         n_jobs=N_JOBS, output_dir=RUN_DIR,
     )
+    training_core.save_training_details(step1_results, RUN_DIR)
 
     # '既存15+tsfresh' のような決め打ちではなく、実際に使われた列数から
     # 生成された名前を使う
@@ -595,10 +345,13 @@ def run_analysis(smns, progress_callback=None):
     MX, N_MX, report = conmtx(y_test, y_pred, le, save_dir=RUN_DIR)
 
     # --- モデル・ラベルエンコーダ・使用特徴量一覧も同じフォルダにまとめて保存 ---
-    bst.save_model(str(RUN_DIR / 'model.json'))
-    with open(RUN_DIR / 'label_encoder.pkl', 'wb') as f:
-        pickle.dump(le, f)
-    (RUN_DIR / 'feature_columns.txt').write_text('\n'.join(feature_columns), encoding='utf-8')
+    # ⑤ 混合予測タブで選べるよう、学習器として保存する（common/trained_models.py）
+    from common.trained_models import save_model
+    save_model(RUN_DIR, main_result, ALGORITHM, FEATURE_SET, smns, fc_parameters_mode=FC_PARAMETERS_MODE,
+             details={'use_tsfresh_feature_selection': USE_TSFRESH_FEATURE_SELECTION,
+                      'event_limits': {'duration': DURATION_LIMIT, 'baseline': BASELINE_LIMIT,
+                                       'signal': SIGNAL_LIMIT},
+                      'training': training_core.manifest_config(split, main_result)})
 
     _report(3, "混同行列・学習曲線を保存中...")
 
@@ -608,6 +361,7 @@ def run_analysis(smns, progress_callback=None):
     _report(4, "Step2: Permutation Importanceを計算中...")
     perm_importance_df = run_permutation_importance(
         main_result, n_repeats=10, n_jobs=N_JOBS, top_n=30, output_dir=RUN_DIR,
+        max_samples=PERM_IMPORTANCE_MAX_SAMPLES,
     )
 
     # ---------------------------------------------------------
@@ -706,12 +460,12 @@ def run_analysis(smns, progress_callback=None):
     paths.write_run_manifest(
         RUN_DIR, RUN_TIMESTAMP, smns,
         config={
-            'fc_parameters_mode': type(FC_PARAMETERS).__name__,
+            'fc_parameters_mode': FC_PARAMETERS_MODE,
             'use_tsfresh_feature_selection': USE_TSFRESH_FEATURE_SELECTION,
+            'tsfresh_feature_selection_fit': '学習用イベントのみ',
             'n_meta_features': len(META_FEATURE_COLUMNS),
-            'distance_values': DISTANCE_VALUES,
-            'distance_min': DISTANCE_MIN,
-            'distance_max': DISTANCE_MAX,
+            'event_limits': {'duration': DURATION_LIMIT, 'baseline': BASELINE_LIMIT, 'signal': SIGNAL_LIMIT},
+            'training': training_core.manifest_config(split, main_result),
         },
         execution_time=execution_time,
         comparison_df=step1_comparison_df,

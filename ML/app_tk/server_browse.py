@@ -135,6 +135,13 @@ class FolderPickerDialog(tk.Toplevel):
         bottom = ttk.Frame(panel)
         bottom.pack(fill="x", pady=(10, 0))
         ttk.Button(bottom, text="選択したフォルダを使用", command=self._choose).pack(side="left")
+        if multiple:
+            # 絞り込み中は表示されている行だけが対象
+            ttk.Button(bottom, text="すべて選択",
+                       command=lambda: self.listbox.selection_set(0, "end")).pack(side="left", padx=(8, 0))
+            ttk.Button(bottom, text="選択解除",
+                       command=lambda: self.listbox.selection_clear(0, "end")).pack(side="left", padx=(4, 0))
+            self.listbox.bind("<Control-a>", lambda _e: (self.listbox.selection_set(0, "end"), "break")[1])
         ttk.Button(bottom, text="キャンセル", command=self.destroy).pack(side="right")
 
         self._load()

@@ -74,12 +74,21 @@ def missing_history_rows(existing, source_path, column_titles):
         if not row or not any(row):
             continue
         if len(row) != width or not row[0]:
-            raise ValueError(f'Python版CSVのデータ行{index}が履歴の{width}列形式ではありません。')
+            raise ValueError(f'取込元CSVのデータ行{index}が履歴の{width}列形式ではありません。')
         key = tuple(row)
         if key not in seen:
             missing.append(row[:])
             seen.add(key)
     return missing
+
+
+def duplicate_history_groups(rows, width=17):
+    """Return zero-based groups of identical complete records, in display order."""
+    groups = {}
+    for index, row in enumerate(rows):
+        if len(row) == width and row[0]:
+            groups.setdefault(tuple(row), []).append(index)
+    return [indices for indices in groups.values() if len(indices) > 1]
 
 
 def save_document(path, original, encoding, rows, newline):
@@ -101,9 +110,11 @@ def save_document(path, original, encoding, rows, newline):
 
 
 class CsvEditor(tk.Toplevel):
-    def __init__(self, parent, path, on_saved, column_titles=(), first_row_header=False, history_source=None):
+    def __init__(self, parent, path, on_saved, column_titles=(), first_row_header=False, history_source=None,
+                 history_source_label='Python版'):
         self.path = Path(path)
         self.history_source = Path(history_source) if history_source is not None else None
+        self.history_source_label = history_source_label
         self.history_columns = tuple(column_titles)
         self.original, self.encoding, self.rows, self.newline = read_document(path)
         self.header, self.rows = split_header(self.rows, column_titles, first_row_header)
@@ -143,7 +154,8 @@ class CsvEditor(tk.Toplevel):
         if self.history_source is not None:
             importing = ttk.Frame(self, padding=(10, 4))
             importing.pack(fill='x')
-            ttk.Button(importing, text='Python版の不足履歴を取り込む', command=self.import_history).pack(side='left', padx=4)
+            ttk.Button(importing, text=f'{self.history_source_label}の不足履歴を取り込む', command=self.import_history).pack(side='left', padx=4)
+            ttk.Button(importing, text='重複を確認・除去', command=self.remove_duplicates).pack(side='left', padx=4)
             ttk.Label(importing, text='不足履歴を追加し、uploaded_atの降順に並べます。反映には「保存」が必要です。').pack(side='left', padx=8)
         ttk.Label(sorting, text='並べ替える列').pack(side='left', padx=4)
         self.sort_column = ttk.Combobox(sorting, state='readonly', width=35,
@@ -164,6 +176,50 @@ class CsvEditor(tk.Toplevel):
         self.status.pack(side='left', padx=12)
         self.refresh()
 
+    def remove_duplicates(self):
+        groups = duplicate_history_groups(self.rows, len(self.history_columns))
+        if not groups:
+            messagebox.showinfo('重複の確認', '全17列が完全一致する重複履歴はありません。', parent=self)
+            return
+        removed = {index for group in groups for index in group[1:]}
+        self.tree.selection_set(*[str(index) for group in groups for index in group])
+        self.tree.see(str(groups[0][0]))
+        dialog = tk.Toplevel(self)
+        dialog.title('重複履歴の確認')
+        dialog.geometry('700x450')
+        dialog.transient(self)
+        dialog.grab_set()
+        ttk.Label(dialog, text=f'全17列が完全一致する重複：{len(groups)}組 / 除去する行：{len(removed)}件\n'
+                  '各組の先頭行を残します。行番号は現在の一覧の番号です。\n'
+                  '除去後も「保存」を押すまではCSVに反映されません。').pack(anchor='w', padx=12, pady=10)
+        frame = ttk.Frame(dialog)
+        frame.pack(fill='both', expand=True, padx=12)
+        details = tk.Text(frame, wrap='word', width=70)
+        bar = ttk.Scrollbar(frame, orient='vertical', command=details.yview)
+        bar.pack(side='right', fill='y')
+        details.pack(fill='both', expand=True)
+        details.configure(yscrollcommand=bar.set)
+        for group in groups:
+            details.insert('end', f'残す行：{group[0] + 1} / 除去する行：'
+                           + ', '.join(str(index + 1) for index in group[1:])
+                           + f'\n  uploaded_at: {self.rows[group[0]][0]}\n\n')
+        details.configure(state='disabled')
+        def cancel():
+            dialog.destroy()
+            self.grab_set()
+        def commit():
+            self.rows = [row for index, row in enumerate(self.rows) if index not in removed]
+            self.dirty = True
+            self.refresh()
+            cancel()
+            messagebox.showinfo('重複の除去', f'{len(removed)}件の重複行を除去しました。\n'
+                                '内容を確認して「保存」を押してください。', parent=self)
+        actions = ttk.Frame(dialog, padding=12)
+        actions.pack(fill='x')
+        ttk.Button(actions, text=f'{len(removed)}件を除去', command=commit).pack(side='left', padx=4)
+        ttk.Button(actions, text='キャンセル', command=cancel).pack(side='left', padx=4)
+        dialog.protocol('WM_DELETE_WINDOW', cancel)
+
     def import_history(self):
         try:
             if self.path.resolve() == self.history_source.resolve() or os.path.samefile(self.path, self.history_source):
@@ -178,7 +234,7 @@ class CsvEditor(tk.Toplevel):
             return
         ordered = sort_rows(self.rows + missing, 0, descending=True)
         if not missing and ordered == self.rows:
-            messagebox.showinfo('履歴の取り込み', 'Python版にだけ存在する履歴はありません。', parent=self)
+            messagebox.showinfo('履歴の取り込み', f'{self.history_source_label}にだけ存在する履歴はありません。', parent=self)
             return
         self.rows = ordered
         self.dirty = True

@@ -9,6 +9,8 @@ ML/mix_results/
 Viewer/output_pdf/
 Viewer/csv_data/
 filemanager/rename_logs/
+filemanager/anal_logs/
+filemanager/bnal_logs/
 Viewer/clips_pick/
 ML/data_checks/
 ML/temp/
@@ -71,3 +73,4 @@ database/*.view.json.tmp
 
 # ===== 作業用一時フォルダ =====
 .tmp/
+filemanager/t_stock_logs/

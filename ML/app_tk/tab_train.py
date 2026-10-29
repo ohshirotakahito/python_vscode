@@ -5,22 +5,21 @@
 train_xgboost_traditional の run_analysis() を実行し、レポート・混同行列・重要度を表示する。
 """
 
-import ast
 import importlib
 import threading
 import tkinter as tk
-from pathlib import Path
 from tkinter import messagebox, ttk
 
 from lib.catalog import list_available_samples
 from common.feature_store import list_versions, resolve_version
+from common.fc_parameters import FC_PARAMETER_MODES
+from common.training_core import BALANCE_METHODS, DEFAULT_SETTINGS
 from tab_browser import RunResultView
 from widgets import CheckList, ProgressPanel, ScrollableFrame
 
 PIPELINES = {
     "rmc + XGBoost（tsfresh併用）": {
         "feature_set": "rmc", "module": "train_xgboost_tsfresh", "tsfresh": True,
-        "distance": True,
     },
     "rmc + LightGBM（tsfresh併用）": {
         "feature_set": "rmc", "module": "train_lightgbm_tsfresh", "tsfresh": True,
@@ -31,35 +30,8 @@ PIPELINES = {
 }
 
 
-DISTANCE_NAMES = ("DISTANCE_VALUES", "DISTANCE_MIN", "DISTANCE_MAX")
-
-
 class TrainingCancelled(Exception):
     """進捗通知の区切りで学習を中止する。"""
-
-
-def read_script_constants(module_name, names):
-    """スクリプトを import せずに、ファイル先頭の定数（NAME = 値）の現在値を読む。
-
-    重いライブラリを読み込まずに、画面の初期値をスクリプトの設定と揃えるため。
-    """
-    path = Path(__file__).resolve().parent.parent / f"{module_name}.py"
-    values = {}
-    try:
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-    except (OSError, SyntaxError):
-        return values
-    for node in tree.body:
-        if isinstance(node, ast.Assign) and len(node.targets) == 1                 and isinstance(node.targets[0], ast.Name) and node.targets[0].id in names:
-            try:
-                values[node.targets[0].id] = ast.literal_eval(node.value)
-            except ValueError:
-                pass
-    return values
-
-
-def _fmt_number(value):
-    return "" if value is None else f"{value:g}"
 
 
 class TrainTab(ttk.Frame):
@@ -84,11 +56,6 @@ class TrainTab(ttk.Frame):
         settings = ScrollableFrame(left_panel)
         settings.pack(fill="both", expand=True)
         left = settings.inner
-        ttk.Label(left, text="① クラスを選ぶ → ② 組み合わせに追加\n"
-                  "③ 絞り込みを設定 → ④ 条件を保存して戻る\n"
-                  "⑤ 下の「学習を実行」を押す（③④は任意）", wraplength=420,
-                  font=("Meiryo UI", 10, "bold")).pack(anchor="w", pady=(0, 8))
-
         ttk.Label(left, text="パイプライン").pack(anchor="w")
         self.pipeline = tk.StringVar(value=list(PIPELINES)[0])
         combo = ttk.Combobox(left, textvariable=self.pipeline, values=list(PIPELINES),
@@ -128,34 +95,35 @@ class TrainTab(ttk.Frame):
         self.tsfresh_frame = ttk.LabelFrame(left, text="tsfresh設定", padding=6)
         self.tsfresh_frame.pack(fill="x", pady=6)
         self.fc_mode = tk.StringVar(value="minimal")
-        ttk.Radiobutton(self.tsfresh_frame, text="Minimal（高速・推奨）", value="minimal",
-                        variable=self.fc_mode).pack(anchor="w")
-        ttk.Radiobutton(self.tsfresh_frame, text="Efficient（低速・特徴量多数）", value="efficient",
-                        variable=self.fc_mode).pack(anchor="w")
+        for mode, label in FC_PARAMETER_MODES.items():
+            ttk.Radiobutton(self.tsfresh_frame, text=label, value=mode,
+                            variable=self.fc_mode).pack(anchor="w")
         self.use_selection = tk.BooleanVar(value=True)
-        ttk.Checkbutton(self.tsfresh_frame, text="tsfresh特徴量選択を使う",
+        ttk.Checkbutton(self.tsfresh_frame, text="tsfresh特徴量選択を使う（学習用データのみで選択）",
                         variable=self.use_selection).pack(anchor="w")
 
-        self.distance_frame = ttk.LabelFrame(left, text="distance絞り込み（空欄なら全distance）",
-                                             padding=6)
-        self.distance_values = tk.StringVar()
-        self.distance_min = tk.StringVar()
-        self.distance_max = tk.StringVar()
-        ttk.Label(self.distance_frame, text="指定値（カンマ区切り）").grid(row=0, column=0, sticky="w")
-        ttk.Entry(self.distance_frame, textvariable=self.distance_values, width=16).grid(
-            row=0, column=1, columnspan=3, sticky="ew", padx=4)
-        ttk.Label(self.distance_frame, text="範囲").grid(row=1, column=0, sticky="w", pady=(4, 0))
-        range_box = ttk.Frame(self.distance_frame)
-        range_box.grid(row=1, column=1, columnspan=3, sticky="w", padx=4, pady=(4, 0))
-        ttk.Entry(range_box, textvariable=self.distance_min, width=8).pack(side="left")
-        ttk.Label(range_box, text=" 〜 ").pack(side="left")
-        ttk.Entry(range_box, textvariable=self.distance_max, width=8).pack(side="left")
-        self.distance_frame.columnconfigure(1, weight=1)
+        # 全パイプライン共通の学習設定（common/training_core.py）
+        training_frame = self.training_frame = ttk.LabelFrame(left, text="学習設定（全パイプライン共通）", padding=6)
+        training_frame.pack(fill="x", pady=(0, 6))
+        ttk.Label(training_frame, text="クラスの偏りへの対処").pack(anchor="w")
+        self.balance = tk.StringVar(value=BALANCE_METHODS[DEFAULT_SETTINGS["balance"]])
+        ttk.Combobox(training_frame, textvariable=self.balance, values=list(BALANCE_METHODS.values()),
+                     state="readonly").pack(fill="x", pady=(0, 4))
+        tune_row = ttk.Frame(training_frame)
+        tune_row.pack(fill="x")
+        self.tune = tk.BooleanVar(value=DEFAULT_SETTINGS["tune"])
+        ttk.Checkbutton(tune_row, text="ハイパーパラメータを探索する　候補数",
+                        variable=self.tune).pack(side="left")
+        self.n_trials = tk.StringVar(value=str(DEFAULT_SETTINGS["n_trials"]))
+        ttk.Spinbox(tune_row, from_=1, to=200, textvariable=self.n_trials, width=5).pack(side="left", padx=4)
+        ttk.Label(training_frame, text="学習用/テスト用はイベント単位で8:2に分けます。"
+                  "探索すると学習時間は約（候補数+1）倍になります。", wraplength=380).pack(anchor="w", pady=(4, 0))
 
         self.settings_end = ttk.Frame(left)
         self.settings_end.pack(fill="x")
         ttk.Button(left, text="③ 学習ファイルの絞り込みを設定（任意）",
                    command=self._choose_file_filters).pack(fill="x", pady=2)
+        ttk.Label(left, text="distanceもここで指定します（例：distance.mean = 0.54）。", wraplength=400).pack(anchor="w")
         self.file_filter_summary = ttk.Label(left, text="ファイル絞り込み：なし", wraplength=400)
         self.file_filter_summary.pack(fill="x")
         ttk.Label(actions, text="絞り込み条件の保存後、このボタンで学習を開始します。\n"
@@ -431,31 +399,20 @@ class TrainTab(ttk.Frame):
         self.refresh_samples()
         pipeline = PIPELINES[self.pipeline.get()]
         if pipeline["tsfresh"]:
-            self.tsfresh_frame.pack(fill="x", pady=6, before=self.settings_end)
+            self.tsfresh_frame.pack(fill="x", pady=6, before=self.training_frame)
         else:
             self.tsfresh_frame.pack_forget()
-        if pipeline.get("distance"):
-            current = read_script_constants(pipeline["module"], DISTANCE_NAMES)
-            self.distance_values.set(", ".join(_fmt_number(v) for v in current.get("DISTANCE_VALUES") or []))
-            self.distance_min.set(_fmt_number(current.get("DISTANCE_MIN")))
-            self.distance_max.set(_fmt_number(current.get("DISTANCE_MAX")))
-            self.distance_frame.pack(fill="x", pady=(0, 6), before=self.settings_end)
-        else:
-            self.distance_frame.pack_forget()
 
-    def _distance_settings(self):
-        """distance欄の入力を (values, min, max) に変換する。不正な値なら ValueError。"""
-        def number(text, label):
-            text = text.strip()
-            if not text:
-                return None
-            try:
-                return float(text)
-            except ValueError:
-                raise ValueError(f"distance の{label}が数値ではありません: {text}") from None
-
-        values = [number(t, "指定値") for t in self.distance_values.get().split(",") if t.strip()]
-        return values, number(self.distance_min.get(), "下限"), number(self.distance_max.get(), "上限")
+    def _training_settings(self):
+        """学習設定欄を common.training_core.configure() の引数に変換する。不正なら ValueError。"""
+        balance = next(key for key, label in BALANCE_METHODS.items() if label == self.balance.get())
+        try:
+            n_trials = int(self.n_trials.get())
+        except ValueError:
+            raise ValueError(f"探索の候補数は整数で入力してください: {self.n_trials.get()}") from None
+        if n_trials < 1:
+            raise ValueError("探索の候補数は1以上にしてください。")
+        return {"balance": balance, "tune": bool(self.tune.get()), "n_trials": n_trials}
 
     def _add_combo(self):
         selected = self.samples.get_selected()
@@ -493,13 +450,11 @@ class TrainTab(ttk.Frame):
             combinations = [selected]
 
         pipeline = PIPELINES[self.pipeline.get()]
-        distance = None
-        if pipeline.get("distance"):
-            try:
-                distance = self._distance_settings()
-            except ValueError as e:
-                messagebox.showerror("入力エラー", str(e))
-                return
+        try:
+            training_settings = self._training_settings()
+        except ValueError as e:
+            messagebox.showerror("入力エラー", str(e))
+            return
         fc_mode = self.fc_mode.get()
         use_selection = self.use_selection.get()
         # Resolve on the UI thread once for the whole batch, before imports/calculation.
@@ -521,9 +476,9 @@ class TrainTab(ttk.Frame):
         def task(progress):
             module = importlib.import_module(pipeline["module"])
             if pipeline["tsfresh"]:
-                from tsfresh.feature_extraction import EfficientFCParameters, MinimalFCParameters
+                from common.fc_parameters import fc_parameters_for
 
-                fc_parameters = EfficientFCParameters() if fc_mode == "efficient" else MinimalFCParameters()
+                fc_parameters = fc_parameters_for(fc_mode)
                 # build_combined_dataset() などは common/data_pipeline.py 側のモジュール変数
                 # (dp.FC_PARAMETERS) を参照するため、そちらも合わせて上書きする必要がある。
                 module.FC_PARAMETERS = fc_parameters
@@ -531,8 +486,9 @@ class TrainTab(ttk.Frame):
                 if hasattr(module, "FC_PARAMETERS_MODE"):
                     module.FC_PARAMETERS_MODE = fc_mode
                 module.USE_TSFRESH_FEATURE_SELECTION = use_selection
-            if distance is not None:
-                module.DISTANCE_VALUES, module.DISTANCE_MIN, module.DISTANCE_MAX = distance
+            from common import training_core
+            training_core.reset()
+            training_core.configure(**training_settings)
 
             results, errors = [], []
             n = len(combinations)

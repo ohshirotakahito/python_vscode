@@ -477,9 +477,11 @@ def predict_events(mix_smn: str, art: TrainArtifacts,
     """
     # dp.build_combined_dataset は元々複数smnsの結合用だが、要素数1で渡せば
     # 単一サンプル（混合サンプル）のtsfresh特徴量抽出・キャッシュにもそのまま使える
+    # 学習・評価タブで作った学習器（common.trained_models.LoadedModel）なら、
+    # 学習時と同じtsfresh設定で混合サンプルの特徴量を作る
     combined_mix, _ = dp.build_combined_dataset(
         [mix_smn], data_root=DATA_ROOT, use_cache=True,
-        filters=filters,
+        filters=filters, fc_parameters=getattr(art, "fc_parameters", None),
         n_jobs=N_JOBS, chunksize=CHUNKSIZE
     )
 
@@ -490,11 +492,11 @@ def predict_events(mix_smn: str, art: TrainArtifacts,
             "fc_parameters（FC_PARAMETERSの設定）が学習時と一致しているか確認してください。"
         )
 
-    X_raw = combined_mix[art.feature_columns]
-    X = art.scaler.transform(X_raw)
-
-    dtest = xgb.DMatrix(X)
-    probs = art.bst.predict(dtest)          # shape: (n_events, num_class)
+    if hasattr(art, "predict_proba"):
+        probs = art.predict_proba(combined_mix)  # 標準化は学習器側で学習時の基準を使う
+    else:
+        X = art.scaler.transform(combined_mix[art.feature_columns])
+        probs = art.bst.predict(xgb.DMatrix(X))  # shape: (n_events, num_class)
     y_pred = probs.argmax(axis=1)
     pmax = probs.max(axis=1)
 

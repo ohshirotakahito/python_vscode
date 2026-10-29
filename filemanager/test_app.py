@@ -8,6 +8,8 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+from unittest.mock import Mock
+import threading
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import app
@@ -18,6 +20,47 @@ import rename_replace
 
 
 class AppTests(unittest.TestCase):
+    def test_stop_button_terminates_only_preview(self):
+        window = app.App()
+        window.withdraw()
+        try:
+            with tempfile.TemporaryDirectory() as temp:
+                for preview in (True, False):
+                    window.busy = True
+                    window.cancel_event = threading.Event()
+                    window.cancel_file = Path(temp) / 'stop'
+                    window.active_preview = preview
+                    window.active_process = Mock()
+                    window.cancel_job()
+                    self.assertTrue(window.cancel_file.exists())
+                    self.assertTrue(window.cancel_event.is_set())
+                    self.assertEqual(window.active_process.terminate.call_count, int(preview))
+                    window.cancel_file.unlink()
+        finally:
+            window.destroy()
+
+    def test_sample_rename_worker_preview_execute_restore(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            experiment = base / 'experiment'
+            source = experiment / 'S' / 'S_10k_Sample' / 'T'
+            source.mkdir(parents=True)
+            (source / 'S_10k_Sample#001.tdms').write_bytes(b'data')
+            data = dict(kind='sample_rename', server='Rackstation', share='analysis',
+                        experiment='E', folder='S', old='S', new='New', preview=True)
+            with patch.object(app, 'BASE', base), patch.object(common, 'server_path', return_value=str(experiment)), contextlib.redirect_stdout(io.StringIO()):
+                app.run_job(data)
+                self.assertTrue(source.exists())
+                app.run_job({**data, 'preview': False})
+                renamed = experiment / 'New' / 'New_10k_Sample' / 'T' / 'New_10k_Sample#001.tdms'
+                self.assertEqual(renamed.read_bytes(), b'data')
+                history = next((base / 'rename_logs' / 'samples').glob('*.json'))
+                undo = dict(kind='sample_restore', history=str(history), preview=True)
+                app.run_job(undo)
+                self.assertTrue(renamed.exists())
+                app.run_job({**undo, 'preview': False})
+                self.assertEqual((source / 'S_10k_Sample#001.tdms').read_bytes(), b'data')
+
     def test_stocked_restore_conflict_and_repreview(self):
         with tempfile.TemporaryDirectory() as temp:
             def local_path(server, share, *parts):
@@ -289,7 +332,7 @@ class AppTests(unittest.TestCase):
         window = app.App()
         window.withdraw()
         try:
-            self.assertEqual(len(window.tabs.tabs()), 3)
+            self.assertEqual(len(window.tabs.tabs()), 7)
             fields = window.fields['rename']
             fields['root'].set('C:/fixture')
             fields['old'].set('old')
@@ -304,6 +347,27 @@ class AppTests(unittest.TestCase):
                 fields['new'].set('changed')
                 start.reset_mock()
                 window.submit('rename')
+                start.assert_not_called()
+        finally:
+            window.destroy()
+
+    def test_sample_rename_preview_gate(self):
+        window = app.App()
+        window.withdraw()
+        try:
+            fields = window.fields['sample_rename']
+            for key, value in dict(experiment='E', folder='S-re', old='S', new='S-re').items():
+                fields[key].set(value)
+            with patch.object(app.messagebox, 'showinfo'), patch.object(app.messagebox, 'askyesno', return_value=True), patch.object(window, 'start') as start:
+                window.submit('sample_rename')
+                start.assert_not_called()
+                window.submit('sample_rename', True)
+                window.preview_signature = start.call_args.args[1]
+                window.submit('sample_rename')
+                self.assertFalse(start.call_args.args[0]['preview'])
+                fields['new'].set('changed')
+                start.reset_mock()
+                window.submit('sample_rename')
                 start.assert_not_called()
         finally:
             window.destroy()

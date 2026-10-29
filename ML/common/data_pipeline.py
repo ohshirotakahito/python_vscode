@@ -65,9 +65,8 @@ from common.filters import apply_filters
 DATA_ROOT = paths.DATA_ROOT
 CACHE_DIR = paths.DATA_ROOT / '_cache'
 
-DURATION_LIMIT = (5, 1000)
-BASELINE_LIMIT = (-300, 1000)
-SIGNAL_LIMIT = (0, 1000)
+# イベントの範囲条件は全パイプライン共通（common/event_limits.py）
+from common.event_limits import DURATION_LIMIT, BASELINE_LIMIT, SIGNAL_LIMIT, event_mask
 
 N_JOBS = 4
 CHUNKSIZE = 10
@@ -177,11 +176,7 @@ def load_meta_data(smn, data_root=None,
     baseline = meta_df['baseline'].astype(np.float32)
     signal = meta_df['signal'].astype(np.float32)
 
-    mask = (
-        duration.between(duration_limit[0] + 1, duration_limit[1] - 1)
-        & baseline.between(baseline_limit[0] + 1, baseline_limit[1] - 1)
-        & signal.between(signal_limit[0] + 1e-12, signal_limit[1] - 1e-12)
-    )
+    mask = event_mask(duration, baseline, signal, duration_limit, baseline_limit, signal_limit)
     meta_df = meta_df[mask].copy()
     from common.training_file_filter import selection_manifest
     if meta_df.empty and selection_manifest():
@@ -196,6 +191,8 @@ def load_meta_data(smn, data_root=None,
     meta_df['absolute_signal'] = meta_df['signal'] + meta_df['baseline']
 
     meta_df['global_id'] = smn + '__' + meta_df['event_id'].astype(str)
+    # クラス名は指定したサンプル名に揃える（全パイプライン共通のラベル）
+    meta_df['sample'] = smn
 
     # 条件付きデータ選択（file_number/machine_no/measured_at等）。
     # filters引数が未指定ならモジュール変数FILTERSを使う。

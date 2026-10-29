@@ -129,6 +129,20 @@ class PartialUpdateTests(unittest.TestCase):
         catalog.export_snapshot(backup, self.db)
         self.assertEqual(catalog.update_history(backup), catalog.update_history(self.db))
 
+    def test_volume_usage_recorded_and_old_db_gets_columns(self):
+        with catalog.connect(self.db) as db:
+            db.execute('ALTER TABLE sources DROP COLUMN volume_used')
+            db.execute('ALTER TABLE sources DROP COLUMN volume_total')
+        catalog.initialize(self.db)  # 古いDBには列だけ追加する
+        self.file('E/a.txt')
+        self.scan()
+        row = catalog.sources(self.db)[0]
+        self.assertGreater(row['volume_total'], 0)
+        self.assertLessEqual(row['volume_used'], row['volume_total'])
+        with patch.object(catalog.shutil, 'disk_usage', side_effect=OSError('offline')):
+            self.scan()
+        self.assertEqual(catalog.sources(self.db)[0]['volume_total'], row['volume_total'])  # 測れなければ前回値
+
     def test_progress_includes_empty_folders_and_final_counts(self):
         (self.root / 'E/empty').mkdir(parents=True)
         self.file('E/a.txt')

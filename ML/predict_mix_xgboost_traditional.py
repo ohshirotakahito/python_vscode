@@ -82,9 +82,7 @@ RETRAIN = False
 DATA_DIR = paths.feature_dir(FEATURE_SET)
 
 # しきい値（条件選択）
-ST_RANGE = (10, 1000)       # signal_time
-SB_RANGE = (-300, 300)      # signal_baseline
-SI_RANGE = (10, 1000)       # signal_intensity
+# イベントの範囲条件は学習と共通（common/event_limits.py。旧 ST_RANGE/SB_RANGE/SI_RANGE は廃止）
 
 # XGBoost パラメータ
 XGB_PARAMS = {
@@ -169,15 +167,9 @@ def load_and_filter(path: str, filters: Optional[dict] = None) -> pd.DataFrame:
     df["signal_baseline"] = df["signal_baseline"].astype(float)
     df["signal_intensity"] = df["signal_intensity"].astype(float)
 
-    st_lo, st_hi = ST_RANGE
-    sb_lo, sb_hi = SB_RANGE
-    si_lo, si_hi = SI_RANGE
-
-    m = (
-        (df["signal_time"] > st_lo) & (df["signal_time"] < st_hi) &
-        (df["signal_baseline"] > sb_lo) & (df["signal_baseline"] < sb_hi) &
-        (df["signal_intensity"] > si_lo) & (df["signal_intensity"] < si_hi)
-    )
+    # イベントの範囲条件は学習時と共通（common/event_limits.py）
+    from common.event_limits import event_mask
+    m = event_mask(df["signal_time"], df["signal_baseline"], df["signal_intensity"])
     df = df.loc[m].reset_index(drop=True)
 
     # --- 派生特徴量の計算（common/data_pipeline.load_meta_data()と同じ定義） ---
@@ -365,7 +357,7 @@ def train(smns: List[str], filters: Optional[dict] = None) -> TrainArtifacts:
             "考えられる原因:\n"
             "  1) smnsのうち片方の.npyファイルが見つからず読み込みをスキップした\n"
             "     （上に出力された [WARN] missing file の行を確認してください）\n"
-            "  2) ST_RANGE/SB_RANGE/SI_RANGEのフィルタ条件で片方のデータが\n"
+            "  2) common/event_limits.py の範囲条件で片方のデータが\n"
             "     全て除外された（'{smn}: 0 rows' の行がないか確認）\n"
             "  3) 'sample'列の命名規則が smns の値と一致しておらず、\n"
             "     y = sample.split('_')[0] が両方とも同じ文字列になっている\n"
@@ -535,9 +527,10 @@ def predict_events(test_smn: str, art: TrainArtifacts,
         return pd.DataFrame()
 
     # --- イベント単位で予測確率・pmaxを計算（fileごとにループせず一括で処理） ---
-    X = art.scaler.transform(df[FEATURES])
-    dtest = xgb.DMatrix(X)
-    probs = art.bst.predict(dtest)          # shape: (n_events, num_class)
+    if hasattr(art, "predict_proba"):
+        probs = art.predict_proba(df)  # 学習・評価タブで作った学習器（common.trained_models）
+    else:
+        probs = art.bst.predict(xgb.DMatrix(art.scaler.transform(df[FEATURES])))
     y_pred = probs.argmax(axis=1)
     pmax = probs.max(axis=1)
 

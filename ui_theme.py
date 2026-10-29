@@ -26,6 +26,7 @@ ML = '#8fd18b'
 FILEMANAGER = '#e8b45e'
 VIEWER = '#6aa8ff'
 DATABASE = '#c58af9'
+PLOTTING = '#f08c6c'
 
 UI = 'Yu Gothic UI'
 UI_BOLD = 'Yu Gothic UI Semibold'

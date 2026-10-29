@@ -201,11 +201,16 @@ def parse_settings(values):
     return settings
 
 
+INPUT_WIDTH = 32  # 入力欄の幅（文字数）。画面幅いっぱいに伸ばさない
+SETTING_WIDTH = 48  # 「波形表示」「信号検出」タブの入力欄の幅（文字数）
+
+
 class FrontPanel(ttk.Frame):
     def __init__(self, root, workspace, waveform_frame, preview_frame):
         super().__init__(root, padding=16)
         self.pack(fill="both", expand=True)
-        self.columnconfigure(1, weight=1)
+        # 入力欄は固定幅にし、余白は右端の列（3列目）に寄せる
+        self.columnconfigure(3, weight=1)
         self.workspace = workspace
         self.waveform_frame = waveform_frame
         self.preview_frame = preview_frame
@@ -223,61 +228,69 @@ class FrontPanel(ttk.Frame):
         self.share = tk.StringVar(value="analysis")
         self.experiment = tk.StringVar()
         self.samples = tk.StringVar()
-        self.source_preview = tk.StringVar()
+        # 保存先は画面に出さず既定のフォルダを使う（保存ファイルタブの「参照…」で別フォルダも閲覧可）
         self.output = tk.StringVar(value=str(Path(__file__).resolve().parent / "clips_pick"))
         self.status = tk.StringVar(value="サーバー・共有フォルダ・実験フォルダ・サンプル名を選択してください。")
         self.values = {key: tk.StringVar(value=default) for key, _, default in FIELDS}
         self.noise_method = tk.StringVar(value="現方式（MAD）")
-        ttk.Label(self, text="サーバー").grid(row=0, column=0, sticky="w")
-        server_box = ttk.Combobox(self, textvariable=self.server, values=SERVERS)
-        server_box.grid(row=0, column=1, sticky="ew", padx=8)
-        for row, (label, variable, key) in enumerate((
+        # サーバー → 共有フォルダ → 実験フォルダ → サンプルを左から右へ並べる（見出しは入力欄の上）。
+        # ウィンドウが狭いときは、入りきらない項目を次の行へ折り返す。
+        source = ttk.Frame(self)
+        source.grid(row=0, column=0, columnspan=4, sticky="ew")
+        source.columnconfigure(0, weight=1)
+        # 行ごとの枠（項目より先に作り、項目がその上に表示されるようにする）
+        self.source_rows = [ttk.Frame(source) for _ in range(4)]
+        self.source_blocks = []
+        server_block = ttk.Frame(source)
+        ttk.Label(server_block, text="サーバー").grid(row=0, column=0, sticky="w")
+        server_box = ttk.Combobox(server_block, textvariable=self.server, values=SERVERS, width=INPUT_WIDTH - 3)
+        server_box.grid(row=1, column=0, sticky="w")
+        self.source_blocks.append(server_block)
+        for label, variable, key in (
             ("共有フォルダ", self.share, "share"),
             ("実験フォルダ名", self.experiment, "experiment"),
             ("サンプル名（カンマ区切り）", self.samples, "samples"),
-        ), start=1):
-            ttk.Label(self, text=label).grid(row=row, column=0, sticky="w", pady=5)
-            ttk.Entry(self, textvariable=variable, width=48).grid(row=row, column=1, sticky="ew", padx=8)
-            ttk.Button(self, text="一覧から選択 / 更新", command=lambda key=key: self.pick(key)).grid(row=row, column=2)
-        ttk.Label(self, textvariable=self.source_preview, wraplength=650).grid(row=4, column=0, columnspan=3, sticky="w")
-        ttk.Label(self, text="保存先").grid(row=5, column=0, sticky="w", pady=5)
-        ttk.Entry(self, textvariable=self.output).grid(row=5, column=1, sticky="ew", padx=8)
-        ttk.Button(self, text="参照…", command=self.choose_output).grid(row=5, column=2)
+        ):
+            block = ttk.Frame(source)
+            ttk.Label(block, text=label).grid(row=0, column=0, columnspan=2, sticky="w")
+            ttk.Entry(block, textvariable=variable, width=INPUT_WIDTH).grid(row=1, column=0, sticky="w", padx=(0, 4))
+            ttk.Button(block, text="一覧から選択", command=lambda key=key: self.pick(key)).grid(
+                row=1, column=1, sticky="w")
+            self.source_blocks.append(block)
+        source.bind("<Configure>", lambda event: self.arrange_source_blocks(event.width))
+        self.arrange_source_blocks(0)
         self.server.trace_add("write", lambda *_: self.share.set(""))
         self.share.trace_add("write", lambda *_: self.experiment.set(""))
         self.experiment.trace_add("write", lambda *_: self.samples.set(""))
         for variable in (self.server, self.share, self.experiment, self.samples):
-            variable.trace_add("write", self.update_source_preview)
-        self.update_source_preview()
+            variable.trace_add("write", self.clear_file_table)
+        self.clear_file_table()
         tabs = ttk.Notebook(self)
-        tabs.grid(row=6, column=0, columnspan=3, sticky="ew", pady=12)
+        tabs.grid(row=6, column=0, columnspan=4, sticky="ew", pady=12)
         basic = ttk.Frame(tabs, padding=12)
         detection = ttk.Frame(tabs, padding=12)
         tabs.add(basic, text="波形表示")
         tabs.add(detection, text="信号検出")
         ttk.Label(detection, text="ノイズσ推定方式").grid(row=8, column=0, sticky="w", pady=4)
         ttk.Combobox(detection, textvariable=self.noise_method, state="readonly",
-                     values=("現方式（MAD）", "新方式（低振幅側の背景成分）"), width=36
-                     ).grid(row=8, column=1, sticky="ew", padx=12)
-        ttk.Label(detection, text="新方式は上向き信号を想定。背景成分を分離できない場合は現方式に戻ります。",
-                  wraplength=750).grid(row=9, column=0, columnspan=2, sticky="w", pady=4)
+                     values=("現方式（MAD）", "新方式（低振幅側の背景成分）"), width=SETTING_WIDTH - 3
+                     ).grid(row=8, column=1, sticky="w", padx=12)
         for index, (key, label, _) in enumerate(FIELDS):
             frame = basic if index < 4 else detection
             row = index if index < 4 else index - 4
-            frame.columnconfigure(1, weight=1)
+            frame.columnconfigure(2, weight=1)  # 余白は右側へ（入力欄は固定幅）
             ttk.Label(frame, text=label).grid(row=row, column=0, sticky="w", pady=4)
-            ttk.Entry(frame, textvariable=self.values[key], width=24).grid(row=row, column=1, sticky="ew", padx=12)
+            ttk.Entry(frame, textvariable=self.values[key], width=SETTING_WIDTH).grid(
+                row=row, column=1, sticky="w", padx=12)
         actions = ttk.Frame(self)
-        actions.grid(row=7, column=0, columnspan=3, sticky="ew")
+        actions.grid(row=7, column=0, columnspan=4, sticky="ew")
         self.scan_button = ttk.Button(actions, text="ファイル一覧を確認 / 更新", command=self.scan_files)
         self.scan_button.pack(side="left", padx=(0, 8))
         self.open_button = ttk.Button(actions, text="波形を読み込む / 設定を適用", command=self.open_viewer)
         self.open_button.pack(side="left")
         ttk.Button(actions, text="設定を初期値に戻す", command=self.reset).pack(side="left", padx=10)
-        ttk.Label(self, text="波形の移動・範囲選択は「波形」タブ、保存確認は「保存プレビュー」タブで操作します。",
-                  wraplength=560).grid(row=8, column=0, columnspan=3, sticky="w", pady=(14, 6))
         status_frame = ttk.Frame(self, padding=(8, 6))
-        status_frame.grid(row=9, column=0, columnspan=3, sticky="ew")
+        status_frame.grid(row=9, column=0, columnspan=4, sticky="ew", pady=(12, 0))
         status_frame.columnconfigure(0, weight=1)
         ttk.Label(status_frame, textvariable=self.status, wraplength=1200,
                   style="Status.TLabel", padding=6).grid(row=0, column=0, sticky="ew")
@@ -285,7 +298,7 @@ class FrontPanel(ttk.Frame):
         self.scan_bar.grid(row=1, column=0, sticky="ew", pady=(5, 0))
         self.scan_bar.grid_remove()
         table_frame = ttk.LabelFrame(self, text="ANALファイル一覧 — シグナル数の多い順", padding=8)
-        table_frame.grid(row=10, column=0, columnspan=3, sticky="nsew", pady=(10, 0))
+        table_frame.grid(row=10, column=0, columnspan=4, sticky="nsew", pady=(10, 0))
         self.rowconfigure(10, weight=1)
         table_frame.columnconfigure(0, weight=1)
         table_frame.rowconfigure(1, weight=1)
@@ -353,15 +366,35 @@ class FrontPanel(ttk.Frame):
     def sample_names(self):
         return list(dict.fromkeys(name.strip() for name in self.samples.get().split(",") if name.strip()))
 
-    def update_source_preview(self, *_):
+    def arrange_source_blocks(self, width, gap=20):
+        """入力項目を左から詰めて並べ、幅 width に入りきらない項目は次の行へ折り返す（0なら1行）。"""
+        positions, row, column, used = [], 0, 0, 0
+        for block in self.source_blocks:
+            need = block.winfo_reqwidth() + (gap if column else 0)
+            if width and column and used + need > width:
+                row, column, used, need = row + 1, 0, 0, block.winfo_reqwidth()
+            positions.append((row, column))
+            column, used = column + 1, used + need
+        if positions == getattr(self, "_source_layout", None):
+            return
+        self._source_layout = positions
+        used_rows = {row for row, _column in positions}
+        for index, frame in enumerate(self.source_rows):
+            if index in used_rows:
+                frame.grid(row=index, column=0, sticky="w", pady=(0, 6))
+            else:
+                frame.grid_remove()
+        # 各行は独立した枠なので、折り返した行も左から詰めて並ぶ
+        for block, (row, column) in zip(self.source_blocks, positions):
+            block.grid(in_=self.source_rows[row], row=0, column=column, sticky="nw",
+                       padx=(gap if column else 0, 0))
+
+    def clear_file_table(self, *_):
+        """入力が変わったらファイル一覧を空にする（古い一覧のまま読み込まないため）。"""
         if hasattr(self, "file_table"):
             self.file_table.delete(*self.file_table.get_children())
             self.file_rows.clear()
             self.catalog_key = None
-        sample = next(iter(self.sample_names()), "<サンプル>")
-        path = sample_t_path(self.server.get(), self.share.get() or "<共有フォルダ>",
-                             self.experiment.get() or "<実験フォルダ>", sample)
-        self.source_preview.set(f"読み込み元: {path}/…ANAL…（複数選択時は各サンプルを検索）")
 
     def pick(self, key):
         try:
@@ -386,11 +419,6 @@ class FrontPanel(ttk.Frame):
                                    browse_dir=parent, preselected=self.sample_names())
         except ValueError as exc:
             messagebox.showerror("入力を確認してください", str(exc), parent=self)
-
-    def choose_output(self):
-        selected = filedialog.askdirectory(parent=self, title="保存先を選択")
-        if selected:
-            self.output.set(selected)
 
     def reset(self):
         self.noise_method.set("現方式（MAD）")

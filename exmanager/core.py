@@ -30,6 +30,57 @@ def sampled_signature(path):
     return result.hexdigest()
 
 
+def source_sample_name(folder_name):
+    """コピー元フォルダ名「日付_時刻 装置条件_サンプル名」からサンプル名を取り出す（形が違えばNone）。
+
+    例: '20261006_1434 UNAN#4Pex0n2_o163o162' → 'o163o162'
+        '20261005_1253 UNAN#4Pex1n1_o163o162_NG' → 'o163o162_NG'
+    """
+    parts = folder_name.split(' ', 1)
+    if len(parts) != 2 or '_' not in parts[1]:
+        return None
+    return parts[1].split('_', 1)[1] or None
+
+
+def name_check(sources, sample):
+    """コピー元フォルダ名のサンプル名と保存先サンプル名の照合。
+
+    戻り値: ('一致' | '不一致：…' | '判定不可：…', 一致しないコピー元名のリスト)。
+    一致しなくても正しい場合があるので、判定は確認の目安として使う。
+    """
+    names = [Path(source).name for source in sources]
+    unknown = [name for name in names if source_sample_name(name) is None]
+    different = [name for name in names
+                 if name not in unknown and source_sample_name(name).casefold() != sample.casefold()]
+    if different:
+        found = '、'.join(dict.fromkeys(source_sample_name(name) for name in different))
+        return f'不一致：{found} ≠ {sample}', different
+    if unknown:
+        return '判定不可：名前の形が違う', unknown
+    return '一致', []
+
+
+def destination_warnings(target, kind):
+    """Report archived files and ongoing analysis in the selected destination."""
+    target = Path(target)
+    warnings = []
+    for rate in ('10k', '100k'):
+        folder = target / f'{target.name}_{rate}_{kind}'
+        for directory in (folder, folder / 'T'):
+            stocked = directory / 'stocked'
+            if stocked.is_dir():
+                count = sum(p.is_file() for p in stocked.rglob('*'))
+                if count:
+                    warnings.append(f'退避ファイルあり（{count}件）: {stocked} '
+                                    '— 採番は退避ファイルを参照しないため、番号がずれる可能性があります。')
+        anal = folder / 'T' / 'ANAL'
+        if anal.is_dir():
+            count = sum(p.is_file() and p.suffix.lower() == '.tdms' for p in anal.rglob('*'))
+            if count:
+                warnings.append(f'解析進行中（ANAL内TDMS {count}件）: {anal}')
+    return warnings
+
+
 def inspect_set_data(spec, check_duplicates=False, progress=None, quick=False):
     """Inspect direct acquisition TDMS files, including renamed destination files."""
     def files(folder):
@@ -205,7 +256,7 @@ def plan(source, target, sample, kind, progress=None, verify=False, reserved=Non
         raise ValueError('コピー元と保存先サンプルフォルダが必要です')
     if source.resolve() == target.resolve() or source.resolve() in target.resolve().parents or target.resolve() in source.resolve().parents:
         raise ValueError('コピー元と保存先が重なっています')
-    items, warnings, numbers = [], [], {}
+    items, warnings, numbers = [], destination_warnings(target, kind), {}
 
     pending = []
 

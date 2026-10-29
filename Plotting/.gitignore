@@ -1,0 +1,3 @@
+# 読み込んだTDMS内容のローカルキャッシュと、図・CSVの出力
+cache/
+heat_data/

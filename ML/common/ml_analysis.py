@@ -1214,13 +1214,18 @@ def run_permutation_importance(result, n_repeats=10, n_jobs=None, top_n=30,
               f"テストデータを {len(result['y_test'])} → {len(y_test)} 件にサブサンプリングして計算します")
 
     print(f"\n===== Step2: Permutation Importance ({result['name']}) を計算中... "
-          f"(n_samples={len(y_test)}, n_repeats={n_repeats}) =====")
+          f"(n_samples={len(y_test)}, n_repeats={n_repeats}, スレッド並列 n_jobs={n_jobs}) =====")
     t0 = time.time()
-    perm = permutation_importance(
-        result['clf'], X_test, y_test,
-        scoring=scoring, n_repeats=n_repeats, n_jobs=n_jobs,
-        random_state=random_state,
-    )
+    # 並列化はプロセスではなくスレッドで行う。プロセス並列（loky）では各ワーカーに
+    # テストデータとモデルの複製が渡り、特徴量が多いとメモリ不足でワーカーが強制終了される
+    # （TerminatedWorkerError）。XGBoost/LightGBMの予測はGILを解放するのでスレッドでも速い。
+    from joblib import parallel_backend
+    with parallel_backend('threading', n_jobs=n_jobs):
+        perm = permutation_importance(
+            result['clf'], X_test, y_test,
+            scoring=scoring, n_repeats=n_repeats, n_jobs=n_jobs,
+            random_state=random_state,
+        )
     print(f"Permutation Importance 完了 ({time.time() - t0:.1f}秒)")
 
     df = pd.DataFrame({

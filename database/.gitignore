@@ -1,2 +1,3 @@
 *.sqlite3*
 sources.json
+logs/

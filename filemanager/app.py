@@ -21,8 +21,30 @@ from tkinter.scrolledtext import ScrolledText
 BASE = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE.parent))
 import ui_theme  # noqa: E402
+from filemanager.job_control import JobCancelled, check_cancel
 ERROR_PREFIX = '__FILEMANAGER_ERROR__'
 PROGRESS_PREFIX = '__FILEMANAGER_PROGRESS__'
+PLAN_PREFIX = '__FILEMANAGER_SAMPLE_PLAN__'
+
+
+def sample_plan_group(source, kind):
+    parts = source.replace('\\', '/').casefold().split('/')
+    if any(p == 'bnal' or p.startswith('bnal@') for p in parts):
+        return 'bnal', 'BNAL'
+    if 'stocked' in parts:
+        return 'stocked', 'stocked（退避）'
+    if 'anal' in parts:
+        return 'anal', 'ANAL'
+    if kind == 'フォルダ':
+        return 'folder', 'フォルダ'
+    if parts[-1].endswith('.txt'):
+        return 'txt', 'TXT'
+    if parts[-1].endswith('.tdms'):
+        if any(re.search(r'_100k_(sample|blank)$', p) for p in parts[:-1]):
+            return '100k', '100kHz TDMS'
+        if any(re.search(r'_10k_(sample|blank)$', p) for p in parts[:-1]):
+            return '10k', '10kHz TDMS'
+    return 'file', 'その他'
 
 
 def format_file_size(size):
@@ -39,6 +61,7 @@ def copy_with_progress(plans):
     files = []
     skipped = 0
     for source, destination, extension in plans:
+        check_cancel()
         with os.scandir(source) as entries:
             for entry in sorted(entries, key=lambda e: e.name):
                 if entry.is_file() and entry.name.lower().endswith(extension.lower()):
@@ -62,6 +85,7 @@ def copy_with_progress(plans):
 
     report(True)
     for source, target, size in files:
+        check_cancel()
         if os.path.exists(target):
             total -= size
             completed += 1
@@ -76,6 +100,7 @@ def copy_with_progress(plans):
                     dir=os.path.dirname(target), prefix='.filemanager-', suffix='.part', delete=False) as writer:
                 temporary = writer.name
                 while True:
+                    check_cancel()
                     chunk = reader.read(4 * 1024 * 1024)
                     if not chunk:
                         break
@@ -213,6 +238,13 @@ def validate(data):
     """GUIとワーカーの双方で入力を検証する。ネットワークアクセスはしない。"""
     d = dict(data)
     kind = d['kind']
+    if kind == 'sample_rename':
+        for key in ('server', 'share', 'experiment', 'folder', 'old', 'new'):
+            component(d[key], key)
+        if d['old'] == d['new']:
+            raise ValueError('現サンプル名と新サンプル名を別の名前にしてください。')
+    if kind == 'sample_restore' and not d.get('history'):
+        raise ValueError('復元する履歴JSONを選択してください。')
     if kind in ('copy', 'folders'):
         for key in ('server', 'share', 'experiment'):
             component(d[key], key)
@@ -288,6 +320,7 @@ def stocked_files(d, common):
         source = common.server_path(d['server'], d['share'], d['experiment'], sample, sample + d['suffix'])
         require_directory(source)
         for folder, dirs, files in os.walk(source, onerror=fail):
+            check_cancel()
             if os.path.basename(folder).casefold() != 'stocked':
                 continue
             for name in sorted(files):
@@ -306,6 +339,7 @@ def restore_stocked(d, common):
     if any(source not in allowed for source in selected):
         raise ValueError('stockedの内容が変わりました。再度一覧を確認してください。')
     for source in dict.fromkeys(selected):
+        check_cancel()
         destination = allowed[source]
         if os.path.lexists(destination):
             print(f'移動スキップ（同名あり・stockedに残します）: {source} → {destination}')
@@ -329,6 +363,36 @@ def run_job(raw):
 
     d = validate(raw)
     kind = d['kind']
+    if kind in ('sample_rename', 'sample_restore'):
+        import hashlib
+        import sample_rename
+        settings = {k: v for k, v in d.items() if k != 'preview'}
+        key = hashlib.sha256(json.dumps(settings, sort_keys=True).encode()).hexdigest()
+        preview_file = BASE / 'rename_logs' / 'previews' / (key + '.json')
+        if d.get('preview'):
+            if kind == 'sample_restore':
+                planned = sample_rename.restore_plan(d['history'])
+            else:
+                root = common.server_path(d['server'], d['share'], d['experiment'])
+                planned = sample_rename.plan(root, d['folder'], d['old'], d['new'])
+            if not planned['operations']:
+                raise ValueError('変更対象がありません。フォルダ名と現サンプル名を確認してください。')
+            for source, target in planned['operations'][:20]:
+                check_cancel()
+                print(f'{source}\n  → {target}')
+            if len(planned['operations']) > 20:
+                print('ログは先頭20件です。全件は中央の変更予定表で確認できます。')
+            print(f'予定: {len(planned["operations"])}件（子から順に変更／復元は逆順）')
+            sample_rename.save(preview_file, planned)
+            print(PLAN_PREFIX + json.dumps(str(preview_file)), flush=True)
+        else:
+            planned = json.loads(preview_file.read_text(encoding='utf-8'))
+            preview_file.unlink()
+            if kind == 'sample_restore':
+                sample_rename.restore(planned)
+            else:
+                sample_rename.execute(planned, BASE / 'rename_logs' / 'samples')
+        return
     if kind in ('copy', 'folders'):
         root = common.server_path(d['server'], d['share'], d['experiment'])
         required = root if kind == 'copy' else common.server_path(d['server'], d['share'])
@@ -401,6 +465,7 @@ def copy_selected_targets(d, samples, common, create_folders):
         print('必要なファイルは「stockedを確認・取り出し」から移動し、コピー予定を再確認してください。')
     plans = []
     for sample in samples:
+        check_cancel()
         source = common.server_path(d['server'], d['share'], d['experiment'], sample, sample + d['suffix'])
         require_directory(source)
         destination = common.server_path(d['server'], d['destination'], d['experiment'], sample, sample + d['suffix'])
@@ -500,6 +565,16 @@ class App(tk.Tk):
         self.tabs = ttk.Notebook(self)
         self.tabs.pack(fill='x', padx=12)
         self.copy_tab()
+        self.sample_rename_tab()
+        from filemanager.anal_manager import AnalPanel
+        from filemanager.bnal_manager import BnalPanel
+        self.anal_panel = AnalPanel(self)
+        self.tabs.add(self.anal_panel, text='ANAL 重複・退避・復帰整理')
+        self.bnal_panel = BnalPanel(self)
+        self.tabs.add(self.bnal_panel, text='BNAL 重複・退避・復帰整理')
+        from filemanager.t_stock_manager import TStockPanel
+        self.t_stock_panel = TStockPanel(self)
+        self.tabs.add(self.t_stock_panel, text='Data 退避・退避整理')
         self.rename_tab()
         self.folder_tab()
         status = ttk.Frame(self, padding=12)
@@ -508,6 +583,8 @@ class App(tk.Tk):
         ttk.Label(status, textvariable=self.status).pack(side='left')
         self.progress = ttk.Progressbar(status, mode='indeterminate', length=200)
         self.progress.pack(side='right')
+        self.stop_button = ttk.Button(status, text='中断', command=self.cancel_job, state='disabled')
+        self.stop_button.pack(side='right', padx=10)
         self.timing = tk.StringVar(value='経過時間・残り時間・終了予定時刻はコピー開始後に表示します。')
         ttk.Label(self, textvariable=self.timing).pack(anchor='w', padx=12)
         ttk.Label(self, text='実行ログ / 変更予定（名前変更の前に確認してください）').pack(anchor='w', padx=12)
@@ -974,6 +1051,129 @@ class App(tk.Tk):
         fields['experiment'].set(parts[2] if len(parts) == 3 else '')
         return True
 
+    def sample_rename_tab(self):
+        f = self.tab('sample_rename', 'サンプル名一括変更・復元')
+        self.field(f, 'sample_rename', 'server', 'サーバー', 'Rackstation', values=COPY_SERVERS)
+        self.field(f, 'sample_rename', 'share', '共有フォルダ', 'analysis',
+                   browse=lambda: self.select_copy_folder('share', 'sample_rename'))
+        self.field(f, 'sample_rename', 'experiment', '実験フォルダ名',
+                   browse=lambda: self.select_copy_folder('experiment', 'sample_rename'))
+        self.field(f, 'sample_rename', 'folder', '対象サンプルフォルダ名（実験直下）',
+                   browse=self.select_rename_sample)
+        self.field(f, 'sample_rename', 'old', '現サンプル名（名前内の置換対象）')
+        self.field(f, 'sample_rename', 'new', '新サンプル名')
+        self.actions(f, 'sample_rename', [
+            ('変更予定を表示', lambda: self.submit('sample_rename', True)),
+            ('確認して変更を実行', lambda: self.submit('sample_rename')),
+            ('履歴を選択・復元予定を表示', lambda: self.sample_undo(True)),
+            ('確認して復元を実行', lambda: self.sample_undo(False))],
+            '対象：サンプルフォルダ名、10k/100kのSample・Blankフォルダ名、直下txt、stocked直下のファイル名、\n'
+            '100k Sample・Blank直下tdms、T直下tdms、T/stocked直下、T/ANAL配下（再帰）、BNAL・BNAL@の名前と直下のフォルダ名。\n'
+            'PS・BSフォルダ内は対象外です。BNAL内のファイルや直下フォルダの内部は走査しません。ファイル内容は変更しません。\n'
+            '例：対象フォルダ L-aTNA-T-re ／現サンプル名 L-aTNA-T ／新サンプル名 L-aTNA-T-re。\n'
+            '英数字・ハイフンが続く別名は置換しません。変更予定の全件を確認してください。\n'
+            '履歴はこのPCの filemanager/rename_logs/samples に永続保存します。後日も履歴を選んで復元できます。')
+        self.sample_plan_rows = []
+        self.sample_plan_filtered = []
+        self.sample_plan_page = 0
+        self.sample_plan_query = tk.StringVar()
+        self.sample_plan_label = tk.StringVar(value='変更予定は未取得です。「変更予定を表示」を押してください。')
+        container = ttk.LabelFrame(f, text='変更予定 / 復元予定', padding=6)
+        container.grid(row=len(self.fields['sample_rename']) + 3, column=0, columnspan=3, sticky='nsew', pady=(8, 0))
+        f.rowconfigure(len(self.fields['sample_rename']) + 3, weight=1)
+        tools = ttk.Frame(container)
+        tools.pack(fill='x')
+        ttk.Label(tools, text='検索').pack(side='left')
+        ttk.Entry(tools, textvariable=self.sample_plan_query).pack(side='left', fill='x', expand=True, padx=6)
+        ttk.Button(tools, text='前の300件', command=lambda: self.sample_plan_turn(-1)).pack(side='left', padx=4)
+        ttk.Button(tools, text='次の300件', command=lambda: self.sample_plan_turn(1)).pack(side='left')
+        ttk.Label(container, textvariable=self.sample_plan_label).pack(anchor='w', pady=4)
+        table_frame = ttk.Frame(container)
+        table_frame.pack(fill='both', expand=True)
+        self.sample_plan_tree = ttk.Treeview(table_frame, columns=('step', 'kind', 'source', 'target', 'group'),
+                                           displaycolumns=('step', 'kind', 'group', 'source', 'target'), show='headings', height=7)
+        for key, title, width in [('step', '順番', 60), ('kind', '種類', 85), ('group', 'グループ', 140), ('source', '変更前のパス', 700), ('target', '変更後のパス（その操作時点）', 700)]:
+            self.sample_plan_tree.heading(key, text=title)
+            self.sample_plan_tree.column(key, width=width, stretch=key in ('source', 'target'))
+        for tag, color in [('folder', '#25464b'), ('file', '#1b2832'), ('txt', '#53462a'),
+                           ('10k', '#24485c'), ('100k', '#3d365d'), ('anal', '#28503d'),
+                           ('bnal', '#543750'), ('stocked', '#593d2d')]:
+            self.sample_plan_tree.tag_configure(tag, background=color, foreground='white')
+        ys = ttk.Scrollbar(table_frame, command=self.sample_plan_tree.yview)
+        xs = ttk.Scrollbar(table_frame, orient='horizontal', command=self.sample_plan_tree.xview)
+        self.sample_plan_tree.configure(yscrollcommand=ys.set, xscrollcommand=xs.set)
+        self.sample_plan_tree.grid(row=0, column=0, sticky='nsew')
+        ys.grid(row=0, column=1, sticky='ns')
+        xs.grid(row=1, column=0, sticky='ew')
+        table_frame.rowconfigure(0, weight=1)
+        table_frame.columnconfigure(0, weight=1)
+        self.sample_plan_query.trace_add('write', lambda *_: self.filter_sample_plan())
+        ttk.Label(container, text='行の色：TXT＝黄褐色／10kHz＝青／100kHz＝紫／ANAL＝緑／BNAL＝赤紫／stocked＝茶／フォルダ＝青緑').pack(anchor='w')
+
+    def filter_sample_plan(self):
+        query = self.sample_plan_query.get().strip().casefold()
+        self.sample_plan_filtered = [r for r in self.sample_plan_rows if query in
+                                     (r[2] + ' ' + r[3] + ' ' + sample_plan_group(r[2], r[1])[1]).casefold()]
+        self.sample_plan_page = 0
+        self.show_sample_plan()
+
+    def sample_plan_turn(self, delta):
+        last = max(0, (len(self.sample_plan_filtered) - 1) // 300)
+        self.sample_plan_page = min(last, max(0, self.sample_plan_page + delta))
+        self.show_sample_plan()
+
+    def show_sample_plan(self):
+        self.sample_plan_tree.delete(*self.sample_plan_tree.get_children())
+        start = self.sample_plan_page * 300
+        page = self.sample_plan_filtered[start:start + 300]
+        for row in page:
+            tag, label = sample_plan_group(row[2], row[1])
+            self.sample_plan_tree.insert('', 'end', values=(*row[:4], label), tags=(tag,))
+        self.sample_plan_label.set(f'予定 {len(self.sample_plan_rows):,}件 / 検索結果 {len(self.sample_plan_filtered):,}件'
+                                   + (f' / {start+1:,}～{start+len(page):,}件を表示' if page else ' / 表示対象なし'))
+
+    def select_rename_sample(self):
+        if self.busy:
+            return
+        fields = self.fields['sample_rename']
+        try:
+            parts = [component(fields[k].get().strip(), k) for k in ('server', 'share', 'experiment')]
+        except ValueError as exc:
+            messagebox.showerror('入力を確認してください', str(exc), parent=self)
+            return
+        parent = '//' + '/'.join(parts)
+        selected = filedialog.askdirectory(parent=self, initialdir=parent, mustexist=True)
+        if selected:
+            if os.path.normcase(os.path.normpath(os.path.dirname(selected))) != os.path.normcase(os.path.normpath(parent)):
+                messagebox.showerror('選択先を確認してください', '指定した実験フォルダの直下から選択してください。', parent=self)
+                return
+            name = os.path.basename(selected)
+            fields['folder'].set(name)
+            fields['old'].set(name)
+
+    def sample_undo(self, preview):
+        if self.busy:
+            return
+        if preview:
+            path = filedialog.askopenfilename(parent=self,
+                initialdir=str(BASE / 'rename_logs' / 'samples'), filetypes=[('サンプル名変更履歴', '*.json')])
+            if not path:
+                return
+            self.sample_history = path
+        path = getattr(self, 'sample_history', None)
+        if not path:
+            messagebox.showinfo('復元予定の確認', '履歴を選んで復元予定を表示してください。', parent=self)
+            return
+        data = dict(kind='sample_restore', history=path, preview=preview)
+        signature = json.dumps({**data, 'preview': True}, ensure_ascii=False, sort_keys=True)
+        if not preview:
+            if signature != self.preview_signature:
+                messagebox.showinfo('復元予定の確認', '履歴を選んで復元予定を再表示してください。', parent=self)
+                return
+            if not messagebox.askyesno('復元の確認', f'{path}\n表示された予定で復元しますか？', parent=self):
+                return
+        self.start(data, signature if preview else None)
+
     def rename_tab(self):
         f = self.tab('rename', '名前変更・復元')
         self.field(f, 'rename', 'root', '対象フォルダ', browse=True)
@@ -1016,11 +1216,13 @@ class App(tk.Tk):
             messagebox.showerror('入力を確認してください', str(exc), parent=self)
             return
         signature = json.dumps({**data, 'preview': True}, ensure_ascii=False, sort_keys=True)
-        if kind == 'rename' and not preview and signature != self.preview_signature:
+        if kind in ('rename', 'sample_rename') and not preview and signature != self.preview_signature:
             messagebox.showinfo('変更予定の確認', '現在の設定で「変更予定を表示」を先に実行してください。', parent=self)
             return
         if not preview:
             detail = (data['root'] if kind == 'rename' else
+                      f'//{data["server"]}/{data["share"]}/{data["experiment"]}/{data["folder"]}\n'
+                      f'{data["old"]} → {data["new"]}' if kind == 'sample_rename' else
                       f'//{data["server"]}/{data["share"]}/{data["experiment"]}\n'
                       f'サンプル: {data["samples"] or "すべて"}')
             if kind == 'copy':
@@ -1030,7 +1232,7 @@ class App(tk.Tk):
                     detail += '\n\n' + self.bnal_summary.get()
             if not messagebox.askyesno('実行の確認', f'{detail}\n\nこの設定で実行しますか？', parent=self):
                 return
-        self.start(data, signature if kind == 'rename' and preview else None)
+        self.start(data, signature if kind in ('rename', 'sample_rename') and preview else None)
 
     def undo(self):
         if self.busy:
@@ -1041,15 +1243,35 @@ class App(tk.Tk):
             self.start({'kind': 'undo', 'log': path})
 
     def start(self, data, signature=None):
+        if any(getattr(getattr(self, key, None), 'busy', False) for key in ('anal_panel', 'bnal_panel', 't_stock_panel')):
+            messagebox.showinfo('処理中', 'ANAL・BNAL整理の処理が終わってから実行してください。', parent=self)
+            return
         self.busy = True
+        self.active_kind = data['kind']
+        self.active_sample_preview = bool(data.get('preview'))
+        self.cancel_event = threading.Event()
+        self.cancel_directory = tempfile.TemporaryDirectory(prefix='filemanager-cancel-')
+        self.cancel_file = Path(self.cancel_directory.name) / 'stop'
+        self.active_process = None
+        self.active_preview = bool(data.get('preview')) and data.get('stocked_action') != 'restore'
+        cancellable = (self.active_preview or data['kind'] in ('sample_rename', 'sample_restore')
+                       or data['kind'] == 'copy' and 'target_text' in data)
+        self.stop_button.configure(state='normal' if cancellable else 'disabled')
         self.preview_signature = None
+        if data['kind'] in ('sample_rename', 'sample_restore'):
+            if data.get('preview'):
+                self.sample_plan_rows = self.sample_plan_filtered = []
+                self.sample_plan_tree.delete(*self.sample_plan_tree.get_children())
+            self.sample_plan_label.set('変更予定を取得中…' if data.get('preview') else '変更を実行中… 表は実行前の予定です。')
         for button in self.buttons:
             button.state(['disabled'])
         self.status.set('予定を確認中…' if data.get('preview') else '処理中…')
         self.progress.configure(mode='indeterminate', value=0)
         self.progress.start(12)
         self.started_at = time.monotonic()
-        self.timing.set('対象を確認中… 終了予定は転送開始後に計算します。')
+        self.timing.set('対象の名前と更新情報を確認中… 確認先・件数はログに表示します。'
+                        if data['kind'] in ('sample_rename', 'sample_restore') else
+                        '対象を確認中… 終了予定は転送開始後に計算します。')
         self.append('\n--- コピー予定の確認 ---\n' if data['kind'] == 'copy' and data.get('preview')
                     else '\n--- 新しい処理 ---\n')
 
@@ -1058,16 +1280,25 @@ class App(tk.Tk):
             error_detail = None
             last_lines = []
             try:
-                env = dict(os.environ, PYTHONIOENCODING='utf-8')
+                env = dict(os.environ, PYTHONIOENCODING='utf-8',
+                           FILEMANAGER_CANCEL_FILE=str(self.cancel_file))
                 with subprocess.Popen([sys.executable, '-u', str(BASE / 'app.py'), '--worker'],
                                       stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                       stderr=subprocess.STDOUT, text=True, encoding='utf-8',
                                       env=env, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0)) as process:
+                    self.active_process = process
                     process.stdin.write(json.dumps(data, ensure_ascii=False))
                     process.stdin.close()
+                    if self.cancel_event.is_set() and self.active_preview:
+                        process.terminate()
                     for line in process.stdout:
                         if line.startswith(PROGRESS_PREFIX):
                             self.events.put(('progress', json.loads(line[len(PROGRESS_PREFIX):])))
+                        elif line.startswith(PLAN_PREFIX):
+                            planned = json.loads(Path(json.loads(line[len(PLAN_PREFIX):])).read_text(encoding='utf-8'))
+                            rows = [(n, 'フォルダ' if planned['snapshot'].get(source, [0, 0, 0])[2] is None else 'ファイル', source, target)
+                                    for n, (source, target) in enumerate(planned['operations'], 1)]
+                            self.events.put(('sample_plan', rows))
                         elif line.startswith(ERROR_PREFIX):
                             error_detail = json.loads(line[len(ERROR_PREFIX):])
                             self.events.put(('log', '\n' + error_detail + '\n'))
@@ -1078,11 +1309,31 @@ class App(tk.Tk):
             except Exception as exc:
                 error_detail = describe_error(exc)
                 self.events.put(('log', traceback.format_exc()))
-            if code and not error_detail:
+            finally:
+                self.active_process = None
+            if self.cancel_event.is_set() and self.active_preview:
+                code, error_detail = 2, None
+            if code not in (0, 2) and not error_detail:
                 error_detail = f'処理用プロセスが終了しました（終了コード: {code}）。\n' + ''.join(last_lines)
             self.events.put(('done', (code, signature, error_detail)))
 
         threading.Thread(target=worker, daemon=False).start()
+
+    def cancel_job(self):
+        if not self.busy or self.cancel_event.is_set():
+            return
+        self.cancel_file.touch()
+        self.cancel_event.set()
+        self.stop_button.configure(state='disabled')
+        self.status.set('停止要求済み — 現在の処理が戻り次第停止します…')
+        self.append('\n停止を要求しました。処理済みの変更は残り、履歴から復元できます。\n')
+        process = self.active_process
+        # A preview never changes server data and can be stopped even during a NAS wait.
+        if self.active_preview and process is not None:
+            try:
+                process.terminate()
+            except OSError:
+                pass
 
     def append(self, text):
         self.log.configure(state='normal')
@@ -1100,18 +1351,33 @@ class App(tk.Tk):
                 self.append(value)
             elif event == 'progress':
                 self.show_copy_progress(value)
+            elif event == 'sample_plan':
+                self.sample_plan_rows = value
+                self.filter_sample_plan()
             else:
                 code, signature, error_detail = value
                 self.busy = False
+                self.stop_button.configure(state='disabled')
+                self.cancel_directory.cleanup()
                 self.progress.stop()
                 elapsed = time.monotonic() - self.started_at
                 self.timing.set(f'{"終了" if code == 0 else "停止"}時刻: {datetime.now():%Y-%m-%d %H:%M:%S}'
                                 f' / 所要時間: {self.duration(elapsed)}')
                 self.preview_signature = signature if code == 0 else None
+                if self.active_kind in ('sample_rename', 'sample_restore'):
+                    if self.active_sample_preview and code != 0:
+                        self.sample_plan_rows = self.sample_plan_filtered = []
+                        self.sample_plan_tree.delete(*self.sample_plan_tree.get_children())
+                        self.sample_plan_label.set('予定を取得できませんでした。ログを確認し、再表示してください。')
+                    elif not self.active_sample_preview:
+                        self.sample_plan_label.set(('実行完了' if code == 0 else '途中停止・ログを確認してください')
+                                                   + ' — 表は実行前の予定です。再実行には予定の再取得が必要です。')
                 for button in self.buttons:
                     button.state(['!disabled'])
-                self.status.set('処理終了 — ログを確認してください' if code == 0 else 'エラー — ログを確認してください')
-                if code:
+                self.status.set('処理終了 — ログを確認してください' if code == 0 else
+                                '中止しました — 変更済みの分は履歴から復元できます' if code == 2 else
+                                'エラー — ログを確認してください')
+                if code not in (0, 2):
                     messagebox.showerror('処理できませんでした', error_detail +
                                          '\n\n途中まで処理されている可能性があります。実行済みの内容はログを確認してください。', parent=self)
         self.after(80, self.poll)
@@ -1141,8 +1407,12 @@ class App(tk.Tk):
             self.timing.set(prefix + (' / 転送完了' if finished else ' / 残り時間・終了見込み: 計算中…'))
 
     def close(self):
-        if self.busy:
-            messagebox.showinfo('処理中', '処理が終わってから画面を閉じてください。', parent=self)
+        if self.busy or any(getattr(getattr(self, key, None), 'busy', False) for key in ('anal_panel', 'bnal_panel', 't_stock_panel')):
+            if self.busy and str(self.stop_button['state']) != 'disabled':
+                message = '処理中です。途中で止める場合は、画面下部の「中断」を押してください。\n中断が完了してから画面を閉じてください。'
+            else:
+                message = '処理または中断が完了してから画面を閉じてください。'
+            messagebox.showinfo('処理中', message, parent=self)
         else:
             self.destroy()
 
@@ -1151,6 +1421,9 @@ if __name__ == '__main__':
     if '--worker' in sys.argv:
         try:
             run_job(json.load(sys.stdin))
+        except JobCancelled as exc:
+            print(str(exc), flush=True)
+            sys.exit(2)
         except Exception as exc:
             print(ERROR_PREFIX + json.dumps(describe_error(exc), ensure_ascii=False), flush=True)
             traceback.print_exc()

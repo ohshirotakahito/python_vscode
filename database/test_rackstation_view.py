@@ -93,17 +93,17 @@ class RackstationTests(TestCase):
         for total, analysed, expected, tag in (
             (10, 0, '0.0%', 'unstarted'), (10, 5, '50.0%', 'partial'),
             (10, 10, '100.0%', 'complete'), (10, 20, '200.0%', 'excess'),
-            (0, 0, '対象なし', 'unknown'), (0, 2, '元ファイル0件・要確認', 'excess'),
+            (0, 0, '対象なし', 'unknown'), (0, 2, '解析用コピー（Tなし）', 'copy'),
             (10, None, '0%（ANAL未作成）', 'unstarted'),
         ):
             with self.subTest(total=total, analysed=analysed):
                 self.assertEqual(rackstation_view.analysis_progress(dict(t_tdms=total, anal_tdms=analysed)), (expected, tag))
 
-    def test_fast_counts_never_enter_bnal_stocked_or_nested_results(self):
+    def test_fast_counts_never_enter_bnal_or_nested_results(self):
         with TemporaryDirectory() as temp:
             target = Path(temp) / 'T'
             for relative in ('a.TDMS', 'ANAL/b.tdms', 'ANAL/nested/ignored.tdms',
-                             'BNAL@one/deep/ignored.tdms', 'stocked/deep/ignored.tdms'):
+                             'BNAL@one/deep/ignored.tdms', 'stocked/raw.tdms', 'stocked/deep/ignored.tdms'):
                 file = target / relative
                 file.parent.mkdir(parents=True, exist_ok=True)
                 file.write_bytes(b'')
@@ -116,8 +116,75 @@ class RackstationTests(TestCase):
 
             with patch.object(rackstation_view.os, 'scandir', side_effect=record):
                 counts = rackstation_view.sample_counts(target, threading.Event())
-            self.assertEqual(counts[:3], (1, 1, 1))
-            self.assertEqual(scanned, [target, target / 'ANAL'])
+            self.assertEqual((counts['t_tdms'], counts['anal_tdms'], counts['bnal_folders'],
+                              counts['t_stocked_tdms'], counts['anal_stocked_tdms']), (1, 1, 1, 1, None))
+            # T/stocked is listed once because it exists; nothing deeper and no BNAL@ folder is entered.
+            self.assertEqual(scanned, [target, target / 'ANAL', target / 'stocked'])
+
+    def test_original_count_and_anal_progress_include_stocked_files(self):
+        bra = dict(t_tdms=0, t_stocked_tdms=137, anal_tdms=90, anal_stocked_tdms=None)
+        brn = dict(t_tdms=54, t_stocked_tdms=None, anal_tdms=34, anal_stocked_tdms=20)
+        self.assertEqual((rackstation_view.original_count(bra), rackstation_view.original_count(brn)), (137, 54))
+        self.assertEqual(rackstation_view.analysis_progress(bra), ('65.7%', 'partial'))
+        self.assertEqual(rackstation_view.analysis_progress(brn), ('100.0%', 'complete'))
+        self.assertIsNone(rackstation_view.original_count(dict(t_tdms=None, anal_tdms=None)))
+
+    def test_rerun_files_with_the_same_number_count_once(self):
+        with TemporaryDirectory() as temp:
+            folder = Path(temp)
+            for name in ('B@@2022_0930_1030_BRA_10k_Sample#001.tdms', 'B@@2022_1003_1018_BRA_10k_Sample#001.tdms',
+                         'B@@2022_0930_1038_BRA_10k_Sample#002.TDMS', 'B@@x#002.tdms_index', 'no-number.tdms'):
+                (folder / name).write_bytes(b'')
+            self.assertEqual(rackstation_view.tdms_numbers(folder, threading.Event()), (4, 3))
+
+    def test_bnal_names_are_saved_without_extra_listing_and_counts_only_when_requested(self):
+        with TemporaryDirectory() as temp:
+            db = Path(temp) / 'inventory.sqlite3'
+            catalog.initialize(db)
+            root = Path(temp) / 'analysis'
+            target = root / 'E' / 'S' / 'S_10k_Sample' / 'T'
+            for relative in ('ANAL/a.tdms', 'BNAL@hsa-miR-1_M_2/a.tdms', 'BNAL@hsa-miR-1_M_2/b.TDMS',
+                             'BNAL@hsa-miR-1_M_2/nested/ignored.tdms', 'BNAL@hsa-miR-1_M_2/note.txt'):
+                (target / relative).parent.mkdir(parents=True, exist_ok=True)
+                (target / relative).write_bytes(b'')
+            (target / 'BNAL@empty').mkdir()
+            source = dict(server='QTserver', root=str(root), kind='analysis')
+            scanned = []
+            original = os.scandir
+
+            def record(path):
+                scanned.append(Path(path))
+                return original(path)
+
+            with patch.object(rackstation_view.os, 'scandir', side_effect=record):
+                rackstation_view.scan_samples(source, db, threading.Event(), lambda *args: None)
+            self.assertFalse([p for p in scanned if p.name.startswith('BNAL@')])
+            rows = {r['target']: r for r in rackstation_view.bnal_inventory(db, str(root))}
+            self.assertEqual(set(rows), {'hsa-miR-1_M_2', 'empty'})
+            self.assertIsNone(rows['hsa-miR-1_M_2']['tdms'])
+
+            rackstation_view.scan_samples(source, db, threading.Event(), lambda *args: None,
+                                          lambda experiment: experiment == 'E')
+            rows = {r['target']: r for r in rackstation_view.bnal_inventory(db, str(root))}
+            self.assertEqual((rows['hsa-miR-1_M_2']['tdms'], rows['empty']['tdms']), (2, 0))
+            checked = rows['empty']['tdms_checked']
+            self.assertIsNotNone(checked)
+
+            # A names-only rescan keeps the previous count; a removed folder disappears.
+            (target / 'BNAL@empty').rmdir()
+            (target / 'BNAL@new').mkdir()
+            rackstation_view.scan_samples(source, db, threading.Event(), lambda *args: None,
+                                          lambda experiment: False)
+            rows = {r['target']: r for r in rackstation_view.bnal_inventory(db, str(root))}
+            self.assertEqual(set(rows), {'hsa-miR-1_M_2', 'new'})
+            self.assertEqual(rows['hsa-miR-1_M_2']['tdms'], 2)
+            self.assertIsNone(rows['new']['tdms'])
+
+            # A sample that vanished from the share also drops its BNAL@ rows.
+            import shutil
+            shutil.rmtree(root / 'E')
+            rackstation_view.scan_samples(source, db, threading.Event(), lambda *args: None)
+            self.assertEqual(rackstation_view.bnal_inventory(db, str(root)), [])
 
     def test_samples_are_published_and_committed_before_next_sample(self):
         with TemporaryDirectory() as temp:
@@ -235,3 +302,13 @@ class RackstationTests(TestCase):
             self.assertIsNone(summary['tdms_bytes'])
             total = rackstation_view.capacity_total([summary, dict(summary, tdms_bytes=7, sized_samples=1)])
             self.assertEqual((total['samples'], total['tdms_bytes']), (2, 7))
+
+
+class VolumeRateTests(TestCase):
+    def test_thresholds_and_missing_values(self):
+        rate = rackstation_view.volume_rate
+        self.assertEqual(rate({'volume_used': 79.9, 'volume_total': 100}), ('79.9%', ''))
+        self.assertEqual(rate({'volume_used': 80, 'volume_total': 100}), ('80.0%', 'volume_warning'))
+        self.assertEqual(rate({'volume_used': 90, 'volume_total': 100}), ('90.0%', 'volume_danger'))
+        self.assertEqual(rate({'volume_used': None, 'volume_total': None}), ('未取得', ''))
+        self.assertEqual(rate({}), ('未取得', ''))

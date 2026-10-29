@@ -95,10 +95,14 @@ def main():
 
     def runs_changed():
         browser.refresh()
+        # 学習が終わったら、混合予測タブの学習器一覧も最新にする
+        if "predict" in tabs:
+            tabs["predict"].refresh_models()
 
     extract = ExtractTab(notebook, runner, on_features_changed=features_changed)
     tabs["train"] = TrainTab(notebook, runner, on_runs_changed=runs_changed)
-    tabs["predict"] = PredictTab(notebook, runner, on_runs_changed=runs_changed)
+    tabs["predict"] = PredictTab(notebook, runner, on_runs_changed=runs_changed,
+                                 on_open_train=lambda: notebook.select(tabs["train"]))
 
     notebook.add(extract, text="① 特徴量抽出")
     notebook.add(stat, text="② 統計ヒストグラム")

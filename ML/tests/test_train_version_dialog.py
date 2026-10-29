@@ -46,7 +46,7 @@ class VersionDialogTests(unittest.TestCase):
         tab = self.tab([], ('Glu, Lys',))
         tab.runner = SimpleNamespace(busy=False)
         tab.experiment = Variable('A')
-        tab._distance_settings = Mock(return_value=([], None, None))
+        tab._training_settings = Mock(return_value={'balance': 'under', 'tune': False, 'n_trials': 20})
         tab.fc_mode = Variable('minimal')
         tab.use_selection = Variable(True)
         with patch.object(tab_train, 'resolve_version', side_effect=FileNotFoundError('missing')) as resolve, \

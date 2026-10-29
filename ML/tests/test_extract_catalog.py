@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common.extract_catalog import extracted_event_counts, record_extraction, load_history
+from common.extract_catalog import extracted_event_counts, record_extraction, load_history, scan_sample
 from common.incremental_save import merge_new_events
 
 
@@ -72,6 +72,22 @@ class ExtractCatalogTests(unittest.TestCase):
             with self.subTest(shape=array.shape), patch("builtins.print") as warning:
                 self.assertEqual(self.counts_for(array), {})
                 warning.assert_called_once()
+
+    def test_anal_without_measurement_file_is_extractable(self):
+        with tempfile.TemporaryDirectory() as folder:
+            t_dir = Path(folder) / "T"
+            (t_dir / "ANAL").mkdir(parents=True)
+            for no in ("001", "002"):
+                (t_dir / "ANAL" / f"A@@2024_1204_1039_00_AA_10k_Sample#{no}.tdms").touch()
+            extracted = {("AA_10k_Sample#002", "20241204_1000"): 5}
+            with patch("common.extract_catalog.sample_t_dir", return_value=str(t_dir)), \
+                    patch("common.extract_catalog.extracted_event_counts", return_value=extracted), \
+                    patch("common.extract_catalog.last_extracted_by_file", return_value={}):
+                df = scan_sample("s", "share", "ex", "AA", "rmc")
+        self.assertEqual(df["status"].tolist(),
+                         ["未抽出（測定ファイルなし）", "抽出済み（測定ファイルなし）"])
+        self.assertEqual(df["extracted_events"].tolist(), [0, 5])
+        self.assertTrue(df["anal_path"].notna().all())
 
 
 if __name__ == "__main__":

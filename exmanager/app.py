@@ -7,6 +7,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import core
 import pc_config
+import source_cache
 from csv_editor import CsvEditor
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -68,8 +69,11 @@ class App(tk.Tk):
         self.pc_label = ttk.Label(pc_panel)
         self.pc_label.pack(side='left')
         ttk.Button(pc_panel, text='このPCの設定', command=self.configure_pc).pack(side='right')
-        select = ttk.LabelFrame(upper, text='1. コピー元の設定・確認', padding=8)
-        select.pack(fill='x', padx=10)
+        source_tab = ttk.LabelFrame(upper, text='1. コピー元の設定・確認', padding=(0, 4, 0, 2))
+        source_tab.pack(fill='x', padx=10)
+        destination_tab = ttk.LabelFrame(upper, text='2. 保存先の選択', padding=(0, 4, 0, 2))
+        select = ttk.Frame(source_tab, padding=(0, 0, 0, 4))
+        select.pack(fill='x')
         for n, (key, label) in enumerate([('machine','装置'), ('selection','コピー元'), ('uploader','アップロード担当者')]):
             ttk.Label(select, text=label).grid(row=(n//4)*2, column=n%4, sticky='w')
             self.vars[key] = tk.StringVar()
@@ -78,18 +82,20 @@ class App(tk.Tk):
             self.boxes[key] = box
         self.boxes['selection']['values'] = ('Recent_Data', 'Archived_Data')
         self.vars['selection'].set('Recent_Data')
-        ttk.Button(select, text='① コピー元一覧を更新', style='Primary.TButton', command=self.sources).grid(row=1, column=3, sticky='w', padx=(12, 4))
+        for key in ('machine', 'selection'):
+            self.boxes[key].bind('<<ComboboxSelected>>', lambda event: self.show_cached_sources())
+        ttk.Button(select, text='① コピー元一覧を更新', style='Primary.TButton', command=self.ask_sources).grid(row=1, column=3, sticky='w', padx=(12, 4))
         ttk.Button(select, text='装置・担当者CSVを再読み込み', style='Conditional.TButton', command=self.load).grid(row=1, column=4, sticky='w', padx=4)
         ttk.Button(select, text='保存履歴を開く', command=self.open_history_window).grid(row=1, column=5, sticky='w', padx=4)
         ttk.Button(select, text='装置CSVを閲覧・編集', command=lambda: self.edit_csv('machine')).grid(row=1, column=6, sticky='w', padx=4)
         ttk.Button(select, text='担当者CSVを閲覧・編集', command=lambda: self.edit_csv('operator')).grid(row=1, column=7, sticky='w', padx=4)
-        self.source_label = ttk.Label(upper, text='黄色の行：履歴あり ／ 無地の行：履歴なし（履歴だけではスキップしません）')
-        self.source_label.pack(anchor='w', padx=10)
+        self.source_label = ttk.Label(upper, text='黄色の行：履歴あり ／ 無地の行：履歴なし ／ 紫の行：セット登録済み（履歴だけではスキップしません）')
+        self.source_label.pack(anchor='w', padx=10, pady=(6, 0))
         tree_frame = ttk.Frame(upper)
         tree_frame.pack(fill='x', padx=10)
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
-        self.tree = ttk.Treeview(tree_frame, columns=('name','10khz','100khz','history','destinations','latest'), show='headings', height=10, selectmode='extended')
+        self.tree = ttk.Treeview(tree_frame, columns=('name','10khz','100khz','history','destinations','latest'), show='headings', height=7, selectmode='extended')
         self.tree.heading('10khz', text='10kHz件数')
         self.tree.heading('100khz', text='100kHz件数')
         self.tree.column('10khz', width=90, stretch=False, anchor='e')
@@ -104,6 +110,8 @@ class App(tk.Tk):
         self.tree.column('latest', width=180, stretch=False)
         self.tree.tag_configure('yes', background=ui_theme.row('warning', 0.2), foreground=ui_theme.TEXT)
         self.tree.tag_configure('no', background=ui_theme.FIELD, foreground=ui_theme.TEXT)
+        # 3. の転送セットに登録済みのコピー元（同じものを重ねて登録しないための目印）
+        self.tree.tag_configure('in_set', background=ui_theme.row('violet', 0.32), foreground=ui_theme.TEXT)
         self.tree.grid(row=0, column=0, sticky='nsew')
         self.add_scrollbars(tree_frame, self.tree)
         self.source_histories = {}
@@ -127,7 +135,8 @@ class App(tk.Tk):
             self.history_tree.column(key, width=width)
         self.history_tree.grid(row=0, column=0, sticky='nsew')
         self.add_scrollbars(history_frame, self.history_tree)
-        panel = ttk.LabelFrame(upper, text='2. 保存先の選択', padding=8)
+        destination_tab.pack(fill='x', padx=10, pady=(8, 0))
+        panel = ttk.Frame(destination_tab)
         panel.pack(fill='x')
         fields = [('db', '装置・担当者CSVフォルダ', str(core.DB)), ('legacy', 'LabVIEW版履歴CSV', str(core.DB / 'Uploader.csv')), ('local', 'Python版履歴CSV', str(core.BASE / 'logs' / 'Uploader_python.csv')), ('root', '保存先解析ルート', r'\\Rackstation\analysis')]
         self.vars['db'] = tk.StringVar(value=str(core.DB))
@@ -152,7 +161,7 @@ class App(tk.Tk):
         ttk.Button(loaders, text='保存先一覧を読み込み', style='Conditional.TButton', command=self.load_destinations).pack(side='left', padx=8)
         for label, key in [('LabVIEW版CSV', 'legacy'), ('Python版CSV', 'local')]:
             ttk.Button(loaders, text=label + 'を閲覧・編集', command=lambda k=key: self.edit_csv(k)).pack(side='left', padx=3)
-        select = ttk.Frame(upper, padding=(10, 4))
+        select = ttk.Frame(destination_tab, padding=(0, 2, 0, 0))
         select.pack(fill='x')
         for n, (key, label) in enumerate([('experiment','保存先実験'), ('sample','保存先サンプル'), ('kind','区分')]):
             ttk.Label(select, text=label).grid(row=(n//4)*2, column=n%4, sticky='w')
@@ -165,13 +174,15 @@ class App(tk.Tk):
         self.boxes['experiment'].bind('<<ComboboxSelected>>', self.samples)
         ttk.Button(select, text='② 選択内容を転送セットに追加', style='Primary.TButton', command=self.add_set).grid(row=1, column=3, sticky='w', padx=(12, 4))
         ttk.Button(select, text='保存先実験・サンプルを追加', style='Conditional.TButton', command=self.add_destination).grid(row=1, column=4, sticky='w', padx=4)
-        ttk.Label(upper, text='3. 登録内容の確認').pack(anchor='w', padx=10)
+        ttk.Label(upper, text='3. 登録内容の確認').pack(anchor='w', padx=10, pady=(8, 0))
         batch_frame = ttk.Frame(upper)
         batch_frame.pack(fill='both', expand=True, padx=10)
         batch_frame.rowconfigure(0, weight=1)
         batch_frame.columnconfigure(0, weight=1)
-        self.batch_tree = ttk.Treeview(batch_frame, columns=('set','source','target','source10','target10','source100','target100','duplicates','nonduplicates','person'), show='headings', height=6)
-        for key, title, width in [('set','セット',55),('source','コピー元実験',250),('target','保存先・区分',300),('source10','元10kHz',90),('target10','先10kHz',90),('source100','元100kHz',90),('target100','先100kHz',90),('duplicates','内容重複確認',160),('nonduplicates','重複なし（TDMS）',180),('person','アップロード担当者',160)]:
+        self.batch_tree = ttk.Treeview(batch_frame, columns=('set','source','target','name_check','source10','target10','source100','target100','duplicates','nonduplicates','person'), show='headings', height=7)
+        # 名前の照合が「不一致」「判定不可」のセットは行を橙にする（一致しなくても正しい場合があるので目安）
+        self.batch_tree.tag_configure('name_mismatch', background=ui_theme.row('warning', 0.22), foreground=ui_theme.TEXT)
+        for key, title, width in [('set','セット',55),('source','コピー元実験',250),('target','保存先・区分',300),('name_check','名前の照合',170),('source10','元10kHz',90),('target10','先10kHz',90),('source100','元100kHz',90),('target100','先100kHz',90),('duplicates','内容重複確認',160),('nonduplicates','重複なし（TDMS）',180),('person','アップロード担当者',160)]:
             self.batch_tree.heading(key, text=title)
             self.batch_tree.column(key, width=width)
         self.batch_tree.grid(row=0, column=0, sticky='nsew')
@@ -184,7 +195,7 @@ class App(tk.Tk):
         ttk.Button(actions, text='④ コピー予定表を確認', style='Primary.TButton', command=self.open_plan_window).pack(side='left', padx=4)
         self.copy_button = ttk.Button(actions, text='⑤ コピー開始', style='Execute.TButton', command=self.copy)
         self.copy_button.pack(side='left')
-        ttk.Label(lower, text='通常：① コピー元一覧を更新 → ② セットに追加 → ③ 予定作成 → ④ 予定表を確認 → ⑤ コピー開始', wraplength=1000).pack(anchor='w', padx=10)
+        ttk.Label(lower, text='通常：① コピー元一覧を更新 → 実験を選択 → ② 保存先を選択してセットに追加 → ③ 予定作成 → ④ 予定表を確認 → ⑤ コピー開始', wraplength=1000).pack(anchor='w', padx=10)
         legend = ttk.Frame(lower)
         legend.pack(fill='x', padx=10)
         for text, color in [('青：通常の手順', ui_theme.row('info', 0.22)), ('緑：実行', ui_theme.row('success', 0.22)),
@@ -286,7 +297,9 @@ class App(tk.Tk):
                       column_titles=(core.HEADERS if key in ('legacy', 'local') else
                                      ('Name', 'initial_name', 'affiliation') if key == 'operator' else ()),
                       first_row_header=key == 'machine',
-                      history_source=self.vars['local'].get() if key == 'legacy' else None)
+                      history_source=(self.vars['local' if key == 'legacy' else 'legacy'].get()
+                                      if key in ('legacy', 'local') else None),
+                      history_source_label='LabVIEW版' if key == 'local' else 'Python版')
         except Exception as exc:
             messagebox.showerror('CSVを開けません', str(exc), parent=self)
 
@@ -436,6 +449,7 @@ class App(tk.Tk):
             for key in ('machines_error', 'operators_error', 'history_sync_error'):
                 if key in data:
                     self.log(f'CSV読込エラー ({key}): {data[key]}')
+            self.show_cached_sources()
             if self.restore_initial:
                 self.restore_initial = False
                 if self.vars['experiment'].get():
@@ -518,28 +532,103 @@ class App(tk.Tk):
                 self.vars['sample'].set(restore_sample)
         self.run(lambda: sorted(p.name for p in (Path(v['root'])/v['experiment']).iterdir() if p.is_dir()), done)
 
-    def sources(self):
+    def source_root(self, v):
+        return Path(self.machine_data[v['machine']]['Tmp_backup' if v['selection']=='Recent_Data' else 'SQ_backup'])
+
+    def clear_sources(self, text):
+        self.source_histories = {}
+        self.source_paths = {}
+        self.source_context = None
+        self.tree.delete(*self.tree.get_children())
+        self.history_tree.delete(*self.history_tree.get_children())
+        self.history_label.configure(text='実験を選択すると保存履歴を表示します。')
+        self.source_label.configure(text=text)
+
+    def show_cached_sources(self):
+        """On machine/selection change, show the previous listing without rescanning."""
+        v = self.values()
+        if not v['machine'] or v['machine'] not in getattr(self, 'machine_data', {}):
+            return self.clear_sources('装置を選択してください。')
+        root = self.source_root(v)
+        cached = source_cache.load(v['machine'], v['selection'])
+        if not cached or cached.get('root') != str(root):
+            return self.clear_sources(f'{root} — 前回の一覧はありません。「① コピー元一覧を更新」で取得してください。')
+        if self.busy:
+            return self.clear_sources(f'{root} — 処理中のため前回の一覧を表示できません。処理後に「① コピー元一覧を更新」を押してください。')
+        self.sources(cached=cached)
+
+    def ask_sources(self):
+        """Show the previous listing first so an unchanged folder need not be rescanned."""
+        v = self.values()
+        if self.busy or not v['machine'] or not hasattr(self, 'machine_data'):
+            return self.sources()
+        cached = source_cache.load(v['machine'], v['selection'])
+        if not cached or cached.get('root') != str(self.source_root(v)):
+            return self.sources()
+        dialog = tk.Toplevel(self)
+        dialog.title('コピー元一覧の更新確認')
+        dialog.transient(self)
+        dialog.grab_set()
+        folders = cached['folders']
+        ttk.Label(dialog, text=f"{v['machine']} / {v['selection']}　前回更新：{cached['updated']}",
+                  font=('', 11, 'bold')).pack(anchor='w', padx=12, pady=(12, 2))
+        ttk.Label(dialog, text=f"{cached['root']} — {len(folders)}フォルダ（前回の内容）").pack(anchor='w', padx=12)
+        frame = ttk.Frame(dialog)
+        frame.pack(fill='both', expand=True, padx=12, pady=8)
+        frame.rowconfigure(0, weight=1)
+        frame.columnconfigure(0, weight=1)
+        tree = ttk.Treeview(frame, columns=('name', '10khz', '100khz'), show='headings', height=12)
+        for column, title, width in [('name', '実験フォルダ', 420), ('10khz', '10kHz件数', 90), ('100khz', '100kHz件数', 90)]:
+            tree.heading(column, text=title)
+            tree.column(column, width=width, stretch=column == 'name', anchor='w' if column == 'name' else 'e')
+        for row in folders:
+            tree.insert('', 'end', values=row)
+        tree.grid(row=0, column=0, sticky='nsew')
+        self.add_scrollbars(frame, tree)
+        ttk.Label(dialog, text='変更がなければ「前回の一覧を使う」を選んでください（履歴列は最新のCSVで表示します）。\n'
+                              '実験の追加や測定途中のフォルダがある場合は「再取得して更新」を選んでください。').pack(anchor='w', padx=12)
+        buttons = ttk.Frame(dialog)
+        buttons.pack(fill='x', padx=12, pady=12)
+        def choose(rescan):
+            dialog.destroy()
+            self.sources(cached=None if rescan else cached)
+        ttk.Button(buttons, text='前回の一覧を使う', style='Primary.TButton', command=lambda: choose(False)).pack(side='left')
+        ttk.Button(buttons, text='再取得して更新', style='Conditional.TButton', command=lambda: choose(True)).pack(side='left', padx=8)
+        ttk.Button(buttons, text='キャンセル', command=dialog.destroy).pack(side='right')
+
+    def sources(self, cached=None):
         v = self.values()
         if not v['machine'] or not hasattr(self, 'machine_data'):
             return
-        root = Path(self.machine_data[v['machine']]['Tmp_backup' if v['selection']=='Recent_Data' else 'SQ_backup'])
+        root = self.source_root(v)
         def work():
-            folders = sorted([p for p in root.iterdir() if p.is_dir()], reverse=True)
-            counts = {p: experiment_data_counts(p) for p in folders}
-            return folders, core.history(v['legacy'], v['local']), counts
+            if cached:
+                folders = [(root / row[0], tuple(row[1:3])) for row in cached['folders']]
+                updated = cached['updated']
+            else:
+                found = sorted([p for p in root.iterdir() if p.is_dir()], reverse=True)
+                folders = [(p, experiment_data_counts(p)) for p in found]
+                try:
+                    updated = source_cache.save(v['machine'], v['selection'], root,
+                                                [(p.name, c) for p, c in folders])['updated']
+                except OSError as exc:
+                    updated = f'保存失敗: {exc}'
+            return folders, core.history(v['legacy'], v['local']), updated
         def done(data):
-            self.source_histories = {}
-            self.tree.delete(*self.tree.get_children())
-            self.history_tree.delete(*self.history_tree.get_children())
-            self.history_label.configure(text='実験を選択すると保存履歴を表示します。')
-            self.source_paths = {}
+            folders, history, updated = data
+            if (v['machine'], v['selection']) != (self.vars['machine'].get(), self.vars['selection'].get()):
+                return self.show_cached_sources()  # selection changed while loading
+            self.clear_sources('')
             self.source_context = (v['machine'], v['selection'])
-            for n,p in enumerate(data[0]):
-                records = [r for r in data[1] if r[2]==v['machine'] and r[6]==p.name]
+            for n,(p, counts) in enumerate(folders):
+                records = [r for r in history if r[2]==v['machine'] and r[6]==p.name]
                 self.source_histories[str(n)] = records
-                self.tree.insert('', 'end', iid=str(n), values=(p.name, *data[2][p], *history_summary(records)), tags=('yes' if records else 'no',))
+                self.tree.insert('', 'end', iid=str(n), values=(p.name, *counts, *history_summary(records)), tags=('yes' if records else 'no',))
                 self.source_paths[str(n)] = p
-            self.source_label.configure(text=f'{root} — 黄色の行：履歴あり ／ 無地の行：履歴なし')
+            state = f'前回の一覧（{updated} 取得）' if cached else f'一覧更新：{updated}'
+            self.source_label.configure(text=f'{root} — {state} — 黄色の行：履歴あり ／ 無地の行：履歴なし ／ 紫の行：セット登録済み')
+            self.mark_set_rows()
+            self.log(f'コピー元一覧: {v["machine"]} / {v["selection"]} {len(folders)}フォルダ（{state}）')
         self.run(work, done)
 
     def open_history_window(self):
@@ -574,6 +663,8 @@ class App(tk.Tk):
         v = self.values()
         selected = self.tree.selection()
         if not selected or not all(v[k] for k in ('experiment','sample','uploader')):
+            if selected and v['uploader']:
+                self.boxes['experiment'].focus_set()
             messagebox.showinfo('選択不足', '実験・保存先・担当者を選択してください。')
             return
         if self.source_context != (v['machine'], v['selection']):
@@ -587,8 +678,45 @@ class App(tk.Tk):
         if self.sets and (v['legacy'], v['local']) != (self.sets[0]['legacy'], self.sets[0]['local']):
             messagebox.showerror('履歴設定', '同じ一括処理では履歴CSVの設定を統一してください。')
             return
-        self.sets.append(dict(sources=[self.source_paths[s] for s in selected], target=dst, context=context, legacy=v['legacy'], local=v['local']))
+        sources = [self.source_paths[s] for s in selected]
+        registered = self.registered_sources()
+        same = [p.name for p in sources if any(n for n in registered.get(p, [])
+                                              if self.sets[n - 1]['target'] == dst
+                                              and self.sets[n - 1]['context']['kind'] == v['kind'])]
+        if same:
+            messagebox.showerror('登録済み', '同じ保存先・区分に、すでに登録済みのコピー元があります。\n'
+                                 + '\n'.join(same[:10]) + ('\n…' if len(same) > 10 else ''))
+            return
+        check, mismatched = core.name_check(sources, v['sample'])
+        if mismatched and not messagebox.askyesno(
+                '名前の照合', f'コピー元フォルダ名のサンプル名と保存先サンプル名（{v["sample"]}）が一致しません。\n'
+                + f'{check}\n\n' + '\n'.join(mismatched[:10]) + ('\n…' if len(mismatched) > 10 else '')
+                + '\n\nこのまま追加しますか？（意図して別名にする場合は「はい」）'):
+            return
+        again = [f"{p.name}（セット{', '.join(map(str, registered[p]))}）" for p in sources if p in registered]
+        if again and not messagebox.askyesno(
+                '登録済みのコピー元', f'選択したコピー元のうち {len(again)} 件は、すでにセットに登録済みです。\n'
+                + '\n'.join(again[:10]) + ('\n…' if len(again) > 10 else '')
+                + '\n\n別の保存先として追加しますか？'):
+            return
+        self.sets.append(dict(sources=sources, target=dst, context=context, legacy=v['legacy'], local=v['local']))
         self.refresh_sets()
+
+    def registered_sources(self):
+        """{コピー元のパス: [登録されているセット番号, ...]}"""
+        registered = {}
+        for number, spec in enumerate(self.sets, start=1):
+            for path in spec['sources']:
+                registered.setdefault(path, []).append(number)
+        return registered
+
+    def mark_set_rows(self):
+        """セットに登録済みのコピー元の行を紫にする（それ以外は履歴の有無で色分け）。"""
+        registered = self.registered_sources()
+        for iid, path in getattr(self, 'source_paths', {}).items():
+            if self.tree.exists(iid):
+                tag = 'in_set' if path in registered else 'yes' if self.source_histories.get(iid) else 'no'
+                self.tree.item(iid, tags=(tag,))
 
     def close_plan_window(self):
         window = getattr(self, 'plan_window', None)
@@ -654,10 +782,17 @@ class App(tk.Tk):
         self.current = None
         self.plan_tree.delete(*self.plan_tree.get_children())
         self.plan_label.configure(text='コピー予定：登録内容が変更されました。再作成してください。')
+        self.render_sets()
+
+    def render_sets(self):
+        """登録表を描き直し、件数を集計し直す（コピー予定・結果の表示には触れない）。"""
         self.batch_tree.delete(*self.batch_tree.get_children())
+        self.mark_set_rows()
         for n, spec in enumerate(self.sets):
             c = spec['context']
-            self.batch_tree.insert('', 'end', iid=str(n), values=(n+1, ' / '.join(p.name for p in spec['sources']), f"{spec['target']} [{c['kind']}]", *('集計中',)*4, '未確認', '未確認', c['uploader']))
+            check, mismatched = core.name_check(spec['sources'], Path(spec['target']).name)
+            self.batch_tree.insert('', 'end', iid=str(n), values=(n+1, ' / '.join(p.name for p in spec['sources']), f"{spec['target']} [{c['kind']}]", check, *('集計中',)*4, '未確認', '未確認', c['uploader']),
+                                   tags=('name_mismatch',) if mismatched else ())
         if self.sets:
             specs = list(self.sets)
             def done(results):
@@ -675,7 +810,9 @@ class App(tk.Tk):
             self.batch_tree.set(iid, 'nonduplicates', '確認中')
         self.log('簡易チェック：同じサイズのTDMSの先頭・中央・末尾を各64KiB比較します。部分一致のため、結果は重複候補です。' if quick else '保存元と保存先のTDMSをサイズ・SHA-256で照合します。大容量データでは時間がかかります。')
         def done(results):
-            for n, (counts, duplicates) in enumerate(results):
+            for n, (counts, duplicates, warnings) in enumerate(results):
+                for warning in warnings:
+                    self.log(f'セット {n+1} 保存先注意: {warning}')
                 for key, count in zip(('source10','target10','source100','target100'), counts):
                     self.batch_tree.set(str(n), key, count)
                 unique = {(rate, source) for rate, source, _ in duplicates}
@@ -684,10 +821,21 @@ class App(tk.Tk):
                 remaining = counts[0] + counts[2] - len(unique)
                 self.batch_tree.set(str(n), 'nonduplicates', f'{remaining}件（簡易）' if quick else f'{remaining}件')
                 self.log(f'セット {n+1}: {label}の保存元TDMS {len(unique)}件')
+                self.log(f"  名前の照合: {core.name_check(specs[n]['sources'], Path(specs[n]['target']).name)[0]}")
                 self.log(f'  重複なしTDMS: {remaining}件' + ('（簡易チェック結果）' if quick else ''))
                 for rate, source, dest in duplicates:
                     self.log(f'  {rate}: {source} → {dest}')
-        self.run(lambda: [core.inspect_set_data(spec, True, self.progress, quick=quick) for spec in specs], done)
+            notices = list(dict.fromkeys(w for _, _, warnings in results for w in warnings))
+            if notices:
+                messagebox.showwarning('保存先の注意事項', '\n\n'.join(notices), parent=self)
+        def work():
+            results = []
+            for spec in specs:
+                counts, duplicates = core.inspect_set_data(spec, True, self.progress, quick=quick)
+                warnings = core.destination_warnings(spec['target'], spec['context']['kind'])
+                results.append((counts, duplicates, warnings))
+            return results
+        self.run(work, done)
 
     def remove_set(self):
         if self.busy:
@@ -742,6 +890,11 @@ class App(tk.Tk):
                 lines.append(f'合計 {len(p.items)} / 新規 {sum(i.status=="新規" for i in p.items)} / 既存・未検証 {sum(i.status=="既存（内容未検証）" for i in p.items)} / 競合 {sum(i.status=="競合" for i in p.items)}')
             self.log('\n'.join(lines))
             self.open_plan_window()
+            notices = list(dict.fromkeys(
+                warning for _, p, _ in jobs for warning in p.warnings
+                if warning.startswith(('退避ファイルあり', '解析進行中'))))
+            if notices:
+                messagebox.showwarning('保存先の注意事項', '\n\n'.join(notices), parent=self)
         def work():
             jobs = core.plan_batch(specs, progress=self.progress)
             return core.review_batch_duplicates(jobs, self.progress)
@@ -779,7 +932,26 @@ class App(tk.Tk):
             self.log(summary)
             self.log('実験ごとの結果を確認してください。再実行する場合はコピー予定を再作成してください。')
             self.open_plan_window()
+            self.clear_finished_sets(results)
         self.run(work, done)
+
+    def clear_finished_sets(self, results):
+        """コピーが終わったセットを登録から外す。失敗・未実行の実験を含むセットは再実行用に残す。"""
+        states = {}
+        for set_no, _source, _target, state, _detail in results:
+            states.setdefault(int(set_no), []).append(state)
+        finished = {n for n, values in states.items() if all(v in ('完了', '警告あり') for v in values)}
+        if not finished:
+            return
+        kept = [spec for n, spec in enumerate(self.sets, start=1) if n not in finished]
+        self.log(f'コピーが完了したセット {len(finished)}件を登録から外しました。'
+                 + (f'失敗・未実行を含むセット {len(kept)}件は再実行用に残しています。' if kept else ''))
+        self.sets = kept
+        if kept:
+            self.render_sets()
+        else:
+            self.batch_tree.delete(*self.batch_tree.get_children())
+            self.show_cached_sources()  # 保存履歴が増えたので一覧の色（履歴あり）を更新する
 
 
 if __name__ == '__main__':

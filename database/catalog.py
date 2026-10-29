@@ -3,6 +3,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from datetime import datetime, timezone
 import os
 import re
+import shutil
 import sqlite3
 import time
 from contextlib import contextmanager, closing
@@ -58,6 +59,11 @@ def initialize(path=DEFAULT_DB):
             CREATE INDEX IF NOT EXISTS updates_source ON updates(source_id,id);
             PRAGMA user_version=2;
         ''')
+        # 共有が載っているディスク全体の使用量・容量（後から追加した列。既存DBには列だけ足す）
+        columns = {row[1] for row in db.execute('PRAGMA table_info(sources)')}
+        for name in ('volume_used', 'volume_total'):
+            if name not in columns:
+                db.execute(f'ALTER TABLE sources ADD COLUMN {name} INTEGER')
 
 
 def classify(relative, kind):
@@ -226,9 +232,16 @@ def scan_source(source, path=DEFAULT_DB, cancel=None, progress=None, scope='.', 
                         report(folder)
             if cancel and cancel.is_set():
                 raise ScanCancelled('中止しました。前回の記録を保持しています。')
-            db.execute('UPDATE sources SET server=?,kind=?,last_success=CASE WHEN ? THEN ? ELSE last_success END,last_attempt=?,status=?,error=? WHERE id=?',
+            # 共有ごとに1回だけ、載っているディスク全体の使用量を測る（取れなければ前回の値を残す）
+            try:
+                usage = shutil.disk_usage(root)
+                volume_used, volume_total = usage.used, usage.total
+            except OSError:
+                volume_used = volume_total = None
+            db.execute('UPDATE sources SET server=?,kind=?,last_success=CASE WHEN ? THEN ? ELSE last_success END,last_attempt=?,status=?,error=?,'
+                       'volume_used=COALESCE(?,volume_used),volume_total=COALESCE(?,volume_total) WHERE id=?',
                        (source['server'], source['kind'], scope == '.', now(), attempted, '取得済み' if scope == '.' else '一部更新',
-                        f'リンク・再解析ポイント {skipped}件を除外' if skipped else '', source_id))
+                        f'リンク・再解析ポイント {skipped}件を除外' if skipped else '', volume_used, volume_total, source_id))
             db.execute('UPDATE updates SET finished=?,status=?,file_count=?,folder_count=?,elapsed=?,error=? WHERE id=?',
                        (now(), '完了', count, folder_count, time.monotonic()-started,
                         f'リンク等 {skipped}件除外' if skipped else '', job_id))

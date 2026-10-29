@@ -130,14 +130,8 @@ def dfdata(smns, data_root=None):
     # data_root未指定時は data/features/rmb/ を使う（common/paths.py 参照）
     if data_root is None:
         data_root = paths.feature_dir(FEATURE_SET)
-    # 条件選択(シグナル時間範囲)
-    (st_l_lmt, st_h_lmt) = (10, 1000)
-
-    # 条件選択(シグナルベースライン範囲)
-    (sb_l_lmt, sb_h_lmt) = (-300, 300)
-
-    # 条件選択(シグナル強度範囲)
-    (si_l_lmt, si_h_lmt) = (10, 1000)
+    # イベントの範囲条件は tsfresh（rmc）側と共通（common/event_limits.py）
+    from common.event_limits import event_mask
 
     # データ読み込み
     dnf = pd.DataFrame(columns=columns)
@@ -161,15 +155,10 @@ def dfdata(smns, data_root=None):
         df = pd.DataFrame(data=datum, columns=loaded_columns)
         from common.training_file_filter import filter_training_rows
         df = filter_training_rows(df, smn, traditional=True)
-        df = df[df['signal_time'].astype(int) > st_l_lmt]
-        df = df[df['signal_time'].astype(int) < st_h_lmt]
-        df = df[df['signal_baseline'].astype(float) < sb_h_lmt]
-        df = df[df['signal_baseline'].astype(float) > sb_l_lmt]
-        df = df[df['signal_intensity'].astype(float) < si_h_lmt]
+        df = df[event_mask(df['signal_time'], df['signal_baseline'], df['signal_intensity'])]
         from common.training_file_filter import selection_manifest
         if df.empty and selection_manifest():
             raise ValueError(f'{smn}: ファイル条件と既存のイベント範囲条件を満たすイベントがありません。')
-        df = df[df['signal_intensity'].astype(float) > si_l_lmt]
 
         # --- 派生特徴量の計算（common/data_pipeline.load_meta_data()と同じ定義） ---
         signal_intensity = df['signal_intensity'].astype(float)
@@ -177,138 +166,23 @@ def dfdata(smns, data_root=None):
         df = df.copy()
         df['relative_signal'] = signal_intensity
         df['absolute_signal'] = signal_intensity + signal_baseline
+        # クラス名は指定したサンプル名に揃える（全パイプライン共通のラベル）
+        df['sample'] = smn
 
         dnf = pd.concat([dnf, df], axis=0)
         print(smn, ':', len(df))
 
-    return dnf
+    return dnf.reset_index(drop=True)
 
 
-def learn_dataset(dnf, feature_set_name='既存15特徴量', max_depth=6, eta=0.1,
-                  num_round=500, early_stopping_rounds=20, test_size=0.2,
-                  random_state=0, verbose_eval=False, n_cv_folds=10):
-    """80% training 内のCVで学習回数を選び、隔離した20% testで評価する。"""
-    y_labels = [sample.split('_')[0] for sample in dnf['sample']]
-    x = dnf[data].astype(float)
+def learn_dataset(dnf, feature_set_name='既存15特徴量', split=None):
+    """イベント単位の分割・CV・（任意）ハイパーパラメータ探索で学習する（common/training_core.py）。
 
-    le = LabelEncoder().fit(y_labels)
-    y = le.transform(y_labels)
-    num_class = len(le.classes_)
-    feature_columns = list(data)
-
-    row_positions = np.arange(len(dnf))
-    idx_train_full, idx_test = train_test_split(
-        row_positions, test_size=test_size, random_state=random_state, stratify=y
-    )
-    x_train_full_raw = x.iloc[idx_train_full]
-    x_test_raw = x.iloc[idx_test]
-    y_train_full = y[idx_train_full]
-    y_test = y[idx_test]
-
-    params = {
-        'max_depth': max_depth,
-        'eta': eta,
-        'eval_metric': 'mlogloss',
-        'num_class': num_class,
-        'objective': 'multi:softprob',
-    }
-
-    min_class_count = int(np.bincount(y_train_full).min())
-    n_splits = min(n_cv_folds, min_class_count)
-    if n_splits < 2:
-        raise ValueError('10-fold CVには、training内の各クラスに2件以上必要です。')
-    skf = StratifiedKFold(
-        n_splits=n_splits, shuffle=True, random_state=random_state
-    )
-
-    fold_scores = []
-    fold_best_rounds = []
-    for train_idx, valid_idx in skf.split(x_train_full_raw, y_train_full):
-        x_train_fold = x_train_full_raw.iloc[train_idx]
-        x_valid_fold = x_train_full_raw.iloc[valid_idx]
-        y_train_fold = y_train_full[train_idx]
-        y_valid_fold = y_train_full[valid_idx]
-
-        scaler_fold = StandardScaler()
-        X_train_fold = scaler_fold.fit_transform(x_train_fold)
-        X_valid_fold = scaler_fold.transform(x_valid_fold)
-
-        rus = RandomUnderSampler(random_state=random_state)
-        X_train_res, y_train_res = rus.fit_resample(X_train_fold, y_train_fold)
-
-        dtrain = xgb.DMatrix(
-            X_train_res, label=y_train_res, feature_names=feature_columns
-        )
-        dvalid = xgb.DMatrix(
-            X_valid_fold, label=y_valid_fold, feature_names=feature_columns
-        )
-        bst_fold = xgb.train(
-            params,
-            dtrain,
-            num_boost_round=num_round,
-            evals=[(dtrain, 'train'), (dvalid, 'val')],
-            early_stopping_rounds=early_stopping_rounds,
-            verbose_eval=False,
-        )
-        y_valid_pred = bst_fold.predict(
-            dvalid, iteration_range=(0, bst_fold.best_iteration + 1)
-        ).argmax(axis=1)
-        fold_scores.append(f1_score(y_valid_fold, y_valid_pred, average='macro'))
-        fold_best_rounds.append(bst_fold.best_iteration + 1)
-
-    cv_macro_f1 = float(np.mean(fold_scores))
-    selected_rounds = max(1, int(round(np.median(fold_best_rounds))))
-    print(
-        f'[{feature_set_name}] 80% training 内 {n_splits}-fold CV: '
-        f'mean Macro F1={cv_macro_f1:.4f}, selected_rounds={selected_rounds}'
-    )
-
-    scaler = StandardScaler()
-    X_train_full = scaler.fit_transform(x_train_full_raw)
-    X_test = scaler.transform(x_test_raw)
-    rus = RandomUnderSampler(random_state=random_state)
-    X_train_res, y_train_res = rus.fit_resample(X_train_full, y_train_full)
-
-    dtrain = xgb.DMatrix(
-        X_train_res, label=y_train_res, feature_names=feature_columns
-    )
-    dtest = xgb.DMatrix(X_test, feature_names=feature_columns)
-    evals_result = {}
-    fit_start = time.time()
-    booster = xgb.train(
-        params,
-        dtrain,
-        num_boost_round=selected_rounds,
-        evals=[(dtrain, 'train')],
-        evals_result=evals_result,
-        verbose_eval=verbose_eval,
-    )
-    print(
-        f'[{feature_set_name}] final model fit 完了 '
-        f'({time.time() - fit_start:.1f}秒, best_iteration={selected_rounds}/{selected_rounds})'
-    )
-
-    y_pred = booster.predict(
-        dtest, iteration_range=(0, selected_rounds)
-    ).argmax(axis=1)
-    macro_f1 = f1_score(y_test, y_pred, average='macro')
-    print(f'[{feature_set_name}] Held-out test Macro F1: {macro_f1:.4f}')
-    print(classification_report(y_test, y_pred, target_names=le.classes_))
-
-    return {
-        'X_test': X_test,
-        'y_test': y_test,
-        'y_pred': y_pred,
-        'booster': booster,
-        'le': le,
-        'scaler': scaler,
-        'evals_result': evals_result,
-        'macro_f1': macro_f1,
-        'cv_macro_f1': cv_macro_f1,
-        'n_cv_folds': n_splits,
-        'cv_best_rounds': fold_best_rounds,
-        'selected_rounds': selected_rounds,
-    }
+    tsfresh版と同じ分割・クラスの偏りへの対処・探索方法を使う。
+    """
+    from common import training_core
+    split = split or training_core.make_split(dnf)
+    return training_core.train_classifier(dnf, data, 'xgboost', split, feature_set_name=feature_set_name)
 
 
 def mapping(data, bst):
@@ -337,8 +211,10 @@ def run_analysis(smns, progress_callback=None):
     _report(0, "データを読み込み中...")
     dnf = dfdata(smns)
 
-    _report(1, "学習中（CV + held-out test）...")
-    result = learn_dataset(dnf)
+    _report(1, "学習中（CV + テスト用イベントで評価）...")
+    from common import training_core
+    split = training_core.make_split(dnf)
+    result = learn_dataset(dnf, split=split)
     X_test = result['X_test']
     y_test = result['y_test']
     y_pred = result['y_pred']
@@ -365,12 +241,14 @@ def run_analysis(smns, progress_callback=None):
     )
 
     # --- モデル・ラベルエンコーダ・使用特徴量一覧も同じフォルダにまとめて保存 ---
-    booster.save_model(str(RUN_DIR / 'model.json'))
-    with open(RUN_DIR / 'label_encoder.pkl', 'wb') as f:
-        pickle.dump(le, f)
-    with open(RUN_DIR / 'scaler.pkl', 'wb') as f:
-        pickle.dump(result['scaler'], f)
-    (RUN_DIR / 'feature_columns.txt').write_text('\n'.join(feature_columns), encoding='utf-8')
+    # ⑤ 混合予測タブで選べるよう、学習器として保存する（common/trained_models.py）
+    from common.trained_models import save_model
+    from common.event_limits import DURATION_LIMIT, BASELINE_LIMIT, SIGNAL_LIMIT
+    save_model(RUN_DIR, result, ALGORITHM, FEATURE_SET, smns,
+               details={'use_tsfresh_feature_selection': False,
+                        'event_limits': {'duration': DURATION_LIMIT, 'baseline': BASELINE_LIMIT,
+                                         'signal': SIGNAL_LIMIT},
+                        'training': training_core.manifest_config(split, result)})
 
     # ============================================================
     # 追加解析（train_xgboost_tsfresh.py と同じ一式）
@@ -432,11 +310,17 @@ def run_analysis(smns, progress_callback=None):
         f.write(f"選択したboosting rounds: {result['selected_rounds']}\n")
         f.write(f"held-out test Macro F1: {acc:.4f}\n")
 
+    training_core.save_training_details({'既存15特徴量': result}, RUN_DIR)
+
     _report(4, "manifestを保存・ZIP圧縮中...")
     # --- 実行条件をmanifestとして保存（他のtrainスクリプトと同じ形式。結果ブラウザ用） ---
     paths.write_run_manifest(
         RUN_DIR, RUN_TIMESTAMP, smns,
-        config={'n_meta_features': len(feature_columns)},
+        config={
+            'n_meta_features': len(feature_columns),
+            'event_limits': 'common/event_limits.py（tsfresh版と共通）',
+            'training': training_core.manifest_config(split, result),
+        },
         execution_time=time.time() - run_start_time,
         comparison_df=None,
         extra_info={

@@ -56,6 +56,7 @@ Step5: UMAPとの統合
 """
 
 import re
+import functools
 import gc
 import time
 import json
@@ -152,22 +153,22 @@ warnings.filterwarnings(
 WAVE_COLUMNS = [f'wave_{i}' for i in range(12)]
 # 'baseline' はモデルの特徴量から除外（品質フィルタ用途では引き続き使用。
 #  下記の load_meta_data() 内 BASELINE_LIMIT によるフィルタリングは維持される）
-META_FEATURE_COLUMNS = ['signal', 'duration'] + WAVE_COLUMNS
+# XGBoost版（train_xgboost_tsfresh.py）と同じ15列にそろえる（パイプライン間で公平に比較するため）
+META_FEATURE_COLUMNS = ['absolute_signal', 'relative_signal', 'duration'] + WAVE_COLUMNS
 
 # メタ特徴量の物理カテゴリ対応表（Step4: build_physical_category_table()の
 # extra_category_mapとして使う。tsfresh特徴量側はcommon/ml_analysis.pyの
 # 既定パターン(DEFAULT_PHYSICAL_CATEGORY_PATTERNS)で自動分類される）
 META_PHYSICAL_CATEGORY = {
-    'signal': '電流強度',
+    'absolute_signal': '電流強度',
+    'relative_signal': '電流強度',
     'duration': 'イベント時間',
-    # 'baseline' はこのバージョンでは特徴量から除外しているため、ここには含めない
 }
 for _i in range(12):
     META_PHYSICAL_CATEGORY[f'wave_{_i}'] = '局所変動'  # 要ドメイン確認
 
-DURATION_LIMIT = (5, 1000)
-BASELINE_LIMIT = (-300, 1000)
-SIGNAL_LIMIT = (0, 1000)
+# イベントの範囲条件は全パイプライン共通（common/event_limits.py で変更する）
+from common.event_limits import DURATION_LIMIT, BASELINE_LIMIT, SIGNAL_LIMIT  # noqa: E402
 
 # --- tsfresh特徴量セットの選択 ---
 # 'minimal'  : 現状（MinimalFCParameters, 列あたり約10特徴量）。最速・最軽量。
@@ -180,55 +181,9 @@ SIGNAL_LIMIT = (0, 1000)
 #              使うことを強く推奨。
 FC_PARAMETERS_MODE = 'curated'
 
-CURATED_FC_PARAMETERS = {
-    # --- 電流強度 ---
-    'abs_energy': None,
-    'root_mean_square': None,
-    'mean': None,
-    'median': None,
-    'maximum': None,
-    'minimum': None,
-    'sum_values': None,
-    'quantile': [{'q': 0.1}, {'q': 0.25}, {'q': 0.75}, {'q': 0.9}],
-    # --- 波形非対称性 ---
-    'skewness': None,
-    'kurtosis': None,
-    # --- 周波数成分 ---
-    'fft_coefficient': [{'coeff': k, 'attr': a} for k in range(5) for a in ['real', 'imag', 'abs']],
-    'fft_aggregated': [{'aggtype': a} for a in ['centroid', 'variance', 'skew', 'kurtosis']],
-    # --- ピーク数 ---
-    'number_peaks': [{'n': n} for n in [1, 3, 5]],
-    'number_cwt_peaks': [{'n': n} for n in [1, 5]],
-    # --- 立ち上がり・立ち下がり ---
-    'linear_trend': [{'attr': a} for a in ['slope', 'intercept', 'rvalue']],
-    'agg_linear_trend': [{'attr': 'slope', 'chunk_len': cl, 'f_agg': 'mean'} for cl in [5, 10]],
-    'first_location_of_maximum': None,
-    'last_location_of_maximum': None,
-    'first_location_of_minimum': None,
-    'last_location_of_minimum': None,
-    'longest_strike_above_mean': None,
-    'longest_strike_below_mean': None,
-    # --- 局所変動 ---
-    'variance': None,
-    'standard_deviation': None,
-    'mean_abs_change': None,
-    'absolute_sum_of_changes': None,
-    'variance_larger_than_standard_deviation': None,
-    # --- 自己相関 ---
-    'autocorrelation': [{'lag': l} for l in [1, 2, 3, 5]],
-    'c3': [{'lag': l} for l in [1, 2, 3]],
-    'time_reversal_asymmetry_statistic': [{'lag': l} for l in [1, 2, 3]],
-}
+from common.fc_parameters import CURATED_FC_PARAMETERS, fc_parameters_for  # noqa: E402
 
-if FC_PARAMETERS_MODE == 'minimal':
-    FC_PARAMETERS = MinimalFCParameters()
-elif FC_PARAMETERS_MODE == 'curated':
-    FC_PARAMETERS = CURATED_FC_PARAMETERS
-elif FC_PARAMETERS_MODE == 'efficient':
-    from tsfresh.feature_extraction import EfficientFCParameters
-    FC_PARAMETERS = EfficientFCParameters()
-else:
-    raise ValueError(f"未知の FC_PARAMETERS_MODE: {FC_PARAMETERS_MODE}")
+FC_PARAMETERS = fc_parameters_for(FC_PARAMETERS_MODE)
 
 USE_TSFRESH_FEATURE_SELECTION = True
 
@@ -361,177 +316,16 @@ dp.FILTERS = FILTERS
 # train_lgbm_classifier として拡張。learn_dataset は後方互換用ラッパー。
 # ============================================================
 
-def train_lgbm_classifier(dnf, feature_columns, feature_set_name="model",
-                           n_jobs=N_JOBS,
-                           use_early_stopping=USE_EARLY_STOPPING,
-                           valid_size=VALID_SIZE,
-                           early_stopping_rounds=EARLY_STOPPING_ROUNDS,
-                           test_size=0.2, random_state=0,
-                           n_cv_folds=10, n_estimators=500):
+def train_lgbm_classifier(dnf, feature_columns, feature_set_name="model", n_jobs=N_JOBS, split=None):
+    """イベント単位の分割・CV・（任意）ハイパーパラメータ探索で学習する（common/training_core.py）。
+
+    XGBoost版と同じ分割・クラスの偏りへの対処・探索方法を使う。
+    split は run_analysis() で1回だけ作った分割（全特徴量セットで共通）。未指定ならここで作る。
     """
-    全データを80% training / 20% held-out testに分割し、training内の
-    Stratified K-fold CVでboosting roundsを選択する。最後にtraining全体で
-    再学習し、一度もモデル選択に使っていないheld-out testで評価する。
-
-    valid_sizeは後方互換のため残しているが、K-fold CVでは使用しない。
-    """
-    y_labels = [_.split('_')[0] for _ in dnf['sample']]
-    feature_columns = list(feature_columns)
-    x = dnf[feature_columns]
-
-    le = LabelEncoder().fit(y_labels)
-    y = le.transform(y_labels)
-    num_class = len(le.classes_)
-
-    row_positions = np.arange(len(dnf))
-    idx_train_full, idx_test = train_test_split(
-        row_positions, test_size=test_size, random_state=random_state, stratify=y
-    )
-    x_train_full_raw = x.iloc[idx_train_full]
-    x_test_raw = x.iloc[idx_test]
-    y_train_full = y[idx_train_full]
-    y_test = y[idx_test]
-
-    model_params = {
-        'objective': 'multiclass',
-        'num_class': num_class,
-        'num_leaves': 63,
-        'max_depth': -1,
-        'learning_rate': 0.05,
-        'subsample': 0.8,
-        'colsample_bytree': 0.8,
-        'random_state': random_state,
-        'n_jobs': n_jobs,
-        'verbosity': -1,
-    }
-
-    min_class_count = int(np.bincount(y_train_full).min())
-    n_splits = min(n_cv_folds, min_class_count)
-    if n_splits < 2:
-        raise ValueError('K-fold CVには、training内の各クラスに2件以上必要です。')
-    skf = StratifiedKFold(
-        n_splits=n_splits, shuffle=True, random_state=random_state
-    )
-
-    fold_scores = []
-    fold_best_rounds = []
-    for train_idx, valid_idx in skf.split(x_train_full_raw, y_train_full):
-        x_train_fold = x_train_full_raw.iloc[train_idx]
-        x_valid_fold = x_train_full_raw.iloc[valid_idx]
-        y_train_fold = y_train_full[train_idx]
-        y_valid_fold = y_train_full[valid_idx]
-
-        scaler_fold = StandardScaler()
-        X_train_fold = scaler_fold.fit_transform(x_train_fold)
-        X_valid_fold = scaler_fold.transform(x_valid_fold)
-
-        rus_fold = RandomUnderSampler(random_state=random_state)
-        X_train_res, y_train_res = rus_fold.fit_resample(
-            X_train_fold, y_train_fold
-        )
-
-        fold_clf = lgb.LGBMClassifier(
-            **model_params, n_estimators=n_estimators
-        )
-        fit_kwargs = {}
-        if use_early_stopping:
-            fit_kwargs = {
-                'eval_set': [(X_valid_fold, y_valid_fold)],
-                'callbacks': [
-                    lgb.early_stopping(
-                        stopping_rounds=early_stopping_rounds, verbose=False
-                    ),
-                    lgb.log_evaluation(period=0),
-                ],
-            }
-        fold_clf.fit(X_train_res, y_train_res, **fit_kwargs)
-        y_valid_pred = fold_clf.predict(X_valid_fold)
-        fold_scores.append(
-            f1_score(y_valid_fold, y_valid_pred, average='macro')
-        )
-        best_round = (
-            fold_clf.best_iteration_
-            if use_early_stopping and fold_clf.best_iteration_
-            else n_estimators
-        )
-        fold_best_rounds.append(int(best_round))
-
-    cv_macro_f1 = float(np.mean(fold_scores))
-    selected_rounds = max(1, int(round(np.median(fold_best_rounds))))
-    print(
-        f"[{feature_set_name}] 80% training 内 {n_splits}-fold CV: "
-        f"mean Macro F1={cv_macro_f1:.4f}, selected_rounds={selected_rounds}"
-    )
-
-    scaler = StandardScaler()
-    X_train_full = scaler.fit_transform(x_train_full_raw)
-    X_test = scaler.transform(x_test_raw)
-    rus = RandomUnderSampler(random_state=random_state)
-    X_train_res, y_train_res = rus.fit_resample(X_train_full, y_train_full)
-
-    clf = lgb.LGBMClassifier(
-        **model_params, n_estimators=selected_rounds
-    )
-    t0 = time.time()
-    clf.fit(X_train_res, y_train_res)
-    print(
-        f"[{feature_set_name}] final model fit 完了 "
-        f"({time.time() - t0:.1f}秒, best_iteration={selected_rounds}/{selected_rounds})"
-    )
-    y_pred = clf.predict(X_test)
-
-    class_names = list(le.classes_)
-    macro_f1 = f1_score(y_test, y_pred, average='macro')
-    per_class_f1 = f1_score(y_test, y_pred, average=None, labels=range(num_class))
-    per_class_f1 = {cls: score for cls, score in zip(class_names, per_class_f1)}
-
-    cm = confusion_matrix(y_test, y_pred, labels=range(num_class))
-    cm_df = pd.DataFrame(
-        cm,
-        index=[f'Actual_{c}' for c in class_names],
-        columns=[f'Pred_{c}' for c in class_names],
-    )
-
-    print(f"[{feature_set_name}] Held-out test Macro F1: {macro_f1:.4f}")
-    print(classification_report(y_test, y_pred, target_names=class_names))
-
-    result = {
-        'name': feature_set_name,
-        'clf': clf,
-        'le': le,
-        'scaler': scaler,
-        'feature_columns': feature_columns,
-        'class_names': class_names,
-        'num_class': num_class,
-        'X_train': X_train_res,
-        'y_train': y_train_res,
-        'X_test': X_test,
-        'X_test_raw': x_test_raw,
-        'y_test': y_test,
-        'y_pred': y_pred,
-        'test_global_ids': list(dnf.index[idx_test]),
-        'macro_f1': macro_f1,
-        'per_class_f1': per_class_f1,
-        'confusion_matrix': cm_df,
-        'cv_macro_f1': cv_macro_f1,
-        'n_cv_folds': n_splits,
-        'cv_best_rounds': fold_best_rounds,
-        'selected_rounds': selected_rounds,
-    }
-    return result
-
-
-def learn_dataset(dnf, feature_columns, n_jobs=N_JOBS,
-                   use_early_stopping=USE_EARLY_STOPPING,
-                   valid_size=VALID_SIZE,
-                   early_stopping_rounds=EARLY_STOPPING_ROUNDS):
-    """後方互換用ラッパー。元のシグネチャ・戻り値(y_test, y_pred, clf, le)を維持する。"""
-    result = train_lgbm_classifier(
-        dnf, feature_columns, feature_set_name="model", n_jobs=n_jobs,
-        use_early_stopping=use_early_stopping, valid_size=valid_size,
-        early_stopping_rounds=early_stopping_rounds,
-    )
-    return result['y_test'], result['y_pred'], result['clf'], result['le']
+    from common import training_core
+    split = split or training_core.make_split(dnf)
+    return training_core.train_classifier(dnf, feature_columns, 'lightgbm', split,
+                                          feature_set_name=feature_set_name, n_jobs=n_jobs)
 
 
 # ============================================================
@@ -578,10 +372,15 @@ def run_analysis(smns, progress_callback=None):
         n_jobs=N_JOBS, chunksize=CHUNKSIZE
     )
 
-    _report(1, "tsfresh特徴量を選択中...")
+    # 学習用/テスト用はイベント単位で1回だけ決め、全特徴量セットで共通に使う
+    from common import training_core
+    split = training_core.make_split(dnf)
+
+    _report(1, "tsfresh特徴量を選択中（学習用イベントのみ使用）...")
     if USE_TSFRESH_FEATURE_SELECTION:
+        # テスト用の情報が特徴量選択に混ざらないよう、学習用の行だけで選ぶ
         tsfresh_feature_cols = apply_tsfresh_feature_selection(
-            dnf, tsfresh_feature_cols_all, n_jobs=N_JOBS, chunksize=CHUNKSIZE
+            dnf.iloc[split['train']], tsfresh_feature_cols_all, n_jobs=N_JOBS, chunksize=CHUNKSIZE
         )
     else:
         tsfresh_feature_cols = tsfresh_feature_cols_all
@@ -591,12 +390,21 @@ def run_analysis(smns, progress_callback=None):
     # ---------------------------------------------------------
     _report(2, "Step1: 特徴量セットを比較・学習中...")
     step1_results, step1_comparison_df, step1_feature_set_names = compare_feature_sets(
-        dnf, META_FEATURE_COLUMNS, tsfresh_feature_cols, train_fn=train_lgbm_classifier,
+        dnf, META_FEATURE_COLUMNS, tsfresh_feature_cols,
+        train_fn=functools.partial(train_lgbm_classifier, split=split),
         n_jobs=N_JOBS, output_dir=RUN_OUTPUT_DIR,
     )
+    training_core.save_training_details(step1_results, RUN_OUTPUT_DIR)
 
     # '既存14+tsfresh' のような、実際に使われた列数から生成された名前を使う。
     main_result = step1_results[step1_feature_set_names['combined']]
+    # ⑤ 混合予測タブで選べるよう、学習器として保存する（common/trained_models.py）
+    from common.trained_models import save_model
+    save_model(RUN_OUTPUT_DIR, main_result, ALGORITHM, FEATURE_SET, smns, fc_parameters_mode=FC_PARAMETERS_MODE,
+             details={'use_tsfresh_feature_selection': USE_TSFRESH_FEATURE_SELECTION,
+                      'event_limits': {'duration': DURATION_LIMIT, 'baseline': BASELINE_LIMIT,
+                                       'signal': SIGNAL_LIMIT},
+                      'training': training_core.manifest_config(split, main_result)})
     _report(3, "特徴量重要度を保存中...")
     plot_feature_importance(main_result['clf'], main_result['feature_columns'], top_n=30,
                              save_dir=RUN_OUTPUT_DIR)
@@ -730,7 +538,10 @@ def run_analysis(smns, progress_callback=None):
         config={
             'fc_parameters_mode': FC_PARAMETERS_MODE,
             'use_tsfresh_feature_selection': USE_TSFRESH_FEATURE_SELECTION,
+            'tsfresh_feature_selection_fit': '学習用イベントのみ',
             'n_meta_features': len(META_FEATURE_COLUMNS),
+            'event_limits': {'duration': DURATION_LIMIT, 'baseline': BASELINE_LIMIT, 'signal': SIGNAL_LIMIT},
+            'training': training_core.manifest_config(split, main_result),
         },
         execution_time=execution_time,
         comparison_df=step1_comparison_df,
