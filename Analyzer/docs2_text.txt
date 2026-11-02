@@ -1,0 +1,6765 @@
+20180801 2nd Step Analysis.vi
+20180801 2nd Step Analysis.vi
+Filename
+error in
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+S New Info and MiN
+Sample Sequence
+Right Read MIN
+Filter P
+STD Type
+Base Table
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+Selection
+noise MAX
+Sample name
+Numeric
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Raw data Graph
+Total NGraph_MS
+Position in Hierarchy
+ASD Right Read Ratio.vi
+Sample Sequence
+Right Read MIN
+Base Table
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+error in
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+RR Seq
+Sample Sequence
+リード方向総合
+RR Ratio (%)
+Right Read MIN out
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Position in Hierarchy
+base color selection_N.vi
+Sample Sequence
+path
+Base All Composition
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+element
+Position in Hierarchy
+Sample name insertion and base array selection.vi
+error in
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Sample name
+Base Table
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+Sample Sequence
+element
+Position in Hierarchy
+Base sp cluster selection for database_N.vi
+Base
+error in
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+path
+error out
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+Base Species IDX
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+element
+Position in Hierarchy
+Mode#.vi
+MR all data
+Mode#
+Position in Hierarchy
+base color selection_N2.vi
+Sample Sequence
+error in
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+Base All Composition
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+error out
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+element
+Position in Hierarchy
+test panel for 2nd.vi
+S New Info and MiN
+Sample Sequence
+Right Read MIN
+Filter P
+STD Type
+Base Table
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+Selection
+noise MAX
+Sample name
+error in
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+S New Info and MiN out
+Sample Sequence
+Right Read MIN
+Filter P
+STD Type
+Base Table
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+Selection
+noise MAX
+Sample name
+SB_ANA
+RR Ratio (%)
+Base Species#
+RR option#
+all option#
+RRS#
+Base Cutted Q#
+Position in Hierarchy
+ASD Right Sequence Formation.vi
+Sample Sequence
+RRS#
+RR Seq
+Sample Sequence
+リード方向総合
+Position in Hierarchy
+ASD Read Candidate.vi
+読み取り配列
+読み取り長さ
+順前削減配列マトリクス
+読み取り配列
+逆前削減配列マトリクス
+読み取り配列
+Position in Hierarchy
+number_digit_treat_N.vi
+number
+digit number
+result_number
+Position in Hierarchy
+Base sp cluster selection for database and baseprofile.vi
+error in
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+error out
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+Base All Composition
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+element
+Position in Hierarchy
+control1.ctl
+Position in Hierarchy
+base array selection data read.vi
+selection
+stripped path
+filenames
+error in
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+Base All Composition
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+element
+error out
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+Position in Hierarchy
+Max_rr_base change.vi
+S New Info and MiN
+Sample Sequence
+Right Read MIN
+Filter P
+STD Type
+Base Table
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+Selection
+noise MAX
+Sample name
+Numeric
+S New Info and MiN 2
+Sample Sequence
+Right Read MIN
+Filter P
+STD Type
+Base Table
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+Selection
+noise MAX
+Sample name
+Position in Hierarchy
+Base sp cluster selection for database.vi
+Base
+error in
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+error out
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+Base Species IDX
+element
+Position in Hierarchy
+base info txt ransfer.vi
+Base All Composition_edit
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+transposed array
+Name
+Position in Hierarchy
+ASM MIni Stat.vi
+Right Read MIN
+Sample Sequence
+Base Table
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+error in
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+RR Ratio (%)
+SB_ANA
+RR Ratio (%)
+Base Species#
+RR option#
+all option#
+RRS#
+Base Cutted Q#
+error out
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+Position in Hierarchy
+Base edit mode.vi
+error in
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Base All Composition_out
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Position in Hierarchy
+BNAL Intial txt and tdms tag_MS.vi
+Folder Path
+Right Read MIN
+Date
+Level Composition
+Base Charactor
+error in (no error)
+エラー入力
+は、このノードを実行する前に発生したエラーの状態を示します。この入力は、標準エラー入力として機能します。
+status
+ステータス
+は、このノードの実行前にエラーが発生した場合はTRUE（X）、警告を示すか、このノードの前にエラーが発生していない場合はFALSE（チェックマーク）になります。デフォルトはFALSEです。
+code
+コード
+はエラーコードまたは警告コードです。デフォルトは0です。
+source
+ソース
+は、エラーまたは警告が発生した場所を示し、ほとんどの場合、エラーまたは警告が発生したノードの名前です。デフォルトは空の文字列です。
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+BS Table Tag
+CSV_Path cluster
+LSP Table Pass
+LCP Table Pass
+LTP Table Pass
+L_Tag cluster
+LSP Table Tag
+LCP Table Tag
+LTP Table Tag
+BS Table Tag
+LAP Table Tag
+Position in Hierarchy
+NI_Gmath.lvlib:Logistic PDF.vi
+x
+x
+specifies the quantile of the continuous random variate.
+a
+a
+specifies the location or mean parameter of the variate.
+b
+b
+specifies the scale parameter of the variate and must be greater than 0.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+NI_Gmath.lvlib:Factorial.vi
+n
+n
+is the input argument.
+n!
+n!
+returns the factorial of
+n
+.
+Position in Hierarchy
+NI_Gmath.lvlib:Incomplete Gamma Function.vi
+x
+x
+is the real input of the incomplete gamma function.
+x
+must be nonnegative.
+a
+a
+is the upper limit of the incomplete gamma function. The default value is Inf.
+g(x, a)
+g(x, a)
+is the result of the incomplete gamma function for the given values of
+x
+and
+a
+.
+Position in Hierarchy
+NI_Gmath.lvlib:(Incomplete) Gamma Function.vi
+Position in Hierarchy
+NI_Gmath.lvlib:Gamma Function.vi
+x
+x
+is the real input of the gamma function.
+g(x)
+g(x)
+is the result of the gamma function for the given value of
+x
+.
+Position in Hierarchy
+NI_Gmath.lvlib:st_Is NaN or Inf.vi
+x
+isNaN(x) || isInf(x)
+Position in Hierarchy
+NI_Gmath.lvlib:Chi-Squared (Non-Central) PDF.vi
+x
+x
+specifies the quantile of the continuous random variate with range
+x
+>= 0.
+k
+k
+specifies the number of degrees of freedom and must be greater than 0.
+d
+d
+specifies the noncentrality parameter, which must be greater than 0.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+NI_Gmath.lvlib:Pareto PDF.vi
+x
+x
+specifies the quantile of the continuous random variate with range
+x
+>=
+a
+.
+a
+a
+specifies the location parameter and must be greater than 0.
+c
+c
+specifies the shape parameter of the variate and must be greater than 0.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+NI_Gmath.lvlib:Lognormal PDF.vi
+x
+x
+specifies the quantile of the continuous random variate with range
+x
+>= 0.
+b
+b
+specifies the scale or median parameter of the variate and must be greater than 0.
+c
+c
+specifies the shape parameter of the variate and must be greater than 0.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+NI_Gmath.lvlib:Continuous PDF.vi
+Position in Hierarchy
+NI_Gmath.lvlib:st_error_code.ctl
+Position in Hierarchy
+NI_Gmath.lvlib:Normal PDF.vi
+x
+x
+specifies the quantile of the continuous random variate.
+mean
+mean
+specifies the location or mean parameter of the variate.
+std
+std
+specifies the scale or standard deviation parameter of the variate and must be greater than 0.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+Base Probability calculation.vi
+Relative Array
+std [%]
+Base Ex Info
+Level Composition
+Base Charactor
+Base S level
+R Base Level
+Base IDX
+Base Color
+Base Color
+Base A Level
+BL Level
+Base R Level
+R Base Level
+Base R std Level
+R Base Level
+Time Probability
+pdf(x)
+Position in Hierarchy
+Time profile.vi
+Time Probability
+pdf(x)
+Base Ex Info
+Level Composition
+Base Charactor
+Base S level
+R Base Level
+Base IDX
+Base Color
+Base Color
+Base A Level
+BL Level
+Base R Level
+R Base Level
+Base R std Level
+R Base Level
+Assigned Profile
+Level IDX
+Probability
+Q value
+Base Species
+Base Charactor
+R level
+R Base Level
+Assigned Profile_plus
+Base Charactor
+R Base Level
+Base Charactor
+Position in Hierarchy
+Base composit for each signal.vi
+文字列
+Base Composition
+Base Charactor
+Base C
+Position in Hierarchy
+Base species number count.vi
+Signal Sequence
+Base Ex Info
+Level Composition
+Base Charactor
+Base S level
+R Base Level
+Base IDX
+Base Color
+Base Color
+Base A Level
+BL Level
+Base R Level
+R Base Level
+Base R std Level
+R Base Level
+All
+b comb
+Base Species#
+Base Species C
+Position in Hierarchy
+Region Sequence Anaysis.vi
+Relative Data Array
+std
+CP std (%)
+P std (%)
+Base Ex Info
+Level Composition
+Base Charactor
+Base S level
+R Base Level
+Base IDX
+Base Color
+Base Color
+Base A Level
+BL Level
+Base R Level
+R Base Level
+Base R std Level
+R Base Level
+Change Point Array
+Chang Point IDX
+Signal Start IDX
+Signal END  IDX
+長さ（残り）
+CP Analysis
+S Start Number
+S End Number
+Start OK?
+End OK?
+B omit
+CP Probability
+pdf(x)
+Time Probability
+pdf(x)
+Assinged Signal Profile plus
+mean
+上限
+Base Species#
+b comb
+Base Species C
+Assigned Time Profile plus
+Base Charactor
+Relative Data Array
+R Base Level
+y
+Base Charactor
+Assigned CP Profile plus
+mean
+R Base Level
+standard deviation
+Base Charactor
+Position in Hierarchy
+Signal Time Assigned Table.vi
+time
+Assinged Signal Profile plus
+mean
+上限
+Base Species#
+b comb
+Base Species C
+Signal Profile Table
+Position in Hierarchy
+CP profie graph.vi
+Assigned CP Profile plus
+mean
+R Base Level
+standard deviation
+Base Charactor
+CP Graph Profile
+Position in Hierarchy
+CP Probability Graph.vi
+CP Probability
+pdf(x)
+CP Graph Profile
+Position in Hierarchy
+Time Profile Graph formation.vi
+CP Probability
+pdf(x)
+time
+Time Profile Graph
+Position in Hierarchy
+Time Assigned TableZ.vi
+time
+current
+Time Probability
+pdf(x)
+Assigned Time Profile plus
+Base Charactor
+Relative Data Array
+R Base Level
+y
+Base Charactor
+Time Profile Table P
+Position in Hierarchy
+Signal CP Assigned Table.vi
+CP Probability
+pdf(x)
+Change Point Array
+Chang Point IDX
+Signal Start IDX
+Signal END  IDX
+長さ（残り）
+time
+Assigned CP Profile plus
+mean
+R Base Level
+standard deviation
+Base Charactor
+CP Profile Table
+Position in Hierarchy
+Time profile graph.vi
+time
+Relative Data Array
+Assigned Time Profile plus
+Base Charactor
+Relative Data Array
+R Base Level
+y
+Base Charactor
+Signal Time Graph
+Position in Hierarchy
+BSM Burst table nosave_formation.vi
+error in
+エラー入力
+は、以前に呼び出されたVIから配線されたエラー情報を取得できます。他のVIからエラーが発生した際に、ある操作を回避するかなど判断するためにこの情報を使用します。
+エラー詳細情報については、フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択します。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーに関するより詳しい情報が表示されます。
+code
+コード
+は、エラーあるいは警告コードです。
+エラーの詳細情報については、フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択します。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+エラーの詳細情報については、フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択します。
+Ex info
+Data Estimated Info
+Mx level
+Mx Level Intensity
+BL Level
+MAX
+Min
+Histogram bin
+Region Cut
+Data Point
+Filename
+G level intensity
+Base Ex Info
+Level Composition
+Base Charactor
+Base S level
+R Base Level
+Base IDX
+Base Color
+Base Color
+Base A Level
+BL Level
+Base R Level
+R Base Level
+Base R std Level
+R Base Level
+Table CP
+Signal Profile Table
+CP Profile Table
+Time Profile Table
+SN [ratio]
+CP S/N ratio
+T S/N ratio
+Mx Intensity level [pA]
+Table CV
+Signal Probile A Table
+CP Profile A Table
+Time Profile A Table
+Table Tag
+Signal A Table Tag
+CP A Table
+Time A Table
+error out
+エラー入力
+は、以前に呼び出されたVIから配線されたエラー情報を取得できます。他のVIからエラーが発生した際に、ある操作を回避するかなど判断するためにこの情報を使用します。
+エラー詳細情報については、フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択します。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーに関するより詳しい情報が表示されます。
+code
+コード
+は、エラーあるいは警告コードです。
+エラーの詳細情報については、フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択します。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+エラーの詳細情報については、フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択します。
+Position in Hierarchy
+base ex info array formation.vi
+Ex info
+Data Estimated Info
+Mx level
+Mx Level Intensity
+BL Level
+MAX
+Min
+Histogram bin
+Region Cut
+Data Point
+Filename
+G level intensity
+Base Ex Info
+Level Composition
+Base Charactor
+Base S level
+R Base Level
+Base IDX
+Base Color
+Base Color
+Base A Level
+BL Level
+Base R Level
+R Base Level
+Base R std Level
+R Base Level
+Base Ex info array
+Tag
+Tag 2
+Position in Hierarchy
+matrixreadnumber.vi
+順前削減配列Max no マトリクス
+順前削減配列 Max L マトリクス
+読み取り配列
+Lリード配列昇順
+Mx Right Read
+MAXリード数昇順
+2以上ある?
+MAXリード数
+MAXリード
+Position in Hierarchy
+Read_estimation_deletion_array_VI.vi
+読み取り配列
+元配列
+読み取り長さ
+順前削減配列判定マトリクス
+逆前削減配列判定マトリクス
+逆前削減配列Max Letter X
+逆Maxリード数
+順前削減配列 Max L X
+出力クラスタ
+読み取り配列
+読み取り配列
+読み取り配列
+読み取り配列
+順MAXリード数
+重複？
+Position in Hierarchy
+Read MAX evaluation modified.vi
+元配列
+順前削減配列 Max L X
+逆前削減配列Max Letter X
+Right Read MAX
+最長Right Read値
+リード方向
+Front Read
+Right Read
+Later Read
+Position in Hierarchy
+ArraySearch_BlockFormation_Maxdisplay Modified_VI.vi
+読み取り配列
+Cutted Sample Sequence
+RR number
+R number
+元配列数
+Right Read MAX
+最長Right Read値
+リード方向総合
+出力クラスタ 2
+Read Seq
+Read No
+Mx Right Read
+Mx No
+Dir
+Front Seq
+Seq
+Later Seq
+Seq SNo
+Seq ENo
+配列開始番号
+配列終了番号
+重複？
+Position in Hierarchy
+Signal Profile selection.vi
+Signal Tag A
+Signal Profile Table A
+Seq SNo
+Mx Right No
+Seq ENo
+Direction
+File name
+S IDX
+Mx Right Read Seq
+Position in Hierarchy
+assembly sort.vi
+Signal Profile Table A
+Right Read MIN
+連続排除配列
+Signal Tag A
+Long Assembly
+assembly C
+Assembly Ratio
+Long Signal#
+Signal #
+Signal#
+Selected S IDX
+Selected S Filename
+Position in Hierarchy
+LSignal Numbering.vi
+Signal Profile Table A
+Selected S IDX
+Selected L#
+Signal Tag A
+L# for T
+BS Table
+Position in Hierarchy
+Right Read Insertion_MS_IDX.vi
+Signal Profile Table
+Signal Tag
+error in
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Total assembly C
+Assembly Ratio
+Long Signal#
+Signal #
+Assembly Ratio 2
+SOC cluster
+Right Read MIN
+Cutted Sample Sequence
+Sample Sequence
+BS Table
+Signal Number Histogram
+LSP Table
+ASM C
+Long Assembly
+All Assembly
+assembly C
+Assembly Ratio
+Long Signal#
+Signal #
+RR#
+Mx No
+AR#
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+LSS Tag
+Signal Tag A
+L Signal Tag A
+Position in Hierarchy
+CP Profile selection_MS.vi
+Long Signal Profile Table A
+Signal Tag AZ
+CP selected IDX
+S CP IDX Start [n]
+S CP IDX End [n]
+Assinged Sequence
+Direction
+Mx Right Read Seq
+Seq SNo
+Seq ENo
+Front Seq
+Seq
+Later Seq
+MSeq_SNo
+MSeq_ENo
+L# [n]
+S# [n]
+M_RRead_Seq
+M_MxRight_No
+Position in Hierarchy
+Read_Time_array_formation_VI.vi
+Right Read MAX
+読み取り配列
+配列開始番号
+リード方向総合
+配列終了番号
+Base Number
+長さ
+配列情報
+読み取り開始番号
+読み取り終了番号
+核酸塩基配列開始番号
+核酸塩基配列終了番号
+RR(%)
+RRead N
+長さ
+Position in Hierarchy
+MS_IDX formation.vi
+Sample sequnce
+AS_ISX
+MS_IXD5
+element
+MS_IXD3
+Position in Hierarchy
+New MS IDX VI.vi
+Base Number
+長さ
+Sample Sequence
+Direction
+Array
+MS_IXD5
+Position in Hierarchy
+Signal_B_Table.vi
+CP Profile Table for Bseq
+CP A Tag AZ
+y
+ACP Table
+Position in Hierarchy
+test for CP check.vi
+CP Profile Table for RSeq
+CP A Tag AZ
+y
+Base Table RSeq
+LAP_Tag
+y
+Position in Hierarchy
+CP Plot Graph Formation.vi
+CP Profile Table for plot
+CP A Tag AZ
+y
+Plot Graph
+layer
+Normalized Plot Graph
+Count Graph
+ヒストグラムグラフ
+は、入力シーケンス
+X
+のヒストグラムの棒グラフを表示します。y軸がヒストグラムのカウントで、x軸がヒストグラムの間隔（ビン）のヒストグラム中央値です。
+Total Con and T
+Average
+mean
+STD
+T Averaged
+mean
+T STD
+layer
+R Con H
+Abs Plot Graph
+GAT
+GAF
+Abs MIN
+Abs Multiplier
+Abs MAX
+P MIN
+P Multiplier
+P MAX
+X MAX
+Abs Axis
+P Axis
+Position in Hierarchy
+CP Selection for Plot and Graph_MS.vi
+CP Profile Table
+Long Signal Profile Table A
+Signal Tag AZ
+CP A Tag
+Sample cluster
+Sample Sequence
+Cutted Sequence
+LCP Table
+CP A Tag AZ
+y
+Plot Graph
+Abs Plot Graph
+LAP
+LAP_Table_Tag
+y
+LAP_Table
+長さ
+Position in Hierarchy
+CP for Time Vi_MS.vi
+CP Profile Table for All Seql
+CP A Tag
+CPIDXZ
+CP T IDX Start [n]
+CP T IDX End [n]
+AS IDX
+L#
+S#
+S/N ratio
+Signal Intensity [pA]
+BLX Level [pA]
+Mx Intensity level [pA]
+MS_IDX
+Direction
+Assinged Sequence
+Mx Right Read Seq
+Mx Right No
+M_RRead_Seq
+M_MxRight_No
+Position in Hierarchy
+Long signal time plot data.vi
+Time A Table Tag
+Time Profile Table
+CP Profile Table for plot
+CP A Tag AZ
+y
+L Time Profile Table for plot
+Time A Table AZ
+y
+Position in Hierarchy
+NI_Gmath.lvlib:Laplace PDF.vi
+x
+x
+specifies the quantile of the continuous random variate.
+a
+a
+specifies the location or mean parameter of the variate.
+b
+b
+specifies the scale parameter of the variate and must be greater than 0.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+ASD Base info.vi
+Base Table
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+error in
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+B Cluster
+Base Character
+R Level
+Color
+Name Ex
+Base IDX
+STD (pA)
+Base N info
+Base Composition
+Name
+Base S Level
+Value
+Color IDX
+Color
+Base ex Composition
+Name
+Base IDX
+Value
+STD S Level [pA]
+Value
+error out
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+Position in Hierarchy
+NI_Gmath.lvlib:Gamma PDF.vi
+x
+x
+specifies the quantile of the continuous random variate with range
+x
+>= 0.
+b
+b
+specifies the scale parameter of the variate and must be greater than 0.
+c
+c
+specifies the shape parameter of the variate and must be greater than 0.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+BNAL Tdms opne intial_MS.vi
+error in
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+TDMSファイル入力
+Tag cluster_B
+LSP Table Tag
+LCP Table Tag
+LTP Table Tag
+BS Table Tag
+LAP Table Tag
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+A TDMSファイル出力
+Position in Hierarchy
+NI_Gmath.lvlib:Uniform PDF.vi
+x
+x
+specifies the quantile of the continuous random variate and is bounded by the interval [
+xmin
+,
+xmax
+].
+xmin
+xmin
+specifies the lower limit parameter of the variate.
+xmax
+xmax
+specifies the upper limit parameter of the variate.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+ASD Color Label.vi
+Color
+Base Color
+Level Composition
+Base Charactor
+Label
+カラーボックス
+カラーボックス 4
+カラーボックス 2
+カラーボックス 5
+カラーボックス 3
+カラーボックス 6
+カラーボックス 7
+カラーボックス 8
+B0
+B1
+B2
+B3
+B4
+B5
+B6
+B7
+Position in Hierarchy
+NI_Gmath.lvlib:Extreme Value PDF.vi
+x
+x
+specifies the quantile of the continuous random variate.
+a
+a
+specifies the location parameter of the variate.
+b
+b
+specifies the scale parameter of the variate.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+NI_Gmath.lvlib:Chi-Squared PDF.vi
+x
+x
+specifies the quantile of the continuous random variate with range
+x
+>= 0.
+k
+k
+specifies the number of degrees of freedom and must be greater than 0.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+Base species cluster.vi
+Base
+Base Species IDX
+ex
+Base Array
+Base Color
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+Position in Hierarchy
+NI_Gmath.lvlib:Rayleigh PDF.vi
+x
+x
+specifies the quantile of the continuous random variate with range
+x
+>= 0.
+b
+b
+specifies the scale parameter of the variate and must be greater than 0.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+B_region_selection for ANAL.vi
+Raw data
+B_Start [s]
+B_END [s]
+datapoint
+Selected Raw data
+Selected Time
+Selected Raw D
+selected time
+selected current
+Position in Hierarchy
+NI_Gmath.lvlib:(Incomplete) Beta Function.vi
+Position in Hierarchy
+NI_Gmath.lvlib:Exp PDF.vi
+x
+x
+specifies the quantile of the continuous random variate with range
+x
+>=
+a
+.
+a
+a
+specifies the offset parameter of the variate.
+b
+b
+specifies the scale parameter of the variate and must be greater than 0.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+STD recal.vi
+Mx Level intensity
+BR BL and STD info
+B BL [pA]
+Region BL [pA]
+B STD [pA]
+Region STD [pA]
+STD Type
+B Cluster
+Base Character
+R Level
+Color
+Name Ex
+Base IDX
+STD (pA)
+std [ratio]
+CP std [ratio]
+T std [ratio]
+SN [ratio]
+B S/N ratio
+R S/N ratio
+Mx Intensity level [pA]
+Position in Hierarchy
+NI_Gmath.lvlib:Beta Function.vi
+x
+x
+is the first argument of the beta function.
+x
+must be nonnegative.
+y
+y
+is the second argument of the beta function.
+y
+must be nonnegative.
+b(x, y)
+b(x, y)
+is the result of the beta function for the given values of
+x
+and
+y
+.
+Position in Hierarchy
+A_del.vi
+Filename
+after substring
+after substring 4
+before substring 2
+Position in Hierarchy
+NI_Gmath.lvlib:Student t PDF.vi
+x
+x
+specifies the quantile of the continuous random variate.
+k degrees of freedom
+k degrees of freedom
+specifies the number of degrees of freedom and must be greater than 0.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+NI_Gmath.lvlib:Weibull PDF.vi
+x
+x
+specifies the quantile of the continuous random variate with range
+x
+>= 0.
+a
+a
+specifies the location parameter and must be greater than 0.
+b
+b
+specifies the shape parameter of the variate and must be greater than 0.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+Each Base Sequence Analysis.vi
+Sample Sequence
+Cutted Sequence
+Base (n)
+Base IDX vs S# Matrix
+Each Base Sequence Info
+5'→3' location Number
+Base Sequnce Array
+試料配列
+Base Species IDX
+Base Species IDX
+Base IDX vs S# Matrix
+Position in Hierarchy
+BSD Filename Header Formation.vi
+Pre File F_Name
+Head for BNAL
+Position in Hierarchy
+BSD_Filename Path formation_MS.vi
+Filename Path
+error in (no error)
+エラー入力
+は、このノードを実行する前に発生したエラーの状態を示します。この入力は、標準エラー入力として機能します。
+status
+ステータス
+は、このノードの実行前にエラーが発生した場合はTRUE（X）、警告を示すか、このノードの前にエラーが発生していない場合はFALSE（チェックマーク）になります。デフォルトはFALSEです。
+code
+コード
+はエラーコードまたは警告コードです。デフォルトは0です。
+source
+ソース
+は、エラーまたは警告が発生した場所を示し、ほとんどの場合、エラーまたは警告が発生したノードの名前です。デフォルトは空の文字列です。
+Date
+SAVE
+BF_name
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+LS Path
+LSE Path
+LS Time Table Path
+LS CP Table Path
+LS Signal Table Path
+BNAL Path
+Filename
+B_TDMS Path
+Pre File F_Name
+Ex Con
+File location folder
+B_Folder Path
+BS Path
+BS_T Path
+BS_CP Path
+BS_J Path
+BS_S Path
+B Time Table Path
+B CP Table Path
+B Signal Table Path
+FN#
+Position in Hierarchy
+BSD BR all info cluster.vi
+B info
+B Table Tag
+R Table
+R Table Tag
+BR all info
+BR info
+B Table Tag
+B info
+R Table Tag
+R info
+BR BL and STD info
+B BL [pA]
+Region BL [pA]
+B STD [pA]
+Region STD [pA]
+Position in Hierarchy
+NI_Gmath.lvlib:F PDF.vi
+x
+x
+specifies the quantile of the continuous random variate with range
+x
+>= 0.
+k1
+k1
+specifies the number of degrees of freedom of the first chi-squared variate that forms the F variate.
+k1
+must be greater than 0.
+k2
+k2
+specifies the number of degrees of freedom of the second chi-squared variate that forms the F variate.
+k2
+must be greater than 0.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+NI_Gmath.lvlib:Incomplete Beta Function.vi
+x
+x
+is the first argument of the beta function.
+x
+must be nonnegative.
+y
+y
+is the second argument of the beta function.
+y
+must be nonnegative.
+a
+a
+is the upper limit of the incomplete beta integral and is a real number between 0 and 1. The default value is 1.
+b(x, y, a)
+b(x, y, a)
+is the result of the incomplete beta function for the given values of
+x
+,
+y
+, and
+a
+.
+Position in Hierarchy
+NI_Gmath.lvlib:Triangular PDF.vi
+x
+x
+specifies the quantile of the continuous random variate and is bounded by the interval [
+xmin
+,
+xmax
+].
+xmin
+xmin
+specifies the lower limit parameter of the variate.
+xmax
+xmax
+specifies the upper limit parameter of the variate.
+xmode
+xmode
+specifies the mode parameter of the variate. The default is NaN, which corresponds to a mode at the midpoint between
+xmin
+and
+xmax
+.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+NI_Gmath.lvlib:Beta PDF.vi
+x
+x
+specifies the quantile of the continuous random variate and is bounded by the interval [0, 1].
+a
+a
+specifies the first shape parameter of the beta variate.
+b
+b
+specifies the second shape parameter of the beta variate.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+Assign Base color and A level.vi
+Data Estimated Info
+Mx level
+Mx Level Intensity
+BL Level
+MAX
+Min
+Histogram bin
+Region Cut
+Data Point
+Filename
+G level intensity
+Base N info
+Base Composition
+Name
+Base S Level
+Value
+Color IDX
+Color
+Base ex Composition
+Name
+Base IDX
+Value
+STD S Level [pA]
+Value
+S New Info and MiN
+Sample Sequence
+Right Read MIN
+Filter P
+STD Type
+Base Table
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+Selection
+noise MAX
+Sample name
+A level
+Color
+Base Color
+R Level
+R Base Level
+Base Ex Info
+Level Composition
+Base Charactor
+Base S level
+R Base Level
+Base IDX
+Base Color
+Base Color
+Base A Level
+BL Level
+Base R Level
+R Base Level
+Base R std Level
+R Base Level
+Position in Hierarchy
+Bnal BC table VI_MS.vi
+S New Info and MiN
+Sample Sequence
+Right Read MIN
+Filter P
+STD Type
+Base Table
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+Selection
+noise MAX
+Sample name
+error in
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Filename
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+TDMSファイル out
+Position in Hierarchy
+Base Level Estimation.vi
+Raw data
+Filename
+error in
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+BR BL and STD info
+B BL [pA]
+Region BL [pA]
+B STD [pA]
+Region STD [pA]
+Base N info
+Base Composition
+Name
+Base S Level
+Value
+Color IDX
+Color
+Base ex Composition
+Name
+Base IDX
+Value
+STD S Level [pA]
+Value
+Histogram Graph
+ヒストグラムグラフ
+は、入力シーケンス
+X
+のヒストグラムの棒グラフを表示します。y軸がヒストグラムのカウントで、x軸がヒストグラムの間隔（ビン）のヒストグラム中央値です。
+Relative G Data Array
+Data Estimated Info
+Mx level
+Mx Level Intensity
+BL Level
+MAX
+Min
+Histogram bin
+Region Cut
+Data Point
+Filename
+G level intensity
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Position in Hierarchy
+NI_Gmath.lvlib:(Incomplete) Beta Function (obs).vi
+x
+x
+is the first argument of the beta function.
+y
+y
+is the second argument of the beta function.
+a
+a
+is the upper limit of the incomplete beta integral and is a real number between 0 and 1.
+b(x, y, a)
+b(x, y, a)
+is the result of the beta function for the given values of
+x
+and
+y
+or the incomplete beta function for the given values
+x
+,
+y
+, and
+a
+.
+Position in Hierarchy
+NI_Gmath.lvlib:Cauchy PDF.vi
+x
+x
+specifies the quantile of the continuous random variate.
+a
+a
+specifies the location parameter and median of the variate.
+b
+b
+specifies the scale parameter of the variate and must be greater than 0.
+pdf(x)
+pdf(x)
+is the probability density function at
+x
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+Front Panel JPEG file converter.vi
+error in
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+VI Path
+JPEG file name
+error out
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+Position in Hierarchy
+Write JPEG File.vi
+path to JPEG file
+path to JPEG file
+specifies the path to and name of the JPEG file to write.
+quality (80)
+quality
+specifies the level of quality you want for the JPEG using the IJG JPEG library scale, which ranges from 0 to 100. The default is 80.
+error in (no error)
+error in
+describes error conditions that occur before this node runs. This input provides standard error in functionality.
+status
+status
+is TRUE (X) if an error occurred before this node ran or FALSE (checkmark) to indicate a warning or that no error occurred before this node ran. The default is FALSE.
+code
+code
+is the error or warning code. The default is 0.
+source
+source
+specifies the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning. The default is an empty string.
+image data
+image data
+describes the image you want to draw or manipulate.
+image type
+image type
+is reserved for future use.
+image depth
+image depth
+specifies the color depth of the image, which is the number of bits to use to describe the color of each pixel in the image. Valid values include 1, 4, 8, and 24 bits per pixel.
+image
+image
+is an array of bytes that describes the color of each pixel in the image in raster order. The value of
+image depth
+determines how LabVIEW interprets the value of this input.
+image
+is an array of bytes that describes the color of each pixel in the image in raster order. The value of
+image depth
+determines how LabVIEW interprets the value of this input.
+mask
+mask
+is an array of bytes in which each bit describes mask information for a pixel. The first byte describes the first eight pixels, the second byte describes the next eight pixels, and so on.
+mask
+is an array of bytes in which each bit describes mask information for a pixel. The first byte describes the first eight pixels, the second byte describes the next eight pixels, and so on.
+colors
+colors
+is an array of RGB color values that correspond to the values in
+image
+. The value of
+image depth
+determines how LabVIEW interprets the value of this input.
+colors
+stores 32-bit RGB values where the most-significant byte is zero, followed in order by red, green, and blue values. Valid values include 0 through 255.
+In the Write File VIs (BMP, JPEG, and PNG), LabVIEW does not have an automatic color table. Use the
+colors
+input even for
+image depth
+of lower bit value to ensure the best performance of the Write File VIs.
+colors
+is an array of RGB color values that correspond to the values in
+image
+. The value of
+image depth
+determines how LabVIEW interprets the value of this input.
+colors
+stores 32-bit RGB values where the most-significant byte is zero, followed in order by red, green, and blue values. Valid values include 0 through 255.
+Rectangle
+Rectangle
+is a cluster that contains coordinates that describe the bounding rectangle of the image.
+left
+left
+is the horizontal coordinate of the left edge of the rectangle.
+top
+top
+is the vertical coordinate of the top edge of the rectangle.
+right
+right
+is the horizontal coordinate of the right edge of the rectangle.
+bottom
+bottom
+is the vertical coordinate of the bottom edge of the rectangle.
+error out
+error out
+contains error information. This output provides standard error out functionality.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+code
+code
+is the error or warning code.
+source
+source
+describes the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning.
+path
+path
+specifies the path to the JPEG file.
+Position in Hierarchy
+Plot MAX Setting.vi
+MAX
+min
+bin length
+New bin
+New MAX
+New MIN
+Position in Hierarchy
+bnal PLOT_MS.vi
+AS IDX
+Relative Averaged Data
+Time
+error in
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Signal Intensity [pA]
+R Con H
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Plot_C
+Count Graph
+Total Con and T
+mean
+mean
+GAT
+Value
+Abs MIN
+Abs Multiplier
+Abs MAX
+P MIN
+P Multiplier
+P MAX
+X MAX
+Axis
+Axis
+Plot Graph
+Plot Graph
+N_Grpah
+Abs_Graph
+Position in Hierarchy
+ASD HIS BIN.vi
+MAX
+min
+bin length
+New bin
+New MAX
+New MIN
+Position in Hierarchy
+NI_AALPro.lvlib:General Histogram.vi
+X
+X
+represents the input data.
+X
+represents the input data.
+max
+max
+specifies the maximum value to include in the histogram. LabVIEW ignores this control if the
+Bins
+input array is not empty.
+min
+min
+specifies the minimum value to include in the histogram. LabVIEW ignores this control if the
+Bins
+input array is not empty.
+# bins
+# bins
+specifies the number of bins in the histogram.
+# bins
+is ignored if the
+Bins
+input array is not empty.
+inclusion
+inclusion
+specifies how to treat the boundaries of each bin.
+Bins
+Bins
+specifies the boundaries of each bin of the histogram.
+Bins
+specifies the boundaries of each bin of the histogram.
+lower
+lower
+specifies the lower boundaries of the bin.
+upper
+upper
+specifies the upper boundaries of the bin.
+inclusion
+inclusion
+specifies how to treat the boundaries of each bin.
+Histogram
+Histogram
+specifies the resulting histogram.
+Histogram
+specifies the resulting histogram.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Axis
+Axis
+specifies the center values for each bin of
+Histogram
+.
+Axis
+specifies the center values for each bin of
+Histogram
+.
+# outside
+# outside
+contains information about points not falling in any bin upon successful execution of the VI.
+total
+total
+contains the total number of values in
+X
+not falling in any bin upon successful execution.
+below
+below
+represents the number of values in
+X
+below the first bin on the lower boundary. The first bin on the lower boundary is
+Bins
+[0].lower.
+above
+above
+represents the number of values in
+X
+above the last bin on the upper boundary. The last bin on the upper boundary is
+Bins
+[size of(
+Bins
+) - 1].upper.
+Histogram Graph
+Histogram Graph
+displays the bar graph of the histogram of the input sequence
+X
+. The y-axis is the histogram count, and the x-axis is the histogram center values of the intervals (bins) of the histogram.
+Position in Hierarchy
+LC_Read_Number.vi
+Level Composition
+Base Charactor
+Cutted Sample Sequence
+LSPX_C2
+Assigned Sequence
+L#
+Seq
+Base Number
+Signal Intensity [pA]
+Assigned#_CL
+Mono_Assigned#
+index
+Di_Assigned#
+index
+Tri_Assigned#
+index
+Tri_MxRight#
+index
+Di_MxRight#
+index
+Mono_MxRight#
+index
+Position in Hierarchy
+Base assingnment EXVI_MS.vi
+Filename Path
+error in
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Selected Raw D
+selected time
+selected current
+BC1
+B region#
+Date
+BR all info
+BR info
+B Table Tag
+B info
+R Table Tag
+R info
+BR BL and STD info
+B BL [pA]
+Region BL [pA]
+B STD [pA]
+Region STD [pA]
+S New Info and MiN
+Sample Sequence
+Right Read MIN
+Filter P
+STD Type
+Base Table
+Item
+Name
+Value
+Color
+Name 2
+Value 2
+Value 3
+Selection
+noise MAX
+Sample name
+Total assembly C
+Assembly Ratio
+Long Signal#
+Signal #
+Assembly Ratio 2
+Data Histogram
+ヒストグラムグラフ
+は、入力シーケンス
+X
+のヒストグラムの棒グラフを表示します。y軸がヒストグラムのカウントで、x軸がヒストグラムの間隔（ビン）のヒストグラム中央値です。
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+GR data
+Time Graph
+time
+current
+CP Graph
+mean
+CP Graph Profile
+mean
+Time Graph Profile
+time
+pdf(x)
+Signal Number Histogram
+配列 2
+配列 5
+Plot Graph
+Ex info
+Data Estimated Info
+Mx level
+Mx Level Intensity
+BL Level
+MAX
+Min
+Histogram bin
+Region Cut
+Data Point
+Filename
+G level intensity
+Base Ex Info
+Level Composition
+Base Charactor
+Base S level
+R Base Level
+Base IDX
+Base Color
+Base Color
+Base A Level
+BL Level
+Base R Level
+R Base Level
+Base R std Level
+R Base Level
+Table cluster_B
+LSP Table
+LCP Table
+LTP Table
+BS Table
+LAP Table
+Position in Hierarchy
+BNAL assembly.vi
+Right Read MIN
+Cutted Sample Sequence
+Seq SNo
+Seq ENo
+Mx Right No
+Long Assembly
+Long Signal#
+Position in Hierarchy
+RR Read number including repeat.vi
+RR Read No
+noise MAX
+RR N#
+シグナル集計
+y
+RR %
+Average Read N
+RR T#
+最大値
+Av n#
+Av RR n#bp
+Position in Hierarchy
+ASD MIN over_S.vi
+AR BN#
+Right Read MIN
+RR MIN Over S#
+Position in Hierarchy
+Read number total including repeat.vi
+Read No
+noise MAX
+AR BN#
+AR N#
+シグナル集計
+y
+AR %
+平均 Read N
+AR T#
+MAX_R#
+Av n#bp
+Av n#
+Position in Hierarchy
+BNAL TDMS save table_MS.vi
+error in
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+TDMSファイル入力
+Table cluster_B
+LSP Table
+LCP Table
+LTP Table
+BS Table
+LAP Table
+Tag cluster_B
+LSP Table Tag
+LCP Table Tag
+LTP Table Tag
+BS Table Tag
+LAP Table Tag
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+A TDMSファイル出力
+Position in Hierarchy
+BSD Data accumlation.vi
+error in (no error)
+エラー入力
+は、このノードを実行する前に発生したエラーの状態を示します。この入力は、標準エラー入力として機能します。
+status
+ステータス
+は、このノードの実行前にエラーが発生した場合はTRUE（X）、警告を示すか、このノードの前にエラーが発生していない場合はFALSE（チェックマーク）になります。デフォルトはFALSEです。
+code
+コード
+はエラーコードまたは警告コードです。デフォルトは0です。
+source
+ソース
+は、エラーまたは警告が発生した場所を示し、ほとんどの場合、エラーまたは警告が発生したノードの名前です。デフォルトは空の文字列です。
+LSPX_C1
+Q value [x]
+Signal Length [ms]
+5’→3'
+Seq SNo
+Seq ENo
+Mx Right No
+Signal Start [s]
+S IDX
+Signal End [s]
+LSP_C1 before
+Q value [x]
+Signal Length [ms]
+5’→3'
+Seq SNo
+Seq ENo
+Mx Right No
+Assigned#_CL
+Mono_Assigned#
+index
+Di_Assigned#
+index
+Tri_Assigned#
+index
+Tri_MxRight#
+index
+Di_MxRight#
+index
+Mono_MxRight#
+index
+LSP_C2 before
+Mono_Assigned#
+index
+Di_Assigned#
+index
+Tri_Assigned#
+index
+Tri_MxRight#
+index
+Di_MxRight#
+index
+Mono_MxRight#
+index
+LCPX_CZ
+Relative Averaged Data
+Time
+AS IDX
+Signal Intensity [pA]
+LA_Relative Averaged Data
+LA_Time
+MS_IDX
+LA_Signal Intensity [pA]
+LCPZ before
+Relative Averaged Data
+Time
+AS IDX
+Signal Intensity [pA]
+LA_Relative Averaged Data
+LA_Time
+MS_IDX
+LA_Signal Intensity [pA]
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+LSP_C1 after
+Q value [x]
+Signal Length [ms]
+5’→3'
+Seq SNo
+Seq ENo
+Mx Right No
+LSP_C2 after
+Mono_Assigned#
+index
+Di_Assigned#
+index
+Tri_Assigned#
+index
+Tri_MxRight#
+index
+Di_MxRight#
+index
+Mono_MxRight#
+index
+LCPZ after
+Relative Averaged Data
+Time
+AS IDX
+Signal Intensity [pA]
+LA_Relative Averaged Data
+LA_Time
+MS_IDX
+LA_Signal Intensity [pA]
+Position in Hierarchy
+Signal Table Anal.vi
+Signal Table
+Signal Tag
+error in (no error)
+エラー入力
+は、このノードを実行する前に発生したエラーの状態を示します。この入力は、標準エラー入力として機能します。
+status
+ステータス
+は、このノードの実行前にエラーが発生した場合はTRUE（X）、警告を示すか、このノードの前にエラーが発生していない場合はFALSE（チェックマーク）になります。デフォルトはFALSEです。
+code
+コード
+はエラーコードまたは警告コードです。デフォルトは0です。
+source
+ソース
+は、エラーまたは警告が発生した場所を示し、ほとんどの場合、エラーまたは警告が発生したノードの名前です。デフォルトは空の文字列です。
+MxRight
+Assigned
+AR
+RR
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Direction
+Position in Hierarchy
+Sequence Anal Tri_Di.vi
+String
+Level Composition
+Base Charactor
+Base Tag
+MonoBase_Array_Tag
+DiBase_Array_Tag
+TriBase_Array_Tag
+BaseNumber
+B%Number
+Position in Hierarchy
+before and after.vi
+after
+Before
+エラー入力
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Anal Time
+エラー出力
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Position in Hierarchy
+Sort 2D Array - Push Stack.vi
+element
+top in
+array in
+element
+array out
+element
+top out
+Position in Hierarchy
+Signal Count Assembly.vi
+Long Assembly
+Total BC
+RR#
+S#
+Total Base CP
+coverage [%]
+Covered?
+Position in Hierarchy
+bnal PLOT_NS.vi
+AS IDX
+Relative Averaged Data
+Time
+error in
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Signal Intensity [pA]
+R Con H
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Plot_C
+Count Graph
+Total Con and T
+mean
+mean
+GAT
+Value
+Abs MIN
+Abs Multiplier
+Abs MAX
+P MIN
+P Multiplier
+P MAX
+X MAX
+Axis
+Axis
+Plot Graph
+Plot Graph
+N_Grpah
+Abs_Graph
+Position in Hierarchy
+Signal Assembly Result Cluster.vi
+AR T#
+Long Signal#
+AR BN#
+Right Read MIN
+Total assembly C
+Assembly Ratio
+Long Signal#
+Signal #
+Assembly Ratio 2
+RR MIN Over S#
+Position in Hierarchy
+LCP table array ans.vi
+LCP Table
+LSP Table
+error in (no error)
+エラー入力
+は、このノードを実行する前に発生したエラーの状態を示します。この入力は、標準エラー入力として機能します。
+status
+ステータス
+は、このノードの実行前にエラーが発生した場合はTRUE（X）、警告を示すか、このノードの前にエラーが発生していない場合はFALSE（チェックマーク）になります。デフォルトはFALSEです。
+code
+コード
+はエラーコードまたは警告コードです。デフォルトは0です。
+source
+ソース
+は、エラーまたは警告が発生した場所を示し、ほとんどの場合、エラーまたは警告が発生したノードの名前です。デフォルトは空の文字列です。
+Tag cluster_B
+LSP Table Tag
+LCP Table Tag
+LTP Table Tag
+BS Table Tag
+LAP Table Tag
+LAP Table
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+LCPX_C1
+Relative Averaged Data
+Time
+AS IDX
+Signal Intensity [pA]
+LSPX_C1
+Q value [x]
+Signal Length [ms]
+5’→3'
+Seq SNo
+Seq ENo
+Mx Right No
+Signal Start [s]
+S IDX
+Signal End [s]
+LSPX_C2
+Assigned Sequence
+L#
+Mx Right Read Seq
+Base Number
+Signal Intensity [pA]
+LCPX_CZ
+Relative Averaged Data
+Time
+AS IDX
+Signal Intensity [pA]
+LA_Relative Averaged Data
+LA_Time
+MS_IDX
+LA_Signal Intensity [pA]
+Position in Hierarchy
+Sort 2D Array - Pop Stack.vi
+array in
+element
+top in
+array out
+element
+element
+top out
+Position in Hierarchy
+Check Path.vi
+path in
+error in (no error)
+The error in cluster can accept error information wired from VIs previously called.  Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+status
+The status boolean is either TRUE (X) for an error, or FALSE (checkmark) for no error or a warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+code
+The code input identifies the error or warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+source
+The source string describes the origin of the error or warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+error out
+The error out cluster passes error or warning information out of a VI to be used by other VIs.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+status
+The status boolean is either TRUE (X) for an error, or FALSE (checkmark) for no error or a warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+code
+The code input identifies the error or warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+source
+The source string describes the origin of the error or warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+path out
+Position in Hierarchy
+Directory of Top Level VI.vi
+error in (no error)
+The error cluster contains error or warning information.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+status
+The status boolean is either TRUE (X) for an error, or FALSE (checkmark) for no error or a warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+code
+The code number identifies the error or warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+source
+The source string describes the origin of the error or warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+error out
+The error cluster contains error or warning information.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+status
+The status boolean is either TRUE (X) for an error, or FALSE (checkmark) for no error or a warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+code
+The code number identifies the error or warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+source
+The source string describes the origin of the error or warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+directory of top VI
+Position in Hierarchy
+imagedata.ctl
+Position in Hierarchy
+Validate Rectangle.vi
+rect
+A cluster containing the upper-left and lower-right coordinates that describe a rectangle bounding the text. The text will be clipped to this rectangle.  All coordinates are absolute.
+left
+top
+right
+bottom
+valid rect
+A cluster containing the upper-left and lower-right coordinates that describe a rectangle bounding the text. The text will be clipped to this rectangle.  All coordinates are absolute.
+left
+top
+right
+bottom
+Position in Hierarchy
+Auto plot info.vi
+# of plots
+plot info
+vi metric
+plot name
+fill?(F)
+Position in Hierarchy
+Error Cluster From Error Code.vi
+error code (0)
+error code
+is the code you want to convert to an error cluster. The default is 0, which indicates that no error occurred.
+show call chain? (False)
+If
+show call chain?
+is TRUE,
+source
+includes the chain of callers from the VI that produced the error or warning to the top-level VI. The default is FALSE, which indicates to include only the calling VI.
+is warning? (False)
+If
+is warning?
+is TRUE,
+status
+returns FALSE to indicate that a warning occurred. The default is FALSE.
+error in (no error)
+error in
+describes error conditions that occur before this node runs. This input provides standard error in functionality.
+status
+status
+is TRUE (X) if an error occurred before this node ran or FALSE (checkmark) to indicate a warning or that no error occurred before this node ran. The default is FALSE.
+code
+code
+is the error or warning code. The default is 0.
+source
+source
+specifies the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning. The default is an empty string.
+error message ("")
+error message
+is the error description to appear in the
+error out
+cluster.
+error out
+error out
+contains error information. With the following exception, this output provides standard error out functionality.If the value of
+error in
+is no error, this VI contains error information that corresponds to the
+error code
+input.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+code
+code
+is the error or warning code.
+source
+source
+describes the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning.
+Position in Hierarchy
+NI_AALBase.lvlib:Multimode.vi
+X
+X
+must contain at least one sample.
+X
+must contain at least one sample.
+intervals
+intervals
+specifies the number of histograms to use when computing estimated modes. The default is 100.
+Modes
+Modes
+returns the modes found in
+X
+.
+Modes
+returns the modes found in
+X
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+Draw Rect.vi
+fill?(F)
+fill?
+specifies whether to fill the interior.
+rect
+rect
+is a cluster that contains four numeric controls that describe the left, top, right, and bottom coordinates of the outer edges of the rectangle.
+left
+left
+is the horizontal coordinate of the left edge of the rectangle.
+top
+top
+is the vertical coordinate of the top edge of the rectangle.
+right
+right
+is the horizontal coordinate of the right edge of the rectangle.
+bottom
+bottom
+is the vertical coordinate of the bottom edge of the rectangle.
+pen
+pen
+sets the width and style of the pen the VI uses to draw the picture.
+Width
+Width
+sets the width in pixels of the pen the VI uses to draw the picture.
+Style
+Style
+sets the style of the line used to draw the picture.
+color(black)
+color
+is the color of the lines.
+picture
+picture
+is the picture to which you want to add the rectangle. The default is an empty picture.
+new picture
+new picture
+is the picture that contains the new image. You can wire this output to any other
+picture
+input to add more drawing instructions to the picture.
+Position in Hierarchy
+Draw Text in Rect(6_1).vi
+text color(black)
+text color
+is the color of the text. The default is black.
+rect
+rect
+a cluster containing the upper-left and lower-right coordinates that describe a rectangle bounding the text.
+left
+left
+is the horizontal coordinate of the left edge of the rectangle.
+top
+top
+is the vertical coordinate of the top edge of the rectangle.
+right
+right
+is the horizontal coordinate of the right edge of the rectangle.
+bottom
+bottom
+is the vertical coordinate of the bottom edge of the rectangle.
+text
+text
+is the string you want to draw in the
+picture
+.
+BG color(transparent)
+BG color
+is the color of the background of the text.
+[user-specified font]
+user-specified font
+is a cluster containing the specific font characteristics for the text you draw.
+Font Name:
+font name
+selects the font to use for the string.
+Size
+Size
+selects the size of the font in points.
+Strikeout?
+Strikeout?
+If TRUE, text appears in strikeout.
+Italic?
+Italic?
+If TRUE, text appears in italic.
+Underline?
+Underline?
+If TRUE, text appears underlined.
+Outline?
+Outline?
+If TRUE, text appears in outline.
+Shadow?
+Shadow?
+If TRUE, text appears in shadow.
+Bold?
+Bold?
+If TRUE, text appears in bold.
+black in B/W?(T)
+black in B/W?
+specifies whether the pixel appears as black or as white if you display it on a black-and-white monitor. The default is black (TRUE).
+desired font(Application)
+desired font
+specifies the font for the text you draw.
+Text Orientation
+picture
+new picture
+Position in Hierarchy
+Draw Line.vi
+color(black)
+color
+is the color of the pixel. The default is black.
+end point
+end point
+is the end point of the new line.
+x
+x
+is the horizontal coordinate that increases to the right.
+y
+y
+is the vertical coordinate that increases to the bottom.
+absolute coordinates?(T)
+absolute coordinates?
+specifies whether the point new position is in absolute or relative coordinates.
+pen
+pen
+sets the width and style of the pen the VI uses to draw the picture.
+Width
+Width
+sets the width in pixels of the pen the VI uses to draw the picture.
+Style
+Style
+sets the style of the line the VI uses to draw the picture.
+picture
+picture
+is the picture to which you want to add the line. The default is an empty picture.
+new picture
+new picture
+is the picture that contains the new image. You can wire this output to any other
+picture
+input to add more drawing instructions to the picture.
+Position in Hierarchy
+NI_AALBase.lvlib:Unimode.vi
+X
+X
+must contain at least one sample.
+X
+must contain at least one sample.
+intervals
+intervals
+specifies the number of histograms to use when computing estimated modes. The default is 100.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+mode
+mode
+returns the mode or estimated mode of
+X
+.
+Position in Hierarchy
+Radar Plot.vi
+picture
+picture
+is the picture to which you want to add the plot. The default is an empty picture.
+axis info
+axis info
+specifies the label (name) of each y-axis and the minimum and maximum value of each y-axis.
+axis info
+axis info
+specifies the label (name) of each y-axis and the minimum and maximum value of each y-axis.
+label
+label
+is the label of the y-axis.
+max value
+max value
+is the maximum value of the y-axis.
+min value
+min value
+is the minimum value of the y-axis.
+data
+data
+is a 2D array, where each row represents a plot.
+data
+is a 2D array, where each row represents a plot.
+plot info
+plot info
+specifies the name, color, and fill option for each plot.
+vi metric
+plot info
+specifies the name, color, and fill option for each plot.
+plot name
+plot name
+is the name of the plot.
+plot color (white)
+plot color
+is the color of the plot.
+fill?(F)
+fill?
+specifies whether to fill the interior.
+[user-specified font]
+[user-specified font]
+specifies the specific font characteristics for the text to draw.
+Font Name:
+Font Name
+specifies the font to use for the text.
+Size
+Size
+specifies the size of the font in points.
+Strikeout?
+Strikeout?
+specifies if the text appears in strikeout. If
+Strikeout?
+is TRUE, the text appears in strikeout.
+Italic?
+Italic?
+specifies if the text appears in italics. If
+Italic?
+is TRUE, the text appears in italics.
+Underline?
+Underline?
+specifies if the text is underlined. If
+Underline?
+is TRUE, the text appears underlined.
+Outline?
+Outline?
+specifies if the text is outlined. If
+Outline?
+is TRUE, the text appears outlined.
+Shadow?
+Shadow?
+specifies if the text has a shadow. If
+Shadow?
+is TRUE, the text appears in shadow.
+Bold?
+Bold?
+specifies if the text is bold. If
+Bold?
+is TRUE, the text appears bold.
+desired font(Application)
+desired font
+specifies the text font.
+axes info
+axes info
+specifies the color, format and precision of the y-axes, and whether to autoscale the y-axes.
+color (white)
+color
+is the color for all the y-axes.
+format and precision
+format and precision
+specifies the format of the values on the y-axes.
+format
+format
+specifies the numeric format for the scale numbers.
+precision
+precision
+specifies the precision for the scale numbers. The default is 1.
+autoscale? (false)
+autoscale?
+specifies whether to autoscale each y-axis independently.
+legend info
+legend info
+specifies the location of the plot legend relative to the radar plot.
+position (none)
+position
+specifies where to draw the legend.
+text color(white)
+text color
+is the color of the labels of the y-axes, as shown in the legend.
+top left point(0, 0)
+top left point
+specifies in coordinates where to place the top-left corner of the image in the
+new picture
+.
+x
+x
+is the horizontal coordinate that increases to the right.
+y
+y
+is the vertical coordinate that increases to the bottom.
+dimension (w,h)
+dimension (w,h)
+specifies the rectangle in coordinates into which the VI draws the radar plot and legend.
+Width
+Width
+is the horizontal coordinate that increases to the right.
+Height
+Height
+is the vertical coordinate that increases to the bottom.
+new picture
+new picture
+is the picture that contains the plot. You can wire this output to any other
+picture
+input to add more drawing instructions to the picture.
+Position in Hierarchy
+Set Pen State.vi
+pen
+Width
+Style
+color(black)
+Picture
+Picture 2
+Position in Hierarchy
+Draw Legend.vi
+picture
+picture
+is the picture to which you want to add the legend. The default is an empty picture.
+rect
+rect
+contains the coordinates that describe a rectangle bounding the legend.
+left
+left
+is the horizontal coordinate of the left edge of the rectangle.
+top
+top
+is the vertical coordinate of the top edge of the rectangle.
+right
+right
+is the horizontal coordinate of the right edge of the rectangle.
+bottom
+bottom
+is the vertical coordinate of the bottom edge of the rectangle.
+plot info
+plot info
+specifies the name and color for each plot in the legend.
+vi metric
+plot info
+specifies the name and color for each plot in the legend.
+plot name
+plot name
+is the name of the plot.
+plot color
+plot color
+is the color of the plot.
+fill?(F)
+fill?
+does not affect the legend and the VI ignores this value.
+[user-specified font]
+[user-specified font]
+specifies the specific font characteristics for the text to draw.
+Font Name:
+Font Name
+specifies the font to use for the text.
+Size
+Size
+specifies the size of the font in points.
+Strikeout?
+Strikeout?
+specifies if the text appears in strikeout. If
+Strikeout?
+is TRUE, the text appears in strikeout.
+Italic?
+Italic?
+specifies if the text appears in italics. If
+Italic?
+is TRUE, the text appears in italics.
+Underline?
+Underline?
+specifies if the text is underlined. If
+Underline?
+is TRUE, the text appears underlined.
+Outline?
+Outline?
+specifies if the text is outlined. If
+Outline?
+is TRUE, the text appears outlined.
+Shadow?
+Shadow?
+specifies if the text has a shadow. If
+Shadow?
+is TRUE, the text appears in shadow.
+Bold?
+Bold?
+specifies if the text is bold. If
+Bold?
+is TRUE, the text appears bold.
+desired font(Application)
+desired font
+specifies the text font.
+text color(black)
+text color
+is the color of the text. The default is black.
+new picture
+new picture
+is the picture that contains the legend. You can wire this output to any other
+picture
+input to add more drawing instructions to the picture.
+Position in Hierarchy
+Table for rader value.vi
+N_sort_[%]
+P_sort_[%]
+P_sort_B
+N_sort_B
+error in (no error)
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+P_sort_#
+N_sort_#
+Mono Table
+error out
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+Mono Table Tag
+Label.Text
+Position in Hierarchy
+Get Text Rect.vi
+text
+text
+is the string to draw in the
+picture
+.
+[user-specified font]
+[user-specified font]
+specifies the specific font characteristics for the text to draw.
+Font Name:
+Font Name
+specifies the font to use for the text.
+Size
+Size
+specifies the size of the font in points.
+Strikeout?
+Strikeout?
+specifies if the text appears in strikeout. If
+Strikeout?
+is TRUE, the text appears in strikeout.
+Italic?
+Italic?
+specifies if the text appears in italics. If
+Italic?
+is TRUE, the text appears in italics.
+Underline?
+Underline?
+specifies if the text is underlined. If
+Underline?
+is TRUE, the text appears underlined.
+Outline?
+Outline?
+specifies if the text is outlined. If
+Outline?
+is TRUE, the text appears outlined.
+Shadow?
+Shadow?
+specifies if the text has a shadow. If
+Shadow?
+is TRUE, the text appears in shadow.
+Bold?
+Bold?
+specifies if the text is bold. If
+Bold?
+is TRUE, the text appears bold.
+desired font(Application)
+desired font
+specifies the text font.
+origin(0,0)
+origin
+is the coordinate of the starting point of the text.
+horizontal
+horizontal
+is the x-axis coordinate that increases to the right.
+vertical
+vertical
+is the y-axis coordinate that increases to the bottom.
+alignment(left, top)
+alignment
+specifies the location of the text relative to the origin you specify.
+horizontal
+horizontal
+is the x-axis coordinate that increases to the right.
+vertical
+vertical
+is the y-axis coordinate that increases to the bottom.
+text orientation
+text orientation
+sets the orientation of the text for which you want the bounding rectangle.
+rect
+rect
+is a cluster that contains coordinates that describe the left, top, right, and bottom coordinates of the outer edges of the rectangle.
+left
+left
+is the horizontal coordinate of the left edge of the rectangle.
+top
+top
+is the vertical coordinate of the top edge of the rectangle.
+right
+right
+is the horizontal coordinate of the right edge of the rectangle.
+bottom
+bottom
+is the vertical coordinate of the bottom edge of the rectangle.
+Position in Hierarchy
+Check Data Size.vi
+flattened image data
+Numeric
+depth
+rect
+left
+top
+right
+bottom
+error in (no error)
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+error out
+error out
+passes error or warning information out of a VI to be used by other VIs.
+Right-click the
+error out
+indicator on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error out
+indicator on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error out
+indicator on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+string describes the origin of the error or warning.
+Right-click the
+error out
+indicator on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+Position in Hierarchy
+Draw angle lines.vi
+picture
+grid measurements
+pixel center
+x
+y
+grid color
+pixel radius
+angle lines
+angle
+min radius
+new picture
+Position in Hierarchy
+temp_test.vi
+error in (no error)
+error in
+describes error conditions that occur before this node runs. This input provides standard error in functionality.
+status
+status
+is TRUE (X) if an error occurred before this node ran or FALSE (checkmark) to indicate a warning or that no error occurred before this node ran. The default is FALSE.
+code
+code
+is the error or warning code. The default is 0.
+source
+source
+specifies the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning. The default is an empty string.
+temp_tdms
+error out
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+temp tdms_path B
+temp txt_path
+temp tdms_path A
+Position in Hierarchy
+Scale Axis.vi
+data
+axis info in
+axis info
+label
+max value
+min value
+autoscale? (false)
+axis info out
+axis info
+label
+max value
+min value
+Position in Hierarchy
+Check Color Table Size.vi
+error in (no error)
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+color table
+Numeric
+depth
+error out
+error out
+passes error or warning information out of a VI to be used by other VIs.
+Right-click the
+error out
+indicator on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error out
+indicator on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error out
+indicator on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+string describes the origin of the error or warning.
+Right-click the
+error out
+indicator on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+Position in Hierarchy
+Draw Data.vi
+plot info
+vi metric
+plot name
+plot color (white)
+fill?(F)
+picture
+rect
+left
+top
+right
+bottom
+scale radius
+data
+axis info
+axis info
+label
+max value
+min value
+angles
+new picture
+Position in Hierarchy
+Calc rects.vi
+dimension (w,h)
+Width
+Height
+top left point(0, 0)
+x
+y
+legend pos (none)
+legend rect
+left
+top
+right
+bottom
+plot rect
+left
+top
+right
+bottom
+Position in Hierarchy
+Draw Multiple Lines.vi
+color(black)
+color
+is the color of the lines.
+line endpoints
+line endpoints
+is an array of points describing the lines to draw.
+line endpoints
+is an array of points describing the lines to draw.
+x
+x
+is the horizontal coordinate that increases to the right.
+y
+y
+is the vertical coordinate that increases to the bottom.
+fill?(F)
+fill?
+specifies whether to fill the interior.
+pen
+pen
+sets the width and style of the pen the VI uses to draw the picture.
+Width
+Width
+sets the width in pixels of the pen the VI uses to draw the picture.
+Style
+Style
+sets the style of the line the VI uses to draw the picture.
+picture
+picture
+is the picture to which you want to add lines. The default is an empty picture.
+new picture
+new picture
+is the picture that contains the new image. You can wire this output to any other
+picture
+input to add more drawing instructions to the picture.
+Position in Hierarchy
+RP Draw Axes.vi
+picture
+rect
+left
+top
+right
+bottom
+axis info
+axis info
+label
+max value
+min value
+[user-specified font]
+[user-specified font]
+is a cluster containing the specific font characteristics for the text.
+Font Name:
+Font Name
+selects the font to use for the string.
+Size
+font
+Size
+selects the size of the font in points.
+Strikeout?
+Strikeout?
+If true, text appears in strikeout.
+Italic?
+Italic?
+If true, text appears in italic.
+Underline?
+Underline?
+If true, text appears underlined.
+Outline?
+Outline?
+If true, text appears in outline.
+Shadow?
+Shadow?
+If true, text appears in shadow.
+Bold?
+Bold?
+If true, text appears in bold.
+desired font(Application)
+desired font
+specifies the font for the text you draw.
+axes info
+color (black)
+fmt and prec
+format
+precision
+new picture
+scale radius
+angles
+Position in Hierarchy
+Histogram Plot save.vi
+Plot Graph
+Normalized Plot Graph
+R Con H
+Folder Path
+Date
+error in
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Position in Hierarchy
+Depth count VI.vi
+Total Con and T
+Average
+mean
+STD
+T Averaged
+mean
+T STD
+layer
+Cutted Sample Sequence
+Sample Sequence
+MS_Total Con and T
+mean
+mean
+Folder Path
+Date
+error in
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Position in Hierarchy
+BNAL Csave Preaparation VI.vi
+Total assembly C
+Assembly Ratio
+Long Signal#
+Signal #
+Assembly Ratio 2
+SB_ANA
+RR Ratio (%)
+Base Species#
+RR option#
+all option#
+RRS#
+Base Cutted Q#
+B prep
+S#
+MAX RR#
+RR#
+Av n#bp
+Av RRn# kbp/day
+Av RR n#bp
+Av n# kbp/day
+coverage [%]
+5’→3'
+Av N_Read N
+Av R_Read N
+RR MIN Over S#
+Total Base CP
+Covered?
+Anal Time
+BNAL TD
+name
+date/time string
+error in
+エラー入力
+は、以前に呼び出されたVIから配線されたエラー情報を取得できます。他のVIからエラーが発生した際に、ある操作を回避するかなど判断するためにこの情報を使用します。
+エラー詳細情報については、フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択します。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーに関するより詳しい情報が表示されます。
+code
+コード
+は、エラーあるいは警告コードです。
+エラーの詳細情報については、フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択します。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+エラーの詳細情報については、フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択します。
+TDMSファイル in
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+file path out
+Position in Hierarchy
+Clear Errors.vi
+error in (no error)
+error in
+describes error conditions that occur before this node runs. This input provides standard error in functionality.
+status
+status
+is TRUE (X) if an error occurred before this node ran or FALSE (checkmark) to indicate a warning or that no error occurred before this node ran. The default is FALSE.
+code
+code
+is the error or warning code. The default is 0.
+source
+source
+specifies the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning. The default is an empty string.
+specific error code to clear (0: all)
+specific error code to clear
+ignores only the specific error code wired to this input. The default value is 0, which means the VI will ignore all errors.
+error out
+error out
+contains error information. This output provides standard error out functionality.
+error out
+returns no error by default. If you wire a value to
+specific error code to clear
+and
+error in
+contains errors that do not match the error code you wired,
+error out
+will return an error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+code
+code
+is the error or warning code.
+source
+source
+describes the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning.
+specific error cleared?
+specific error cleared?
+indicates whether the error referenced by
+specific error code to clear
+has been cleared.
+Position in Hierarchy
+BNAL RADAR graph Formation.vi
+Level Composition
+Base Charactor
+Cutted Sample Sequence
+Assigned#_CL
+Mono_Assigned#
+index
+Di_Assigned#
+index
+Tri_Assigned#
+index
+Tri_MxRight#
+index
+Di_MxRight#
+index
+Mono_MxRight#
+index
+Radar graph cluster
+Radar Plot
+Radar Plot
+Radar Plot
+Table Cluster
+Mono Table
+Mono Table
+Mono Table
+Base_Com_Array
+index
+Base_Tag_Array
+Position in Hierarchy
+LADAR value save VI.vi
+error in
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+TDMSファイル入力
+LL_Base_Com_Array
+index
+LL_Base Tag_Array
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+A TDMSファイル出力
+Position in Hierarchy
+Histogram Plot save_MS.vi
+Plot Graph
+Normalized Plot Graph
+R Con H
+Folder Path
+Date
+error in
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+error out
+エラー入力
+は、前に呼び出されたVIから配線されたエラー情報を取得できます。この情報は、他のVIでエラーが発生した際に、ある操作を回避するかどうかを判断するために使用します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+status
+ステータス
+は、エラーが発生した場合はTRUE（X）、警告が発生した場合またはエラーなしの場合はFALSE（チェックマーク）になります。
+フロントパネルにある
+エラー入力
+制御器を右クリックして、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+code
+コード
+は、エラーまたは警告コードです。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+source
+ソース
+は、エラーまたは警告が発生した場所を示します。
+フロントパネルの
+エラー入力
+制御器を右クリックし、ショートカットメニューから
+エラーの説明
+または
+警告の説明
+を選択すると、エラーの詳細が表示されます。
+Position in Hierarchy
+Num To Text.vi
+fmt and prec
+format
+precision
+number
+numeric string
+Position in Hierarchy
+GetFileCreationDate.vi
+File Path
+Error
+File Created Date (UTC)
+Position in Hierarchy
+Rader graph.vi
+XBase_Array_Tag
+Theory B_Comp
+Real B_Comp (NR)
+Real B_Comp (RR)
+Radar Plot
+Position in Hierarchy
+Draw Labels.vi
+picture
+labels
+String
+text color(black)
+Specifies the color of the text.
+origin
+A cluster containing the reference point for drawing the text.  The text will be positioned around this point according to the 'alignment' input.
+x
+x is the horizontal coordinate that increases to the right.
+y
+y is the vertical coordinate that increases to the bottom.
+angles
+angle
+[user-specified font]
+[user-specified font]
+is a cluster containing the specific font characteristics for the text.
+Font Name:
+Font Name
+selects the font to use for the string.
+Size
+font
+Size
+selects the size of the font in points.
+Strikeout?
+Strikeout?
+If true, text appears in strikeout.
+Italic?
+Italic?
+If true, text appears in italic.
+Underline?
+Underline?
+If true, text appears underlined.
+Outline?
+Outline?
+If true, text appears in outline.
+Shadow?
+Shadow?
+If true, text appears in shadow.
+Bold?
+Bold?
+If true, text appears in bold.
+desired font(Application)
+desired font
+specifies the font for the text you draw.
+radii
+radius
+new picture
+text rects
+text rect
+left
+top
+right
+bottom
+Position in Hierarchy
+Draw Radar Axes.vi
+number of angle lines
+picture
+grid color
+axes center
+x
+y
+pixel radius
+new picture
+angles
+Position in Hierarchy
+Draw Text in Rect.vi
+text color(black)
+text color
+is the color of the text. The default is black.
+rect
+rect
+contains the upper-left and lower-right coordinates that describe a rectangle bounding the text.
+left
+left
+is the horizontal coordinate of the left edge of the rectangle.
+top
+top
+is the vertical coordinate of the top edge of the rectangle.
+right
+right
+is the horizontal coordinate of the right edge of the rectangle.
+bottom
+bottom
+is the vertical coordinate of the bottom edge of the rectangle.
+text
+text
+is the string to draw in the
+picture
+.
+BG color(transparent)
+BG color
+is the color of the background of the text.
+[user-specified font]
+[user-specified font]
+specifies the specific font characteristics for the text to draw.
+Font Name:
+Font Name
+specifies the font to use for the text.
+Size
+Size
+specifies the size of the font in points.
+Strikeout?
+Strikeout?
+specifies if the text appears in strikeout. If
+Strikeout?
+is TRUE, the text appears in strikeout.
+Italic?
+Italic?
+specifies if the text appears in italics. If
+Italic?
+is TRUE, the text appears in italics.
+Underline?
+Underline?
+specifies if the text is underlined. If
+Underline?
+is TRUE, the text appears underlined.
+Outline?
+Outline?
+specifies if the text is outlined. If
+Outline?
+is TRUE, the text appears outlined.
+Shadow?
+Shadow?
+specifies if the text has a shadow. If
+Shadow?
+is TRUE, the text appears in shadow.
+Bold?
+Bold?
+specifies if the text is bold. If
+Bold?
+is TRUE, the text appears bold.
+desired font(Application)
+desired font
+specifies the text font.
+text orientation
+text orientation
+sets the orientation of the text to draw.
+picture
+picture
+is the picture to which you want to add the text string. The default is an empty picture.
+new picture
+new picture
+is the picture that contains the new image. You can wire this output to any other
+picture
+input to add more drawing instructions to the picture.
+Position in Hierarchy
+Draw Text at Point.vi
+text color(black)
+text color
+is the color of the text. The default is black.
+text
+text
+is the string to draw in the
+picture
+.
+BG color(transparent)
+BG color
+is the color of the background of the text.
+[user-specified font]
+[user-specified font]
+specifies the specific font characteristics for the text to draw.
+Font Name:
+Font Name
+specifies the font to use for the text.
+Size
+Size
+specifies the size of the font in points.
+Strikeout?
+Strikeout?
+specifies if the text appears in strikeout. If
+Strikeout?
+is TRUE, the text appears in strikeout.
+Italic?
+Italic?
+specifies if the text appears in italics. If
+Italic?
+is TRUE, the text appears in italics.
+Underline?
+Underline?
+specifies if the text is underlined. If
+Underline?
+is TRUE, the text appears underlined.
+Outline?
+Outline?
+specifies if the text is outlined. If
+Outline?
+is TRUE, the text appears outlined.
+Shadow?
+Shadow?
+specifies if the text has a shadow. If
+Shadow?
+is TRUE, the text appears in shadow.
+Bold?
+Bold?
+specifies if the text is bold. If
+Bold?
+is TRUE, the text appears bold.
+desired font(Application)
+desired font
+specifies the text font.
+origin
+origin
+is the coordinate of the starting point of the text.
+x
+x
+is the horizontal coordinate that increases to the right.
+y
+y
+is the vertical coordinate that increases to the bottom.
+alignment(left, top)
+alignment
+specifies the location of the text relative to the origin you specify.
+horizontal
+horizontal
+sets the horizontal position of the text with respect to the origin.
+vertical
+vertical
+sets the vertical position of the text with respect to the origin.
+text orientation
+text orientation
+sets the orientation of the text to draw.
+picture
+picture
+is the picture to which you want to add the text string. The default is an empty picture.
+text rect
+text rect
+is a cluster that contains coordinates that describe the left, top, right, and bottom coordinates of the outer edges of the rectangle.
+left
+left
+is the horizontal coordinate of the left edge of the rectangle.
+top
+top
+is the vertical coordinate of the top edge of the rectangle.
+right
+right
+is the horizontal coordinate of the right edge of the rectangle.
+bottom
+bottom
+is the vertical coordinate of the bottom edge of the rectangle.
+new picture
+new picture
+is the picture that contains the new image. You can wire this output to any other
+picture
+input to add more drawing instructions to the picture.
+Position in Hierarchy
+PCT Pad String.vi
+string
+padded length
+padded string
+Position in Hierarchy
+tdms_index_trans.vi
+B_TDMS_Path_Temp
+path
+Position in Hierarchy
+Check File Permissions.vi
+path
+error in (no error)
+The
+error in
+cluster can accept error information wired from VIs previously called.  Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+The pop-up option
+Explain Error
+(or Explain Warning) gives more information about the error displayed.
+status
+The
+status
+boolean is either TRUE (X) for an error, or FALSE (checkmark) for no error or a warning.
+The pop-up option
+Explain Error
+(or Explain Warning) gives more information about the error displayed.
+code
+The
+code
+input identifies the error or warning.
+The pop-up option
+Explain Error
+(or Explain Warning) gives more information about the error displayed.
+source
+The
+source
+string describes the origin of the error or warning.
+The pop-up option
+Explain Error
+(or Explain Warning) gives more information about the error displayed.
+error out
+The
+error in
+cluster can accept error information wired from VIs previously called.  Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+The pop-up option
+Explain Error
+(or Explain Warning) gives more information about the error displayed.
+status
+The
+status
+boolean is either TRUE (X) for an error, or FALSE (checkmark) for no error or a warning.
+The pop-up option
+Explain Error
+(or Explain Warning) gives more information about the error displayed.
+code
+The
+code
+input identifies the error or warning.
+The pop-up option
+Explain Error
+(or Explain Warning) gives more information about the error displayed.
+source
+The
+source
+string describes the origin of the error or warning.
+The pop-up option
+Explain Error
+(or Explain Warning) gives more information about the error displayed.
+Position in Hierarchy
+Move Pen.vi
+new position
+new position
+is the point to which the pen moves in the
+new picture
+.
+x
+x
+is the horizontal coordinate that increases to the right.
+y
+y
+is the vertical coordinate that increases to the bottom.
+absolute coordinates?(T)
+absolute coordinates?
+specifies whether the point new position is in absolute or relative coordinates.
+picture
+picture
+is the picture whose current pen location you want to move. The default is an empty picture.
+new picture
+new picture
+is the picture that contains the new image. You can wire this output to any other
+picture
+input to add more drawing instructions to the picture.
+Position in Hierarchy
+NI_AALPro.lvlib:Polynomial Interpolation.vi
+X
+X
+is the array of independent values. If the number of elements in
+X
+is different from the number of elements in
+Y
+, the VI sets the output
+interpolation value
+and
+interpolation error
+to NaN and returns an error.
+X
+is the array of independent values. If the number of elements in
+X
+is different from the number of elements in
+Y
+, the VI sets the output
+interpolation value
+and
+interpolation error
+to NaN and returns an error.
+Y
+Y
+is the array of dependent values.
+Y
+is the array of dependent values.
+x value
+x value
+specifies the point at which the interpolation or extrapolation is performed. If the value of
+x value
+is in the range of
+X
+, the VI performs interpolation. Otherwise, the VI performs extrapolation.
+interpolation value
+interpolation value
+is the interpolation of the function f at
+x value
+.
+interpolation error
+interpolation error
+is an estimate of the error in the interpolation.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+Draw Plot.vi
+origin
+x
+y
+radii
+interpolation value
+picture
+color(black)
+fill?(F)
+angles
+new picture
+Position in Hierarchy
+NI_AALBase.lvlib:Histogram.vi
+X
+X
+must contain at least one sample. If
+X
+is empty, the histogram is undefined, and the VI sets
+Histogram: h(x)
+and
+X Values
+to empty arrays and returns an error.
+X
+must contain at least one sample. If
+X
+is empty, the histogram is undefined, and the VI sets
+Histogram: h(x)
+and
+X Values
+to empty arrays and returns an error.
+intervals
+intervals
+specifies the number of intervals, or bins, to use in the histogram and must be greater than 0. If
+intervals
+is less than or equal to 0, the histogram is undefined, and the VI sets
+Histogram: h(X)
+and
+X Values
+to empty arrays and returns an error. The default is 10.
+Histogram: h(x)
+Histogram: h(x)
+is the discrete histogram of the input sequence
+X
+.
+Histogram: h(x)
+is the discrete histogram of the input sequence
+X
+.
+X Values
+X Values
+is an array of the center values of the interval (bin) of the histogram.
+X Values
+is an array of the center values of the interval (bin) of the histogram.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Histogram Graph
+Histogram Graph
+displays the bar graph of the histogram of the input sequence
+X
+. The y-axis is the histogram count, and the x-axis is the histogram center values of the intervals (bins) of the histogram.
+Position in Hierarchy
+NI_AALBase.lvlib:Std Deviation and Variance.vi
+X
+X
+is the input sequence.
+X
+is the input sequence.
+Weighting (Sample)
+Weighting
+determines whether to calculate the population or the sample standard deviation and variance.
+mean
+mean
+is the mean, or average, of the values in the input sequence
+X
+.
+standard deviation
+standard deviation
+is the standard deviation calculated from the values in the input sequence
+X
+.
+variance
+variance
+is the calculated variance of the values in the input sequence
+X
+.
+Position in Hierarchy
+NI_FileType.lvlib:FT_FileTypes.ctl
+Position in Hierarchy
+NI_FileType.lvlib:LVFileType.ctl
+Position in Hierarchy
+NI_FileType.lvlib:Get File Type.vi
+error in (no error)
+error in
+can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+describes the origin of the error or warning.
+Right-click the
+error in
+control on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+path
+error out
+error out
+passes error or warning information out of a VI to be used by other VIs.
+Right-click the
+error out
+indicator on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the
+error out
+indicator on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+code
+code
+is the error or warning code.
+Right-click the
+error out
+indicator on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+source
+source
+string describes the origin of the error or warning.
+Right-click the
+error out
+indicator on the front panel and select
+Explain Error
+or
+Explain Warning
+from the shortcut menu for more information about the error.
+file type
+is template?
+True if a VI or control is a template.
+Position in Hierarchy
+NI_PackedLibraryUtility.lvlib:Get Exported File List.vi
+packed library path
+packed library path
+specifies the path to the packed library.
+error in (no error)
+error in
+describes error conditions that occur before this node runs. This input provides standard error in functionality.
+status
+status
+is TRUE (X) if an error occurred before this node ran or FALSE (checkmark) to indicate a warning or that no error occurred before this node ran. The default is FALSE.
+code
+code
+is the error or warning code. The default is 0.
+source
+source
+specifies the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning. The default is an empty string.
+qualified names
+qualified names
+returns an array of strings with the qualified names of the exported files in the packed library.
+qualified name
+error out
+error out
+contains error information. This output provides standard error out functionality.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+code
+code
+is the error or warning code.
+source
+source
+describes the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning.
+paths
+paths
+returns an array with the paths to the exported files in the packed library.
+path
+Position in Hierarchy
+Check if File or Folder Exists.vi
+path
+path
+specifies the path to the file or folder you want LabVIEW to look for.
+error in (no error)
+error in
+describes error conditions that occur before this node runs. This input provides standard error in functionality.
+status
+status
+is TRUE (X) if an error occurred before this node ran or FALSE (checkmark) to indicate a warning or that no error occurred before this node ran. The default is FALSE.
+code
+code
+is the error or warning code. The default is 0.
+source
+source
+specifies the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning. The default is an empty string.
+error out
+error out
+contains error information. This output provides standard error out functionality.
+status
+status
+is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+code
+code
+is the error or warning code.
+source
+source
+describes the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning.
+dup path
+dup path
+returns
+path
+unchanged.
+file or folder exists?
+file or folder exists?
+is TRUE if the file or folder you specify in
+path
+exists on disk and FALSE if the file or folder you specify in
+path
+does not exist on disk. If you wire an empty path to
+path
+,
+file or folder exists?
+returns TRUE because the empty path refers to the list of drives mapped to the computer. (macOS) The empty path refers to the mounted volumes. (Linux) The empty path refers to the root directory.
+Position in Hierarchy
+numbe_estimation.vi
+数値
+桁数
+数値文字列
+Position in Hierarchy
+NI_AALBase.lvlib:Mean (CDB).vi
+X
+X
+is the input sequence. If the input sequence
+X
+is empty,
+mean
+is NaN.
+Numeric
+mean
+mean
+is the mean, or average, of the values in the input sequence
+X
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+NI_AALBase.lvlib:Mean.vi
+Position in Hierarchy
+NI_AALBase.lvlib:Mean (DBL).vi
+X
+X
+is the input sequence. If the input sequence
+X
+is empty,
+mean
+is NaN.
+X
+is the input sequence. If the input sequence
+X
+is empty,
+mean
+is NaN.
+mean
+mean
+is the mean, or average, of the values in the input sequence
+X
+.
+error
+error
+returns any error or warning from the VI. You can wire
+error
+to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Position in Hierarchy
+Smoothing++.vi
+Y in
+数値
++/- Point
+Y out
+数値
+Position in Hierarchy
+NI_AALBase.lvlib:Mode.vi
+Position in Hierarchy

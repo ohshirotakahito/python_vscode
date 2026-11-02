@@ -4,7 +4,7 @@ import threading
 import unittest
 from unittest.mock import patch
 
-from database import catalog
+from shared import catalog
 
 
 class InventoryTests(unittest.TestCase):

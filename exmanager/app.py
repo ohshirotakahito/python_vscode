@@ -5,13 +5,37 @@ import sys
 import threading
 import tkinter as tk
 from tkinter import ttk, messagebox
-import core
-import pc_config
-import source_cache
-from csv_editor import CsvEditor
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import ui_theme  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # リポジトリ直下（shared/ を読むため）
+import core  # noqa: E402
+import pc_config  # noqa: E402
+import source_cache  # noqa: E402
+from csv_editor import CsvEditor  # noqa: E402
+from shared import sample_plan, ui_theme  # noqa: E402
+
+# サンプル台帳（machinedb）の項目。転送するときに試料の種類と BNAL に回すかを決めておく
+PLAN_KINDS = ('未設定', *sample_plan.KINDS)
+PLAN_BNAL = ('未分類', *sample_plan.BNAL.values())
+
+
+def plan_choices(entry):
+    """(種類, BNAL) の表示値 for one ledger entry (an empty dict when the sample is not in the ledger)."""
+    return entry.get('kind') or PLAN_KINDS[0], sample_plan.BNAL.get(entry.get('bnal'), PLAN_BNAL[0])
+
+
+def plan_fields(kind, bnal):
+    """Ledger fields from the two choices; 未設定 / 未分類 clear the field."""
+    codes = {label: code for code, label in sample_plan.BNAL.items()}
+    return dict(kind=kind if kind in sample_plan.KINDS else None, bnal=codes.get(bnal))
+
+
+def plan_summary(entry):
+    """Short text for the set list, e.g. '核酸・BNAL対象' or '台帳なし'."""
+    if not entry:
+        return '台帳なし'
+    kind, bnal = plan_choices(entry)
+    return (f"{kind if kind != PLAN_KINDS[0] else '種類未設定'}・"
+            f"{'BNAL' + bnal if bnal != PLAN_BNAL[0] else 'BNAL未分類'}")
 
 
 def experiment_data_counts(folder):
@@ -172,6 +196,21 @@ class App(tk.Tk):
         self.boxes['kind']['values'] = ('Sample', 'Blank')
         self.vars['kind'].set('Sample')
         self.boxes['experiment'].bind('<<ComboboxSelected>>', self.samples)
+        self.boxes['sample'].bind('<<ComboboxSelected>>', lambda event: self.show_plan())
+        # サンプル台帳: 保存先サンプルの試料の種類・BNAL に回すか（変えるとすぐ台帳に保存する）
+        plan_row = ttk.Frame(destination_tab, padding=(0, 2, 0, 4))
+        plan_row.pack(fill='x')
+        ttk.Label(plan_row, text='サンプル台帳').pack(side='left', padx=(4, 8))
+        self.plan_vars = {}
+        for key, label, choices in (('kind', '試料の種類', PLAN_KINDS), ('bnal', 'BNAL', PLAN_BNAL)):
+            ttk.Label(plan_row, text=label).pack(side='left', padx=(8, 4))
+            self.plan_vars[key] = tk.StringVar()
+            box = ttk.Combobox(plan_row, textvariable=self.plan_vars[key], values=choices, state='disabled', width=10)
+            box.pack(side='left')
+            box.bind('<<ComboboxSelected>>', lambda event: self.save_plan())
+            self.boxes['plan_' + key] = box
+        self.plan_status = ttk.Label(plan_row, style='Muted.TLabel', text='保存先サンプルを選ぶと表示します')
+        self.plan_status.pack(side='left', padx=12)
         ttk.Button(select, text='② 選択内容を転送セットに追加', style='Primary.TButton', command=self.add_set).grid(row=1, column=3, sticky='w', padx=(12, 4))
         ttk.Button(select, text='保存先実験・サンプルを追加', style='Conditional.TButton', command=self.add_destination).grid(row=1, column=4, sticky='w', padx=4)
         ttk.Label(upper, text='3. 登録内容の確認').pack(anchor='w', padx=10, pady=(8, 0))
@@ -179,10 +218,10 @@ class App(tk.Tk):
         batch_frame.pack(fill='both', expand=True, padx=10)
         batch_frame.rowconfigure(0, weight=1)
         batch_frame.columnconfigure(0, weight=1)
-        self.batch_tree = ttk.Treeview(batch_frame, columns=('set','source','target','name_check','source10','target10','source100','target100','duplicates','nonduplicates','person'), show='headings', height=7)
+        self.batch_tree = ttk.Treeview(batch_frame, columns=('set','source','target','plan','name_check','source10','target10','source100','target100','duplicates','nonduplicates','person'), show='headings', height=7)
         # 名前の照合が「不一致」「判定不可」のセットは行を橙にする（一致しなくても正しい場合があるので目安）
         self.batch_tree.tag_configure('name_mismatch', background=ui_theme.row('warning', 0.22), foreground=ui_theme.TEXT)
-        for key, title, width in [('set','セット',55),('source','コピー元実験',250),('target','保存先・区分',300),('name_check','名前の照合',170),('source10','元10kHz',90),('target10','先10kHz',90),('source100','元100kHz',90),('target100','先100kHz',90),('duplicates','内容重複確認',160),('nonduplicates','重複なし（TDMS）',180),('person','アップロード担当者',160)]:
+        for key, title, width in [('set','セット',55),('source','コピー元実験',250),('target','保存先・区分',300),('plan','台帳（種類・BNAL）',150),('name_check','名前の照合',170),('source10','元10kHz',90),('target10','先10kHz',90),('source100','元100kHz',90),('target100','先100kHz',90),('duplicates','内容重複確認',160),('nonduplicates','重複なし（TDMS）',180),('person','アップロード担当者',160)]:
             self.batch_tree.heading(key, text=title)
             self.batch_tree.column(key, width=width)
         self.batch_tree.grid(row=0, column=0, sticky='nsew')
@@ -499,6 +538,14 @@ class App(tk.Tk):
         ttk.Label(dialog, text='サンプル名（カンマ区切り）').grid(row=2, column=0, padx=12, sticky='w')
         ttk.Entry(dialog, textvariable=samples, width=43).grid(row=2, column=1, padx=12, pady=6)
         ttk.Label(dialog, text='10k/100kのSample・Blank、raw data、T、stocked等を作成します。\n既存フォルダはそのまま利用します。サンプル名は必須です。').grid(row=3, column=0, columnspan=2, padx=12, pady=8, sticky='w')
+        plan_frame = ttk.LabelFrame(dialog, text='サンプル台帳（作成したサンプルすべてに登録）', padding=8)
+        plan_frame.grid(row=4, column=0, columnspan=2, padx=12, sticky='ew')
+        new_plan = {}
+        for n, (key, label, choices) in enumerate((('kind', '試料の種類', PLAN_KINDS), ('bnal', 'BNAL', PLAN_BNAL))):
+            ttk.Label(plan_frame, text=label).grid(row=0, column=n * 2, padx=(0, 4), sticky='w')
+            new_plan[key] = tk.StringVar(value=choices[0])
+            ttk.Combobox(plan_frame, textvariable=new_plan[key], values=choices, state='readonly', width=10).grid(
+                row=0, column=n * 2 + 1, padx=(0, 16))
 
         def create():
             if self.busy:
@@ -514,11 +561,63 @@ class App(tk.Tk):
                 self.vars['sample'].set(names[0])
                 self.current = None
                 self.log(f'保存先フォルダ作成完了: {Path(root) / ex} / {", ".join(names)}')
+                if (new_plan['kind'].get(), new_plan['bnal'].get()) != (PLAN_KINDS[0], PLAN_BNAL[0]):
+                    for key, var in new_plan.items():
+                        self.plan_vars[key].set(var.get())
+                    self.save_plan(ex, names)
+                else:
+                    self.show_plan()
                 if dialog.winfo_exists():
                     dialog.destroy()
             self.run(lambda: core.create_destinations(root, ex, names), done)
 
-        ttk.Button(dialog, text='フォルダ作成', command=create).grid(row=4, column=0, padx=12, pady=12, sticky='w')
+        ttk.Button(dialog, text='フォルダ作成', command=create).grid(row=5, column=0, padx=12, pady=12, sticky='w')
+
+    def read_plan(self):
+        """The sample ledger, or {} with a log line when it cannot be read (never stops the transfer work)."""
+        try:
+            for copy in sample_plan.conflicted_copies():
+                self.log(f'サンプル台帳に Dropbox の競合コピーがあります。内容を確認してまとめてください: {copy}')
+            return sample_plan.load()
+        except (OSError, ValueError) as exc:
+            self.log(f'サンプル台帳を読めません: {exc}')
+            return {}
+
+    def show_plan(self):
+        """Show the ledger entry of the chosen destination sample."""
+        v = self.values()
+        ready = bool(v['experiment'] and v['sample'])
+        for key in ('kind', 'bnal'):
+            self.boxes['plan_' + key].configure(state='readonly' if ready else 'disabled')
+        if not ready:
+            for var in self.plan_vars.values():
+                var.set('')
+            self.plan_status.configure(text='保存先サンプルを選ぶと表示します')
+            return
+        entry = self.read_plan().get(sample_plan.key(v['experiment'], v['sample']), {})
+        kind, bnal = plan_choices(entry)
+        self.plan_vars['kind'].set(kind)
+        self.plan_vars['bnal'].set(bnal)
+        self.plan_status.configure(
+            text=f"最終更新 {entry['updated_at'][:16].replace('T', ' ')}（{entry.get('updated_by', '')}）"
+            if entry.get('updated_at') else '台帳に未登録（選ぶと登録します）')
+
+    def save_plan(self, experiment=None, samples=None):
+        """Write the two choices for the destination sample (or the given new samples) to the ledger."""
+        v = self.values()
+        experiment = experiment or v['experiment']
+        samples = samples or [v['sample']]
+        fields = plan_fields(self.plan_vars['kind'].get(), self.plan_vars['bnal'].get())
+        try:
+            sample_plan.update({sample_plan.key(experiment, s): fields for s in samples})
+        except (OSError, ValueError) as exc:
+            messagebox.showerror('サンプル台帳', f'台帳に保存できませんでした。\n{exc}')
+            return
+        self.log(f"サンプル台帳を更新: {experiment} / {', '.join(samples)} → "
+                 f"{self.plan_vars['kind'].get()}・BNAL {self.plan_vars['bnal'].get()}")
+        self.show_plan()
+        if self.sets:
+            self.render_sets()
 
     def samples(self, event=None, restore_sample=''):
         if self.busy:
@@ -530,6 +629,7 @@ class App(tk.Tk):
             self.set_choices('sample', names)
             if restore_sample in names:
                 self.vars['sample'].set(restore_sample)
+            self.show_plan()
         self.run(lambda: sorted(p.name for p in (Path(v['root'])/v['experiment']).iterdir() if p.is_dir()), done)
 
     def source_root(self, v):
@@ -788,10 +888,13 @@ class App(tk.Tk):
         """登録表を描き直し、件数を集計し直す（コピー予定・結果の表示には触れない）。"""
         self.batch_tree.delete(*self.batch_tree.get_children())
         self.mark_set_rows()
+        plan = self.read_plan()
         for n, spec in enumerate(self.sets):
             c = spec['context']
             check, mismatched = core.name_check(spec['sources'], Path(spec['target']).name)
-            self.batch_tree.insert('', 'end', iid=str(n), values=(n+1, ' / '.join(p.name for p in spec['sources']), f"{spec['target']} [{c['kind']}]", check, *('集計中',)*4, '未確認', '未確認', c['uploader']),
+            self.batch_tree.insert('', 'end', iid=str(n), values=(n+1, ' / '.join(p.name for p in spec['sources']), f"{spec['target']} [{c['kind']}]",
+                                                                     plan_summary(plan.get(sample_plan.key(Path(spec['target']).parent.name, Path(spec['target']).name), {})),
+                                                                     check, *('集計中',)*4, '未確認', '未確認', c['uploader']),
                                    tags=('name_mismatch',) if mismatched else ())
         if self.sets:
             specs = list(self.sets)

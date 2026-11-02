@@ -24,6 +24,60 @@ class Variable:
 
 
 class VersionDialogTests(unittest.TestCase):
+    def test_group_execution_preview_and_switch_back_preserve_sample_combinations(self):
+        tab = SimpleNamespace(classification_mode=Variable('group'),
+            sample_groups={'KSN': ['KSN1', 'KSN2'], 'KST': ['KST1', 'KST2']},
+            add_combo_button=Mock(), remove_combo_button=Mock(), combos=Mock(),
+            group_preview=Mock(), execution_label=Mock(), run_hint=Mock())
+        tab_train.TrainTab._classification_changed(tab)
+        tab.add_combo_button.configure.assert_called_with(state='disabled')
+        tab.remove_combo_button.configure.assert_called_with(state='disabled')
+        self.assertEqual(tab.group_preview.insert.call_args_list,
+                         [unittest.mock.call('end', 'KSN: KSN1, KSN2'),
+                          unittest.mock.call('end', 'KST: KST1, KST2')])
+        self.assertIn('1回（2群・4サンプル）', tab.execution_label.configure.call_args.kwargs['text'])
+        tab.combos.delete.assert_not_called()
+        tab.combos.insert.assert_not_called()
+        tab_train.TrainTab._add_combo(tab)
+        tab_train.TrainTab._remove_combo(tab)
+        tab.combos.delete.assert_not_called()
+        tab.classification_mode.set('sample')
+        tab_train.TrainTab._classification_changed(tab)
+        tab.group_preview.pack_forget.assert_called_once()
+        tab.combos.pack.assert_called_once()
+        tab.add_combo_button.configure.assert_called_with(state='normal')
+
+    def test_group_mode_uses_registered_members_instead_of_sample_combinations(self):
+        tab = self.tab([], ('unrelated, other',))
+        tab.runner = SimpleNamespace(busy=False)
+        tab.classification_mode = Variable('group')
+        tab.sample_groups = {'Group A': ['KST1', 'KST2'], 'Group B': ['KSN1', 'KSN2']}
+        tab.samples.listbox = Mock()
+        tab.samples.listbox.get.return_value = ('KST1', 'KST2', 'KSN1', 'KSN2')
+        tab.experiment = Variable('A')
+        tab._training_settings = Mock(return_value={'classification_mode': 'group', 'split_mode': 'event'})
+        tab.fc_mode = Variable('minimal')
+        tab.use_selection = Variable(True)
+        with patch.object(tab_train, 'resolve_version', side_effect=FileNotFoundError('missing')) as resolve, \
+                patch.object(tab_train.messagebox, 'showerror'):
+            tab_train.TrainTab._run(tab)
+            self.assertIn(resolve.call_args.args[1], {'KST1', 'KST2', 'KSN1', 'KSN2'})
+
+    def test_group_source_evaluation_rejected_before_data_loading_when_too_small(self):
+        tab = self.tab([], ())
+        tab.runner = SimpleNamespace(busy=False)
+        tab.classification_mode = Variable('group')
+        tab.sample_groups = {'A': ['KST1', 'KST2'], 'B': ['KSN1', 'KSN2']}
+        tab.samples.listbox = Mock()
+        tab.samples.listbox.get.return_value = ('KST1', 'KST2', 'KSN1', 'KSN2')
+        tab._training_settings = Mock(return_value={'classification_mode': 'group', 'split_mode': 'sample',
+                                                    'sample_groups': tab.sample_groups})
+        with patch.object(tab_train, 'resolve_version') as resolve, \
+                patch.object(tab_train.messagebox, 'showerror') as error:
+            tab_train.TrainTab._run(tab)
+            resolve.assert_not_called()
+            self.assertIn('3サンプル', error.call_args.args[1])
+
     def test_source_filter_clears_incompatible_versions_and_file_rules(self):
         tab = SimpleNamespace(experiment=Variable(''), experiment_combo=Mock(),
             _experiments=['A'], _sample_names=['Glu', 'Lys', 'Legacy'],

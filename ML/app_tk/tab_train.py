@@ -44,6 +44,7 @@ class TrainTab(ttk.Frame):
         self.feature_versions = {}
         self.version_feature_set = None
         self.file_filter_rules = []
+        self.sample_groups = {}
 
         paned = ttk.PanedWindow(self, orient="horizontal")
         paned.pack(fill="both", expand=True)
@@ -84,13 +85,37 @@ class TrainTab(ttk.Frame):
         self.version_summary = ttk.Label(left, text="未指定のサンプルは最新の完了版を使用",
                                          wraplength=340)
         self.version_summary.pack(anchor="w")
-        ttk.Button(left, text="② 選択中のクラスを組み合わせに追加 ↓",
-                   command=self._add_combo).pack(fill="x", pady=2)
+        group_frame = ttk.LabelFrame(left, text="分類単位・グループ設定", padding=6)
+        group_frame.pack(fill="x", pady=6)
+        self.classification_mode = tk.StringVar(value="sample")
+        ttk.Radiobutton(group_frame, text="サンプル別（従来）", variable=self.classification_mode,
+                        value="sample").pack(anchor="w")
+        ttk.Radiobutton(group_frame, text="グループ別", variable=self.classification_mode,
+                        value="group").pack(anchor="w")
+        ttk.Button(group_frame, text="グループ名・所属サンプルを設定 / 保存・読込",
+                   command=self._choose_groups).pack(fill="x")
+        self.group_summary = ttk.Label(group_frame, text="グループ未設定", wraplength=380)
+        self.group_summary.pack(fill="x")
+        self.split_mode = tk.StringVar(value="event")
+        ttk.Radiobutton(group_frame, text="評価：イベント単位", variable=self.split_mode,
+                        value="event").pack(anchor="w")
+        ttk.Radiobutton(group_frame, text="評価：元サンプル単位（各群3サンプル以上）",
+                        variable=self.split_mode, value="sample").pack(anchor="w")
+        ttk.Label(group_frame, text="グループ別では登録した全所属サンプルで1回学習します。\n"
+                  "実行する内容は下の一覧に表示します。", wraplength=380).pack(fill="x")
+        self.add_combo_button = ttk.Button(left, text="② 選択中のクラスを組み合わせに追加 ↓",
+                                          command=self._add_combo)
+        self.add_combo_button.pack(fill="x", pady=2)
 
-        ttk.Label(left, text="実行する組み合わせ（1行につき1回の学習）").pack(anchor="w", pady=(6, 0))
-        self.combos = tk.Listbox(left, height=5, exportselection=False)
+        self.execution_label = ttk.Label(left, text="実行する組み合わせ（1行につき1回の学習）", wraplength=380)
+        self.execution_label.pack(anchor="w", pady=(6, 0))
+        execution_frame = ttk.Frame(left)
+        execution_frame.pack(fill="x", pady=2)
+        self.combos = tk.Listbox(execution_frame, height=5, exportselection=False)
         self.combos.pack(fill="x", pady=2)
-        ttk.Button(left, text="選択した組み合わせを削除", command=self._remove_combo).pack(fill="x")
+        self.group_preview = tk.Listbox(execution_frame, height=5, exportselection=False)
+        self.remove_combo_button = ttk.Button(left, text="選択した組み合わせを削除", command=self._remove_combo)
+        self.remove_combo_button.pack(fill="x")
 
         self.tsfresh_frame = ttk.LabelFrame(left, text="tsfresh設定", padding=6)
         self.tsfresh_frame.pack(fill="x", pady=6)
@@ -116,8 +141,8 @@ class TrainTab(ttk.Frame):
                         variable=self.tune).pack(side="left")
         self.n_trials = tk.StringVar(value=str(DEFAULT_SETTINGS["n_trials"]))
         ttk.Spinbox(tune_row, from_=1, to=200, textvariable=self.n_trials, width=5).pack(side="left", padx=4)
-        ttk.Label(training_frame, text="学習用/テスト用はイベント単位で8:2に分けます。"
-                  "探索すると学習時間は約（候補数+1）倍になります。", wraplength=380).pack(anchor="w", pady=(4, 0))
+        ttk.Label(training_frame, text="イベント単位の評価では学習用/テスト用を8:2に分けます。"
+                  "元サンプル単位の評価も上で選択できます。探索すると学習時間は約（候補数+1）倍になります。", wraplength=380).pack(anchor="w", pady=(4, 0))
 
         self.settings_end = ttk.Frame(left)
         self.settings_end.pack(fill="x")
@@ -126,10 +151,8 @@ class TrainTab(ttk.Frame):
         ttk.Label(left, text="distanceもここで指定します（例：distance.mean = 0.54）。", wraplength=400).pack(anchor="w")
         self.file_filter_summary = ttk.Label(left, text="ファイル絞り込み：なし", wraplength=400)
         self.file_filter_summary.pack(fill="x")
-        ttk.Label(actions, text="絞り込み条件の保存後、このボタンで学習を開始します。\n"
-                  "組み合わせの登録があれば登録分を順番に実行します。\n"
-                  "未登録なら、現在選択中のサンプルで1回実行します。",
-                  wraplength=400).pack(anchor="w", pady=(0, 4))
+        self.run_hint = ttk.Label(actions, wraplength=400)
+        self.run_hint.pack(anchor="w", pady=(0, 4))
         self.run_button = ttk.Button(actions, text="⑤ 学習を実行", command=self._run)
         self.run_button.pack(fill="x", pady=4)
         self.cancel_button = ttk.Button(actions, text="学習を中止", command=self._cancel,
@@ -154,10 +177,39 @@ class TrainTab(ttk.Frame):
         runner.add_busy_listener(lambda busy: self.run_button.configure(
             state="disabled" if busy else "normal"))
         runner.add_busy_listener(self._busy_changed)
+        self.classification_mode.trace_add('write', lambda *_: self._classification_changed())
+        self._classification_changed()
         self._pipeline_changed()
 
     # --- 入力 ---
+    def _classification_changed(self):
+        grouped = self.classification_mode.get() == 'group'
+        self.add_combo_button.configure(state='disabled' if grouped else 'normal')
+        self.remove_combo_button.configure(state='disabled' if grouped else 'normal')
+        if grouped:
+            self.combos.pack_forget()
+            self.group_preview.delete(0, 'end')
+            for name, members in self.sample_groups.items():
+                self.group_preview.insert('end', f'{name}: {", ".join(members)}')
+            if not self.sample_groups:
+                self.group_preview.insert('end', 'グループ未設定：上の設定ボタンから登録してください。')
+            self.group_preview.pack(fill='x', pady=2)
+            count = sum(len(members) for members in self.sample_groups.values())
+            self.execution_label.configure(text=f'実行予定：グループ分類を1回（{len(self.sample_groups)}群・{count}サンプル）')
+            self.run_hint.configure(text='上の実行予定に表示した全グループで1回学習します。\n'
+                                    '所属・評価方法を確認し、「学習を実行」を押してください。\n'
+                                    '②の組み合わせ追加は不要です。')
+        else:
+            self.group_preview.pack_forget()
+            self.combos.pack(fill='x', pady=2)
+            self.execution_label.configure(text='実行する組み合わせ（1行につき1回の学習）')
+            self.run_hint.configure(text='絞り込み条件の保存後、このボタンで学習を開始します。\n'
+                                    '組み合わせの登録があれば登録分を順番に実行します。\n'
+                                    '未登録なら、現在選択中のサンプルで1回実行します。')
+
     def apply_review_selection(self, feature_set, samples, versions, rules):
+        if hasattr(self, 'classification_mode'):
+            self.classification_mode.set('sample')
         matching = [name for name, settings in PIPELINES.items()
                     if settings['feature_set'] == feature_set]
         if not matching:
@@ -198,6 +250,8 @@ class TrainTab(ttk.Frame):
         names = list(dict.fromkeys(self.samples.get_selected() +
                      [s.strip() for line in self.combos.get(0, "end")
                       for s in line.split(",") if s.strip()]))
+        if getattr(self, 'classification_mode', None) is not None and self.classification_mode.get() == 'group':
+            names = [s for members in self.sample_groups.values() for s in members]
         if not names:
             messagebox.showinfo("サンプルを選んでください", "サンプルを選ぶか、組み合わせを追加してください。")
             return
@@ -269,6 +323,8 @@ class TrainTab(ttk.Frame):
         if not names:
             names = list(dict.fromkeys(s.strip() for line in self.combos.get(0, "end")
                                       for s in line.split(',') if s.strip()))
+        if getattr(self, 'classification_mode', None) is not None and self.classification_mode.get() == 'group':
+            names = [s for members in self.sample_groups.values() for s in members]
         if not names:
             messagebox.showinfo("クラスを選択してください",
                                 "確認するクラスを選ぶか、学習の組み合わせを追加してください。")
@@ -412,9 +468,125 @@ class TrainTab(ttk.Frame):
             raise ValueError(f"探索の候補数は整数で入力してください: {self.n_trials.get()}") from None
         if n_trials < 1:
             raise ValueError("探索の候補数は1以上にしてください。")
-        return {"balance": balance, "tune": bool(self.tune.get()), "n_trials": n_trials}
+        return {"balance": balance, "tune": bool(self.tune.get()), "n_trials": n_trials,
+                "classification_mode": self.classification_mode.get(),
+                "sample_groups": {k: list(v) for k, v in self.sample_groups.items()},
+                "split_mode": self.split_mode.get()}
+
+    def _choose_groups(self):
+        import json
+        from tkinter import filedialog
+        from common.training_core import normalize_groups
+        if self.runner.busy:
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title("分類グループの設定")
+        dialog.geometry("650x700")
+        draft = [(name, list(members)) for name, members in self.sample_groups.items()]
+        ttk.Label(dialog, text="グループ名（空欄なら Group A、Group B…）").pack(anchor="w", padx=10)
+        name = tk.StringVar()
+        ttk.Entry(dialog, textvariable=name).pack(fill="x", padx=10)
+        ttk.Label(dialog, text="所属サンプルを選択").pack(anchor="w", padx=10)
+        members = CheckList(dialog, height=12)
+        members.pack(fill="both", expand=True, padx=10)
+        members.set_items(list(self.samples.listbox.get(0, "end")))
+        groups = tk.Listbox(dialog, height=7, exportselection=False)
+        groups.pack(fill="x", padx=10, pady=6)
+
+        def refresh():
+            groups.delete(0, "end")
+            for i, (label, items) in enumerate(draft):
+                groups.insert("end", f"{label or ('Group ' + (chr(65+i) if i < 26 else str(i+1)))}: {', '.join(items)}")
+
+        def put(edit=False):
+            selected = members.get_selected()
+            if not selected:
+                messagebox.showerror("入力エラー", "所属サンプルを選択してください。", parent=dialog)
+                return
+            index = groups.curselection()
+            if edit and not index:
+                return
+            entry = (name.get().strip(), selected)
+            if edit:
+                draft[index[0]] = entry
+            else:
+                draft.append(entry)
+            refresh()
+            name.set("")
+            members.clear_selection()
+
+        def select(_event):
+            index = groups.curselection()
+            if not index:
+                return
+            label, items = draft[index[0]]
+            name.set(label)
+            members.clear_selection()
+            for i, sample in enumerate(members.listbox.get(0, 'end')):
+                if sample in items:
+                    members.listbox.selection_set(i)
+            members._changed()
+
+        def remove():
+            for index in reversed(groups.curselection()):
+                draft.pop(index)
+            refresh()
+
+        def checked():
+            available = set(self.samples.listbox.get(0, 'end'))
+            result = normalize_groups(draft)
+            unknown = {s for items in result.values() for s in items} - available
+            if unknown:
+                raise ValueError(f'現在の実験フォルダにないサンプル: {sorted(unknown)}')
+            return result
+
+        def save_file():
+            try:
+                result = checked()
+                path = filedialog.asksaveasfilename(parent=dialog, defaultextension='.json', filetypes=[('JSON', '*.json')])
+                if path:
+                    from pathlib import Path
+                    Path(path).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
+            except (ValueError, OSError) as error:
+                messagebox.showerror('設定エラー', str(error), parent=dialog)
+
+        def load_file():
+            path = filedialog.askopenfilename(parent=dialog, filetypes=[('JSON', '*.json')])
+            if not path:
+                return
+            try:
+                from pathlib import Path
+                data = json.loads(Path(path).read_text(encoding='utf-8'))
+                if not isinstance(data, dict) or any(not isinstance(v, list) or any(not isinstance(s, str) for s in v) for v in data.values()):
+                    raise ValueError('グループ名と所属サンプル一覧のJSONを指定してください。')
+                result = normalize_groups(data.items())
+                draft[:] = list(result.items())
+                refresh()
+            except (ValueError, OSError) as error:
+                messagebox.showerror('読込エラー', str(error), parent=dialog)
+
+        def apply():
+            try:
+                self.sample_groups = checked()
+            except ValueError as error:
+                messagebox.showerror('設定エラー', str(error), parent=dialog)
+                return
+            self.group_summary.configure(text='\n'.join(f'{k}: {", ".join(v)}' for k, v in self.sample_groups.items()))
+            self.classification_mode.set('group')
+            dialog.destroy()
+
+        groups.bind('<<ListboxSelect>>', select)
+        row = ttk.Frame(dialog)
+        row.pack(fill='x', padx=10, pady=4)
+        for label, command in [('追加', lambda: put()), ('選択行を更新', lambda: put(True)), ('選択行を削除', remove),
+                               ('JSON保存', save_file), ('JSON読込', load_file)]:
+            ttk.Button(row, text=label, command=command).pack(side='left')
+        ttk.Button(dialog, text='設定を適用', command=apply).pack(fill='x', padx=10, pady=8)
+        refresh()
 
     def _add_combo(self):
+        if getattr(self, 'classification_mode', None) is not None and self.classification_mode.get() == 'group':
+            return
         selected = self.samples.get_selected()
         if len(selected) < 2:
             messagebox.showerror("入力エラー", "クラスを2つ以上選んでください。")
@@ -423,6 +595,8 @@ class TrainTab(ttk.Frame):
         self.samples.clear_selection()
 
     def _remove_combo(self):
+        if getattr(self, 'classification_mode', None) is not None and self.classification_mode.get() == 'group':
+            return
         for i in reversed(self.combos.curselection()):
             self.combos.delete(i)
 
@@ -440,6 +614,17 @@ class TrainTab(ttk.Frame):
         if self.runner.busy:
             return
         combinations = [[s.strip() for s in line.split(",")] for line in self.combos.get(0, "end")]
+        if getattr(self, 'classification_mode', None) is not None and self.classification_mode.get() == 'group':
+            from common.training_core import normalize_groups
+            try:
+                groups = normalize_groups(self.sample_groups.items())
+                samples = [s for items in groups.values() for s in items]
+                if set(samples) - set(self.samples.listbox.get(0, 'end')):
+                    raise ValueError('現在の実験フォルダにない所属サンプルがあります。グループ設定を確認してください。')
+                combinations = [samples]
+            except ValueError as error:
+                messagebox.showerror('グループ設定エラー', str(error))
+                return
         if not combinations:
             # 組み合わせ未登録なら、今選んでいるサンプルを1件として実行する
             selected = self.samples.get_selected()
@@ -452,6 +637,10 @@ class TrainTab(ttk.Frame):
         pipeline = PIPELINES[self.pipeline.get()]
         try:
             training_settings = self._training_settings()
+            if training_settings.get('split_mode') == 'sample':
+                if training_settings.get('classification_mode') != 'group' or any(
+                        len(items) < 3 for items in training_settings.get('sample_groups', {}).values()):
+                    raise ValueError('元サンプル単位の評価にはグループ別分類で各群3サンプル以上を登録してください。')
         except ValueError as e:
             messagebox.showerror("入力エラー", str(e))
             return

@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from database import catalog
+from shared import catalog
 from database.app import App, sq_entry_tag
 
 

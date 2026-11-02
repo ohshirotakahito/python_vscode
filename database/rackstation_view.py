@@ -1,21 +1,24 @@
 """Analysis_server panel: every analysis server/share plus one combined table."""
 from pathlib import Path, PurePosixPath
 import queue
-import re
 import threading
-import time
-import os
-import shutil
 import sys
 import tkinter as tk
 from tkinter import ttk, messagebox
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # リポジトリ直下（shared/ を読むため）
+from shared import catalog, progress, ui_theme  # noqa: E402
 try:
-    from . import catalog, inventory_views
+    from . import inventory_views
 except ImportError:
-    import catalog, inventory_views
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import ui_theme  # noqa: E402
+    import inventory_views
+# DB の読み書き・測定番号の規則は shared/rack_store.py（filemanager・Plotting と共有）。
+# この画面と既存の呼び出し側のため、同じ名前でここからも使えるようにしている。
+from shared.rack_store import (  # noqa: E402,F401
+    entries, sample_counts, NUMBER, SAMPLE_NUMBER, measurement_key, tdms_keys,
+    tdms_numbers, number_ranges, missing_numbers, save_bnals, bnal_inventory, ensure_tables,
+    root_states, record_root, scan_group, scan_samples, refresh_sample, ANALYSIS_GROUPS,
+    group_label,
+)
 
 
 def inventory(path, root=None):
@@ -36,277 +39,6 @@ def inventory(path, root=None):
             and r['folder_state'] == '存在' and r['t_tdms'] is not None]
 
 
-def entries(path, cancel):
-    """Use directory metadata already returned by SMB; never descend recursively."""
-    with os.scandir(path) as iterator:
-        for entry in iterator:
-            if cancel.is_set():
-                raise catalog.ScanCancelled('中止しました。取得済みサンプルは保存されています。')
-            if entry.is_symlink() or (hasattr(entry, 'is_junction') and entry.is_junction()):
-                continue
-            yield entry
-
-
-def sample_counts(target, cancel, bnal_paths=None):
-    """Direct counts of one sample's T as a dict of rack_samples columns.
-
-    TDMS bytes cost no extra request on Windows (DirEntry.stat() reuses the listing).
-    BNAL@ folder names come from the same T listing; pass a dict as bnal_paths to collect {target: path}.
-    T/stocked (original measurement files moved out of T) and T/ANAL/stocked (ANAL files set aside to restart
-    an interrupted BNAL run) are listed only when present; their counts are None when the folder does not exist."""
-    tdms = bnals = t_bytes = 0
-    anal = t_stocked = anal_stocked = None
-    t_keys = []
-    for entry in entries(target, cancel):
-        if entry.name.lower().endswith('.tdms') and entry.is_file(follow_symlinks=False):
-            tdms += 1
-            t_bytes += entry.stat(follow_symlinks=False).st_size
-            t_keys.append(measurement_key(entry.name))
-        elif entry.is_dir(follow_symlinks=False):
-            if entry.name.lower().startswith('bnal@'):
-                bnals += 1
-                if bnal_paths is not None:
-                    bnal_paths[entry.name[len('BNAL@'):]] = entry.path
-            elif entry.name.lower() == 'anal':
-                anal = entry.path
-            elif entry.name.lower() == 'stocked':
-                t_stocked = entry.path
-    anal_tdms = anal_bytes = anal_numbers = None
-    if anal is not None:
-        anal_tdms = anal_bytes = 0
-        anal_numbers = set()
-        for entry in entries(anal, cancel):
-            if entry.name.lower().endswith('.tdms') and entry.is_file(follow_symlinks=False):
-                anal_tdms += 1
-                anal_bytes += entry.stat(follow_symlinks=False).st_size
-                anal_numbers.add(measurement_key(entry.name))
-            elif entry.name.lower() == 'stocked' and entry.is_dir(follow_symlinks=False):
-                anal_stocked = entry.path
-    t_stocked_keys = None if t_stocked is None else tdms_keys(t_stocked, cancel)
-    anal_stocked_keys = None if anal_stocked is None else tdms_keys(anal_stocked, cancel)
-    analysed = (anal_numbers or set()) | set(anal_stocked_keys or [])
-    resume, missing = missing_numbers(t_keys + (t_stocked_keys or []), analysed)
-    last = max((key for key in analysed if isinstance(key, int)), default=None)
-    return dict(t_tdms=tdms, anal_tdms=anal_tdms, bnal_folders=bnals, t_bytes=t_bytes, anal_bytes=anal_bytes,
-                t_stocked_tdms=None if t_stocked_keys is None else len(t_stocked_keys),
-                anal_stocked_tdms=None if anal_stocked_keys is None else len(anal_stocked_keys),
-                anal_distinct=None if anal_numbers is None else len(anal_numbers),
-                anal_resume=resume, anal_missing=missing, anal_last=last, anal_missing_checked=1)
-
-
-NUMBER = re.compile(r'#(\d+)\.tdms$', re.I)
-# Originals carry the number right after the sample folder name and more '#' later
-# ('KSN3_10k_Sample#001 D_... ANAN#1Pex1n2_..._EXSV#10_....tdms'); ANAL ends with it ('..._Sample#001.tdms').
-SAMPLE_NUMBER = re.compile(r'_Sample#(\d+)', re.I)
-
-
-def measurement_key(name):
-    match = SAMPLE_NUMBER.search(name) or NUMBER.search(name)
-    return int(match[1]) if match else name
-
-
-def tdms_keys(folder, cancel):
-    """'#NNN' number (or the name when it has none) of every direct .tdms in one listing."""
-    return [measurement_key(entry.name) for entry in entries(folder, cancel)
-            if entry.name.lower().endswith('.tdms') and entry.is_file(follow_symlinks=False)]
-
-
-def tdms_numbers(folder, cancel):
-    """(files, distinct '#NNN' numbers) of direct .tdms in one listing; nested folders are not entered.
-
-    BNAL makes one file per ANAL file present, so the file count is the progress. Fewer distinct numbers
-    than files is only a hint: a re-run, or two ANAL generations mixed in one folder."""
-    keys = tdms_keys(folder, cancel)
-    return len(keys), len(set(keys))
-
-
-def number_ranges(numbers):
-    """[1, 2, 3, 7, 9, 10] -> '#001-#003,#007,#009-#010'."""
-    parts, numbers = [], sorted(numbers)
-    for index, number in enumerate(numbers):
-        if index and number == numbers[index - 1] + 1:
-            parts[-1][1] = number
-        else:
-            parts.append([number, number])
-    return ','.join(f'#{a:03d}' if a == b else f'#{a:03d}-#{b:03d}' for a, b in parts)
-
-
-def missing_numbers(originals, analysed):
-    """(resume number, missing ranges) of the original '#NNN' numbers not yet in ANAL (+ ANAL/stocked).
-
-    ANAL keeps the original number, so the first missing number is where an interrupted ANAL run resumes.
-    Both are None when nothing is missing; names without a number are ignored."""
-    missing = {key for key in originals if isinstance(key, int)} - {key for key in analysed if isinstance(key, int)}
-    return (min(missing), number_ranges(missing)) if missing else (None, None)
-
-
-def save_bnals(db, root_key, experiment, sample, bnal_paths, counted, checked_at):
-    """Replace the sample's BNAL@ names; targets not counted this time keep their previous counts and date.
-
-    counted: {target: (files, distinct measurements)} from tdms_numbers."""
-    previous = {row['target']: (row['tdms'], row['tdms_distinct'], row['tdms_checked']) for row in db.execute(
-        'SELECT target, tdms, tdms_distinct, tdms_checked FROM rack_bnals WHERE root=? AND experiment=? AND sample=?',
-        (root_key, experiment, sample))}
-    db.execute('DELETE FROM rack_bnals WHERE root=? AND experiment=? AND sample=?', (root_key, experiment, sample))
-    db.executemany('INSERT INTO rack_bnals(root,experiment,sample,target,tdms,tdms_distinct,tdms_checked,last_seen) '
-                   'VALUES(?,?,?,?,?,?,?,?)',
-                   [(root_key, experiment, sample, name,
-                     *((*counted[name], checked_at) if name in counted else previous.get(name, (None, None, None))),
-                     checked_at) for name in bnal_paths])
-
-
-def bnal_inventory(path, root=None):
-    """Saved BNAL@ targets per sample (no server access); tdms is None until counted."""
-    with catalog.connect(path, readonly=True) as db:
-        if not db.execute("SELECT 1 FROM sqlite_master WHERE name='rack_bnals'").fetchone():
-            return []
-        rows = [dict(row) for row in db.execute('SELECT * FROM rack_bnals ORDER BY experiment,sample,target')]
-    if root is None:
-        return rows
-    return [row for row in rows if catalog.root_identity(row['root']) == catalog.root_identity(root)]
-
-
-def ensure_tables(db):
-    db.execute("""CREATE TABLE IF NOT EXISTS rack_samples (
-        root TEXT NOT NULL, experiment TEXT NOT NULL, sample TEXT NOT NULL,
-        t_tdms INTEGER, anal_tdms INTEGER, bnal_folders INTEGER,
-        last_success TEXT, status TEXT, PRIMARY KEY(root,experiment,sample))""")
-    existing = {row[1] for row in db.execute('PRAGMA table_info(rack_samples)')}
-    for column in ('t_bytes', 'anal_bytes', 'anal_stocked_tdms', 't_stocked_tdms', 'anal_distinct'):
-        if column not in existing:
-            db.execute(f'ALTER TABLE rack_samples ADD COLUMN {column} INTEGER')
-    # anal_resume: first original '#NNN' missing from ANAL (+ ANAL/stocked); anal_missing: every missing number
-    # as ranges; anal_last: largest number in ANAL (missing numbers below it are gaps, not the unfinished tail).
-    # anal_missing_checked tells 'nothing missing' apart from rows scanned before these columns existed.
-    for column, kind in (('anal_resume', 'INTEGER'), ('anal_missing', 'TEXT'), ('anal_last', 'INTEGER'),
-                         ('anal_missing_checked', 'INTEGER')):
-        if column not in existing:
-            db.execute(f'ALTER TABLE rack_samples ADD COLUMN {column} {kind}')
-    db.execute("""CREATE TABLE IF NOT EXISTS rack_roots (
-        root TEXT PRIMARY KEY, server TEXT, status TEXT, error TEXT,
-        last_success TEXT, last_attempt TEXT, volume_used INTEGER, volume_total INTEGER)""")
-    # last_seen: when the name was last listed in T; tdms_checked: when its direct .tdms were last counted.
-    db.execute("""CREATE TABLE IF NOT EXISTS rack_bnals (
-        root TEXT NOT NULL, experiment TEXT NOT NULL, sample TEXT NOT NULL, target TEXT NOT NULL,
-        tdms INTEGER, tdms_checked TEXT, last_seen TEXT,
-        PRIMARY KEY(root,experiment,sample,target))""")
-    # tdms_distinct: distinct '#NNN' numbers; fewer than tdms means a re-run or mixed ANAL generations.
-    if 'tdms_distinct' not in {row[1] for row in db.execute('PRAGMA table_info(rack_bnals)')}:
-        db.execute('ALTER TABLE rack_bnals ADD COLUMN tdms_distinct INTEGER')
-
-
-def root_states(path):
-    """Saved per-share state keyed by root identity; reading never touches the servers."""
-    with catalog.connect(path, readonly=True) as db:
-        if not db.execute("SELECT 1 FROM sqlite_master WHERE name='rack_roots'").fetchone():
-            return {}
-        return {catalog.root_identity(row['root']): dict(row) for row in db.execute('SELECT * FROM rack_roots')}
-
-
-def record_root(path, root, server, **fields):
-    key = os.path.normcase(os.path.normpath(str(root)))
-    with catalog.connect(path) as db:
-        ensure_tables(db)
-        db.execute('INSERT OR IGNORE INTO rack_roots(root, server) VALUES(?,?)', (key, server))
-        db.execute(f"UPDATE rack_roots SET server=?, {', '.join(f'{name}=?' for name in fields)} WHERE root=?",
-                   (server, *fields.values(), key))
-
-
-def scan_group(source, path, cancel, emit, count_bnal=None):
-    """Scan one share and keep its status; a failure keeps the previous successful values."""
-    record_root(path, source['root'], source['server'], status='実行中', error='', last_attempt=catalog.now())
-    try:
-        # One cheap volume query per share; it reports the whole volume, not only this folder.
-        usage = shutil.disk_usage(source['root'])
-        record_root(path, source['root'], source['server'], volume_used=usage.used, volume_total=usage.total)
-    except OSError:
-        pass
-    try:
-        count = scan_samples(source, path, cancel, emit, count_bnal)
-    except catalog.ScanCancelled as exc:
-        record_root(path, source['root'], source['server'], status='中止', error=str(exc))
-        raise
-    except Exception as exc:
-        record_root(path, source['root'], source['server'], status='失敗', error=str(exc))
-        raise
-    record_root(path, source['root'], source['server'], status='取得済み', last_success=catalog.now())
-    return count
-
-
-def scan_samples(source, path, cancel, emit, count_bnal=None):
-    """Commit and publish each valid sample independently.
-
-    count_bnal(experiment) -> bool selects experiments whose BNAL@ folders are listed for .tdms counts
-    (one extra request per folder); None counts nothing and only the names are saved."""
-    root = Path(source['root'])
-    root_key = os.path.normcase(os.path.normpath(str(root)))
-    completed = 0
-    started = time.monotonic()
-    seen = []
-    with catalog.connect(path) as db:
-        ensure_tables(db)
-    for experiment in entries(root, cancel):
-        if not experiment.is_dir(follow_symlinks=False):
-            continue
-        emit('progress', f'取得済み {completed}サンプル ／ 実験 {experiment.name}')
-        for sample in entries(experiment.path, cancel):
-            if not sample.is_dir(follow_symlinks=False):
-                continue
-            target = Path(sample.path) / (sample.name + '_10k_Sample') / 'T'
-            scope = experiment.name + '/' + sample.name
-            emit('progress', f'取得済み {completed}サンプル ／ 経過 {time.monotonic()-started:.0f}秒 ／ 処理中 {scope}')
-            bnal_paths = {}
-            try:
-                counts = sample_counts(target, cancel, bnal_paths)
-            except (FileNotFoundError, NotADirectoryError):
-                if not target.is_dir():
-                    continue
-                raise
-            counted = {}
-            if count_bnal is not None and count_bnal(experiment.name):
-                for index, (name, folder) in enumerate(sorted(bnal_paths.items()), 1):
-                    emit('progress', f'取得済み {completed}サンプル ／ 処理中 {scope} ／ BNAL内訳 {index}/{len(bnal_paths)}')
-                    counted[name] = tdms_numbers(folder, cancel)
-            row = dict(root=root_key, experiment=experiment.name, sample=sample.name, **counts,
-                       last_success=catalog.now(), status='完了')
-            with catalog.connect(path) as db:
-                db.execute(f"INSERT OR REPLACE INTO rack_samples({','.join(row)}) VALUES({','.join('?' for _ in row)})",
-                           tuple(row.values()))
-                save_bnals(db, root_key, experiment.name, sample.name, bnal_paths, counted, row['last_success'])
-            seen.append((experiment.name, sample.name))
-            completed += 1
-            emit('sample', row)
-            emit('progress', f'取得済み {completed}サンプル ／ 経過 {time.monotonic()-started:.0f}秒 ／ 完了 {scope}')
-    with catalog.connect(path) as db:
-        existing = db.execute('SELECT experiment,sample FROM rack_samples WHERE root=?', (root_key,)).fetchall()
-        keep = set(seen)
-        gone = [(root_key, r[0], r[1]) for r in existing if tuple(r) not in keep]
-        db.executemany('DELETE FROM rack_samples WHERE root=? AND experiment=? AND sample=?', gone)
-        db.executemany('DELETE FROM rack_bnals WHERE root=? AND experiment=? AND sample=?', gone)
-    return completed
-
-
-def refresh_sample(path, root, experiment, sample, cancel=None):
-    """Re-read one sample's T and count every BNAL@, saved exactly as a full scan would save that sample.
-
-    For the file manager after it moves files: one T listing, ANAL (+stocked) and one listing per BNAL@."""
-    cancel = cancel or threading.Event()
-    root_key = os.path.normcase(os.path.normpath(str(root)))
-    target = Path(root) / experiment / sample / (sample + '_10k_Sample') / 'T'
-    if not target.is_dir():
-        raise ValueError(f'Tフォルダが見つかりません: {target}')
-    bnal_paths = {}
-    counts = sample_counts(target, cancel, bnal_paths)
-    counted = {name: tdms_numbers(folder, cancel) for name, folder in sorted(bnal_paths.items())}
-    row = dict(root=root_key, experiment=experiment, sample=sample, **counts, last_success=catalog.now(), status='完了')
-    with catalog.connect(path) as db:
-        ensure_tables(db)
-        db.execute(f"INSERT OR REPLACE INTO rack_samples({','.join(row)}) VALUES({','.join('?' for _ in row)})",
-                   tuple(row.values()))
-        save_bnals(db, root_key, experiment, sample, bnal_paths, counted, row['last_success'])
-    return row
-
-
 def original_count(row):
     """Original measurement count: T direct plus T/stocked, or the ANAL set if that is larger (None if unknown)."""
     counts = [row[key] + (row.get(extra) or 0) for key, extra in (('t_tdms', 't_stocked_tdms'), ('anal_tdms', 'anal_stocked_tdms'))
@@ -315,19 +47,17 @@ def original_count(row):
 
 
 def analysis_progress(row):
+    """(表示, タグ) of one share; the judgment itself is shared.progress.anal_share (same as the ANAL進捗 tab)."""
     # Files moved to T/stocked or set aside in ANAL/stocked still belong to the sample.
-    total = None if row.get('t_tdms') is None else row['t_tdms'] + (row.get('t_stocked_tdms') or 0)
-    analysed = None if row.get('anal_tdms') is None else row['anal_tdms'] + (row.get('anal_stocked_tdms') or 0)
-    if total is None:
-        return '確認不可', 'unknown'
-    if total == 0:
+    cell = progress.anal_share(row)
+    if cell['status'] == 'unknown':
+        return ('確認不可' if cell['total'] is None else '対象なし'), 'unknown'
+    if cell['status'] == 'copy':
         # ANAL without T: ANAL copied here to run BNAL (a work copy), not a missing original.
-        return ('対象なし', 'unknown') if not analysed else ('解析用コピー（Tなし）', 'copy')
-    if analysed is None:
+        return '解析用コピー（Tなし）', 'copy'
+    if cell['analysed'] is None:
         return '0%（ANAL未作成）', 'unstarted'
-    rate = analysed / total * 100
-    tag = 'excess' if analysed > total else 'complete' if analysed == total else 'unstarted' if analysed == 0 else 'partial'
-    return f'{rate:.1f}%', tag
+    return f"{cell['analysed'] / cell['total'] * 100:.1f}%", cell['status']
 
 
 def filter_experiments(rows, query):
@@ -335,9 +65,6 @@ def filter_experiments(rows, query):
     return [row for row in rows if query in row['experiment'].casefold()]
 
 
-ANALYSIS_GROUPS = (('Rackstation', 'analysis'), ('Rackstation', 'archive'),
-                   ('QTserver', 'analysis'), ('QTserver', 'backup'),
-                   ('QDserver', 'analysis'), ('QDserver', 'backup'), ('QKserver', 'analysis'))
 COLUMNS = ('experiment', 'sample', 't_tdms', 't_stocked_tdms', 'anal_tdms', 'anal_progress', 'anal_stocked_tdms',
            'bnal_folders', 'tdms_bytes', 'last_success', 'status')
 TITLES = ('実験名', 'サンプル名', 'ファイル数（T直下）', 'T/stocked', 'ANAL解析数', 'ANAL進捗', 'ANAL/stocked（退避中）',
@@ -372,10 +99,6 @@ def volume_rate(row):
 def tag_volume_rows(tree):
     tree.tag_configure('volume_warning', background=ui_theme.row('warning', 0.3))
     tree.tag_configure('volume_danger', background=ui_theme.row('danger', 0.32))
-
-
-def group_label(server, share):
-    return f'{server}/{share}'
 
 
 def default_root(configured, server, share):

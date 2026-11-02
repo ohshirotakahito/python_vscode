@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 
 from database.recent_progress import inspect_recent, inventory_counts
-from database import catalog
+from shared import catalog
 
 
 class RecentProgressTests(unittest.TestCase):
@@ -19,9 +19,9 @@ class RecentProgressTests(unittest.TestCase):
                                [(name,) for name in ('.', 'started', 'started/EXSV', 'started/EXSV/T', 'pending')])
             row = [''] * 17
             row[2], row[6] = 'AXN3', 'started'
-            with patch('database.recent_progress.core.machines', return_value={
+            with patch('database.recent_progress.seq_records.machines', return_value={
                 'AXN3': {'Tmp_backup': root + '\\'},
-            }), patch('database.recent_progress.core.history', return_value=[tuple(row)]):
+            }), patch('database.recent_progress.seq_records.history', return_value=[tuple(row)]):
                 counts = inventory_counts(db_path)
             result = next(iter(counts.values()))
             self.assertEqual(result['direct_folders'], 2)
@@ -38,10 +38,10 @@ class RecentProgressTests(unittest.TestCase):
             row[0], row[2], row[6] = '2026/10/15_10:00', 'AN1', 'started'
             other = row.copy()
             other[2], other[6] = 'AN2', 'other_machine'
-            with patch('database.recent_progress.core.machines', return_value={
+            with patch('database.recent_progress.seq_records.machines', return_value={
                 'AN1': {'Tmp_backup': str(root)},
                 'AN9': {'Tmp_backup': str(Path(temp) / 'backup_09')},
-            }), patch('database.recent_progress.core.history', return_value=[tuple(row), tuple(other)]):
+            }), patch('database.recent_progress.seq_records.history', return_value=[tuple(row), tuple(other)]):
                 summary, details = inspect_recent('machines', 'legacy', 'local')
             self.assertEqual(len(summary), 8)
             self.assertEqual(summary[0][2:6], (3, 1, 2, '33.3%'))
@@ -52,17 +52,17 @@ class RecentProgressTests(unittest.TestCase):
         with TemporaryDirectory() as temp:
             root = Path(temp) / 'backup_08'
             (root / 'experiment').mkdir(parents=True)
-            with patch('database.recent_progress.core.machines', return_value={
+            with patch('database.recent_progress.seq_records.machines', return_value={
                 'AN8': {'Tmp_backup': str(root)},
-            }), patch('database.recent_progress.core.history', side_effect=FileNotFoundError('missing CSV')):
+            }), patch('database.recent_progress.seq_records.history', side_effect=FileNotFoundError('missing CSV')):
                 summary, details = inspect_recent('machines', 'legacy', 'local')
             self.assertEqual(details[0][2], '確認不可')
             self.assertEqual(summary[-1][3:6], ('', '', ''))
 
     def test_unreachable_folder_is_not_reported_as_empty(self):
-        with patch('database.recent_progress.core.machines', return_value={
+        with patch('database.recent_progress.seq_records.machines', return_value={
             'AN1': {'Tmp_backup': 'Z:/nonexistent-test-folder/backup_01'},
-        }), patch('database.recent_progress.core.history', return_value=[]):
+        }), patch('database.recent_progress.seq_records.history', return_value=[]):
             summary, details = inspect_recent('machines', 'legacy', 'local')
         self.assertEqual(summary[0][1], '確認不可')
         self.assertEqual(summary[0][2], '')

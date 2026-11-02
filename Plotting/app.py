@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""BNALプロット: 実験ファイルDBの BNAL@ 一覧から target を選び、TDMS（LAP Table）を読み込んで可視化する。
+"""配列アセンブリ（BNALプロット）: 実験ファイルDBの BNAL@ 一覧から target を選び、TDMS（LAP Table）を読み込んで可視化する。
 
 一覧は DB を読むだけでサーバーにはアクセスしない。読み込みはスレッド1本で順番に行う
 （サーバー負荷を軽く保つため）。読んだ内容は cache/ に保存し、次回は差分だけ読む。
@@ -23,7 +23,7 @@ import bnal_assembly as asm  # noqa: E402
 import bnal_modification as mod  # noqa: E402
 import bnal_plots as plots  # noqa: E402
 import bnal_source as src  # noqa: E402
-import ui_theme  # noqa: E402  (bnal_source がリポジトリ直下を sys.path に追加している)
+from shared import ui_theme  # noqa: E402  (bnal_source がリポジトリ直下を sys.path に追加している)
 
 OUTPUT_DIR = src.PLOTTING_DIR / 'heat_data'
 
@@ -453,6 +453,9 @@ class PlotPanel(ttk.Frame):
         self.per_position = tk.BooleanVar(value=False)
         self.bin_width = tk.DoubleVar(value=plots.BIN_WIDTH)
         self.scheme = tk.StringVar(value=next(iter(plots.POSITION_COLOR_SCHEMES)))
+        self.y_mode = tk.StringVar(value='auto')     # auto / fit / manual
+        self.y_min = tk.DoubleVar(value=-0.25)
+        self.y_max = tk.DoubleVar(value=1.25)
         self.pinned: str | None = None       # 基準として固定したデータ（常に比較の1番目＝島の一番左）
         self._job = None
         self.build()
@@ -464,7 +467,7 @@ class PlotPanel(ttk.Frame):
 
         box = ttk.Labelframe(left, text='データ（Ctrl / Shift で複数選択、★基準と比較）', padding=6)
         box.pack(fill='both', expand=True)
-        self.listbox = tk.Listbox(box, selectmode='extended', exportselection=False, height=10,
+        self.listbox = tk.Listbox(box, selectmode='extended', exportselection=False, height=4,
                                   activestyle='none', relief='flat', borderwidth=0, highlightthickness=1,
                                   highlightbackground=ui_theme.BORDER)
         self.listbox.pack(fill='both', expand=True)
@@ -480,9 +483,9 @@ class PlotPanel(ttk.Frame):
 
         kinds = ttk.Labelframe(left, text='グラフの種類', padding=6)
         kinds.pack(fill='x', pady=(8, 0))
-        for title, kind in plots.PLOTS.items():
+        for index, (title, kind) in enumerate(plots.PLOTS.items()):
             ttk.Radiobutton(kinds, text=title, value=kind, variable=self.kind,
-                            command=self.schedule_draw).pack(anchor='w')
+                            command=self.schedule_draw).grid(row=index % 4, column=index // 4, sticky='w', padx=(0, 6))
 
         colors = ttk.Labelframe(left, text='位置の色（箱ひげ・バイオリン・ヒストグラム）', padding=6)
         colors.pack(fill='x', pady=(8, 0))
@@ -505,11 +508,27 @@ class PlotPanel(ttk.Frame):
         ttk.Spinbox(options, from_=0.005, to=0.2, increment=0.005, width=7, textvariable=self.bin_width,
                     command=self.schedule_draw).grid(row=3, column=1, sticky='w', pady=(4, 0))
 
+        yaxis = ttk.Labelframe(left, text='縦軸の範囲（Relative Averaged Data）', padding=6)
+        yaxis.pack(fill='x', pady=(8, 0))
+        for column, (text, mode) in enumerate((('自動（全データ）', 'auto'), ('色の範囲に合わせる', 'fit'), ('手動', 'manual'))):
+            ttk.Radiobutton(yaxis, text=text, value=mode, variable=self.y_mode,
+                            command=self.schedule_draw).grid(row=0, column=column, sticky='w', padx=(0, 6))
+        limits = ttk.Frame(yaxis)
+        limits.grid(row=1, column=0, columnspan=3, sticky='w', pady=(4, 0))
+        for text, var in (('下限', self.y_min), ('上限', self.y_max)):
+            ttk.Label(limits, text=text).pack(side='left')
+            spin = ttk.Spinbox(limits, from_=-10, to=10, increment=0.05, width=6, textvariable=var,
+                               command=self.manual_y_changed)
+            spin.pack(side='left', padx=(4, 8))
+            spin.bind('<Return>', lambda e: self.manual_y_changed())
+        ttk.Button(limits, text='表示中の範囲', command=self.capture_y).pack(side='left')
+
+        # 画面が低くても描画・保存ボタンが隠れないよう、下端に固定してデータ一覧の側を縮める
+        ttk.Label(left, text=f'保存先: {OUTPUT_DIR}', style='Muted.TLabel', wraplength=330)             .pack(side='bottom', anchor='w', pady=(4, 0), before=box)
         buttons = ttk.Frame(left)
-        buttons.pack(fill='x', pady=(8, 0))
+        buttons.pack(side='bottom', fill='x', pady=(8, 0), before=box)
         ttk.Button(buttons, text='描画', style='Execute.TButton', command=self.draw).pack(side='left')
         ttk.Button(buttons, text='選択データの図・CSVを一式保存', command=self.save_outputs).pack(side='left', padx=6)
-        ttk.Label(left, text=f'保存先: {OUTPUT_DIR}', style='Muted.TLabel', wraplength=330).pack(anchor='w', pady=(4, 0))
 
         right = ttk.Frame(self)
         right.pack(side='left', fill='both', expand=True, padx=(10, 0))
@@ -608,6 +627,24 @@ class PlotPanel(ttk.Frame):
             self.after_cancel(self._job)
         self._job = self.after(250, self.draw)
 
+    def value_range(self):
+        mode = self.y_mode.get()
+        return (float(self.y_min.get()), float(self.y_max.get())) if mode == 'manual' else mode
+
+    def manual_y_changed(self):
+        self.y_mode.set('manual')
+        self.schedule_draw()
+
+    def capture_y(self):
+        """いま表示中（ズーム後を含む）の縦軸範囲を手動の下限・上限に入れる"""
+        axes = [ax for ax in self.figure.axes if ax.get_label() != '<colorbar>']
+        if not axes:
+            return
+        lo, hi = axes[0].get_xlim() if self.kind.get() == 'histogram' else axes[0].get_ylim()
+        self.y_min.set(round(lo, 3))
+        self.y_max.set(round(hi, 3))
+        self.manual_y_changed()
+
     def scheme_key(self):
         return plots.POSITION_COLOR_SCHEMES[self.scheme.get()]
 
@@ -630,7 +667,8 @@ class PlotPanel(ttk.Frame):
         try:
             preps = self.selected_preps()
             edges = plots.shared_bin_edges(preps, bin_width=float(self.bin_width.get()))
-            plots.draw(self.kind.get(), preps, edges, figure=self.figure, scheme=self.scheme_key())
+            plots.draw(self.kind.get(), preps, edges, figure=self.figure, scheme=self.scheme_key(),
+                       value_range=self.value_range())
         except (ValueError, tk.TclError) as exc:
             self.figure.clear()
             self.message(f'描画できません: {exc}')
@@ -654,7 +692,7 @@ class PlotPanel(ttk.Frame):
                     continue
                 edges = plots.shared_bin_edges([prep], bin_width=bin_width)
                 folders.append(plots.save_outputs(prep, edges, OUTPUT_DIR, timestamp=stamp,
-                                                  scheme=self.scheme_key()))
+                                                  scheme=self.scheme_key(), value_range=self.value_range()))
         finally:
             self.configure(cursor='')
         if folders and messagebox.askyesno('保存しました', f'{len(folders)} 件を保存しました。\n\n'
@@ -968,14 +1006,27 @@ class ModificationPanel(ttk.Frame):
         self.zero = tk.StringVar()
         self.full = tk.StringVar()
         self.min_q = tk.DoubleVar(value=0.0)
+        self.group_mode = tk.BooleanVar(value=False)
+        self.sample_groups = {}
+        self.group_aggregation = tk.StringVar(value=next(iter(mod.GROUP_METHODS)))
+        self.display_sites = []
         self._job = None
         self._dirty = True      # 読み込み済みデータか Q の下限が変わったら数え直す
         self.build()
 
     def build(self):
-        left = ttk.Frame(self, width=330)
-        left.pack(side='left', fill='y')
-        left.pack_propagate(False)
+        sidebar = ttk.Frame(self, width=350)
+        sidebar.pack(side='left', fill='y')
+        sidebar.pack_propagate(False)
+        scroll_canvas = tk.Canvas(sidebar, width=330, highlightthickness=0, background=ui_theme.BG)
+        scrollbar = ttk.Scrollbar(sidebar, orient='vertical', command=scroll_canvas.yview)
+        scroll_canvas.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side='right', fill='y')
+        scroll_canvas.pack(side='left', fill='both', expand=True)
+        left = ttk.Frame(scroll_canvas)
+        window = scroll_canvas.create_window((0, 0), window=left, anchor='nw')
+        left.bind('<Configure>', lambda e: scroll_canvas.configure(scrollregion=scroll_canvas.bbox('all')))
+        scroll_canvas.bind('<Configure>', lambda e: scroll_canvas.itemconfigure(window, width=e.width))
 
         box = ttk.Labelframe(left, text='サンプル（Ctrl / Shift で複数選択）', padding=6)
         box.pack(fill='both', expand=True)
@@ -997,6 +1048,20 @@ class ModificationPanel(ttk.Frame):
         ttk.Label(box, style='Muted.TLabel', wraplength=310,
                   text='基本配列と、修飾配列（基本配列_M_22 など）を同じサンプルで読み込むと表示されます。'
                        '読み込みタブの「同じ配列グループを選択」が便利です。').pack(anchor='w', pady=(4, 0))
+
+        grouping = ttk.Labelframe(left, text='サンプルのグループ化', padding=6)
+        grouping.pack(fill='x', pady=(8, 0))
+        ttk.Checkbutton(grouping, text='グループ別に修飾率を評価', variable=self.group_mode,
+                        command=self.schedule_draw).pack(anchor='w')
+        ttk.Button(grouping, text='グループ名・所属を設定 / 保存・読込', command=self.choose_groups).pack(fill='x')
+        self.group_summary = ttk.Label(grouping, text='グループ未設定', wraplength=300)
+        self.group_summary.pack(fill='x', pady=3)
+        aggregate = ttk.Combobox(grouping, textvariable=self.group_aggregation, values=list(mod.GROUP_METHODS), state='readonly', width=30)
+        aggregate.pack(fill='x')
+        aggregate.bind('<<ComboboxSelected>>', lambda e: self.schedule_draw())
+        ttk.Label(grouping, text='登録した全所属サンプルで評価します（上の選択はグループ作成用）。\n'
+                  'グループの95%区間はサンプル単位。対照のばらつきは含みません。', wraplength=300,
+                  style='Muted.TLabel').pack(fill='x', pady=3)
 
         targets = ttk.Labelframe(left, text='ターゲット（Ctrl / Shift で複数選択）', padding=6)
         targets.pack(fill='x', pady=(8, 0))
@@ -1040,6 +1105,7 @@ class ModificationPanel(ttk.Frame):
         options.pack(fill='x', pady=(8, 0))
         ttk.Label(options, text='信頼区間').grid(row=0, column=0, sticky='w')
         combo = ttk.Combobox(options, textvariable=self.ci, state='readonly', values=list(mod.CI_METHODS), width=30)
+        self.ci_combo = combo
         combo.grid(row=0, column=1, sticky='w', padx=(6, 0))
         combo.bind('<<ComboboxSelected>>', lambda e: self.schedule_draw())
         ttk.Label(options, text='修飾位置の Q 下限').grid(row=1, column=0, sticky='w', pady=(4, 0))
@@ -1085,6 +1151,17 @@ class ModificationPanel(ttk.Frame):
         self.update_controls()
 
     # ---------- データ ----------
+    def choose_groups(self):
+        from modification_groups import edit_groups
+        self.remember_sample_selection()
+        def apply(groups):
+            self.sample_groups = groups
+            self.group_mode.set(True)
+            self.group_summary.configure(text='\n'.join(f'{name}: {"; ".join(mod.sample_label(k) for k in members)}'
+                                                      for name, members in groups.items()))
+            self.schedule_draw()
+        edit_groups(self, self.sample_keys, self.sample_groups, self.selected_sample_keys, apply)
+
     def datasets(self):
         return [mod.Dataset(r.entry.experiment, r.entry.sample, r.entry.target, r.data, r.occurrence.group)
                 for r in self.app.datasets.values() if not r.data.empty]
@@ -1190,10 +1267,23 @@ class ModificationPanel(ttk.Frame):
         method = mod.METHODS[self.method.get()]
         self.remember_sample_selection()
         chosen = self.selected_sample_keys
-        table = mod.rate_table(self.sites, method, zero=self.control_key(self.zero),
-                               full=self.control_key(self.full), ci=mod.CI_METHODS[self.ci.get()])
+        self.ci_combo.configure(state='disabled' if self.group_mode.get() else 'readonly')
+        self.tree.heading('sample', text='グループ' if self.group_mode.get() else 'サンプル')
+        self.display_sites = self.sites
+        if self.group_mode.get():
+            if not self.sample_groups:
+                self.table = None
+                self.tree.delete(*self.tree.get_children())
+                self.render()
+                return
+            table, self.display_sites = mod.group_rate_table(self.sites, self.sample_groups, method,
+                zero=self.control_key(self.zero), full=self.control_key(self.full),
+                aggregation=mod.GROUP_METHODS[self.group_aggregation.get()])
+        else:
+            table = mod.rate_table(self.sites, method, zero=self.control_key(self.zero),
+                                   full=self.control_key(self.full), ci=mod.CI_METHODS[self.ci.get()])
         targets = {self.target_sequences[i] for i in self.target_listbox.curselection()}
-        keep = [(e, s) in chosen and sequence in targets
+        keep = [(self.group_mode.get() or (e, s) in chosen) and sequence in targets
                 for e, s, sequence in zip(table['experiment'], table['sample'], table['sequence'])]
         self.table = table[keep].reset_index(drop=True)
         self.fill_tree()
@@ -1207,8 +1297,11 @@ class ModificationPanel(ttk.Frame):
             return '—' if math.isnan(x) else f'{x * 100:.1f}%'
         for index, row in self.table.iterrows():
             ci = '—' if math.isnan(row['low']) else f'{row["low"] * 100:.1f} 〜 {row["high"] * 100:.1f}%'
+            note = row['note']
+            if self.group_mode.get():
+                note = f'有効 {row["n_samples"]}/{row["n_members"]}サンプル / {row["members"]} / {note}'
             values = (f'{row["experiment"]} / {row["sample"]}', row['sequence'], row['site'], f'{row["n_mod"]:,}',
-                      f'{row["n_unmod"]:,}', row['chunks'], pct(row['raw_rate']), pct(row['rate']), ci, row['note'])
+                      f'{row["n_unmod"]:,}', row['chunks'], pct(row['raw_rate']), pct(row['rate']), ci, note)
             self.tree.insert('', 'end', iid=str(index), values=values, tags=('warn',) if row['note'] else ())
         if previous and self.tree.exists(previous[0]):
             self.tree.selection_set(previous[0])
@@ -1218,26 +1311,33 @@ class ModificationPanel(ttk.Frame):
         if not selection or self.table is None:
             return None
         row = self.table.iloc[int(selection[0])]
-        return next((s for s in self.sites if (s.experiment, s.sample, s.target) ==
+        return next((s for s in self.display_sites if (s.experiment, s.sample, s.target) ==
                      (row['experiment'], row['sample'], row['target'])), None)
 
     def render(self):
         if self.table is None or self.table.empty:
             self.figure.clear()
-            self.figure.text(0.5, 0.5, '選択条件に一致する結果がありません。\nサンプル・ターゲットの選択と読み込み済み配列を確認してください。',
+            message = ('グループ未設定です。\n「グループ名・所属を設定」でサンプルを登録してください。'
+                       if self.group_mode.get() and not self.sample_groups else
+                       '選択条件に一致する結果がありません。\nサンプル・ターゲットの選択と読み込み済み配列を確認してください。')
+            self.figure.text(0.5, 0.5, message,
                              ha='center', va='center', fontsize=11, color='#555555')
         else:
             mod.plot_rates(self.table, self.figure, mod.METHODS[self.method.get()], detail=self.selected_site())
         self.canvas.draw_idle()
 
     def save_csv(self):
+        if self._job:
+            self.after_cancel(self._job)
+        self.draw()
         if self.table is None or self.table.empty:
             messagebox.showinfo('保存', '保存する結果がありません。', parent=self)
             return
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         method = mod.METHODS[self.method.get()]
-        name = f'{datetime.now():%Y%m%d%H%M}_modification_{method}.csv'
-        out = self.table.assign(method=method, ci=mod.CI_METHODS[self.ci.get()],
+        mode = 'group' if self.group_mode.get() else 'sample'
+        name = f'{datetime.now():%Y%m%d%H%M%S}_modification_{mode}_{method}.csv'
+        out = self.table.assign(method=method, ci='sample_bootstrap' if self.group_mode.get() else mod.CI_METHODS[self.ci.get()],
                                 zero_control=self.zero.get() if method != 'raw' else '',
                                 full_control=self.full.get() if method == 'both' else '',
                                 min_q=self.min_q.get())
@@ -1251,7 +1351,7 @@ class App:
         self.root = root
         # 読み込み済みデータ: ident -> LoadResult（グラフ用タブはここから読む）
         self.datasets: dict[str, src.LoadResult] = {}
-        ui_theme.header(root, 'BNALプロット', 'BNAL@ の TDMS を読み込んで MS_IDX ごとの分布を可視化',
+        ui_theme.header(root, '配列アセンブリ', 'BNAL の位置ごとの分布・アセンブリ・q値・修飾率の可視化',
                         '', ACCENT, on_close=self.close).pack(fill='x')
         self.notebook = ttk.Notebook(root)
         self.notebook.pack(fill='both', expand=True)
@@ -1295,7 +1395,7 @@ class App:
 
 def main():
     root = tk.Tk()
-    root.title('BNALプロット')
+    root.title('配列アセンブリ')
     root.geometry('1400x900')
     root.minsize(900, 600)
     ui_theme.apply(root, ACCENT)

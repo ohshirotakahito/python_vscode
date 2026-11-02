@@ -134,7 +134,7 @@ class BnalStockTest(unittest.TestCase):
             t = make_sample(tmp)
             add_bnal(t, 'miR-1', range(1, 4))
             built = bnal_stock.plan(bnal_stock.scan(t, ['miR-1']))
-            with patch('filemanager.anal_manager.os.replace', flaky), patch('filemanager.anal_manager.time.sleep'):
+            with patch('shared.file_moves.os.replace', flaky), patch('shared.file_moves.time.sleep'):
                 log = execute_moves(built['plan'], Path(tmp) / 'logs')
             self.assertIn('"status": "完了"', log.read_text(encoding='utf-8'))
             self.assertEqual(len(names(t / 'ANAL' / 'stocked')), 6)
@@ -212,16 +212,16 @@ class BnalStockTest(unittest.TestCase):
                 self.assertEqual(con.execute('SELECT count(*) FROM rack_samples').fetchone(), (1,))
 
     def test_running_database_scan_only_warns_for_the_same_share(self):
-        from database import rackstation_view
+        from shared import rack_store
         from filemanager.anal_manager import scan_warning
         with tempfile.TemporaryDirectory() as tmp:
             db = Path(tmp) / 'inventory.sqlite3'
             self.assertEqual(scan_warning(db, [tmp]), '', 'missing DB is not an error')
             share = Path(tmp) / 'share'
-            rackstation_view.record_root(db, share, 'QD', status='実行中', last_attempt='2026-10-22T03:00:00+00:00')
+            rack_store.record_root(db, share, 'QD', status='実行中', last_attempt='2026-10-22T03:00:00+00:00')
             self.assertIn('調査中', scan_warning(db, [str(share) + '\\']))
             self.assertEqual(scan_warning(db, [Path(tmp) / 'other']), '')
-            rackstation_view.record_root(db, share, 'QD', status='取得済み')
+            rack_store.record_root(db, share, 'QD', status='取得済み')
             self.assertEqual(scan_warning(db, [share]), '')
 
     def test_bnal_row_state_flags_unfinished_and_stocked(self):

@@ -4,7 +4,8 @@ import threading
 import unittest
 from unittest.mock import patch
 
-from database import catalog, inventory_views
+from database import inventory_views
+from shared import catalog
 
 
 class PartialUpdateTests(unittest.TestCase):

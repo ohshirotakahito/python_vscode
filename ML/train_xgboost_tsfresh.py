@@ -306,6 +306,7 @@ def run_analysis(smns, progress_callback=None):
 
     # 学習用/テスト用はイベント単位で1回だけ決め、全特徴量セットで共通に使う
     from common import training_core
+    dnf = training_core.prepare_dataset(dnf)
     split = training_core.make_split(dnf)
 
     _report(1, "tsfresh特徴量を選択中（学習用イベントのみ使用）...")
@@ -342,7 +343,8 @@ def run_analysis(smns, progress_callback=None):
     plot_learning_curve(main_result['evals_result'], save_dir=RUN_DIR)
     plot_feature_importance(main_result['clf'], feature_columns, top_n=30, save_dir=RUN_DIR)
 
-    MX, N_MX, report = conmtx(y_test, y_pred, le, save_dir=RUN_DIR)
+    MX, N_MX, report = conmtx(y_test, y_pred, le, save_dir=RUN_DIR,
+                                   classification_config=training_core.current_settings())
 
     # --- モデル・ラベルエンコーダ・使用特徴量一覧も同じフォルダにまとめて保存 ---
     # ⑤ 混合予測タブで選べるよう、学習器として保存する（common/trained_models.py）

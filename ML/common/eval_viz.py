@@ -102,7 +102,7 @@ def redraw_confusion_matrices(run_dir, class_order=None, output_dir=None):
     plot_confusion_matrices(matrix, normalized, output_dir or run_dir)
 
 
-def conmtx(y_test, y_pred, le, save_dir=None):
+def conmtx(y_test, y_pred, le, save_dir=None, classification_config=None):
     """混同行列（実数・正規化%）を作成・可視化する。
 
     save_dirを指定するとそのフォルダにPNG画像・CSV・レポートテキストを保存する
@@ -121,6 +121,13 @@ def conmtx(y_test, y_pred, le, save_dir=None):
     N_MX = pd.DataFrame(n_mtx, index=mtx_index, columns=mtx_columns)
 
     report = classification_report(y_test, y_pred, target_names=class_names)
+    if classification_config is not None:
+        cfg = classification_config
+        header = '分類単位: ' + ('グループ別' if cfg['classification_mode'] == 'group' else 'サンプル別') + '\n'
+        if cfg['classification_mode'] == 'group':
+            header += ''.join(f'{name}: {", ".join(members)}\n' for name, members in cfg['sample_groups'].items())
+        header += '評価方法: ' + ('元サンプル単位' if cfg['split_mode'] == 'sample' else 'イベント単位') + '\n\n'
+        report = header + report
     print(report)
 
     out_dir = Path(save_dir) if save_dir else Path('.')

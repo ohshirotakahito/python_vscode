@@ -4,7 +4,8 @@ from unittest import TestCase
 from unittest.mock import patch
 import os
 import threading
-from database import catalog, rackstation_view
+from database import rackstation_view
+from shared import catalog, rack_store
 
 
 class RackstationTests(TestCase):
@@ -47,7 +48,7 @@ class RackstationTests(TestCase):
                                           db, threading.Event(), lambda *args: None)
             with catalog.connect(db, readonly=True) as connection:
                 acquired = connection.execute('SELECT last_success FROM rack_samples').fetchone()[0]
-            with patch.object(rackstation_view.os, 'scandir', side_effect=AssertionError('server accessed')):
+            with patch.object(rack_store.os, 'scandir', side_effect=AssertionError('server accessed')):
                 rows = rackstation_view.inventory(db, str(root))
             self.assertEqual(len(rows), 1)
             self.assertEqual(rows[0]['last_success'], acquired)
@@ -114,7 +115,7 @@ class RackstationTests(TestCase):
                 scanned.append(Path(path))
                 return original(path)
 
-            with patch.object(rackstation_view.os, 'scandir', side_effect=record):
+            with patch.object(rack_store.os, 'scandir', side_effect=record):
                 counts = rackstation_view.sample_counts(target, threading.Event())
             self.assertEqual((counts['t_tdms'], counts['anal_tdms'], counts['bnal_folders'],
                               counts['t_stocked_tdms'], counts['anal_stocked_tdms']), (1, 1, 1, 1, None))
@@ -156,7 +157,7 @@ class RackstationTests(TestCase):
                 scanned.append(Path(path))
                 return original(path)
 
-            with patch.object(rackstation_view.os, 'scandir', side_effect=record):
+            with patch.object(rack_store.os, 'scandir', side_effect=record):
                 rackstation_view.scan_samples(source, db, threading.Event(), lambda *args: None)
             self.assertFalse([p for p in scanned if p.name.startswith('BNAL@')])
             rows = {r['target']: r for r in rackstation_view.bnal_inventory(db, str(root))}
@@ -278,7 +279,7 @@ class RackstationTests(TestCase):
             source = dict(server='QDserver', root=str(root), kind='analysis')
             rackstation_view.scan_group(source, db, threading.Event(), lambda *args: None)
             succeeded = rackstation_view.root_states(db)[catalog.root_identity(root)]['last_success']
-            with patch.object(rackstation_view, 'scan_samples', side_effect=OSError('network down')):
+            with patch.object(rack_store, 'scan_samples', side_effect=OSError('network down')):
                 with self.assertRaises(OSError):
                     rackstation_view.scan_group(source, db, threading.Event(), lambda *args: None)
             state = rackstation_view.root_states(db)[catalog.root_identity(root)]

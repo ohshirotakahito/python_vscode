@@ -3,7 +3,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-import ui_theme
+from shared import ui_theme
 from common.trained_models import comparison_table
 
 

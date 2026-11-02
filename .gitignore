@@ -74,3 +74,6 @@ database/*.view.json.tmp
 # ===== 作業用一時フォルダ =====
 .tmp/
 filemanager/t_stock_logs/
+
+# Analyzer の実行ログ（解析の記録・自動着手の状態）。ほかのアプリの logs と同じく Git 管理外
+Analyzer/logs/

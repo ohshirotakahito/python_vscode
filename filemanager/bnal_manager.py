@@ -1,7 +1,7 @@
 """BNAL duplicate management using the same saved counts as BNAL progress."""
 from pathlib import Path
 
-from database import catalog
+from shared import catalog
 from filemanager.anal_manager import AnalPanel
 
 

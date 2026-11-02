@@ -10,19 +10,19 @@ from tkinter import ttk, filedialog, messagebox
 from tkinter import font as tkfont
 import sys
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import ui_theme  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # リポジトリ直下（shared/ を読むため）
+from shared import catalog, ui_theme  # noqa: E402
 
 try:
-    from . import catalog, inventory_views, recent_progress, sq_workflow, rackstation_view, bnal_progress, anal_progress
+    from . import inventory_views, recent_progress, sq_workflow, rackstation_view, bnal_progress, anal_progress, plan_view
 except ImportError:
-    import catalog
     import inventory_views
     import recent_progress
     import sq_workflow
     import rackstation_view
     import bnal_progress
     import anal_progress
+    import plan_view
 
 BASE = Path(__file__).resolve().parent
 CONFIG = BASE / 'sources.json'
@@ -94,6 +94,8 @@ class App(tk.Tk):
         self.main_tabs.add(self.anal_panel, text='ANAL進捗')
         self.bnal_panel = ttk.Frame(self.main_tabs)
         self.main_tabs.add(self.bnal_panel, text='BNAL進捗')
+        self.plan_panel = ttk.Frame(self.main_tabs)
+        self.main_tabs.add(self.plan_panel, text='サンプル台帳')
         self.buttons = []
         target = ttk.LabelFrame(self.sq_panel, text='更新する範囲を選択（ほかの範囲の記録は保持します）', padding=8)
         target.pack(fill='x', padx=8)
@@ -220,6 +222,7 @@ class App(tk.Tk):
         rackstation_view.create_panel(self, self.analysis_panel)
         anal_progress.create_panel(self, self.anal_panel)
         bnal_progress.create_panel(self, self.bnal_panel)
+        plan_view.create_panel(self, self.plan_panel)
         self.refresh()
 
     def table(self, columns, titles, height, expand=False, parent=None):

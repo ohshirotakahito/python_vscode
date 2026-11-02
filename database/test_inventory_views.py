@@ -2,7 +2,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-from database import catalog, inventory_views as views
+from database import inventory_views as views
+from shared import catalog
 
 
 class DomainInventoryTests(unittest.TestCase):

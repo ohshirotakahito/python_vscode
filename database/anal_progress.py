@@ -6,80 +6,28 @@ file and keeps its '#NNN' number, so the first original number missing from ANAL
 A sample's progress is its most advanced share.
 """
 from collections import defaultdict
-import re
 import tkinter as tk
 import tkinter.font as tkfont
 from tkinter import ttk
 try:
-    from . import bnal_progress, catalog, rackstation_view
+    from . import bnal_progress, rackstation_view
 except ImportError:
-    import bnal_progress, catalog, rackstation_view
-import ui_theme  # noqa: E402  (rackstation_view puts the repository root on sys.path)
+    import bnal_progress, rackstation_view
+from shared import catalog, ui_theme  # noqa: E402  (rackstation_view puts the repository root on sys.path)
 
-DONE_STATES = bnal_progress.DONE_STATES
-STATUS_TEXT = dict(bnal_progress.STATUS_TEXT, unknown='未計数・対象なし', copy='解析用コピー（Tなし）')
+# 判定の規則（状態・再開地点・注意）は shared/progress.py（ファイル管理・Analyzer と共通）
+from shared.progress import DONE_STATES, STATUS_TEXT, parse_ranges, resume_point  # noqa: E402,F401
+from shared import progress  # noqa: E402
 FLAG_LEGEND = ('⚠（黄の帯）＝先に片付けが必要：欠番＝ANALの途中に抜けがある（最後の#番号より前が未解析）　'
                '退避＝ANAL/stockedに退避中　混在＝ANALに同じ#番号（世代混在の疑い）。'
                '参考：差異＝共有間でT（元ファイル）数が違う　要更新＝再開地点が未取得（Analysis_serverで更新）　'
                'コピー不足＝解析用コピーのANALが元より少ない')
-INFO_FLAGS = ('差異', '要更新', 'コピー不足')
-
-
-def parse_ranges(text):
-    """'#001-#003,#007' -> {1, 2, 3, 7} (inverse of rackstation_view.number_ranges)."""
-    numbers = set()
-    for part in (text or '').split(','):
-        bounds = [int(n) for n in re.findall(r'\d+', part)]
-        if bounds:
-            numbers.update(range(bounds[0], bounds[-1] + 1))
-    return numbers
-
-
-def resume_point(row):
-    """(resume number, gap numbers) for one share, or (None, None) when the scan predates these columns.
-
-    Missing numbers above the largest ANAL number are the unfinished tail: the run resumes at the first of them.
-    Missing numbers below it are gaps that a plain resume would never fill."""
-    if not row.get('anal_missing_checked'):
-        return None, None
-    missing = parse_ranges(row.get('anal_missing'))
-    last = row.get('anal_last')
-    if last is None:
-        return (min(missing) if missing else None), []
-    tail = [n for n in missing if n > last]
-    return (min(tail) if tail else None), sorted(n for n in missing if n < last)
+INFO_FLAGS = progress.ANAL_INFO
 
 
 def share_cell(row, group):
     """Status of one sample on one share from its rack_samples row."""
-    total = None if row.get('t_tdms') is None else row['t_tdms'] + (row.get('t_stocked_tdms') or 0)
-    analysed = None if row.get('anal_tdms') is None else row['anal_tdms'] + (row.get('anal_stocked_tdms') or 0)
-    resume, gaps = resume_point(row)
-    cell = dict(group=group, row=row, total=total, analysed=analysed, resume=resume, gaps=gaps,
-                checked=bool(row.get('anal_missing_checked')), stocked=row.get('anal_stocked_tdms') or 0,
-                mixed=row['anal_tdms'] - row['anal_distinct'] if row.get('anal_distinct') is not None and row.get('anal_tdms') else 0)
-    if total is None or (total == 0 and not analysed):
-        return dict(cell, status='unknown', ratio=None, remaining=None, state='確認不可' if total is None else '対象なし（T 0件）')
-    if total == 0:
-        # ANAL without T: ANAL copied here to run BNAL. Not an ANAL run, so it never decides the sample's progress.
-        return dict(cell, status='copy', ratio=None, remaining=None, coverage=None, state=STATUS_TEXT['copy'])
-    if not analysed:
-        return dict(cell, status='unstarted', ratio=0.0, remaining=total,
-                    state='未着手（ANALなし）' if analysed is None else '未着手（ANAL 0件）')
-    ratio = analysed / total
-    status = 'excess' if ratio > 1 else 'complete' if ratio == 1 else 'partial'
-    return dict(cell, status=status, ratio=ratio, remaining=max(total - analysed, 0),
-                state=dict(excess='超過・要確認', complete='完了', partial='進行中')[status])
-
-
-def _best(cells):
-    """Most advanced share: highest ratio, then the one with the fewest remaining files. Analysis copies only
-    count when the sample has nothing else."""
-    cells = [c for c in cells if c['status'] != 'copy'] or cells
-    known = [c for c in cells if c['ratio'] is not None]
-    if not known:
-        return next((c for c in cells if c['status'] == 'excess'), cells[0])
-    return max(known, key=lambda c: (min(c['ratio'], 1), c['status'] != 'excess', -(c['remaining'] or 0)))
+    return dict(progress.anal_share(row), group=group, row=row)
 
 
 def group_order(samples, labels):
@@ -99,23 +47,7 @@ def build_progress(samples, labels):
         by_sample[(r['experiment'], r['sample'])][group] = share_cell(r, group)
     entries = []
     for (experiment, sample), cells in by_sample.items():
-        best = _best(list(cells.values()))
-        copies = [c for c in cells.values() if c['status'] == 'copy' and c is not best]
-        for c in copies:
-            c['coverage'] = c['analysed'] / best['analysed'] if best['analysed'] else None
-        flags = []
-        if len({c['total'] for c in cells.values() if c['total']}) > 1:
-            flags.append('差異')
-        if best['gaps']:
-            flags.append('欠番')
-        if any(c['stocked'] for c in cells.values()):
-            flags.append('退避')
-        if any(c['mixed'] for c in cells.values()):
-            flags.append('混在')
-        if best['status'] not in DONE_STATES and best['status'] != 'unknown' and not best['checked']:
-            flags.append('要更新')
-        if any(c['coverage'] is not None and c['coverage'] < 1 for c in copies):
-            flags.append('コピー不足')
+        best, flags = progress.assess_sample(list(cells.values()))
         entries.append(dict(experiment=experiment, sample=sample, cells=cells, best=best, status=best['status'],
                             ratio=best['ratio'], remaining=best['remaining'], total=best['total'],
                             resume=best['resume'], gaps=best['gaps'], flags=tuple(flags)))
@@ -202,8 +134,10 @@ def detail_values(entry, cell):
     duplicate_known = row.get('anal_distinct') is not None
     duplicate = (f"重複あり（{cell['mixed']:,}件）" if cell['mixed'] else
                  '重複なし' if duplicate_known else '未判定（要更新）')
+    # anal_stocked_tdms is None when ANAL/stocked does not exist; the same listing sets anal_distinct,
+    # so a row with anal_distinct was scanned and simply has nothing set aside
     stocked = (f"退避中（{cell['stocked']:,}件）" if cell['stocked'] else
-               '退避なし' if row.get('anal_stocked_tdms') is not None else '未取得（要更新）')
+               '退避なし' if row.get('anal_stocked_tdms') is not None or duplicate_known else '未取得（要更新）')
     duplicate_risk = ('要確認（同じ#番号・世代混在）' if cell['mixed'] else
                       '兆候なし（#番号重複なし）' if duplicate_known else '未判定（要更新）')
     return dict(experiment=entry['experiment'], sample=entry['sample'], group=cell['group'],

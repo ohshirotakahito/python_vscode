@@ -37,6 +37,9 @@ BALANCE_METHODS = {
 }
 
 DEFAULT_SETTINGS = {
+    'classification_mode': 'sample',
+    'sample_groups': {},
+    'split_mode': 'event',
     'balance': 'under',          # BALANCE_METHODS のキー
     'tune': False,               # ハイパーパラメータをランダム探索するか
     'n_trials': 20,              # 探索する候補数（既定値の1候補に追加）
@@ -64,6 +67,10 @@ def configure(**changes):
         raise ValueError('テスト用の割合は0より大きく1未満にしてください。')
     if int(merged['n_cv_folds']) < 2:
         raise ValueError('交差検証の分割数は2以上にしてください。')
+    if merged['classification_mode'] not in ('sample', 'group') or merged['split_mode'] not in ('event', 'sample'):
+        raise ValueError('分類単位または評価方法が不正です。')
+    if merged['classification_mode'] == 'group':
+        merged['sample_groups'] = normalize_groups(merged['sample_groups'].items())
     SETTINGS.update(merged)
 
 
@@ -82,6 +89,67 @@ def reset():
 # ファイルは同じ条件での連続測定なので、ファイルごとの違いは実験条件の違いではない。
 # そのため、イベント（シグナル）単位で学習用/テスト用に分ければ十分とする。
 
+def normalize_groups(groups, samples=None):
+    """Validate explicit membership and name unnamed groups."""
+    result, assigned = {}, set()
+    for i, (name, members) in enumerate(groups):
+        name = str(name).strip() or f'Group {chr(65 + i) if i < 26 else i + 1}'
+        members = list(map(str, members))
+        if name in result:
+            raise ValueError(f'グループ名が重複しています: {name}')
+        if not members:
+            raise ValueError(f'所属サンプルがありません: {name}')
+        if len(set(members)) != len(members) or assigned.intersection(members):
+            raise ValueError('同じサンプルを複数回登録できません。')
+        result[name] = members
+        assigned.update(members)
+    if len(result) < 2:
+        raise ValueError('グループを2つ以上登録してください。')
+    if samples is not None and assigned != set(samples):
+        raise ValueError('選択サンプルとグループ所属が一致しません。未割り当て・選択外の所属を確認してください。')
+    return result
+
+
+def prepare_dataset(dnf, settings=None):
+    cfg = settings or current_settings()
+    if cfg['classification_mode'] != 'group':
+        return dnf
+    groups = normalize_groups(cfg['sample_groups'].items())
+    mapping = {sample: name for name, members in groups.items() for sample in members}
+    result = dnf.copy()
+    result['original_sample'] = result['sample'].astype(str)
+    missing = set(result['original_sample']) - set(mapping)
+    absent = set(mapping) - set(result['original_sample'])
+    if missing or absent:
+        raise ValueError(f'グループと読み込みデータが一致しません。未登録: {sorted(missing)} / データなし: {sorted(absent)}')
+    result['sample'] = result['original_sample'].map(mapping)
+    return result
+
+
+def sample_split(dnf, y, cfg):
+    """Hold out source samples and keep remaining sources disjoint in CV."""
+    source = dnf.get('original_sample', dnf['sample']).astype(str).to_numpy()
+    rng = np.random.default_rng(cfg['random_state'])
+    test_sources, class_sources = [], []
+    for cls in np.unique(y):
+        members = np.unique(source[y == cls])
+        if len(members) < 3:
+            raise ValueError('元サンプル単位の評価には各クラス3サンプル以上が必要です（テスト用1以上、交差検証用2以上）。')
+        members = rng.permutation(members)
+        n_test = min(len(members) - 2, max(1, int(np.ceil(len(members) * cfg['test_size']))))
+        test_sources.extend(members[:n_test])
+        class_sources.append(members[n_test:])
+    test_mask = np.isin(source, test_sources)
+    train, test = np.flatnonzero(~test_mask), np.flatnonzero(test_mask)
+    n_folds = min(int(cfg['n_cv_folds']), min(map(len, class_sources)))
+    cv = []
+    for fold in range(n_folds):
+        valid_sources = np.concatenate([np.array_split(members, n_folds)[fold] for members in class_sources])
+        valid = np.isin(source[train], valid_sources)
+        cv.append((np.flatnonzero(~valid), np.flatnonzero(valid)))
+    return train, test, cv
+
+
 def make_split(dnf, settings=None):
     """学習用/テスト用（クラス比率を保ったイベント単位）と、学習用内のCV分割を1回だけ決める。
 
@@ -98,18 +166,23 @@ def make_split(dnf, settings=None):
         raise ValueError('各クラスに3イベント以上必要です（'
                          + ', '.join(f'{c}={n}' for c, n in zip(class_names, counts)) + '）。')
     seed = cfg['random_state']
-    train, test = train_test_split(np.arange(len(y)), test_size=cfg['test_size'],
-                                   random_state=seed, stratify=y)
-    n_folds = max(2, min(int(cfg['n_cv_folds']), int(np.bincount(y[train]).min())))
-    cv = list(StratifiedKFold(n_folds, shuffle=True, random_state=seed).split(np.zeros(len(train)), y[train]))
+    if cfg['split_mode'] == 'sample':
+        train, test, cv = sample_split(dnf, y, cfg)
+    else:
+        train, test = train_test_split(np.arange(len(y)), test_size=cfg['test_size'],
+                                       random_state=seed, stratify=y)
+        n_folds = max(2, min(int(cfg['n_cv_folds']), int(np.bincount(y[train]).min())))
+        cv = list(StratifiedKFold(n_folds, shuffle=True, random_state=seed).split(np.zeros(len(train)), y[train]))
     info = {
-        'split_unit': 'イベント（クラス比率を保って無作為）',
+        'split_unit': '元サンプル単位' if cfg['split_mode'] == 'sample' else 'イベント（クラス比率を保って無作為）',
+        'train_samples': sorted(dnf.iloc[train].get('original_sample', dnf.iloc[train]['sample']).astype(str).unique()),
+        'test_samples': sorted(dnf.iloc[test].get('original_sample', dnf.iloc[test]['sample']).astype(str).unique()),
         'train_events': int(len(train)), 'test_events': int(len(test)),
         'test_event_fraction': round(len(test) / len(y), 4),
         'events_per_class': {c: int(n) for c, n in zip(class_names, counts)},
         'n_cv_folds': len(cv),
     }
-    print(f"イベント単位の分割: 学習用 {info['train_events']:,} / テスト用 {info['test_events']:,}イベント / "
+    print(f"{info['split_unit']}の分割: 学習用 {info['train_events']:,} / テスト用 {info['test_events']:,}イベント / "
           f"CV {len(cv)}分割")
     return {'train': train, 'test': test, 'cv': cv, 'info': info}
 
@@ -312,7 +385,15 @@ def train_classifier(dnf, feature_columns, algorithm, split, feature_set_name='m
         'selected_candidate': best_name,
         'tuning': pd.DataFrame(rows),
         'balance': cfg['balance'],
+        'classification_mode': cfg['classification_mode'],
+        'sample_groups': cfg['sample_groups'] if cfg['classification_mode'] == 'group' else {},
+        'split_info': split['info'],
     }
+    source = dnf.iloc[idx_test].get('original_sample', dnf.iloc[idx_test]['sample']).astype(str).to_numpy()
+    result['source_sample_scores'] = pd.DataFrame({
+        'sample': source, 'target_label': le.inverse_transform(y_test),
+        'correct': y_test == y_pred,
+    }).groupby(['sample', 'target_label']).agg(events=('correct', 'size'), accuracy=('correct', 'mean')).reset_index()
     if algorithm == 'xgboost':
         from common.ml_analysis import BoosterClassifierWrapper
         result['booster'] = model
@@ -326,7 +407,13 @@ def train_classifier(dnf, feature_columns, algorithm, split, feature_set_name='m
 def save_training_details(results, run_dir):
     """特徴量セットごとのハイパーパラメータ候補とCVスコアをCSVに保存する。"""
     import re
+    import json
     for name, result in results.items():
+        safe = re.sub(r'[\/:*?"<>|\s+]+', '_', name).strip('_') or 'model'
+        if 'source_sample_scores' in result:
+            result['source_sample_scores'].to_csv(run_dir / f'source_sample_scores_{safe}.csv', index=False, encoding='utf-8-sig')
+        definition = {key: result.get(key) for key in ('classification_mode', 'sample_groups', 'split_info')}
+        (run_dir / 'classification_definition.json').write_text(json.dumps(definition, ensure_ascii=False, indent=2), encoding='utf-8')
         table = result.get('tuning')
         if table is not None:
             safe = re.sub(r'[\/:*?"<>|\s+]+', '_', name).strip('_') or 'model'
@@ -339,6 +426,8 @@ def manifest_config(split, main_result, settings=None):
     cfg = settings or current_settings()
     return {
         'split': split['info'],
+        'classification_mode': cfg['classification_mode'],
+        'sample_groups': cfg['sample_groups'] if cfg['classification_mode'] == 'group' else {},
         'balance': cfg['balance'],
         'balance_label': BALANCE_METHODS[cfg['balance']],
         'hyperparameter_tuning': bool(cfg['tune']),

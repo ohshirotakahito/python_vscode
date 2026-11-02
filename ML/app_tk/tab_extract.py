@@ -21,7 +21,7 @@ import pandas as pd
 import common.paths as paths
 from common.extract_catalog import load_history, scan_sample
 from lib.catalog import list_available_samples
-from server_browse import SERVERS, FolderPickerDialog, check_component, list_server_shares, list_subfolders
+from shared.server_browse import SERVERS, FolderPickerDialog, check_component, list_server_shares, list_subfolders
 from theme import DANGER, INFO, MUTED, SELECTED, SUCCESS, SURFACE, TEXT, WARNING
 from widgets import DataTable, ProgressPanel, open_path
 

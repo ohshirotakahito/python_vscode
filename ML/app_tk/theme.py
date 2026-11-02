@@ -1,9 +1,9 @@
-"""Project-wide dark theme (ui_theme.py at the repository root) for the ML panel."""
+"""Project-wide dark theme (shared/ui_theme.py) for the ML panel."""
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-import ui_theme  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # リポジトリ直下（shared/ を読むため）
+from shared import ui_theme  # noqa: E402
 
 BACKGROUND = ui_theme.PANEL
 SURFACE = ui_theme.FIELD

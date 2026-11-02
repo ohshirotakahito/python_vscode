@@ -5,10 +5,7 @@ from datetime import datetime
 import re
 import unicodedata
 
-try:
-    from .catalog import DEFAULT_DB, connect, scope_state, root_identity
-except ImportError:
-    from catalog import DEFAULT_DB, connect, scope_state, root_identity
+from shared.catalog import DEFAULT_DB, connect, scope_state, root_identity
 
 ARCHIVES = ('.tar.gz', '.tar.bz2', '.tar.xz', '.zip', '.7z', '.rar', '.tar', '.tgz', '.gz', '.bz2', '.xz', '.lzh')
 SQ_KINDS = ('experiment', 'sq_recent', 'sq_data', 'sq_stocked')

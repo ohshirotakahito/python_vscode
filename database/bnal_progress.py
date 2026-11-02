@@ -13,32 +13,14 @@ import tkinter as tk
 import tkinter.font as tkfont
 from tkinter import ttk, filedialog, messagebox
 try:
-    from . import catalog, rackstation_view
+    from . import rackstation_view
 except ImportError:
-    import catalog, rackstation_view
-import ui_theme  # noqa: E402  (rackstation_view puts the repository root on sys.path)
+    import rackstation_view
+from shared import catalog, ui_theme  # noqa: E402  (rackstation_view puts the repository root on sys.path)
+from shared.seq_targets import DEFAULT_TARGET_DIR, list_target_csvs, read_targets  # noqa: E402,F401
+from shared import progress, sample_plan  # noqa: E402
 
-DEFAULT_TARGET_DIR = r'D:\Dropbox\ou&t\machinedb\SEQlist'
 UNSTARTED_GROUP = '—'
-
-
-def read_targets(path):
-    """SEQlist CSVs have no header: name,sequence,length. Returns names in file order without duplicates."""
-    data = Path(path).read_bytes()
-    for encoding in ('utf-8-sig', 'cp932'):
-        try:
-            text = data.decode(encoding)
-            break
-        except UnicodeDecodeError:
-            continue
-    else:
-        raise ValueError(f'文字コードを判別できません: {path}')
-    names = (line.split(',', 1)[0].strip() for line in text.splitlines())
-    return list(dict.fromkeys(name for name in names if name))
-
-
-def list_target_csvs(folder):
-    return sorted((p.name for p in Path(folder).glob('*.csv') if p.is_file()), key=str.casefold)
 
 
 def load_saved(path):
@@ -59,18 +41,8 @@ def sample_choices(samples):
     return sorted({(row['experiment'], row['sample']) for row in samples}, key=lambda key: (key[0].casefold(), key[1].casefold()))
 
 
-def occurrence_state(tdms, anal):
-    """(進捗表示, 状態, タグ) for one BNAL@ folder against the ANAL on the same share."""
-    if tdms is None:
-        return '未計数', '着手（TDMS未計数）', 'unknown'
-    if not anal:
-        return '確認不可', 'ANALなし・要確認', 'unknown'
-    rate = f'{tdms / anal * 100:.1f}%'
-    if tdms > anal:
-        return rate, '超過・要確認', 'excess'
-    if tdms == anal:
-        return rate, '完了', 'complete'
-    return rate, '進行中', 'partial'
+# 1つの BNAL@ フォルダの判定は shared/progress.py（Analyzer・ファイル管理と共通）
+occurrence_state = progress.bnal_state
 
 
 FLAG_NAMES = dict(stocked='退避', short='不足', mixed='混在')
@@ -196,7 +168,7 @@ def build_progress(selected, expected, samples, bnals, labels, show_extra=False)
                     continue
                 done = min(b['tdms'] or 0, share_anal or 0)
                 share = shares[label(b['root'])]
-                share['started'] += 1
+                share['started'] += b['tdms'] != 0  # an empty BNAL@ folder is not started (uncounted still is)
                 share['uncounted'] += b['tdms'] is None
                 share['complete'] += complete
                 any_complete = any_complete or complete
@@ -209,7 +181,7 @@ def build_progress(selected, expected, samples, bnals, labels, show_extra=False)
             # Overall counts each (sample, target) once even if it runs on several shares.
             total['expected'] += 1
             total['goal'] += 1
-            if occurrences:
+            if any(b['tdms'] != 0 for b in occurrences):
                 total['started'] += 1
                 total['uncounted'] += all(b['tdms'] is None for b in occurrences)
                 total['done'] += best
@@ -220,9 +192,52 @@ def build_progress(selected, expected, samples, bnals, labels, show_extra=False)
     return rows, summary, dict(group='全体', **total), warnings
 
 
+
+def build_progress_by_plan(selected, plan, samples, bnals, labels, show_extra=False, folder=None):
+    """build_progress with each sample's own targets: the SEQlist CSVs in its sample-ledger entry.
+
+    Samples sharing the same SEQlists are counted together and the results are added up. A sample without
+    SEQlists in the ledger, or whose SEQlist cannot be read, is not counted and is reported in the warnings.
+    Returns (rows, shares, total, warnings, expected union)."""
+    folder = Path(folder or DEFAULT_TARGET_DIR)
+    groups, warnings, names = defaultdict(list), [], {}
+    for experiment, sample in selected:
+        lists = tuple(plan.get(sample_plan.key(experiment, sample), {}).get('seqlists', []))
+        if not lists:
+            warnings.append(f'{experiment}/{sample}: 台帳に SEQlist が未設定のため集計していません（サンプル台帳タブで設定）。')
+            continue
+        groups[lists].append((experiment, sample))
+    rows, shares, expected_all = [], defaultdict(lambda: dict(started=0, complete=0, uncounted=0, done=0, goal=0)), []
+    total = dict(expected=0, started=0, complete=0, uncounted=0, done=0.0, goal=0)
+    for lists, chosen in groups.items():
+        expected = []
+        try:
+            for name in lists:
+                if name not in names:
+                    names[name] = read_targets(folder / name)
+                expected.extend(names[name])
+        except (OSError, ValueError) as exc:
+            warnings.append(f'{len(chosen)}サンプル（{chosen[0][0]}/{chosen[0][1]} など）: SEQlist を読めないため'
+                            f'集計していません: {exc}')
+            continue
+        expected = list(dict.fromkeys(expected))
+        expected_all.extend(expected)
+        r, sh, t, w = build_progress(chosen, expected, samples, bnals, labels, show_extra)
+        rows += r
+        warnings += w
+        for share in sh:
+            for k, v in share.items():
+                if k != 'group':
+                    shares[share['group']][k] += v
+        for k in total:
+            total[k] += t[k]
+    summary = [dict(group=name, **values) for name, values in sorted(shares.items())]
+    return rows, summary, dict(group='全体', **total), warnings, list(dict.fromkeys(expected_all))
+
+
 SERVER_ABBR = {'rackstation': 'R', 'qtserver': 'QT', 'qdserver': 'QD', 'qkserver': 'QK'}
 SHARE_ABBR = {'analysis': 'a', 'backup': 'b', 'archive': 'r'}
-DONE_STATES = ('complete', 'excess')
+DONE_STATES = progress.DONE_STATES
 
 
 def share_abbr(group):
@@ -252,7 +267,8 @@ def _leaf_cell(target_rows):
     value = ratio(best)
     if value is None:
         return dict(status='unknown', ratio=None, remaining=None, servers=servers)
-    status = 'excess' if value > 1 else 'complete' if value == 1 else 'partial'
+    # an empty BNAL@ folder (0 files) is not started (shared.progress.bnal_state)
+    status = 'excess' if value > 1 else 'complete' if value == 1 else 'unstarted' if value == 0 else 'partial'
     if status == 'complete' and not best.get('base_ok', True):
         status = 'unknown' if best.get('base_tdms') is None else 'partial'
     return dict(status=status, ratio=value, remaining=best['anal_tdms'] - min(best['bnal_tdms'], best['anal_tdms']),
@@ -971,6 +987,10 @@ def create_panel(parent, window):
     ttk.Entry(folder_bar, textvariable=folder, width=45).pack(side='left', padx=6)
     csv_list = tk.Listbox(right, selectmode='extended', height=10, exportselection=False)
     csv_list.pack(fill='both', expand=True, pady=(4, 0))
+    use_plan = tk.BooleanVar(value=False)
+    ttk.Checkbutton(right, variable=use_plan,
+                    text='サンプル台帳の SEQlist を使う（サンプルごとに台帳の SEQlist で集計。上の CSV の選択は使わない）'
+                    ).pack(anchor='w', pady=(4, 0))
 
     actions = ttk.Frame(window, padding=(8, 0))
     actions.pack(fill='x')
@@ -1076,8 +1096,23 @@ def create_panel(parent, window):
             folder.set(chosen)
             fill_csvs()
 
+    def select_plan_targets():
+        """Select the samples routed to BNAL in the sample ledger (among those listed)."""
+        try:
+            plan = sample_plan.load()
+        except (OSError, ValueError) as exc:
+            messagebox.showerror('サンプル台帳', f'台帳を読めません: {exc}', parent=window)
+            return
+        sample_list.selection_clear(0, 'end')
+        hits = [i for i, (e, s) in enumerate(choices) if plan.get(sample_plan.key(e, s), {}).get('bnal') == 'target']
+        for i in hits:
+            sample_list.selection_set(i)
+        status.set(f'サンプル台帳で BNAL 対象のサンプル {len(hits)} 件を選択しました（表示中の一覧から）。')
+
     def show():
         selected = [choices[i] for i in sample_list.curselection()]
+        if use_plan.get():
+            return show_by_plan(selected)
         csvs = [csv_list.get(i) for i in csv_list.curselection()]
         if not selected or not csvs:
             messagebox.showinfo('BNAL進捗', '実験・サンプルとtargetリスト（CSV）をそれぞれ1つ以上選択してください。', parent=window)
@@ -1094,10 +1129,31 @@ def create_panel(parent, window):
         try:
             saved['samples'], saved['bnals'] = load_saved(parent.db_path)
         except Exception as exc:
-            status.set(f'DB??????: {exc}')
+            status.set(f'DBを読めません: {exc}')
             return
         rows, shares, total, warnings = build_progress(selected, expected, saved['samples'], saved['bnals'],
                                                        group_labels(parent.configured), show_extra.get())
+        render(rows, shares, total, warnings, expected,
+               f"{len(selected)}サンプル × {len(expected)}target（CSV {len(csvs)}件）")
+
+    def show_by_plan(selected):
+        if not selected:
+            messagebox.showinfo('BNAL進捗', '実験・サンプルを1つ以上選択してください。', parent=window)
+            return
+        try:
+            saved['samples'], saved['bnals'] = load_saved(parent.db_path)
+            plan = sample_plan.load()
+        except Exception as exc:
+            status.set(f'DB・サンプル台帳を読めません: {exc}')
+            return
+        rows, shares, total, warnings, expected = build_progress_by_plan(
+            selected, plan, saved['samples'], saved['bnals'], group_labels(parent.configured), show_extra.get(),
+            folder.get())
+        counted = len({(r['experiment'], r['sample']) for r in rows})
+        render(rows, shares, total, warnings, expected,
+               f"サンプル台帳の SEQlist で {counted}/{len(selected)}サンプル・{len(expected)}target")
+
+    def render(rows, shares, total, warnings, expected, heading):
         summary_tree.delete(*summary_tree.get_children())
         for row in shares:
             summary_tree.insert('', 'end', values=[parent.cell(summary_values(row), c) for c in SUMMARY_COLUMNS])
@@ -1118,13 +1174,13 @@ def create_panel(parent, window):
         if total['uncounted']:
             notes.append(f"TDMS未計数のtarget {total['uncounted']}件は進捗0として数えています。")
         set_warnings([f'警告 {len(notes)}件（スクロールで確認できます）'] + notes if notes else [])
-        status.set(f"{len(selected)}サンプル × {len(expected)}target（CSV {len(csvs)}件）: "
+        status.set(f"{heading}: "
                    f"着手 {total['started']} / 完了 {total['complete']} / 期待 {total['expected']}　"
                    f"全体の進捗 {rate_text(total['done'], total['goal'])}")
 
     def after_moves():
         reload_db()
-        if csv_list.curselection():
+        if csv_list.curselection() or use_plan.get():
             show()
 
     def selected_rows(wanted):
@@ -1141,6 +1197,7 @@ def create_panel(parent, window):
     ttk.Button(folder_bar, text='再読込', command=fill_csvs).pack(side='left', padx=4)
     ttk.Button(actions, text='進捗を表示', command=show).pack(side='left')
     ttk.Button(actions, text='DBを再読込', command=reload_db).pack(side='left', padx=6)
+    ttk.Button(actions, text='台帳の BNAL 対象を選択', command=select_plan_targets).pack(side='left', padx=6)
     ttk.Checkbutton(actions, text='CSVにないBNAL@（一覧外）も表示', variable=show_extra).pack(side='left', padx=6)
     ttk.Button(actions, text='選択サンプルのANAL/stockedをANALへ戻す…', command=restore_selected).pack(side='left', padx=(24, 0))
     ttk.Button(actions, text='選択サンプルのANAL旧世代をANAL/oldへ…', command=move_old_selected).pack(side='left', padx=6)

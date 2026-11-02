@@ -17,22 +17,10 @@ zip_stocked.py	溜まったフォルダをZIP圧縮して元を削除	✅
 という流れ
 """
 import os
+import sys
 
-
-def create_sample_folders(root, ex, sample):
-    """Create the standard sample tree under an arbitrary analysis root."""
-    base = os.path.join(root, ex, sample)
-    folders = [base, os.path.join(base, 'raw data')]
-    for rate in ('10k', '100k'):
-        for kind in ('Sample', 'Blank'):
-            folder = os.path.join(base, f'{sample}_{rate}_{kind}')
-            folders.append(folder)
-            if rate == '10k':
-                folders.extend(os.path.join(folder, *parts) for parts in
-                               [('T',), ('stocked',), ('T', 'ANAL'), ('T', 'stocked')])
-    for folder in folders:
-        os.makedirs(folder, exist_ok=True)
-    return folders
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # リポジトリ直下（shared/ を読むため）
+from shared.folder_layout import create_sample_folders  # noqa: E402,F401  (fo_xx と exmanager が同じ構成を使う)
 
 
 def fo_xx(server, keyfolder, ex, sample):

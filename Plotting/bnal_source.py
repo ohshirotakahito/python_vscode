@@ -23,7 +23,7 @@ from nptdms import TdmsFile
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from database import catalog, rackstation_view  # noqa: E402
+from shared import catalog, rack_store  # noqa: E402
 
 PLOTTING_DIR = Path(__file__).resolve().parent
 CACHE_DIR = PLOTTING_DIR / 'cache'
@@ -48,14 +48,14 @@ def group_label(root):
     """'\\\\qtserver\\backup\\' -> 'QTserver/backup'（登録済みの表記に揃える）"""
     parts = [p for p in re.split(r'[\\/]+', str(root)) if p]
     server, share = (parts + ['', ''])[:2]
-    for known_server, known_share in rackstation_view.ANALYSIS_GROUPS:
+    for known_server, known_share in rack_store.ANALYSIS_GROUPS:
         if known_server.casefold() == server.casefold() and known_share.casefold() == share.casefold():
-            return rackstation_view.group_label(known_server, known_share)
+            return rack_store.group_label(known_server, known_share)
     return f'{server}/{share}'
 
 
 def _group_order(label):
-    labels = [rackstation_view.group_label(*g) for g in rackstation_view.ANALYSIS_GROUPS]
+    labels = [rack_store.group_label(*g) for g in rack_store.ANALYSIS_GROUPS]
     return labels.index(label) if label in labels else len(labels)
 
 
@@ -106,7 +106,7 @@ def target_alias(target: str) -> str:
 def load_entries(db_path=DEFAULT_DB) -> list[TargetEntry]:
     """DBに保存された BNAL@ フォルダを (実験, サンプル, target) ごとにまとめて返す"""
     entries: dict[tuple, TargetEntry] = {}
-    for row in rackstation_view.bnal_inventory(db_path):
+    for row in rack_store.bnal_inventory(db_path):
         key = (row['experiment'], row['sample'], row['target'])
         entry = entries.setdefault(key, TargetEntry(*key))
         entry.occurrences.append(Occurrence(row['root'], group_label(row['root']), row['tdms'], row['last_seen']))

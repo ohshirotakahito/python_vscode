@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# unfinished outputs (A@@ is written as .part and renamed when complete)
+*.part
+
+# LabVIEW / OS clutter
+*.aliases
+*.lvlps
+Thumbs.db
+desktop.ini

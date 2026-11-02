@@ -2,7 +2,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 import threading
-from database import bnal_progress, catalog, rackstation_view
+from database import bnal_progress, rackstation_view
+from shared import catalog
 
 QT, QD = r'\\QTserver\backup', r'\\QDserver\analysis'
 LABELS = {catalog.root_identity(QT): 'QTserver/backup', catalog.root_identity(QD): 'QDserver/analysis'}
@@ -353,3 +354,24 @@ class SavedDbTests(TestCase):
             rows, _, total, _ = bnal_progress.build_progress([('BR', 'BRA')], ['A', 'B'], samples, bnals, {})
             self.assertEqual([(r['target'], r['progress']) for r in rows], [('A', '50.0%'), ('B', '0%')])
             self.assertEqual((total['done'], total['goal']), (0.5, 2))  # A 1/2 + B 0, in target units
+
+
+class PlanTargetsTests(TestCase):
+    """BNAL進捗 with each sample's own SEQlists from the sample ledger."""
+
+    def test_samples_use_their_own_seqlists_and_unset_ones_are_reported(self):
+        with TemporaryDirectory() as temp:
+            folder = Path(temp)
+            (folder / 'a.csv').write_text('t1,ACGU,4\nt2,ACGU,4\n', encoding='utf-8')
+            (folder / 'b.csv').write_text('t3,ACGU,4\n', encoding='utf-8')
+            samples = [dict(root=r'\qd\analysis', experiment='ex', sample=s, t_tdms=10, anal_tdms=10, bnal_folders=1)
+                       for s in ('S1', 'S2', 'S3')]
+            bnals = [dict(root=r'\qd\analysis', experiment='ex', sample='S1', target='t1', tdms=10, tdms_checked=None),
+                     dict(root=r'\qd\analysis', experiment='ex', sample='S2', target='t3', tdms=4, tdms_checked=None)]
+            plan = {'ex|S1': dict(seqlists=['a.csv']), 'ex|S2': dict(seqlists=['b.csv']), 'ex|S3': dict(bnal='target')}
+            rows, shares, total, warnings, expected = bnal_progress.build_progress_by_plan(
+                [('ex', 'S1'), ('ex', 'S2'), ('ex', 'S3')], plan, samples, bnals, {}, folder=folder)
+        self.assertEqual(sorted({(r['sample'], r['target']) for r in rows}), [('S1', 't1'), ('S1', 't2'), ('S2', 't3')])
+        self.assertEqual((total['expected'], total['started'], total['complete']), (3, 2, 1))
+        self.assertEqual(expected, ['t1', 't2', 't3'])
+        self.assertTrue(any('ex/S3' in w and 'SEQlist' in w for w in warnings))

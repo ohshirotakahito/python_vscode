@@ -1,4 +1,4 @@
-"""Read-only Recent_Data folder/history comparison, shared with exmanager."""
+"""Read-only Recent_Data folder/history comparison (exmanager が書く SEQ 履歴CSVを shared.seq_records で読む)."""
 from collections import defaultdict
 from pathlib import Path, PureWindowsPath
 import queue
@@ -7,19 +7,15 @@ import threading
 import tkinter as tk
 from tkinter import ttk, filedialog
 
-try:
-    from exmanager import core
-except ModuleNotFoundError:
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    from exmanager import core
-import ui_theme  # noqa: E402  (リポジトリ直下。上の try で sys.path に追加済み)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # リポジトリ直下（shared/ を読むため）
+from shared import seq_records, ui_theme  # noqa: E402
 
 
 def inspect_recent(machine_csv, legacy, local):
-    machines = core.machines(machine_csv)
+    machines = seq_records.machines(machine_csv)
     history_error = ''
     try:
-        records = core.history(legacy, local)
+        records = seq_records.history(legacy, local)
     except (OSError, ValueError, UnicodeError) as exc:
         records = []
         history_error = str(exc)
@@ -62,14 +58,11 @@ def inspect_recent(machine_csv, legacy, local):
 
 def inventory_counts(path):
     """Direct experiment counts from the saved DB; history reads never write CSVs."""
-    try:
-        from .catalog import connect
-    except ImportError:
-        from catalog import connect
+    from shared.catalog import connect
     counts = {}
     try:
-        machines = core.machines(core.DB / 'Machine_N.csv')
-        records = core.history(core.DB / 'Uploader.csv', core.BASE / 'logs' / 'Uploader_python.csv')
+        machines = seq_records.machines(seq_records.MACHINE_CSV)
+        records = seq_records.history(seq_records.LEGACY_HISTORY, seq_records.LOCAL_HISTORY)
         codes = defaultdict(set)
         for code, info in machines.items():
             codes[str(PureWindowsPath(info.get('Tmp_backup', ''))).casefold()].add(code)
@@ -104,9 +97,9 @@ def open_window(parent):
     window.geometry('1200x760')
     fields = {}
     for label, key, default in (
-        ('装置CSV', 'machines', core.DB / 'Machine_N.csv'),
-        ('LabVIEW版履歴CSV', 'legacy', core.DB / 'Uploader.csv'),
-        ('Python版履歴CSV', 'local', core.BASE / 'logs' / 'Uploader_python.csv'),
+        ('装置CSV', 'machines', seq_records.MACHINE_CSV),
+        ('LabVIEW版履歴CSV', 'legacy', seq_records.LEGACY_HISTORY),
+        ('Python版履歴CSV', 'local', seq_records.LOCAL_HISTORY),
     ):
         bar = ttk.Frame(window, padding=4)
         bar.pack(fill='x')

@@ -286,6 +286,106 @@ def rate_table(sites: list[SiteCounts], method='raw', zero=None, full=None, ci='
 
 
 # ============= 図 =============
+GROUP_METHODS = {'サンプル修飾率の平均（各サンプルを同じ重み）': 'mean',
+                 '行数を合算（修飾行の合計 / 全行の合計）': 'pooled'}
+
+
+def validate_groups(groups):
+    """Membership uses (experiment, sample), so identical sample names stay distinct."""
+    result, seen = {}, set()
+    for i, (name, members) in enumerate(groups):
+        name = str(name).strip() or f'Group {chr(65 + i) if i < 26 else i + 1}'
+        if not isinstance(members, (list, tuple)) or any(
+                not isinstance(key, (list, tuple)) or len(key) != 2 or
+                any(not isinstance(value, str) for value in key) for key in members):
+            raise ValueError('所属には実験名・サンプル名の組を指定してください。')
+        members = [tuple(key) for key in members]
+        if name in result or not members or any(len(key) != 2 for key in members):
+            raise ValueError('グループ名の重複・空の所属・不正なサンプル指定を確認してください。')
+        if len(set(members)) != len(members) or seen.intersection(members):
+            raise ValueError('同じサンプルを複数のグループに登録できません。')
+        result[name] = members
+        seen.update(members)
+    if not result:
+        raise ValueError('グループを1つ以上登録してください。')
+    return result
+
+
+def group_rate_table(sites, groups, method='raw', zero=None, full=None, aggregation='mean',
+                     n_boot=N_BOOT, seed=0):
+    """Group estimates with source-sample bootstrap; fixed controls, incomplete pairs excluded.
+
+    Returns (table, pooled SiteCounts for the value-distribution detail).
+    """
+    groups = validate_groups(groups.items())
+    if aggregation not in ('mean', 'pooled'):
+        raise ValueError('不明なグループ集計方法です。')
+    if n_boot < 1:
+        raise ValueError('ブートストラップの回数は1以上にしてください。')
+    individual = rate_table(sites, method, zero=zero, full=full, ci='wilson')
+    index = {(s.sample_key, s.site_key): s for s in sites}
+    rows, details = [], []
+    for name, members in groups.items():
+        keys = sorted({s.site_key for s in sites})
+        for key in keys:
+            found = [index[(member, key)] for member in members if (member, key) in index]
+            valid = [s for s in found if s.has_unmod and s.total > 0]
+            template = next(s for s in sites if s.site_key == key)
+            selected = individual[(individual.sequence == key[0]) & (individual.kind == key[1]) &
+                                  (individual.position == key[2])]
+            valid_keys = {v.sample_key for v in valid}
+            selected = selected[[ (e, s) in valid_keys
+                                 for e, s in zip(selected.experiment, selected['sample']) ]]
+            notes = list(dict.fromkeys(note for s in valid for note in s.notes))
+            if len(valid) != len(members):
+                notes.append(f'有効サンプル {len(valid)}/{len(members)}（未読込・未修飾なし・行なしを除外）')
+            if len(valid) < 2:
+                notes.append('有効サンプル2未満：サンプル単位の95%区間を算出不可')
+            r0 = float(selected.r0.iloc[0]) if len(selected) else math.nan
+            r1 = float(selected.r1.iloc[0]) if len(selected) else math.nan
+            mod_counts = np.array([s.n_mod for s in valid], dtype=float)
+            totals = np.array([s.total for s in valid], dtype=float)
+            raw = (float(np.mean(mod_counts / totals)) if aggregation == 'mean' else
+                   float(mod_counts.sum() / totals.sum())) if valid else math.nan
+            lo = hi = math.nan
+            if len(valid) >= 2:
+                # Batch resampling bounds memory even for large groups.
+                rng = np.random.default_rng(seed)
+                estimates = []
+                for start in range(0, n_boot, 100):
+                    draw = rng.integers(len(valid), size=(min(100, n_boot-start), len(valid)))
+                    estimates.extend((mod_counts[draw] / totals[draw]).mean(axis=1) if aggregation == 'mean'
+                                     else mod_counts[draw].sum(axis=1) / totals[draw].sum(axis=1))
+                lo, hi = map(float, np.percentile(estimates, [2.5, 97.5]))
+            if not np.isfinite(r0) or not np.isfinite(r1) or r1 <= r0:
+                notes.append('対照なし・対照の範囲不正：補正率を算出不可')
+            pooled = SiteCounts('グループ', name, *key, template.target,
+                                ref_base=template.ref_base, mod_base=template.mod_base,
+                                n_mod=sum(s.n_mod for s in valid), n_unmod=sum(s.n_unmod for s in valid),
+                                n_other=sum(s.n_other for s in valid), has_unmod=bool(valid))
+            parts = [s.chunks.assign(source=sample_label(s.sample_key)).reset_index() for s in valid]
+            pooled.chunks = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame(columns=['mod', 'total'])
+            for target in {target for s in valid for target in s.values}:
+                pooled.values[target] = np.concatenate([s.values[target] for s in valid if target in s.values])
+            details.append(pooled)
+            row = dict(experiment='グループ', sample=name, sequence=key[0], kind=key[1], position=key[2],
+                       target=template.target, site=template.site_label, n_mod=pooled.n_mod,
+                       n_unmod=pooled.n_unmod, n_other=pooled.n_other, total=pooled.total,
+                       chunks=sum(int((s.chunks.total > 0).sum()) for s in valid),
+                       raw_rate=raw, raw_low=lo, raw_high=hi, r0=r0, r1=r1,
+                       rate=rescale(raw, r0, r1), low=rescale(lo, r0, r1), high=rescale(hi, r0, r1),
+                       note='、'.join(notes), group_name=name,
+                       members='; '.join(sample_label(member) for member in members),
+                       valid_members='; '.join(sample_label(s.sample_key) for s in valid),
+                       n_samples=len(valid), n_members=len(members), aggregation=aggregation,
+                       interval_method='sample_bootstrap', n_boot=n_boot,
+                       control_uncertainty='not_included')
+            rows.append(row)
+    extra = ['group_name', 'members', 'valid_members', 'n_samples', 'n_members', 'aggregation',
+             'interval_method', 'n_boot', 'control_uncertainty']
+    return pd.DataFrame(rows, columns=TABLE_COLUMNS + extra), details
+
+
 def plot_rates(table: pd.DataFrame, figure, method='raw', detail: SiteCounts | None = None):
     """上: 修飾ごとに、サンプルを色分けした棒（エラーバー＝信頼区間）。
     下: detail（表で選んだ行）の修飾位置での値の分布（未修飾配列と修飾配列を重ねる）"""
@@ -325,7 +425,10 @@ def plot_rates(table: pd.DataFrame, figure, method='raw', detail: SiteCounts | N
         ax.axhline(100, color='#555555', lw=0.8, ls='--')
     ax.set_ylabel('修飾率 (%)')
     title = {'raw': '修飾率（補正なし）', 'zero': '修飾率（0% 対照で補正）', 'both': '修飾率（0%・100% 対照で換算）'}
-    ax.set_title(f'{title[method]}　棒の中の数字: 修飾 / 位置の全行数（補正前）', fontsize=10)
+    grouped = 'aggregation' in table.columns
+    description = ('サンプル率の平均' if table['aggregation'].iloc[0] == 'mean' else '行数を合算') if grouped else ''
+    suffix = f'グループ別・{description} / 95%区間: サンプル単位（対照の不確実性は含まず）' if grouped else ''
+    ax.set_title(f'{title[method]}　棒の中: 修飾 / 全行数（合計・補正前）\n{suffix}', fontsize=10)
     if samples:
         ax.legend(fontsize=8, loc='upper left', bbox_to_anchor=(1.0, 1.0), frameon=False)
     ax.grid(axis='y', alpha=0.3)

@@ -2,10 +2,7 @@
 from pathlib import PureWindowsPath
 import re
 import os
-try:
-    from .recent_progress import core
-except ImportError:
-    from recent_progress import core
+from shared import seq_records
 
 
 def stage(source):
@@ -26,8 +23,8 @@ def jobs_for_stage(configured, wanted):
 
 def enrich(groups, entries):
     try:
-        machines = core.machines(core.DB / 'Machine_N.csv')
-        history = core.history(core.DB / 'Uploader.csv', core.BASE / 'logs' / 'Uploader_python.csv')
+        machines = seq_records.machines(seq_records.MACHINE_CSV)
+        history = seq_records.history(seq_records.LEGACY_HISTORY, seq_records.LOCAL_HISTORY)
         error = ''
     except (OSError, ValueError, UnicodeError) as exc:
         machines, history, error = {}, [], str(exc)
@@ -72,10 +69,7 @@ def enrich(groups, entries):
 
 
 def acquisition_counts(path, root, relative):
-    try:
-        from .catalog import connect
-    except ImportError:
-        from catalog import connect
+    from shared.catalog import connect
     with connect(path, readonly=True) as db:
         source = db.execute('SELECT id FROM sources WHERE root=?',
                             (os.path.normcase(os.path.normpath(root)),)).fetchone()

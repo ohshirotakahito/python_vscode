@@ -20,7 +20,7 @@ from tkinter.scrolledtext import ScrolledText
 
 BASE = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE.parent))
-import ui_theme  # noqa: E402
+from shared import ui_theme  # noqa: E402
 from filemanager.job_control import JobCancelled, check_cancel
 ERROR_PREFIX = '__FILEMANAGER_ERROR__'
 PROGRESS_PREFIX = '__FILEMANAGER_PROGRESS__'

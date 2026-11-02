@@ -1,0 +1,8 @@
+# Keep every file byte-for-byte (no CRLF/LF conversion):
+# TotalAnalysis_Launcher.bat must stay Shift-JIS + CRLF, and the CSV lists use CRLF like LabVIEW.
+* -text
+
+*.vi binary
+*.ctl binary
+*.npz binary
+*.png binary

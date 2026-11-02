@@ -4,7 +4,8 @@ from unittest import TestCase
 from contextlib import closing
 import sqlite3
 import threading
-from database import anal_progress, catalog, rackstation_view
+from database import anal_progress, rackstation_view
+from shared import catalog
 
 QT, QD = r'\\QTserver\backup', r'\\QDserver\analysis'
 LABELS = {catalog.root_identity(QT): 'QTserver/backup', catalog.root_identity(QD): 'QDserver/analysis'}

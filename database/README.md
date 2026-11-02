@@ -92,13 +92,15 @@ TOは操作者、AN#1は装置、3は実験回数、0は繰り返し回数です
 - 設定から外した共有の過去の記録はDBに残り、最終取得日時とともに表示されます。更新対象は保存先設定内の行です。
 - DBはローカルディスクで使用してください。複数アプリの読み取りに対応しますが、更新は1プロセスずつ行ってください。配布にはSQLite backup APIを使う保存ボタンを使用してください（稼働中のDB本体だけのコピーは避けます）。
 
-## exmanager / filemanager用の共通API
+## 他のアプリ用の共通API
 
-既存アプリの画面にはまだ組み込んでいません。リポジトリルートがPythonのimportパスにある場合、次のAPIで同じ記録を読み出せます。直接 `python exmanager/app.py` 等で起動するアプリへ統合する際は、リポジトリルートをimportパスへ追加する必要があります。
+DBの窓口は `shared/` にあります（`shared/catalog.py`：files/folders/sources/updates、`shared/rack_store.py`：rack_samples/rack_roots/rack_bnals）。
+DBファイル自体は従来どおり `database/inventory.sqlite3` です。filemanager・Plotting はこの窓口だけを使い、`database/` は import しません。
+テーブルの列や意味を変えるときの取り決めは [shared/README.md](../shared/README.md) を参照してください。
 
 ```python
-from database.catalog import DEFAULT_DB, sources, summary, find_files
-from database.catalog import scan_source, update_history
+from shared.catalog import DEFAULT_DB, sources, summary, find_files
+from shared.catalog import scan_source, update_history
 from database.inventory_views import analysis_inventory, sq_inventory
 
 status = sources(DEFAULT_DB)  # 共有ごとの状態、最終取得、件数、容量

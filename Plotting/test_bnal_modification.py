@@ -107,3 +107,73 @@ class RateTests(TestCase):
         self.assertLessEqual(lo, 0.25)
         self.assertGreaterEqual(hi, 0.25)
         self.assertTrue(math.isnan(mod.chunk_bootstrap(chunks.iloc[:1])[0]))
+
+
+class GroupRateTests(TestCase):
+    def sites(self):
+        data = []
+        for sample, n, k in [('A', 100, 20), ('B', 10, 8), ('zero', 100, 10), ('full', 100, 90)]:
+            data += [dataset(sample, 'seq', site_rows(n-k, 'C', .5)),
+                     dataset(sample, 'seq_M_22', site_rows(k, 'M', 1.2))]
+        return mod.collect_sites(data)
+
+    def test_equal_sample_mean_and_pooled_ratio_differ(self):
+        groups = {'任意名': [('EX', 'A'), ('EX', 'B')]}
+        mean, details = mod.group_rate_table(self.sites(), groups)
+        pooled, _ = mod.group_rate_table(self.sites(), groups, aggregation='pooled')
+        self.assertAlmostEqual(mean.iloc[0]['rate'], .5)
+        self.assertAlmostEqual(pooled.iloc[0]['rate'], 28/110)
+        self.assertEqual(mean.iloc[0]['n_samples'], 2)
+        self.assertEqual(mean.iloc[0]['chunks'], 2)  # identical #001 in different samples stays separate
+        self.assertEqual(len(details[0].chunks), 2)
+        self.assertEqual(len(details[0].values['seq_M_22']), 28)
+        self.assertEqual(details[0].total, 110)
+        self.assertIn('EX / A', mean.iloc[0]['members'])
+        self.assertEqual(mean.iloc[0]['interval_method'], 'sample_bootstrap')
+
+    def test_group_controls_and_sample_interval(self):
+        groups = {'G': [('EX', 'A'), ('EX', 'B')]}
+        table, _ = mod.group_rate_table(self.sites(), groups, 'both', zero=('EX', 'zero'), full=('EX', 'full'))
+        row = table.iloc[0]
+        self.assertAlmostEqual(row['rate'], .5)
+        self.assertAlmostEqual(row['low'], (.2-.1)/.8)
+        self.assertAlmostEqual(row['high'], (.8-.1)/.8)
+        self.assertEqual(row['control_uncertainty'], 'not_included')
+        zero, _ = mod.group_rate_table(self.sites(), groups, 'zero', zero=('EX', 'zero'))
+        self.assertAlmostEqual(zero.iloc[0]['rate'], (.5-.1)/.9)
+
+    def test_missing_controls_produce_nan(self):
+        table, _ = mod.group_rate_table(self.sites(), {'G': [('EX', 'A')]}, 'both')
+        self.assertTrue(math.isnan(table.iloc[0]['rate']))
+        self.assertIn('対照', table.iloc[0]['note'])
+
+    def test_missing_or_incomplete_members_are_reported_and_excluded(self):
+        sites = self.sites() + mod.collect_sites([dataset('bad', 'seq_M_22', site_rows(20, 'M', 1.2))])
+        groups = {'G': [('EX', 'A'), ('EX', 'bad'), ('EX', 'missing')], 'empty': [('EX', 'none')]}
+        table, _ = mod.group_rate_table(sites, groups)
+        row = table.iloc[0]
+        self.assertAlmostEqual(row['rate'], .2)
+        self.assertEqual((row['n_samples'], row['n_members']), (1, 3))
+        self.assertIn('有効サンプル 1/3', row['note'])
+        self.assertTrue(math.isnan(row['low']))
+        self.assertTrue(math.isnan(table.iloc[1]['rate']))
+
+    def test_group_identity_includes_experiment_and_blank_names_are_generated(self):
+        groups = mod.validate_groups([('', [('EX1', 'S')]), ('', [('EX2', 'S')])])
+        self.assertEqual(list(groups), ['Group A', 'Group B'])
+        for invalid in [[('G', [])], [('G', [('EX', 'A')]), ('H', [('EX', 'A')])],
+                        [('G', [('EX', 'A')]), ('G', [('EX', 'B')])]]:
+            with self.assertRaises(ValueError):
+                mod.validate_groups(invalid)
+
+    def test_multi_site_multi_group_and_plot(self):
+        from matplotlib.figure import Figure
+        sites = self.sites() + mod.collect_sites([dataset('A', 'seq', site_rows(80, 'C', .5)),
+                                                 dataset('A', 'seq_N_22', site_rows(20, 'N', .9))])
+        groups = {'A群': [('EX', 'A')], 'B群': [('EX', 'B')], 'C群': [('EX', 'zero')]}
+        table, details = mod.group_rate_table(sites, groups)
+        self.assertEqual(len(table), 6)
+        self.assertEqual(set(table['sample']), set(groups))
+        figure = mod.plot_rates(table, Figure(), detail=details[0])
+        self.assertEqual(len(figure.axes), 2)
+        self.assertIn('サンプル率の平均', figure.axes[0].get_title())

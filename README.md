@@ -30,16 +30,26 @@ Python_VScode/
 │   ├── predict_mix_xgboost_tsfresh.py    # 混合予測: tsfresh
 │   └── redraw_confusion_matrix.py        # 既存の学習結果から混同行列を再描画
 │
+├── Analyzer/               # LabVIEW Total Analysis の Python 版: 1st/2nd Step 解析(PyQt6)
 ├── ML_N/                   # 元TDMSからのsignal検出・特徴量保存の新パイプライン(pyproject管理)
+├── Plotting/               # 配列アセンブリ: BNAL の位置ごとの分布・アセンブリ・q値・修飾率の可視化(python Plotting/app.py)
 ├── Viewer/                 # TDMS波形の可視化・ノイズ推定(python Viewer/view_tdms_signal_tk.py)
 ├── database/               # 各サーバーのファイル保存状況をSQLiteで管理(python database/app.py)
 ├── exmanager/              # 実験データの転送・履歴管理(python exmanager/app.py)
-└── filemanager/            # フォルダ作成・転送・リネーム・ZIP化(python filemanager/app.py)
+├── filemanager/            # フォルダ作成・転送・リネーム・ZIP化(python filemanager/app.py)
+├── shared/                 # アプリ間で共有する部品(テーマ・サーバー選択・DBの窓口など)
+├── launcher.py             # アプリランチャー(launch_apps.bat から起動)
+└── conftest.py             # pytest 用: どこから実行しても shared/ を読めるようにする
 ```
 
-Tkinter アプリ(exmanager / ML パネル / filemanager / Viewer / database)は、
-ルートの `launch_apps.bat`(ランチャー画面 `launcher.py`)から起動できる。
-画面の配色・ヘッダーはルートの `ui_theme.py`(共通ダークテーマ、標準ライブラリのみ)で統一している。
+アプリ(exmanager / ML パネル / filemanager / Viewer / database / Plotting / Analyzer)は、
+ルートの `launch_apps.bat`(ランチャー画面 `launcher.py`)から起動できる。Analyzer だけ PyQt6、ほかは Tkinter。
+
+アプリ同士は直接 import せず、共有するものはすべて `shared/` を通す(画面の配色は
+`shared/ui_theme.py`(PyQt6 は `shared/qt_theme.py`)、実験ファイルDBの読み書きは `shared/catalog.py`・
+`shared/rack_store.py`、ファイル移動の記録は `shared/file_moves.py` など)。
+そのため各アプリのフォルダは単独で作り直し・差し替えができる。守るべき取り決めと、
+新しいアプリを加える手順は [shared/README.md](shared/README.md) を参照。
 
 各フォルダの詳細は、それぞれの `README.md`(ML は `ML/docs/`)を参照。
 ML/ 直下のスクリプトは UI から `importlib` でモジュール名指定で読み込まれるため、
@@ -110,7 +120,7 @@ streamlit run ML/app/Home.py    # Streamlit 版
 各フォルダに同名モジュール(`app.py` 等)があるため、フォルダごとに実行する。
 
 ```bash
-for d in ML/tests database exmanager filemanager Viewer; do python -m pytest -q $d; done
+for d in shared ML/tests database exmanager filemanager Viewer Plotting Analyzer/python; do python -m pytest -q $d; done
 ```
 
 ---

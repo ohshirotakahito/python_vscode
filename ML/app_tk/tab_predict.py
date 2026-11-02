@@ -157,7 +157,8 @@ class PredictTab(ttk.Frame):
         self._tree_models, self._tree_groups = {}, {}
 
         def values(model):
-            return (", ".join(model["class_names"]), model["algorithm"], model.get("created_at", ""),
+            label = ('[グループ別] ' if model.get('classification_mode') == 'group' else '') + ", ".join(model['class_names'])
+            return (label, model["algorithm"], model.get("created_at", ""),
                     f"{model['test_macro_f1']:.3f}", model.get("fc_parameters_mode") or "—",
                     model.get("balance") or "")
 
@@ -169,7 +170,7 @@ class PredictTab(ttk.Frame):
             best = max(items, key=lambda m: m["test_macro_f1"])
             self._tree_groups[f"g{g}"] = items
             self.model_tree.insert("", "end", iid=f"g{g}", open=False, tags=("group",), values=(
-                ", ".join(items[0]["class_names"]), f"{len(items)}件", f"最新 {items[0].get('created_at', '')}",
+                values(items[0])[0], f"{len(items)}件", f"最新 {items[0].get('created_at', '')}",
                 f"最高 {best['test_macro_f1']:.3f}", "比較して選択", ""))
             for i, model in enumerate(items):
                 self._tree_models[f"m{g}_{i}"] = model

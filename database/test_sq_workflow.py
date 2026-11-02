@@ -2,7 +2,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
-from database import catalog, inventory_views, sq_workflow
+from database import inventory_views, sq_workflow
+from shared import catalog
 
 
 class SQWorkflowTests(TestCase):
@@ -39,7 +40,7 @@ class SQWorkflowTests(TestCase):
         record[2], record[6] = 'AXN7', 'started'
         earlier = record.copy()
         earlier[0] = '2026/10/14_09:15'
-        with patch.object(sq_workflow.core, 'machines', return_value={'AXN7': {'SQ_backup': groups[0]['root']}}), patch.object(sq_workflow.core, 'history', return_value=[record, earlier]):
+        with patch.object(sq_workflow.seq_records, 'machines', return_value={'AXN7': {'SQ_backup': groups[0]['root']}}), patch.object(sq_workflow.seq_records, 'history', return_value=[record, earlier]):
             sq_workflow.enrich(groups, entries)
         self.assertEqual(groups[0]['started_count'], 1)
         self.assertEqual(groups[0]['pending_count'], 1)

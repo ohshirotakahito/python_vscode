@@ -16,8 +16,9 @@ from pathlib import Path
 
 _TK_DIR = Path(__file__).resolve().parent
 _ML_DIR = _TK_DIR.parent
-# ML/app/lib（Streamlit版と共有する集計・一覧ロジック）を "lib" として import するため ML/app も通す
-for _p in (_TK_DIR, _ML_DIR / "app", _ML_DIR):
+# ML/app/lib（Streamlit版と共有する集計・一覧ロジック）を "lib" として import するため ML/app も通す。
+# リポジトリ直下は shared/（画面テーマ・サーバー選択）を読むため。
+for _p in (_ML_DIR.parent, _TK_DIR, _ML_DIR / "app", _ML_DIR):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 

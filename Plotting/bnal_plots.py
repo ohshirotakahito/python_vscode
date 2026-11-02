@@ -409,13 +409,14 @@ def _kde_1d(values, grid):
     return np.convolve(counts, kernel / kernel.sum(), mode='same')
 
 
-def plot_density(preps, figure=None, threshold=0.04, x_sigma=0.18, show_mode=True):
+def plot_density(preps, figure=None, threshold=0.04, x_sigma=0.18, show_mode=True, fit_y=False):
     """位置ごとの値の分布を、横方向にもぼかした「島」として描く（論文で使われる伝導度の分布図に近い形）。
 
     縦方向: その位置の値の KDE（多峰性もそのまま残る）
     横方向: 位置を中心とするガウス形（幅は見た目のためのもので、データ由来ではない）
     濃淡は位置ごとに最大値=1で正規化する（データ数の違う位置どうしでも形を比べやすくするため）。
     threshold 未満は描かない（背景を白に保つ）。show_mode=True で各位置の最頻値に点を打つ。
+    fit_y=True で縦軸を実際に色が付いた範囲に合わせる。
     """
     fig = _new_figure(figure)
     n = len(preps)
@@ -432,6 +433,7 @@ def plot_density(preps, figure=None, threshold=0.04, x_sigma=0.18, show_mode=Tru
     x_profile = np.exp(-0.5 * (dx / x_sigma) ** 2)
     levels = np.linspace(threshold, 1.0, 12)
     contour = None
+    visible = []
     for ax, prep in zip(axes, preps):
         groups = {pos: g[VALUE].to_numpy() for pos, g in prep.clean.groupby(POSITION)}
         for i, pos in enumerate(positions):
@@ -441,6 +443,7 @@ def plot_density(preps, figure=None, threshold=0.04, x_sigma=0.18, show_mode=Tru
             if dens.max() <= 0:
                 continue
             dens = dens / dens.max()
+            visible.append(y[dens >= threshold])
             z = np.outer(dens, x_profile)
             contour = ax.contourf(i + dx, y, z, levels=levels, cmap=DENSITY_CMAP, vmin=0, vmax=1, extend='neither')
             if show_mode:
@@ -448,7 +451,7 @@ def plot_density(preps, figure=None, threshold=0.04, x_sigma=0.18, show_mode=Tru
                         markeredgecolor='#1d5c25', markeredgewidth=0.6, zorder=3)
         _finish_position_axis(ax, positions, [prep])
         ax.grid(False)
-        ax.set_ylim(y[0], y[-1])
+        ax.set_ylim(*_visible_ylim(visible, y, fit_y))
         ax.set_title(prep.label, fontsize=10)
     axes[0].set_ylabel(VALUE)
     if contour is not None:
@@ -456,6 +459,17 @@ def plot_density(preps, figure=None, threshold=0.04, x_sigma=0.18, show_mode=Tru
                      ticks=[0.25, 0.5, 0.75, 1.0])
     fig.suptitle(_title(preps, '分布の島図') if n > 1 else '分布の島図（位置ごとのKDE）')
     return fig
+
+
+def _visible_ylim(visible, y, fit):
+    """島図の縦軸範囲。fit=True なら色が付いた範囲（threshold 以上）に少し余白を付けて返す"""
+    visible = [v for v in visible if v.size]
+    if not fit or not visible:
+        return y[0], y[-1]
+    lo = min(v.min() for v in visible)
+    hi = max(v.max() for v in visible)
+    margin = max((hi - lo) * 0.05, y[1] - y[0])
+    return lo - margin, hi + margin
 
 
 def _split_cmap(color):
@@ -466,7 +480,7 @@ def _split_cmap(color):
         f'bnal_split_{color}', [rgb * 0.13 + white * 0.87, rgb * 0.5 + white * 0.5, rgb, rgb * 0.6])
 
 
-def plot_density_split(preps, figure=None, threshold=0.04, x_sigma=0.18, show_mode=True):
+def plot_density_split(preps, figure=None, threshold=0.04, x_sigma=0.18, show_mode=True, fit_y=False):
     """複数データの島図を1つの軸に並べる。各位置の島を縦に n 等分し、左から選択順にデータを割り当てる。
 
     島全体の横幅・ガウス形は plot_density と同じで、短冊ごとにそのデータの KDE で塗る。
@@ -490,6 +504,7 @@ def plot_density_split(preps, figure=None, threshold=0.04, x_sigma=0.18, show_mo
     levels = np.linspace(threshold, 1.0, 12)
     # 3つ以上では端の短冊が薄くなりすぎないよう、島の横の広がりを大きくする（2つなら元の島図と同じ形）
     x_sigma = x_sigma * max(1.0, n / 2)
+    visible = []
     for k, prep in enumerate(preps):
         dx = np.linspace(bounds[k], bounds[k + 1], max(61 // n, 8))
         x_profile = np.exp(-0.5 * (dx / x_sigma) ** 2)
@@ -503,6 +518,7 @@ def plot_density_split(preps, figure=None, threshold=0.04, x_sigma=0.18, show_mo
             if dens.max() <= 0:
                 continue
             dens = dens / dens.max()
+            visible.append(y[dens >= threshold])
             ax.contourf(i + dx, y, np.outer(dens, x_profile), levels=levels, cmap=cmap,
                         vmin=0, vmax=1, extend='neither')
             if show_mode:
@@ -514,7 +530,7 @@ def plot_density_split(preps, figure=None, threshold=0.04, x_sigma=0.18, show_mo
             ax.axvline(i + b, color='#888888', linewidth=0.3, alpha=0.4, zorder=0)
     _finish_position_axis(ax, positions, preps)
     ax.grid(False)
-    ax.set_ylim(y[0], y[-1])
+    ax.set_ylim(*_visible_ylim(visible, y, fit_y))
     ax.set_ylabel(VALUE)
     from matplotlib.patches import Patch
     ax.legend(handles=[Patch(facecolor=_dataset_color(k), label=f'{k + 1}: {p.label}')
@@ -591,10 +607,29 @@ PLOTS = {
 }
 
 
-def draw(kind, preps, bin_edges, figure=None, scheme='viridis'):
+def draw(kind, preps, bin_edges, figure=None, scheme='viridis', value_range='auto'):
+    """value_range: 'auto'（全データ）／'fit'（島図は色の付いた範囲、ヒートマップは度数のある範囲）／
+    (下限, 上限)（手動。Relative Averaged Data の軸に適用し、ヒストグラムでは横軸）"""
     preps = [p for p in preps if not p.clean.empty]
     if not preps:
         raise ValueError('描画できるデータがありません（全行が値なし・外れ値です）')
+    if isinstance(value_range, tuple) and not value_range[0] < value_range[1]:
+        raise ValueError('縦軸の下限は上限より小さくしてください')
+    fig = _draw(kind, preps, bin_edges, figure, scheme, fit=value_range == 'fit')
+    if kind == 'heatmap' and value_range == 'fit':
+        counts = sum(np.nansum(heatmap_matrix(p, bin_edges, p.positions), axis=1) for p in preps)
+        filled = np.flatnonzero(counts > 0)
+        if filled.size:
+            margin = (bin_edges[1] - bin_edges[0]) * 2
+            value_range = (bin_edges[filled[0]] - margin, bin_edges[filled[-1] + 1] + margin)
+    if isinstance(value_range, tuple) and kind != 'depth':
+        for ax in fig.axes:
+            if ax.get_label() != '<colorbar>':
+                (ax.set_xlim if kind == 'histogram' else ax.set_ylim)(*value_range)
+    return fig
+
+
+def _draw(kind, preps, bin_edges, figure, scheme, fit):
     if kind == 'histogram':
         return plot_histogram(preps, bin_edges, figure, scheme=scheme)
     if kind == 'violin':
@@ -604,7 +639,8 @@ def draw(kind, preps, bin_edges, figure=None, scheme='viridis'):
     if kind == 'heatmap':
         return plot_heatmap(preps, bin_edges, figure)
     if kind == 'density':   # 1データは島図、複数なら1つの軸で島を短冊に分けて並べる
-        return plot_density(preps, figure) if len(preps) == 1 else plot_density_split(preps, figure)
+        return (plot_density(preps, figure, fit_y=fit) if len(preps) == 1
+                else plot_density_split(preps, figure, fit_y=fit))
     if kind == 'depth':
         return plot_depth(preps, figure)
     if kind == 'median':
@@ -617,7 +653,7 @@ def _sanitize(s):
     return re.sub(r'[\\/:*?"<>|]+', '_', s.replace('@', ''))
 
 
-def save_outputs(prep: Prepared, bin_edges, base_dir, timestamp=None, scheme='viridis') -> str:
+def save_outputs(prep: Prepared, bin_edges, base_dir, timestamp=None, scheme='viridis', value_range='auto') -> str:
     """heat_data/{timestamp}_{ex}_{sample}_{target}/ に CSV と PNG 一式を保存してフォルダを返す"""
     timestamp = timestamp or datetime.now().strftime('%Y%m%d%H%M')
     folder = os.path.join(base_dir, f'{timestamp}_{_sanitize(prep.experiment)}_{_sanitize(prep.sample)}'
@@ -635,5 +671,5 @@ def save_outputs(prep: Prepared, bin_edges, base_dir, timestamp=None, scheme='vi
         .to_csv(os.path.join(folder, 'heatmap_matrix.csv'), index=False)
     for kind, name in (('histogram', 'histogram.png'), ('violin', 'violin.png'), ('box', 'boxplot.png'),
                        ('heatmap', 'heatmap.png'), ('density', 'density.png'), ('median', 'median.png'), ('depth', 'depth.png')):
-        draw(kind, [prep], bin_edges, scheme=scheme).savefig(os.path.join(folder, name), dpi=150)
+        draw(kind, [prep], bin_edges, scheme=scheme, value_range=value_range).savefig(os.path.join(folder, name), dpi=150)
     return folder

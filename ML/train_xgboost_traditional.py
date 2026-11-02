@@ -213,6 +213,7 @@ def run_analysis(smns, progress_callback=None):
 
     _report(1, "学習中（CV + テスト用イベントで評価）...")
     from common import training_core
+    dnf = training_core.prepare_dataset(dnf)
     split = training_core.make_split(dnf)
     result = learn_dataset(dnf, split=split)
     X_test = result['X_test']
@@ -227,7 +228,8 @@ def run_analysis(smns, progress_callback=None):
     RUN_DIR, RUN_TIMESTAMP = paths.new_run(FEATURE_SET, ALGORITHM, smns=smns, run_type='train')
 
     _report(2, "混同行列・特徴量重要度・SHAPを保存中...")
-    MX, N_MX, report = conmtx(y_test, y_pred, le, save_dir=RUN_DIR)
+    MX, N_MX, report = conmtx(y_test, y_pred, le, save_dir=RUN_DIR,
+                                   classification_config=training_core.current_settings())
 
     class_names = list(le.classes_)
     feature_columns = data  # 学習に使った15特徴量

@@ -53,6 +53,8 @@ def save_model(run_dir, result, algorithm, feature_set, smns, fc_parameters_mode
         'feature_set': feature_set,
         'smns': list(smns),
         'class_names': list(result['class_names']),
+        'classification_mode': result.get('classification_mode', 'sample'),
+        'sample_groups': result.get('sample_groups', {}),
         'feature_set_name': result.get('name'),
         'n_features': len(result['feature_columns']),
         'fc_parameters_mode': fc_parameters_mode,
@@ -159,7 +161,8 @@ def predict_mix(model_dir, test_smns, threshold=0.8, mix_filters=None,
             progress_callback(i, total, message)
 
     notify(0, f"学習器を読み込みました: {'-'.join(model.class_names)}")
-    run_dir, run_ts = paths.new_run(model.feature_set, model.algorithm, smns=model.class_names, run_type='mix')
+    run_dir, run_ts = paths.new_run(model.feature_set, model.algorithm,
+                                  smns=model.info.get('smns') or model.class_names, run_type='mix')
     (run_dir / 'used_model_version.txt').write_text(str(model.run_dir), encoding='utf-8')
     from common.training_file_filter import prediction_file_selection
     with prediction_file_selection(model.feature_set, test_smns, mix_file_rules) as file_selection:
@@ -186,7 +189,10 @@ def predict_mix(model_dir, test_smns, threshold=0.8, mix_filters=None,
 
 def combination_key(model):
     """同じ組み合わせとみなすキー（特徴量の種類 + クラスの集合）。"""
-    return model['feature_set'], tuple(sorted(model['class_names']))
+    base = model['feature_set'], tuple(sorted(model['class_names']))
+    if model.get('classification_mode') == 'group':
+        return base + (tuple(sorted((k, tuple(sorted(v))) for k, v in model['sample_groups'].items())),)
+    return base
 
 
 def group_models(models):
@@ -244,11 +250,14 @@ def model_details(model):
     split = training.get('split') or {}
     params = training.get('params') or {}
     rows = [
+        ('基本', '分類単位', 'グループ別' if model.get('classification_mode') == 'group' else 'サンプル別'),
         ('基本', '作成日時', model.get('created_at')),
         ('基本', '学習フォルダ', run_dir.name),
         ('基本', 'アルゴリズム', model.get('algorithm')),
         ('基本', '解析の完了', '完了' if manifest else '途中で停止（学習器は保存済み）'),
     ]
+    for name, members in model.get('sample_groups', {}).items():
+        rows.append(('グループ', name, ', '.join(members)))
     inputs = details.get('feature_inputs') or manifest.get('feature_inputs') or []
     for item in sorted(inputs, key=lambda v: str(v.get('sample'))):
         extracted = str(item.get('extracted_at') or '')[:16].replace('T', ' ')

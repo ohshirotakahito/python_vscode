@@ -374,6 +374,7 @@ def run_analysis(smns, progress_callback=None):
 
     # 学習用/テスト用はイベント単位で1回だけ決め、全特徴量セットで共通に使う
     from common import training_core
+    dnf = training_core.prepare_dataset(dnf)
     split = training_core.make_split(dnf)
 
     _report(1, "tsfresh特徴量を選択中（学習用イベントのみ使用）...")
@@ -477,7 +478,8 @@ def run_analysis(smns, progress_callback=None):
     clf = main_result['clf']
 
     # --- 混同行列(distance_confusion_correlationで使用するN_MXを得るため) ---
-    MX, N_MX, report = conmtx(y_test, y_pred, le, save_dir=RUN_OUTPUT_DIR)
+    MX, N_MX, report = conmtx(y_test, y_pred, le, save_dir=RUN_OUTPUT_DIR,
+                                   classification_config=training_core.current_settings())
 
     # --- ヒストグラム・統計データの作成と保存 ---
     hist_stats_df, summary_stats_df = data_stat(

@@ -10,9 +10,10 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 
+from shared.folder_layout import create_sample_folders
+from shared.seq_records import HEADERS, SEQ_DB as DB, history, machines, rows  # noqa: F401  (app.py も core 経由で使う)
+
 BASE = Path(__file__).resolve().parent
-DB = Path(r'D:\My_Dropbox\ou&t\machinedb\SEQ')
-HEADERS = 'uploaded_at operator_code machine_code data_selection experiment_at uploader_code source_experiment destination_experiment sample folder_10k prefix_10k start_10k end_10k folder_100k prefix_100k start_100k end_100k'.split()
 
 
 def sampled_signature(path):
@@ -122,8 +123,7 @@ def inspect_set_data(spec, check_duplicates=False, progress=None, quick=False):
 
 
 def create_destinations(root, experiment, samples):
-    """Use filemanager's standard folder layout for new destinations."""
-    import importlib.util
+    """Use the shared standard folder layout for new destinations."""
     names = [experiment, *samples]
     if not samples:
         raise ValueError('サンプル名を入力してください。')
@@ -135,40 +135,9 @@ def create_destinations(root, experiment, samples):
     root = Path(root)
     if not root.is_dir():
         raise ValueError(f'保存先解析ルートが存在しません: {root}')
-    spec = importlib.util.spec_from_file_location('destination_folders', BASE.parent / 'filemanager' / 'create_folders.py')
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
     for sample in samples:
-        module.create_sample_folders(root, experiment, sample)
+        create_sample_folders(root, experiment, sample)
     return sorted(p.name for p in root.iterdir() if p.is_dir()), sorted(p.name for p in (root / experiment).iterdir() if p.is_dir())
-
-
-def rows(path):
-    data = Path(path).read_bytes()
-    for encoding in ('utf-8-sig', 'cp932'):
-        try:
-            return list(csv.reader(data.decode(encoding).splitlines()))
-        except UnicodeDecodeError:
-            pass
-    raise ValueError(f'文字コードを判定できません: {path}')
-
-
-def machines(path):
-    data = rows(path)
-    return {r[0]: dict(zip(data[0], r)) for r in data[1:] if r and r[0]}
-
-
-def history(legacy, local):
-    result = set()
-    for path in (legacy, local):
-        if not Path(path).exists():
-            if Path(path) == Path(legacy):
-                raise FileNotFoundError(path)
-            continue
-        for row in rows(path):
-            if len(row) >= 17 and row[0] and row[0] != HEADERS[0]:
-                result.add(tuple(row[:17]))
-    return sorted(result, key=lambda r: datetime.strptime(r[0], '%Y/%m/%d_%H:%M'), reverse=True)
 
 
 def sync_history(legacy, local):

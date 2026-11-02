@@ -14,7 +14,7 @@ from pathlib import Path
 import re
 import uuid
 
-from database.rackstation_view import measurement_key, number_ranges as _ranges
+from shared.rack_store import measurement_key, number_ranges as _ranges
 
 SUFFIXES = ('.tdms', '.tdms_index')
 HISTORY = '.整理履歴'
@@ -197,7 +197,7 @@ def plan(result):
                                  runs=len(x['runs']), empty=sum(r['size'] == 0 for r in x['runs']),
                                  delete=sum(r['tag'] == 'delete' and r['location'] == 'BNAL@' + x['target'] for r in rows))
                             for x in result['targets']])
-    from filemanager.t_stock_manager import pair_up
+    from shared.t_stock import pair_up
     skipped = []
     pair_up(result.get('orphans', []), result['files'], moves, skipped, {'ANAL': anal, 'ANAL/stocked': anal / 'stocked'})
     for orphan in result.get('orphans', []):

@@ -1,0 +1,3558 @@
+
+20180816 1st Step Analysis.vi
+20180816 1st Step Analysis.vi
+F_name
+error in
+G[üÍ
+ÍAÈOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B¼ÌVI©çG[ª­¶µ½ÛÉA éìðñð·é©ÈÇ»f·é½ßÉ±ÌîñðgpµÜ·B
+G[Ú×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÉÖ·éæèÚµ¢îñª\¦³êÜ·B
+code
+R[h
+ÍAG[ é¢ÍxR[hÅ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+Set Condition
++/- Point
+Cut Region
+BL Selection
+STD Selection
+D Th std xn
+U Th std xn
+MAX D time (ms)
+LL BR (n)
+LL BR T length (ms)
+LL Retention (ms)
+Read Region Point
+Filter Selection
+STD smooth Point
+MAX E_S time (ms)
+Raw data Graph
+Count Graph
+error out
+G[üÍ
+ÍAÈOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B¼ÌVI©çG[ª­¶µ½ÛÉA éìðñð·é©ÈÇ»f·é½ßÉ±ÌîñðgpµÜ·B
+G[Ú×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÉÖ·éæèÚµ¢îñª\¦³êÜ·B
+code
+R[h
+ÍAG[ é¢ÍxR[hÅ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+Front Panel JPEG file converter.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\Front Panel JPEG file converter.vi
+Anal tzt close header_MS.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\Anal tzt close header_MS.vi
+AR table formation VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\AR table formation VI.vi
+AR Table save for TDMS.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\AR Table save for TDMS.vi
+ASD total S analysis.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASD total S analysis.vi
+R Table Graph VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\R Table Graph VI.vi
+ASD BL estimation VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASD BL estimation VI.vi
+Anal txt open_MS.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\Anal txt open_MS.vi
+AC Table save for TDMS.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\AC Table save for TDMS.vi
+NI_AALBase.lvlib:Median Filter.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\3filter.llb\Median Filter.vi
+csv temp path.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\csv temp path.vi
+ASM A_PATH formation.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASM A_PATH formation.vi
+temp_test.vi
+D:\Dropbox\ou&t\Signal Analysis\temp_test.vi
+Clear Errors.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\error.llb\Clear Errors.vi
+GetFileCreationDate.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\GetFileCreationDate.vi
+ASD Baseline substract VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASD Baseline substract VI.vi
+ASD STD estimation VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASD STD estimation VI.vi
+ASD STD for Threshold VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASD STD for Threshold VI.vi
+ASD Peak-Pick Threshold VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASD Peak-Pick Threshold VI.vi
+2Triger Peak detectionM VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\2Triger Peak detectionM VI.vi
+ASD Signal SE caluculation VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASD Signal SE caluculation VI.vi
+TDMS Initialization and Tag Formation_MS.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\TDMS Initialization and Tag Formation_MS.vi
+ASD Signal BL estimation VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASD Signal BL estimation VI.vi
+ASD Peak location for Graph VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASD Peak location for Graph VI.vi
+ASD Time point for Graph VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASD Time point for Graph VI.vi
+region analysis.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\region analysis.vi
+ASD Threshold Function VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASD Threshold Function VI.vi
+S_ASD Each Burst SAVE Modified_MS VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\S_ASD Each Burst SAVE Modified_MS VI.vi
+S_ASD Each Signal SAVE_MS VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\S_ASD Each Signal SAVE_MS VI.vi
+ASDE Signal Data Table For New_MS.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASDE Signal Data Table For New_MS.vi
+R Table data formation.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\R Table data formation.vi
+Anal tdms each save.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\Anal tdms each save.vi
+anal txt each save.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\anal txt each save.vi
+ANAL Time date.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ANAL Time date.vi
+Smoothing++.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\Smoothing++.vi
+Front Panel JPEG file converter.vi
+error in
+error in
+ can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+code
+code
+ is the error or warning code.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+source
+source
+ describes the origin of the error or warning.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+VI Path
+JPEG file name
+error out
+error in
+ can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+code
+code
+ is the error or warning code.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+source
+source
+ describes the origin of the error or warning.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+Write JPEG File.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\picture\jpeg.llb\Write JPEG File.vi
+Write JPEG File.vi
+Writes a JPEG file.
+path to JPEG file
+path to JPEG file
+ specifies the path to and name of the JPEG file to write.
+quality (80)
+quality
+ specifies the level of quality you want for the JPEG using the IJG JPEG library scale, which ranges from 0 to 100. The default is 80.
+error in (no error)
+error in
+ describes error conditions that occur before this node runs. This input provides standard error in functionality.
+status
+status
+ is TRUE (X) if an error occurred before this node ran or FALSE (checkmark) to indicate a warning or that no error occurred before this node ran. The default is FALSE.
+code
+code
+ is the error or warning code. The default is 0.
+source
+source
+ specifies the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning. The default is an empty string.
+image data
+image data
+ describes the image you want to draw or manipulate.
+image type
+image type
+ is reserved for future use.
+image depth
+image depth
+ specifies the color depth of the image, which is the number of bits to use to describe the color of each pixel in the image. Valid values include 1, 4, 8, and 24 bits per pixel.
+image
+image
+ is an array of bytes that describes the color of each pixel in the image in raster order. The value of 
+image depth
+ determines how LabVIEW interprets the value of this input.
+image
+ is an array of bytes that describes the color of each pixel in the image in raster order. The value of 
+image depth
+ determines how LabVIEW interprets the value of this input.
+mask
+mask
+ is an array of bytes in which each bit describes mask information for a pixel. The first byte describes the first eight pixels, the second byte describes the next eight pixels, and so on.
+mask
+ is an array of bytes in which each bit describes mask information for a pixel. The first byte describes the first eight pixels, the second byte describes the next eight pixels, and so on.
+colors
+colors
+ is an array of RGB color values that correspond to the values in 
+image
+. The value of 
+image depth
+ determines how LabVIEW interprets the value of this input. 
+colors
+ stores 32-bit RGB values where the most-significant byte is zero, followed in order by red, green, and blue values. Valid values include 0 through 255.
+In the Write File VIs (BMP, JPEG, and PNG), LabVIEW does not have an automatic color table. Use the 
+colors
+ input even for 
+image depth
+ of lower bit value to ensure the best performance of the Write File VIs.
+colors
+ is an array of RGB color values that correspond to the values in 
+image
+. The value of 
+image depth
+ determines how LabVIEW interprets the value of this input. 
+colors
+ stores 32-bit RGB values where the most-significant byte is zero, followed in order by red, green, and blue values. Valid values include 0 through 255.
+Rectangle
+Rectangle
+ is a cluster that contains coordinates that describe the bounding rectangle of the image.
+left
+left
+ is the horizontal coordinate of the left edge of the rectangle.
+top
+top
+ is the vertical coordinate of the top edge of the rectangle.
+right
+right
+ is the horizontal coordinate of the right edge of the rectangle.
+bottom
+bottom
+ is the vertical coordinate of the bottom edge of the rectangle.
+error out
+error out
+ contains error information. This output provides standard error out functionality.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+code
+code
+ is the error or warning code.
+source
+source
+ describes the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning.
+path
+path
+ specifies the path to the JPEG file.
+Check Path.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\picture\jpeg.llb\Check Path.vi
+imagedata.ctl
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\picture\picture.llb\imagedata.ctl
+Error Cluster From Error Code.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\error.llb\Error Cluster From Error Code.vi
+Check Data Size.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\picture\jpeg.llb\Check Data Size.vi
+Check Color Table Size.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\picture\jpeg.llb\Check Color Table Size.vi
+Check File Permissions.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\picture\jpeg.llb\Check File Permissions.vi
+Check Path.vi
+Checks the path to see if it actually exists on disk.  If it does not the error cluster is set.  If the path is a relative path, an absolute path is made from the relative path by appending it with the path to the directory in which the top most VI of this program exists.
+path in
+error in (no error)
+The error in cluster can accept error information wired from VIs previously called.  Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed. 
+status
+The status boolean is either TRUE (X) for an error, or FALSE (checkmark) for no error or a warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+code
+The code input identifies the error or warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+source
+The source string describes the origin of the error or warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+error out
+The error out cluster passes error or warning information out of a VI to be used by other VIs.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+status
+The status boolean is either TRUE (X) for an error, or FALSE (checkmark) for no error or a warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+code
+The code input identifies the error or warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+source
+The source string describes the origin of the error or warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+path out
+Directory of Top Level VI.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\picture\jpeg.llb\Directory of Top Level VI.vi
+Directory of Top Level VI.vi
+This VI will get the directory in which the top level VI of the program is contained.    If VI is in a library (.llb) file the directory in which the library file exists is returned
+error in (no error)
+The error cluster contains error or warning information. 
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed. 
+status
+The status boolean is either TRUE (X) for an error, or FALSE (checkmark) for no error or a warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+code
+The code number identifies the error or warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+source
+The source string describes the origin of the error or warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+error out
+The error cluster contains error or warning information. 
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed. 
+status
+The status boolean is either TRUE (X) for an error, or FALSE (checkmark) for no error or a warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+code
+The code number identifies the error or warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+source
+The source string describes the origin of the error or warning.
+The pop-up option Explain Error (or Explain Warning) gives more information about the error displayed.
+directory of top VI
+Anal tzt close header_MS.vi
+error in
+G[üÍ
+ÍAÈOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B¼ÌVI©çG[ª­¶µ½ÛÉA éìðñð·é©ÈÇ»f·é½ßÉ±ÌîñðgpµÜ·B
+G[Ú×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÉÖ·éæèÚµ¢îñª\¦³êÜ·B
+code
+R[h
+ÍAG[ é¢ÍxR[hÅ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+S Table refnum
+B Table refnum
+R Table refnum
+A TDMS refnum
+error out
+G[üÍ
+ÍAÈOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B¼ÌVI©çG[ª­¶µ½ÛÉA éìðñð·é©ÈÇ»f·é½ßÉ±ÌîñðgpµÜ·B
+G[Ú×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÉÖ·éæèÚµ¢îñª\¦³êÜ·B
+code
+R[h
+ÍAG[ é¢ÍxR[hÅ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+imagedata.ctl
+Error Cluster From Error Code.vi
+Converts an error or warning code to an error cluster. This VI is useful when you receive a return value from a shared library call or when you return user-defined error codes.
+error code (0)
+error code
+ is the code you want to convert to an error cluster. The default is 0, which indicates that no error occurred.
+show call chain? (False)
+If 
+show call chain?
+ is TRUE, 
+source
+ includes the chain of callers from the VI that produced the error or warning to the top-level VI. The default is FALSE, which indicates to include only the calling VI.
+is warning? (False)
+If 
+is warning?
+ is TRUE, 
+status
+ returns FALSE to indicate that a warning occurred. The default is FALSE.
+error in (no error)
+error in
+ describes error conditions that occur before this node runs. This input provides standard error in functionality.
+status
+status
+ is TRUE (X) if an error occurred before this node ran or FALSE (checkmark) to indicate a warning or that no error occurred before this node ran. The default is FALSE.
+code
+code
+ is the error or warning code. The default is 0.
+source
+source
+ specifies the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning. The default is an empty string.
+error message ("")
+error message
+ is the error description to appear in the 
+error out
+ cluster.
+error out
+error out
+ contains error information. With the following exception, this output provides standard error out functionality.If the value of 
+error in
+ is no error, this VI contains error information that corresponds to the 
+error code
+ input.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+code
+code
+ is the error or warning code.
+source
+source
+ describes the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning.
+AR table formation VI.vi
+A Cluster
+Region STD Mode
+Region BL Mode
+Region Count Mode
+B Duty Cycle [%]
+Total Time [s]
+Anal Time
+Filename
+info Cluster
+D con
+A New folder
+Ainfo
+AN time
+Filename
+F ex Info
+Ex ID
+Chip ID
+Distance (nm)
+Bias Voltage (mV)
+EP1 Voltage (mV)
+EP2 Voltage (mV)
+AA info
+Burst#Sum
+Signal#Sum
+R B_SCount [n] in
+B Region Time [s] in
+Signal Freq [/s]
+datapoint
+AA2 info
+Value
+Version
+Anal date
+AR Table Data
+AR Table save for TDMS.vi
+error in
+G[üÍ
+ÍAÈOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B¼ÌVI©çG[ª­¶µ½ÛÉA éìðñð·é©ÈÇ»f·é½ßÉ±ÌîñðgpµÜ·B
+G[Ú×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÉÖ·éæèÚµ¢îñª\¦³êÜ·B
+code
+R[h
+ÍAG[ é¢ÍxR[hÅ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+TDMSt@C in
+AR Table Data
+AR Table Tag
+error out
+G[üÍ
+ÍAOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B±ÌîñÍA¼ÌVIÅG[ª­¶µ½ÛÉA éìðñð·é©Ç¤©ð»f·é½ßÉgpµÜ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+code
+R[h
+ÍAG[Ü½ÍxR[hÅ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+TDMSt@C out
+ASD total S analysis.vi
+Region STD
+Selected STD (pA)
+Region BL
+Region Count
+B Region Time [s] in
+Rigon#
+1s datapoint
+Read Region Point
+AF_C
+Anal Time
+Filename
+A Cluster
+Region STD Mode
+Region BL Mode
+Region Count Mode
+B Duty Cycle [%]
+Total Time [s]
+Anal Time
+Filename
+NI_AALBase.lvlib:Unimode.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Unimode.vi
+NI_AALBase.lvlib:Mode.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Mode.vi
+NI_AALBase.lvlib:Multimode.vi
+Finds the modes (most common values) or estimated modes (most common range centers) of the input sequence 
+X
+. This VI can perform unimodal or multimodal analysis. You must manually select the polymorphic instance to use.
+X
+X
+ must contain at least one sample.
+X
+ must contain at least one sample.
+intervals
+intervals
+ specifies the number of histograms to use when computing estimated modes. The default is 100.
+Modes
+Modes
+ returns the modes found in 
+X
+.
+Modes
+ returns the modes found in 
+X
+.
+error
+error
+ returns any error or warning from the VI. You can wire 
+error
+ to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+R Table Graph VI.vi
+Region BL
+Region STD
+R Signal Count
+BLW Graph
+STDW Graph
+Count Graph
+ASD BSC Graph VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASD BSC Graph VI.vi
+NI_AALBase.lvlib:Unimode.vi
+Finds the modes (most common values) or estimated modes (most common range centers) of the input sequence 
+X
+. This VI can perform unimodal or multimodal analysis. You must manually select the polymorphic instance to use.
+X
+X
+ must contain at least one sample.
+X
+ must contain at least one sample.
+intervals
+intervals
+ specifies the number of histograms to use when computing estimated modes. The default is 100.
+error
+error
+ returns any error or warning from the VI. You can wire 
+error
+ to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+mode
+mode
+ returns the mode or estimated mode of 
+X
+.
+NI_AALBase.lvlib:Multimode.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Multimode.vi
+Check Data Size.vi
+Checks the flattened data to see if the size of the data in bytes is what we expect it to be based on its bounds and depth.
+flattened image data
+Numeric
+depth
+rect
+left
+top
+right
+bottom
+error in (no error)
+error in
+ can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error. 
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+code
+code
+ is the error or warning code.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+source
+source
+ describes the origin of the error or warning.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+error out
+error out
+ passes error or warning information out of a VI to be used by other VIs.
+Right-click the 
+error out
+ indicator on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the 
+error out
+ indicator on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+code
+code
+ is the error or warning code.
+Right-click the 
+error out
+ indicator on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+source
+source
+ string describes the origin of the error or warning.
+Right-click the 
+error out
+ indicator on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+Error Cluster From Error Code.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\error.llb\Error Cluster From Error Code.vi
+NI_Gmath.lvlib:Measures of Mean.vi
+Computes the central tendency of the data values in 
+x array
+.
+x array
+x array
+ specifies the data set.
+Numeric
+x array
+ specifies the data set.
+type
+type
+ specifies the type of mean to compute.
+percent (trim)
+percent (trim)
+ specifies the percentage of data to trim before computing the 
+trimmed
+ mean. Use this input to ignore outlier values in 
+x array
+. LabVIEW trims the percentage you specify from both the lowest and highest values of 
+x array
+. Thus, the total amount trimmed equals twice the value of 
+percent (trim)
+.
+mean value
+mean value
+ returns the mean measure of the data in 
+x array
+.
+error
+error
+ returns any error or warning from the VI. You can wire 
+error
+ to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+NI_Gmath.lvlib:st_Percentile Trimming.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\gmath\statdist.llb\st_Percentile Trimming.vi
+NI_AALBase.lvlib:Median.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Median.vi
+NI_AALBase.lvlib:Mean.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Mean.vi
+NI_AALBase.lvlib:Mean (DBL).vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Mean (DBL).vi
+NI_Gmath.lvlib:st_Percentile Trimming.vi
+x array
+Numeric
+p
+trimmed x array
+Numeric
+ASD BL estimation VI.vi
+STD Cut
+Region raw data
+BL Selection
+Selected Region Baseline
+BL cluster
+All Mode
+Div Mode
+Dive Mean
+Min H Peak
+Region BL selct
+HPeak Cluster
+100_20_10 H Peak
+1000_20_50 H Peak
+1000_10_20 H Peak
+NI_AALBase.lvlib:Unimode.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Unimode.vi
+NI_Gmath.lvlib:Measures of Mean.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\gmath\statdist.llb\Measures of Mean.vi
+NI_AALBase.lvlib:Histogram.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Histogram.vi
+NI_AAL_SigProc.lvlib:Peak Detector.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\8numeric.llb\Peak Detector.vi
+NI_AALBase.lvlib:Mean.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Mean.vi
+NI_AALBase.lvlib:Mean (DBL).vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Mean (DBL).vi
+NI_AALBase.lvlib:Mode.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Mode.vi
+NI_AALBase.lvlib:Median.vi
+Finds the median value of the input sequence 
+X
+ by sorting the values of 
+X
+ and averaging the middle element(s) of the sorted array.
+X
+X
+ is the input sequence. If 
+X
+ is empty, 
+median
+ is NaN.
+X
+ is the input sequence. If 
+X
+ is empty, 
+median
+ is NaN.
+median
+median
+ is the calculated median value of the input sequence 
+X
+.
+error
+error
+ returns any error or warning from the VI. You can wire 
+error
+ to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Anal txt open_MS.vi
+error in
+G[üÍ
+ÍAÈOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B¼ÌVI©çG[ª­¶µ½ÛÉA éìðñð·é©ÈÇ»f·é½ßÉ±ÌîñðgpµÜ·B
+G[Ú×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÉÖ·éæèÚµ¢îñª\¦³êÜ·B
+code
+R[h
+ÍAG[ é¢ÍxR[hÅ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+Table Tag C
+S Table Tag
+R Table Tag
+B Table Tag
+AR Table Tag
+AC Table Tag
+Table tmp cluster
+S_Table_tmp_path
+R_Table_tmp_path
+T_Table_tmp_path
+error out
+G[üÍ
+ÍAÈOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B¼ÌVI©çG[ª­¶µ½ÛÉA éìðñð·é©ÈÇ»f·é½ßÉ±ÌîñðgpµÜ·B
+G[Ú×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÉÖ·éæèÚµ¢îñª\¦³êÜ·B
+code
+R[h
+ÍAG[ é¢ÍxR[hÅ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+Table Pass refnum
+S Table refnumoÍ
+R Table refnumoÍ
+B Table refnumoÍ
+Header Astep.vi
+¶ñ
+út/Ô¶ñ
+Header for Astep
+file name transfer.vi
+pX
+Data file name
+Experimetal ID
+D con
+file info output
+Ex time
+Operator
+Machine
+Ex#
+Sample Name
+SW Ex name
+DAQ time
+SW form
+Distance
+Bias (mV)
+Target Current (pA)
+EP1 (mV)
+EP2 (mV)
+Data form
+F ex Info
+Ex ID
+Chip ID
+Distance (nm)
+Bias Voltage (mV)
+EP1 Voltage (mV)
+EP2 Voltage (mV)
+Machine DB info IV.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\Machine DB info IV.vi
+AC Table save for TDMS.vi
+AC Table Tag
+Set Condition
++/- Point
+Cut Region
+BL Selection
+STD Selection
+D Th std xn
+U Th std xn
+MAX D time (ms)
+LL BR (n)
+LL BR T length (ms)
+LL Retention (ms)
+Read Region Point
+Filter Selection
+STD smooth Point
+MAX E_S time (ms)
+error in
+G[üÍ
+ÍAOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B±ÌîñÍA¼ÌVIÅG[ª­¶µ½ÛÉA éìðñð·é©Ç¤©ð»f·é½ßÉgpµÜ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+code
+R[h
+ÍAG[Ü½ÍxR[hÅ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+TDMSt@C in
+error out
+G[üÍ
+ÍAOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B±ÌîñÍA¼ÌVIÅG[ª­¶µ½ÛÉA éìðñð·é©Ç¤©ð»f·é½ßÉgpµÜ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+code
+R[h
+ÍAG[Ü½ÍxR[hÅ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+TDMSt@C out
+NI_AALBase.lvlib:Median Filter.vi
+Applies a median filter of rank to the input sequence 
+X
+, where rank is 
+right rank
+ if 
+right rank
+ is greater than zero, or 
+left rank
+ if 
+right rank
+ is less than zero.
+X
+X
+ is the input signal to filter.
+X
+ is the input signal to filter.
+right rank
+right rank
+ is the number of elements used to compute the median filter to the right side. If 
+right rank
+ is less than 0, the VI assumes 
+right rank
+ is equal to 
+left rank
+. 
+right rank
+ must be less than 
+X
+. The default is -1.
+left rank
+left rank
+ is the number of elements used to compute the median filter to the left side. 
+left rank
+ must be greater than or equal to 0. The default is 2.
+Filtered X
+Filtered X
+ is the output array of filtered samples. The size of this array is the same as the input array 
+X
+.
+Filtered X
+ is the output array of filtered samples. The size of this array is the same as the input array 
+X
+.
+error
+error
+ returns any error or warning from the VI. You can wire 
+error
+ to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+csv temp path.vi
+error in (no error)
+error in
+ describes error conditions that occur before this node runs. This input provides standard error in functionality.
+status
+status
+ is TRUE (X) if an error occurred before this node ran or FALSE (checkmark) to indicate a warning or that no error occurred before this node ran. The default is FALSE.
+code
+code
+ is the error or warning code. The default is 0.
+source
+source
+ specifies the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning. The default is an empty string.
+Path_Name
+Folder_name
+S_Table_name
+R_Table_name
+T_Table_name
+tdms temp path
+error out
+error in
+ can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+code
+code
+ is the error or warning code.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+source
+source
+ describes the origin of the error or warning.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+Table tmp cluster
+S_Table_tmp_path
+R_Table_tmp_path
+T_Table_tmp_path
+A New Folder temp
+Check if File or Folder Exists.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\libraryn.llb\Check if File or Folder Exists.vi
+ASM A_PATH formation.vi
+F_name
+error in (no error)
+G[üÍ
+ÍA±Ìm[hðÀs·éOÉ­¶µ½G[ÌóÔð¦µÜ·B±ÌüÍÍAWG[üÍÆµÄ@\µÜ·B
+status
+Xe[^X
+ÍA±Ìm[hÌÀsOÉG[ª­¶µ½êÍTRUEiXjAxð¦·©A±Ìm[hÌOÉG[ª­¶µÄ¢È¢êÍFALSEi`FbN}[NjÉÈèÜ·BftHgÍFALSEÅ·B
+code
+R[h
+ÍG[R[hÜ½ÍxR[hÅ·BftHgÍ0Å·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µAÙÆñÇÌêAG[Ü½Íxª­¶µ½m[hÌ¼OÅ·BftHgÍóÌ¶ñÅ·B
+error out
+G[üÍ
+ÍAOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B±ÌîñÍA¼ÌVIÅG[ª­¶µ½ÛÉA éìðñð·é©Ç¤©ð»f·é½ßÉgpµÜ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+code
+R[h
+ÍAG[Ü½ÍxR[hÅ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+SRBJT Path
+S Table Pass
+R Table Pass
+B Table Pass
+JPEG Pass
+A TDMS Pass
+info Cluster
+D con
+A New folder
+Ainfo
+AN time
+Filename
+F ex Info
+Ex ID
+Chip ID
+Distance (nm)
+Bias Voltage (mV)
+EP1 Voltage (mV)
+EP2 Voltage (mV)
+AR Table Path
+Path_Name
+Folder_name
+S_Table_name
+R_Table_name
+T_Table_name
+Header Astep.vi
+D:\Dropbox\ou&t\File transfer\VI\Header Astep.vi
+file name transfer.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\file name transfer.vi
+Check if File or Folder Exists.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\libraryn.llb\Check if File or Folder Exists.vi
+temp_test.vi
+error in (no error)
+error in
+ describes error conditions that occur before this node runs. This input provides standard error in functionality.
+status
+status
+ is TRUE (X) if an error occurred before this node ran or FALSE (checkmark) to indicate a warning or that no error occurred before this node ran. The default is FALSE.
+code
+code
+ is the error or warning code. The default is 0.
+source
+source
+ specifies the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning. The default is an empty string.
+temp_tdms
+error out
+error in
+ can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+code
+code
+ is the error or warning code.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+source
+source
+ describes the origin of the error or warning.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+temp tdms_path B
+temp txt_path
+temp tdms_path A
+Check if File or Folder Exists.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\libraryn.llb\Check if File or Folder Exists.vi
+Check Color Table Size.vi
+Takes a bit depth and checks to be sure the color table is at least 2^depth elements in size.
+error in (no error)
+error in
+ can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error. 
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+code
+code
+ is the error or warning code.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+source
+source
+ describes the origin of the error or warning.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+color table
+Numeric
+depth
+error out
+error out
+ passes error or warning information out of a VI to be used by other VIs.
+Right-click the 
+error out
+ indicator on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the 
+error out
+ indicator on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+code
+code
+ is the error or warning code.
+Right-click the 
+error out
+ indicator on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+source
+source
+ string describes the origin of the error or warning.
+Right-click the 
+error out
+ indicator on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+Error Cluster From Error Code.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\error.llb\Error Cluster From Error Code.vi
+Machine DB info IV.vi
+Ex ID
+MachineDB GPSET
+found!
+Chip ID
+Clear Errors.vi
+Resets the error 
+status
+ to no error, 
+code
+ to 0, and 
+source
+ to an empty string. Use this VI when you want to ignore an error. By default, this VI ignores all errors. Wire an error code value to 
+specific error code to clear
+ if you only want to ignore a specific error.
+error in (no error)
+error in
+ describes error conditions that occur before this node runs. This input provides standard error in functionality.
+status
+status
+ is TRUE (X) if an error occurred before this node ran or FALSE (checkmark) to indicate a warning or that no error occurred before this node ran. The default is FALSE.
+code
+code
+ is the error or warning code. The default is 0.
+source
+source
+ specifies the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning. The default is an empty string.
+specific error code to clear (0: all)
+specific error code to clear
+ ignores only the specific error code wired to this input. The default value is 0, which means the VI will ignore all errors.
+error out
+error out
+ contains error information. This output provides standard error out functionality. 
+error out
+ returns no error by default. If you wire a value to 
+specific error code to clear
+ and 
+error in
+ contains errors that do not match the error code you wired, 
+error out
+ will return an error.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+code
+code
+ is the error or warning code.
+source
+source
+ describes the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning.
+specific error cleared?
+specific error cleared?
+ indicates whether the error referenced by 
+specific error code to clear
+ has been cleared.
+GetFileCreationDate.vi
+File Path
+Error
+File Created Date (UTC)
+Check File Permissions.vi
+Check the permission settings on the file at the specified path.
+path
+error in (no error)
+The 
+error in
+ cluster can accept error information wired from VIs previously called.  Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+The pop-up option 
+Explain Error
+ (or Explain Warning) gives more information about the error displayed. 
+status
+The 
+status
+ boolean is either TRUE (X) for an error, or FALSE (checkmark) for no error or a warning.
+The pop-up option 
+Explain Error
+ (or Explain Warning) gives more information about the error displayed.
+code
+The 
+code
+ input identifies the error or warning.
+The pop-up option 
+Explain Error
+ (or Explain Warning) gives more information about the error displayed.
+source
+The 
+source
+ string describes the origin of the error or warning.
+The pop-up option 
+Explain Error
+ (or Explain Warning) gives more information about the error displayed.
+error out
+The 
+error in
+ cluster can accept error information wired from VIs previously called.  Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+The pop-up option 
+Explain Error
+ (or Explain Warning) gives more information about the error displayed. 
+status
+The 
+status
+ boolean is either TRUE (X) for an error, or FALSE (checkmark) for no error or a warning.
+The pop-up option 
+Explain Error
+ (or Explain Warning) gives more information about the error displayed.
+code
+The 
+code
+ input identifies the error or warning.
+The pop-up option 
+Explain Error
+ (or Explain Warning) gives more information about the error displayed.
+source
+The 
+source
+ string describes the origin of the error or warning.
+The pop-up option 
+Explain Error
+ (or Explain Warning) gives more information about the error displayed.
+Error Cluster From Error Code.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\error.llb\Error Cluster From Error Code.vi
+ASD Baseline substract VI.vi
+Region Raw
+Baseline
+l
+Substracted Raw data
+ASD STD estimation VI.vi
+STD Cut
+BL Substraced raw data
+STD Selection
+Selected STD (pA)
+[h
+ÍA
+X
+Ì[hÜ½Íè[hðÔµÜ·B
+STD cluster
+All STD
+Div STD mean
+Div STD Mode
+R STD select
+NI_AALBase.lvlib:Unimode.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Unimode.vi
+NI_AALBase.lvlib:Std Deviation and Variance.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Std Deviation and Variance.vi
+NI_AALBase.lvlib:Mean.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Mean.vi
+NI_AALBase.lvlib:Mean (DBL).vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Mean (DBL).vi
+NI_AALBase.lvlib:Mode.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Mode.vi
+ASD STD for Threshold VI.vi
+STD A
+Selected STD (pA)
+S Point
+STD for Thd
+Smoothing++.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\Smoothing++.vi
+ASD Peak-Pick Threshold VI.vi
+U thred std n
+standard deviation (pA)
+WÎ·
+ÍAüÍV[PX
+ X
+Ìl©çvZ³ê½WÎ·Å·B
+D thred std n
+U thred (pA)
+D thred (pA)
+U thred (nA)
+D thred (nA)
+SearchSpecifedBoolArrayFrom1DBool.vi
+ÎÛÆ·ézñ
+u[
+õ·ézñ
+u[
+wW
+ASD SearchSpecifedBoolArrayFrom1DBool.vi
+ÎÛÆ·ézñ
+u[
+õ·ézñ
+u[
+wW
+ASD Signal Triger Detection VI.vi
+ãèl
+üÍzñ
+ûü
+ºèl
+Êu
+index of element
+§¿ãªè
+index of element
+§ºè
+index of element
+Jn
+index of element
+SearchSpecifedBoolArrayFrom1DBool.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\SearchSpecifedBoolArrayFrom1DBool.vi
+ASD SearchSpecifedBoolArrayFrom1DBool.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASD SearchSpecifedBoolArrayFrom1DBool.vi
+2Triger Peak detectionM VI.vi
+¶f[^Ìzñ
+l
+U Threshold (nA)
+D Threshold (nA)
+Peak Intensity
+Peak location
+Peak#
+S Start
+index of element
+S End
+index of element
+ASD Signal Triger Detection VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASD Signal Triger Detection VI.vi
+ASD Signal SE caluculation VI.vi
+R Peak location
+RS Start
+index of element
+RS End
+index of element
+Region Start
+1s datapoint
+TS Peak Time (s)
+T Start Time (s)
+T END Time (s)
+Signal Time (ms)
+TDMS Initialization and Tag Formation_MS.vi
+Raw data
+A TDMS Pass
+error in
+G[üÍ
+ÍAOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B±ÌîñÍA¼ÌVIÅG[ª­¶µ½ÛÉA éìðñð·é©Ç¤©ð»f·é½ßÉgpµÜ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+code
+R[h
+ÍAG[Ü½ÍxR[hÅ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+error out
+G[üÍ
+ÍAOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B±ÌîñÍA¼ÌVIÅG[ª­¶µ½ÛÉA éìðñð·é©Ç¤©ð»f·é½ßÉgpµÜ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+code
+R[h
+ÍAG[Ü½ÍxR[hÅ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+A TDMSt@CoÍ
+Table Tag C
+S Table Tag
+R Table Tag
+B Table Tag
+AR Table Tag
+AC Table Tag
+ASD Signal BL estimation VI.vi
+Estimated BL
+l
+R Peak location
+Signal location BL
+l
+ASD Peak location for Graph VI.vi
+Region Raw data
+median
+Peak Locations
+Êu
+ÉÍA»ÝÌf[^ubNàÅo³ê½·×ÄÌ+s[NÜ½Í-s[NÌwWÊuªÜÜêÜ·B
+Êu
+ÉÍA»ÝÌf[^ubNàÅo³ê½·×ÄÌ+s[NÜ½Í-s[NÌwWÊuªÜÜêÜ·B
+Peak Y
+ASD Time point for Graph VI.vi
+Region Raw data
+Time for Graph
+NI_Gmath.lvlib:Skewness and Kurtosis.vi
+Computes the skewness and kurtosis of the input sequence 
+X
+.
+X
+X
+ is the input sequence. If 
+X
+ is empty, 
+skewness
+ and 
+kurtosis
+ are NaN.
+Numeric
+Weighting (Sample)
+Weighting
+ specifies whether the input sequence 
+X
+ is a complete population or a random sample taken from a population.
+skewness
+skewness
+ returns the symmetrical measurement of the input sequence 
+X
+.
+kurtosis
+kurtosis
+ returns the peak measurement of the input sequence 
+X
+.
+error
+error
+ returns any error or warning from the VI. You can wire 
+error
+ to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+ASD Burst Reigon VI.vi
+SDS
+ãÀ
+MAX Duration time(s)
+I underD0.01s
+ãÀ
+R S IDX
+Burst Profile
+Burst Region (n)
+Burst Array
+B RStart IDX
+RStart time
+y
+BREnd IDX
+REnd time
+y
+BR number
+y
+Burst time length
+S BRS IDX
+S BRE IDX
+Burst A
+Total Burst (s)
+B time (%)
+region analysis.vi
+S Table C1
+TS Peak Time
+Peak Intensity
+Signal BL
+l
+TS Start
+TS End
+Signal time
+MAX Duration time(s)
+MAX E and S time(s)
+STD Graph
+All Signal Intensity Histogram
+qXgOOt
+ÍAüÍV[PX
+X
+ÌqXgOÌ_Otð\¦µÜ·By²ªqXgOÌJEgÅAx²ªqXgOÌÔuirjÌqXgOlÅ·B 
+D-I Graph
+Duration Graph
+Burst Time Profile
+Region Info
+Signal (n)
+Burst S (n)
+Burst (%)
+Burst R (n)
+Mean (pA)
+STD (pA)
+SN (%)
+skewness
+kurtosis
+Total Burst (s)
+B time (%)
+Under D array
+Under D time
+ãÀ
+Under D Signal
+ãÀ
+under D BL
+ãÀ
+Burst Array
+B RStart IDX
+RStart time
+y
+BREnd IDX
+REnd time
+y
+BR number
+y
+Burst time length
+S BRS IDX
+S BRE IDX
+NI_Gmath.lvlib:Skewness and Kurtosis.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\gmath\statdist.llb\Skewness and Kurtosis.vi
+ASD Burst Reigon VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASD Burst Reigon VI.vi
+NI_AALBase.lvlib:Histogram.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Histogram.vi
+NI_AALBase.lvlib:Std Deviation and Variance.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Std Deviation and Variance.vi
+Smoothing++.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\Smoothing++.vi
+ASD Threshold Function VI.vi
+Estimated BL
+U thred (pA)
+D thred (pA)
+UP Thre Func
+Down Thre Func
+B_ASD Signal Assignment VI.vi
+BR Start time (s)
+BR End time (s)
+Under D array
+Under D time
+ãÀ
+Under D Signal
+ãÀ
+under D BL
+ãÀ
+Under D B Array
+B Under D time
+ãÀ
+B Under D Signal 
+ãÀ
+B Under D IDX
+B Under D BL
+ãÀ
+ASDE Burst Region Data Pass Formation Modified VI.vi
+Filename
+Burst Start
+N #
+Burst End
+Burst Time (ms)
+error in
+G[üÍ
+ÍAÈOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B¼ÌVI©çG[ª­¶µ½ÛÉA éìðñð·é©ÈÇ»f·é½ßÉ±ÌîñðgpµÜ·B
+G[Ú×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÉÖ·éæèÚµ¢îñª\¦³êÜ·B
+code
+R[h
+ÍAG[ é¢ÍxR[hÅ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+B#
+A New folder
+BSX Pass
+error out
+G[üÍ
+ÍAÈOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B¼ÌVI©çG[ª­¶µ½ÛÉA éìðñð·é©ÈÇ»f·é½ßÉ±ÌîñðgpµÜ·B
+G[Ú×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÉÖ·éæèÚµ¢îñª\¦³êÜ·B
+code
+R[h
+ÍAG[ é¢ÍxR[hÅ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+Check if File or Folder Exists.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\libraryn.llb\Check if File or Folder Exists.vi
+numbe_estimation.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\numbe_estimation.vi
+S_ASD Each Burst SAVE Modified_MS VI.vi
+Filename
+error in
+G[üÍ
+ÍAÈOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B¼ÌVI©çG[ª­¶µ½ÛÉA éìðñð·é©ÈÇ»f·é½ßÉ±ÌîñðgpµÜ·B
+G[Ú×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÉÖ·éæèÚµ¢îñª\¦³êÜ·B
+code
+R[h
+ÍAG[ é¢ÍxR[hÅ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+Under D array
+Under D time
+ãÀ
+Under D Signal
+ãÀ
+under D BL
+ãÀ
+BL and Raw
+Estimated BL
+l
+Region Raw data
+Burst Array
+B RStart IDX
+RStart time
+y
+BREnd IDX
+REnd time
+y
+BR number
+y
+Burst time length
+S BRS IDX
+S BRE IDX
+BCC
+LL BR number (n)
+LL BR time length (ms)
+Signal# Sum
+F ex Info
+Ex ID
+Chip ID
+Distance (nm)
+Bias Voltage (mV)
+EP1 Voltage (mV)
+EP2 Voltage (mV)
+A New folder
+Selected STD (pA)
+[h
+ÍA
+X
+Ì[hÜ½Íè[hðÔµÜ·B
+Selected Region BL
+Rigon#
+Burst#Sum
+error out
+G[üÍ
+ÍAÈOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B¼ÌVI©çG[ª­¶µ½ÛÉA éìðñð·é©ÈÇ»f·é½ßÉ±ÌîñðgpµÜ·B
+G[Ú×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÉÖ·éæèÚµ¢îñª\¦³êÜ·B
+code
+R[h
+ÍAG[ é¢ÍxR[hÅ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+B Table
+R Burst#
+NI_AALBase.lvlib:Multimode.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Multimode.vi
+B_ASD Signal Assignment VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\B_ASD Signal Assignment VI.vi
+ASDE Burst Region Data Pass Formation Modified VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASDE Burst Region Data Pass Formation Modified VI.vi
+NI_AALBase.lvlib:Histogram.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Histogram.vi
+NI_AALBase.lvlib:Std Deviation and Variance.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Std Deviation and Variance.vi
+ASD Signal Analysis VI.vi
+D:\Dropbox\ou&t\Signal Analysis\20171128 All TDMS Simple Analysis FolderVer17\Signal Analysis\VI\ASD Signal Analysis VI.vi
+Write Delimited Spreadsheet.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\file.llb\Write Delimited Spreadsheet.vi
+Write Delimited Spreadsheet (DBL).vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\file.llb\Write Delimited Spreadsheet (DBL).vi
+Smoothing++.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\Smoothing++.vi
+NI_AALBase.lvlib:Mode.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Mode.vi
+NI_AALBase.lvlib:Histogram.vi
+Finds the discrete histogram of the input sequence 
+X
+.
+X
+X
+ must contain at least one sample. If 
+X
+ is empty, the histogram is undefined, and the VI sets 
+Histogram: h(x)
+ and 
+X Values
+ to empty arrays and returns an error.
+X
+ must contain at least one sample. If 
+X
+ is empty, the histogram is undefined, and the VI sets 
+Histogram: h(x)
+ and 
+X Values
+ to empty arrays and returns an error.
+intervals
+intervals
+ specifies the number of intervals, or bins, to use in the histogram and must be greater than 0. If 
+intervals
+ is less than or equal to 0, the histogram is undefined, and the VI sets 
+Histogram: h(X)
+ and 
+X Values
+ to empty arrays and returns an error. The default is 10.
+Histogram: h(x)
+Histogram: h(x)
+ is the discrete histogram of the input sequence 
+X
+.
+Histogram: h(x)
+ is the discrete histogram of the input sequence 
+X
+.
+X Values
+X Values
+ is an array of the center values of the interval (bin) of the histogram.
+X Values
+ is an array of the center values of the interval (bin) of the histogram.
+error
+error
+ returns any error or warning from the VI. You can wire 
+error
+ to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Histogram Graph
+Histogram Graph
+ displays the bar graph of the histogram of the input sequence 
+X
+. The y-axis is the histogram count, and the x-axis is the histogram center values of the intervals (bins) of the histogram.
+NI_AALBase.lvlib:Std Deviation and Variance.vi
+Computes the 
+mean
+, 
+standard deviation
+, and 
+variance
+ of the values in the input sequence 
+X
+.
+X
+X
+ is the input sequence.
+X
+ is the input sequence.
+Weighting (Sample)
+Weighting
+ determines whether to calculate the population or the sample standard deviation and variance.
+mean
+mean
+ is the mean, or average, of the values in the input sequence 
+X
+.
+standard deviation
+standard deviation
+ is the standard deviation calculated from the values in the input sequence
+ X
+.
+variance
+variance
+ is the calculated variance of the values in the input sequence 
+X
+.
+NI_AAL_SigProc.lvlib:Peak Detector.vi
+Finds the location, amplitude, and second derivative of peaks or valleys in the input signal.
+width
+width
+ specifies the number of consecutive data points to use in the quadratic least squares fit. 
+width
+ is coerced to a value greater than or equal to 3.
+X
+X
+ is the array of input values that represents the signal to be analyzed.
+X
+ is the array of input values that represents the signal to be analyzed.
+threshold
+threshold
+ instructs the VI to ignore peaks and valleys that are too small. The VI ignores peaks if the fitted amplitude is less than 
+threshold
+. The VI ignores valleys if the fitted trough is greater than 
+threshold
+.
+peaks/valleys
+peaks/valleys
+ specifies whether the VI looks for peaks or valleys in the input signal.
+initialize (T)
+initialize
+, when set to TRUE, specifies processing the first block of data.
+end of data (T)
+end of data
+, when set to TRUE, specifies processing the last block of data.
+Locations
+Locations
+ contains the index locations of all peaks or valleys detected in the current block of data.
+Locations
+ contains the index locations of all peaks or valleys detected in the current block of data.
+Amplitudes
+Amplitudes
+ contains the amplitudes of peaks or valleys found in the current block of data.
+Amplitudes
+ contains the amplitudes of peaks/valleys found in the current block of data.
+2nd Derivatives
+2nd Derivatives
+ gives measurements of the second derivative of the amplitude at each of the peaks or valleys found in the current block of data.
+2nd Derivatives
+ gives measurements of the second derivative of the amplitude at each of the peaks or valleys found in the current block of data.
+error
+error
+ returns any error or warning from the VI. You can wire 
+error
+ to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+# found
+# found
+ is the number of 
+peaks/valleys
+ found in the current block of data. 
+# found
+ is the size of the arrays 
+Locations
+, 
+Amplitudes
+, and 
+2nd Derivatives
+.
+NI_FileType.lvlib:FT_FileTypes.ctl
+NI_FileType.lvlib:LVFileType.ctl
+NI_FileType.lvlib:Get File Type.vi
+This VI returns the file type of the file specified in "path". It does not load LabVIEW types (ex. VIs) into memory to determine this information. This VI works for LabVIEW types inside of LLBs.
+NOTE: This VI will not run in a built executable. An error 53 is returned.
+error in (no error)
+error in
+ can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error. 
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+code
+code
+ is the error or warning code.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+source
+source
+ describes the origin of the error or warning.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+path
+error out
+error out
+ passes error or warning information out of a VI to be used by other VIs.
+Right-click the 
+error out
+ indicator on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the 
+error out
+ indicator on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+code
+code
+ is the error or warning code.
+Right-click the 
+error out
+ indicator on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+source
+source
+ string describes the origin of the error or warning.
+Right-click the 
+error out
+ indicator on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+file type
+is template?
+True if a VI or control is a template.
+Error Cluster From Error Code.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\error.llb\Error Cluster From Error Code.vi
+NI_FileType.lvlib:FT_FileTypes.ctl
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\lvfile.llb\FT_FileTypes.ctl
+NI_FileType.lvlib:LVFileType.ctl
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\lvfile.llb\LVFileType.ctl
+NI_PackedLibraryUtility.lvlib:Get Exported File List.vi
+Returns the qualified names and paths of the exported files in a packed project library.
+packed library path
+packed library path
+ specifies the path to the packed library.
+error in (no error)
+error in
+ describes error conditions that occur before this node runs. This input provides standard error in functionality.
+status
+status
+ is TRUE (X) if an error occurred before this node ran or FALSE (checkmark) to indicate a warning or that no error occurred before this node ran. The default is FALSE.
+code
+code
+ is the error or warning code. The default is 0.
+source
+source
+ specifies the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning. The default is an empty string.
+qualified names
+qualified names
+ returns an array of strings with the qualified names of the exported files in the packed library.
+qualified name
+error out
+error out
+ contains error information. This output provides standard error out functionality.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+code
+code
+ is the error or warning code.
+source
+source
+ describes the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning.
+paths
+paths
+ returns an array with the paths to the exported files in the packed library.
+path
+Check if File or Folder Exists.vi
+Checks whether a file or folder exists on disk at a specified path. This VI works with standard files and folders as well as files in LLB files.
+path
+path
+ specifies the path to the file or folder you want LabVIEW to look for.
+error in (no error)
+error in
+ describes error conditions that occur before this node runs. This input provides standard error in functionality.
+status
+status
+ is TRUE (X) if an error occurred before this node ran or FALSE (checkmark) to indicate a warning or that no error occurred before this node ran. The default is FALSE.
+code
+code
+ is the error or warning code. The default is 0.
+source
+source
+ specifies the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning. The default is an empty string.
+error out
+error out
+ contains error information. This output provides standard error out functionality.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+code
+code
+ is the error or warning code.
+source
+source
+ describes the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning.
+dup path
+dup path
+ returns 
+path
+ unchanged.
+file or folder exists?
+file or folder exists?
+ is TRUE if the file or folder you specify in 
+path
+ exists on disk and FALSE if the file or folder you specify in 
+path
+ does not exist on disk. If you wire an empty path to 
+path
+, 
+file or folder exists?
+ returns TRUE because the empty path refers to the list of drives mapped to the computer. (macOS) The empty path refers to the mounted volumes. (Linux) The empty path refers to the root directory.
+NI_FileType.lvlib:FT_FileTypes.ctl
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\lvfile.llb\FT_FileTypes.ctl
+NI_FileType.lvlib:Get File Type.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\lvfile.llb\Get File Type.vi
+NI_PackedLibraryUtility.lvlib:Get Exported File List.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\LVLibp\Get Exported File List.vi
+ASD Signal Analysis VI.vi
+S txt
+S Analysis
+Size
+SH1
+SH2
+BL (pA)
+Omit STD (pA)
+WÎ·
+ÍAüÍV[PX
+X
+Ìl©çvZ³ê½WÎ·Å·B
+NI_AALBase.lvlib:Multimode.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Multimode.vi
+NI_AALBase.lvlib:Histogram.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Histogram.vi
+NI_AALBase.lvlib:Std Deviation and Variance.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Std Deviation and Variance.vi
+NI_AAL_SigProc.lvlib:Peak Detector.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\8numeric.llb\Peak Detector.vi
+NI_AALBase.lvlib:Mode.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Mode.vi
+Write Delimited Spreadsheet (I64).vi
+Converts a 2D or 1D array of strings, signed integers, or double-precision numbers to a text string and writes the string to a new byte stream file or appends the string to an existing file. Wire data to the 
+2D data
+ input or 
+1D data
+ input to determine the polymorphic instance to use or manually select the instance.
+Use this VI to transpose or separate data.
+Note
+  To format with Microsoft Excel, use ActiveX with LabVIEW or the Report Generation Toolkit for Microsoft Office.
+file path (dialog if empty)
+file path
+ is the path name of the file. If 
+file path
+ is empty (default) or is <Not A Path>, the VI displays a dialog box from which you can select a file. Error 43 occurs if you cancel the dialog box.
+1D data
+1D data
+ specifies the data to write to the file if this input is not empty.
+Numeric
+append to file? (new file:F)
+append to file?
+ appends data to an existing file, if TRUE. If 
+append to file?
+ is FALSE (default), the VI replaces data in an existing file. If there is no existing file, the VI creates a new file.
+2D data
+2D data
+ specifies the data to write to the file if 
+1D data
+ is not wired or is empty.
+Numeric
+format (%d)
+format
+ specifies how to convert the numbers to characters.
+transpose? (no:F)
+transpose?
+ specifies whether the VI transposes the data after converting it from a string.
+delimiter (\t)
+delimiter
+ is the character or string of characters to use to separate fields in the spreadsheet file. For example, a value of , (comma) specifies a single comma as the delimiter. The default is \t, which specifies a single tab character as the delimiter.
+error in (no error)
+error in
+ describes error conditions that occur before this node runs. This input provides standard error in functionality.
+status
+status
+ is TRUE (X) if an error occurred before this node ran or FALSE (checkmark) to indicate a warning or that no error occurred before this node ran. The default is FALSE.
+code
+code
+ is the error or warning code. The default is 0.
+source
+source
+ specifies the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning. The default is an empty string.
+new file path (Not A Path if cancelled)
+new file path
+ returns the path to the file.
+error out
+error out
+ contains error information. This output provides standard error out functionality.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+code
+code
+ is the error or warning code.
+source
+source
+ describes the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning.
+Write Spreadsheet String.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\file.llb\Write Spreadsheet String.vi
+Write Delimited Spreadsheet (string).vi
+Converts a 2D or 1D array of strings, signed integers, or double-precision numbers to a text string and writes the string to a new byte stream file or appends the string to an existing file. Wire data to the 
+2D data
+ input or 
+1D data
+ input to determine the polymorphic instance to use or manually select the instance.
+Use this VI to transpose or separate data.
+Note
+  To format with Microsoft Excel, use ActiveX with LabVIEW or the Report Generation Toolkit for Microsoft Office.
+file path (dialog if empty)
+file path
+ is the path name of the file. If 
+file path
+ is empty (default) or is <Not A Path>, the VI displays a dialog box from which you can select a file. Error 43 occurs if you cancel the dialog box.
+1D data
+1D data
+ specifies the data to write to the file if this input is not empty.
+String
+append to file? (new file:F)
+append to file?
+ appends data to an existing file, if TRUE. If 
+append to file?
+ is FALSE (default), the VI replaces data in an existing file. If there is no existing file, the VI creates a new file.
+2D data
+2D data
+ specifies the data to write to the file if 
+1D data
+ is not wired or is empty.
+String
+format (%s)
+format
+ specifies how to convert the numbers to characters.
+transpose? (no:F)
+transpose?
+ specifies whether the VI transposes the data after converting it from a string.
+delimiter (\t)
+delimiter
+ is the character or string of characters to use to separate fields in the spreadsheet file. For example, a value of , (comma) specifies a single comma as the delimiter. The default is \t, which specifies a single tab character as the delimiter.
+error in (no error)
+error in
+ describes error conditions that occur before this node runs. This input provides standard error in functionality.
+status
+status
+ is TRUE (X) if an error occurred before this node ran or FALSE (checkmark) to indicate a warning or that no error occurred before this node ran. The default is FALSE.
+code
+code
+ is the error or warning code. The default is 0.
+source
+source
+ specifies the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning. The default is an empty string.
+new file path (Not A Path if cancelled)
+new file path
+ returns the path to the file.
+error out
+error out
+ contains error information. This output provides standard error out functionality.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+code
+code
+ is the error or warning code.
+source
+source
+ describes the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning.
+Write Spreadsheet String.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\file.llb\Write Spreadsheet String.vi
+Write Delimited Spreadsheet.vi
+Converts a 2D or 1D array of strings, signed integers, or double-precision numbers to a text string and writes the string to a new byte stream file or appends the string to an existing file. Wire data to the 
+2D data
+ input or 
+1D data
+ input to determine the polymorphic instance to use or manually select the instance.
+Use this VI to transpose or separate data.
+Note
+  To format with Microsoft Excel, use ActiveX with LabVIEW or the Report Generation Toolkit for Microsoft Office.
+Write Delimited Spreadsheet (I64).vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\file.llb\Write Delimited Spreadsheet (I64).vi
+Write Delimited Spreadsheet (string).vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\file.llb\Write Delimited Spreadsheet (string).vi
+Write Delimited Spreadsheet (DBL).vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\file.llb\Write Delimited Spreadsheet (DBL).vi
+ASDE Peak Region Data Pass Formation VI.vi
+Filename
+Signal P
+N #
+I (pA)
+T (ms)
+error in
+G[üÍ
+ÍAÈOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B¼ÌVI©çG[ª­¶µ½ÛÉA éìðñð·é©ÈÇ»f·é½ßÉ±ÌîñðgpµÜ·B
+G[Ú×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÉÖ·éæèÚµ¢îñª\¦³êÜ·B
+code
+R[h
+ÍAG[ é¢ÍxR[hÅ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+S#
+A New folder
+PSX Pass
+error out
+G[üÍ
+ÍAÈOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B¼ÌVI©çG[ª­¶µ½ÛÉA éìðñð·é©ÈÇ»f·é½ßÉ±ÌîñðgpµÜ·B
+G[Ú×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÉÖ·éæèÚµ¢îñª\¦³êÜ·B
+code
+R[h
+ÍAG[ é¢ÍxR[hÅ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+Check if File or Folder Exists.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\libraryn.llb\Check if File or Folder Exists.vi
+numbe_estimation.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\numbe_estimation.vi
+Write Spreadsheet String.vi
+prompt
+spreadsheet string
+file path (dialog if empty)
+append to file? (new file:F)
+error in
+error in
+ can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+code
+code
+ is the error or warning code.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+source
+source
+ describes the origin of the error or warning.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+path
+error out
+error in
+ can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+code
+code
+ is the error or warning code.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+source
+source
+ describes the origin of the error or warning.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+Write Delimited Spreadsheet (DBL).vi
+Converts a 2D or 1D array of strings, signed integers, or double-precision numbers to a text string and writes the string to a new byte stream file or appends the string to an existing file. Wire data to the 
+2D data
+ input or 
+1D data
+ input to determine the polymorphic instance to use or manually select the instance.
+Use this VI to transpose or separate data.
+Note
+  To format with Microsoft Excel, use ActiveX with LabVIEW or the Report Generation Toolkit for Microsoft Office.
+file path (dialog if empty)
+file path
+ is the path name of the file. If 
+file path
+ is empty (default) or is <Not A Path>, the VI displays a dialog box from which you can select a file. Error 43 occurs if you cancel the dialog box.
+1D data
+1D data
+ specifies the data to write to the file if this input is not empty.
+Numeric
+append to file? (new file:F)
+append to file?
+ appends data to an existing file, if TRUE. If 
+append to file?
+ is FALSE (default), the VI replaces data in an existing file. If there is no existing file, the VI creates a new file.
+2D data
+2D data
+ specifies the data to write to the file if 
+1D data
+ is not wired or is empty.
+Numeric
+format (%.3f)
+format
+ specifies how to convert the numbers to characters.
+transpose? (no:F)
+transpose?
+ specifies whether the VI transposes the data after converting it from a string.
+delimiter (\t)
+delimiter
+ is the character or string of characters to use to separate fields in the spreadsheet file. For example, a value of , (comma) specifies a single comma as the delimiter. The default is \t, which specifies a single tab character as the delimiter.
+error in (no error)
+error in
+ describes error conditions that occur before this node runs. This input provides standard error in functionality.
+status
+status
+ is TRUE (X) if an error occurred before this node ran or FALSE (checkmark) to indicate a warning or that no error occurred before this node ran. The default is FALSE.
+code
+code
+ is the error or warning code. The default is 0.
+source
+source
+ specifies the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning. The default is an empty string.
+new file path (Not A Path if cancelled)
+new file path
+ returns the path to the file.
+error out
+error out
+ contains error information. This output provides standard error out functionality.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+code
+code
+ is the error or warning code.
+source
+source
+ describes the origin of the error or warning and is, in most cases, the name of the node that produced the error or warning.
+Write Spreadsheet String.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\file.llb\Write Spreadsheet String.vi
+S_ASD Each Signal SAVE_MS VI.vi
+Region raw data
+S Table C1
+TS Peak Time
+Peak Intensity
+Signal BL
+l
+TS Start
+TS End
+Signal time
+error in
+G[üÍ
+ÍAÈOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B¼ÌVI©çG[ª­¶µ½ÛÉA éìðñð·é©ÈÇ»f·é½ßÉ±ÌîñðgpµÜ·B
+G[Ú×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÉÖ·éæèÚµ¢îñª\¦³êÜ·B
+code
+R[h
+ÍAG[ é¢ÍxR[hÅ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+Peak Array
+S Start
+index of element
+S End
+index of element
+Peak location
+S_save C
+Region#
+Signal#Sum
+LL Retention Time (ms)
+A New folder
+F_name
+Raw data 2
+error out
+G[üÍ
+ÍAÈOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B¼ÌVI©çG[ª­¶µ½ÛÉA éìðñð·é©ÈÇ»f·é½ßÉ±ÌîñðgpµÜ·B
+G[Ú×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÉÖ·éæèÚµ¢îñª\¦³êÜ·B
+code
+R[h
+ÍAG[ é¢ÍxR[hÅ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+S Anal
+Size
+SH1
+SH2
+NI_AALBase.lvlib:Histogram.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Histogram.vi
+ASD Signal Analysis VI.vi
+D:\Dropbox\ou&t\Signal Analysis\20171128 All TDMS Simple Analysis FolderVer17\Signal Analysis\VI\ASD Signal Analysis VI.vi
+Write Delimited Spreadsheet.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\file.llb\Write Delimited Spreadsheet.vi
+ASDE Peak Region Data Pass Formation VI.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\ASDE Peak Region Data Pass Formation VI.vi
+Write Delimited Spreadsheet (DBL).vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Utility\file.llb\Write Delimited Spreadsheet (DBL).vi
+ASDE Signal Data Table For New_MS.vi
+S Table C1
+TS Peak Time
+Peak Intensity
+Signal BL
+l
+TS Start
+TS End
+Signal time
+S Table C0
+Fulter Select
+R STD select
+Region BL select
+Filter point
+Read Region Point
+S Anal
+Signal Region Point
+Size
+H1
+SH1
+H2
+SH2
+F ex Info
+Ex ID
+Chip ID
+Distance (nm)
+Bias Voltage (mV)
+EP1 Voltage (mV)
+EP2 Voltage (mV)
+S Table C2
+R BL (pA)
+R STD (pA)
+U thre (pA)
+D thre (pA)
+U thre (n)
+D thre (n)
+STD smooth Point 
+MAX Duration time(s)
+error in
+G[üÍ
+ÍAÈOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B¼ÌVI©çG[ª­¶µ½ÛÉA éìðñð·é©ÈÇ»f·é½ßÉ±ÌîñðgpµÜ·B
+G[Ú×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÉÖ·éæèÚµ¢îñª\¦³êÜ·B
+code
+R[h
+ÍAG[ é¢ÍxR[hÅ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+S Table Z
+Signal Pre Count
+S Peak Position Time (s) Pre
+LL Retention time
+S Table Present Sum
+S Peak Position Final (s)
+error out
+G[üÍ
+ÍAÈOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B¼ÌVI©çG[ª­¶µ½ÛÉA éìðñð·é©ÈÇ»f·é½ßÉ±ÌîñðgpµÜ·B
+G[Ú×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÉÖ·éæèÚµ¢îñª\¦³êÜ·B
+code
+R[h
+ÍAG[ é¢ÍxR[hÅ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+G[ÌÚ×îñÉÂ¢ÄÍAtgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIðµÜ·B
+Signal R count (n)
+R Table data formation.vi
+BL cluster
+All Mode
+Div Mode
+Dive Mean
+Min H Peak
+STD cluster
+All STD
+Div STD mean
+Div STD Mode
+HPeak Cluster
+100_20_10 H Peak
+1000_20_50 H Peak
+1000_10_20 H Peak
+F ex Info
+Ex ID
+Chip ID
+Distance (nm)
+Bias Voltage (mV)
+EP1 Voltage (mV)
+EP2 Voltage (mV)
+Region Info
+Signal (n)
+Burst S (n)
+Burst (%)
+Burst R (n)
+Mean (pA)
+STD (pA)
+SN (%)
+skewness
+kurtosis
+Total Burst (s)
+B time (%)
+R Table C0
+Region#
+Selected Region BBL
+Selected STD (pA)
+Peak#
+appended array
+EP2 Voltage (mV)
+Anal tdms each save.vi
+error in
+G[üÍ
+ÍAOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B±ÌîñÍA¼ÌVIÅG[ª­¶µ½ÛÉA éìðñð·é©Ç¤©ð»f·é½ßÉgpµÜ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+code
+R[h
+ÍAG[Ü½ÍxR[hÅ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+TDMSt@C in
+S Table
+Table Tag C
+S Table Tag
+R Table Tag
+B Table Tag
+AR Table Tag
+AC Table Tag
+R Table
+B Table
+error out
+G[üÍ
+ÍAOÉÄÑo³ê½VI©çzü³ê½G[îñðæ¾Å«Ü·B±ÌîñÍA¼ÌVIÅG[ª­¶µ½ÛÉA éìðñð·é©Ç¤©ð»f·é½ßÉgpµÜ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+status
+Xe[^X
+ÍAG[ª­¶µ½êÍTRUEiXjAxª­¶µ½êÜ½ÍG[ÈµÌêÍFALSEi`FbN}[NjÉÈèÜ·B
+tgplÉ é
+G[üÍ
+§äíðENbNµÄAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+code
+R[h
+ÍAG[Ü½ÍxR[hÅ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+source
+\[X
+ÍAG[Ü½Íxª­¶µ½êð¦µÜ·B
+tgplÌ
+G[üÍ
+§äíðENbNµAV[gJbgj[©ç
+G[Ìà¾
+Ü½Í
+xÌà¾
+ðIð·éÆAG[ÌÚ×ª\¦³êÜ·B
+TDMSt@C out
+anal txt each save.vi
+Table Pass refnum_in
+S Table refnumoÍ
+R Table refnumoÍ
+B Table refnumoÍ
+S Table
+B Table
+R Table
+error in
+error in
+ can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+code
+code
+ is the error or warning code.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+source
+source
+ describes the origin of the error or warning.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+Table Pass refnum_out
+S Table refnumoÍ
+R Table refnumoÍ
+B Table refnumoÍ
+error out
+error in
+ can accept error information wired from VIs previously called. Use this information to decide if any functionality should be bypassed in the event of errors from other VIs.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+status
+status
+ is TRUE (X) if an error occurred or FALSE (checkmark) to indicate a warning or that no error occurred.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+code
+code
+ is the error or warning code.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+source
+source
+ describes the origin of the error or warning.
+Right-click the 
+error in
+ control on the front panel and select 
+Explain Error
+ or 
+Explain Warning
+ from the shortcut menu for more information about the error.
+numbe_estimation.vi
+l
+
+l¶ñ
+NI_AALBase.lvlib:Mean (CDB).vi
+Computes the 
+mean
+ of the values in the input sequence 
+X
+. You must manually select the polymorphic instance you want to use.
+X
+X
+ is the input sequence. If the input sequence 
+X
+ is empty, 
+mean
+ is NaN.
+Numeric
+mean
+mean
+ is the mean, or average, of the values in the input sequence 
+X
+.
+error
+error
+ returns any error or warning from the VI. You can wire 
+error
+ to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+NI_AALBase.lvlib:Mean.vi
+Computes the 
+mean
+ of the values in the input sequence 
+X
+. You must manually select the polymorphic instance you want to use.
+NI_AALBase.lvlib:Mean (CDB).vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Mean (CDB).vi
+NI_AALBase.lvlib:Mean (DBL).vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Mean (DBL).vi
+ANAL Time date.vi
+Before
+^CX^v
+Anal Time
+numbe_estimation.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\numbe_estimation.vi
+NI_AALBase.lvlib:Mean (DBL).vi
+Computes the 
+mean
+ of the values in the input sequence 
+X
+. You must manually select the polymorphic instance you want to use.
+X
+X
+ is the input sequence. If the input sequence 
+X
+ is empty, 
+mean
+ is NaN.
+X
+ is the input sequence. If the input sequence 
+X
+ is empty, 
+mean
+ is NaN.
+mean
+mean
+ is the mean, or average, of the values in the input sequence 
+X
+.
+error
+error
+ returns any error or warning from the VI. You can wire 
+error
+ to the Error Cluster From Error Code VI to convert the error code or warning into an error cluster.
+Smoothing++.vi
+Y in
+l
++/- Point
+Y out
+l
+NI_AALBase.lvlib:Mean.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Mean.vi
+NI_AALBase.lvlib:Mean (DBL).vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Mean (DBL).vi
+ASD BSC Graph VI.vi
+Region C
+BL
+STD
+Count
+Count Graph
+BLW Graph
+STDW Graph
+Smoothing++.vi
+D:\Dropbox\ou&t\Signal Analysis\VI\Smoothing++.vi
+NI_AALBase.lvlib:Mode.vi
+Finds the modes (most common values) or estimated modes (most common range centers) of the input sequence 
+X
+. This VI can perform unimodal or multimodal analysis. You must manually select the polymorphic instance to use.
+NI_AALBase.lvlib:Multimode.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Multimode.vi
+NI_AALBase.lvlib:Unimode.vi
+C:\Program Files\National Instruments\LabVIEW 2018\vi.lib\Analysis\baseanly.llb\Unimode.vi

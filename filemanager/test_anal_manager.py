@@ -154,7 +154,7 @@ class AnalManagerTest(unittest.TestCase):
                     raise PermissionError('file in use')
                 return rename(source, target)
             logs = Path(tmp) / 'logs'
-            with patch('filemanager.anal_manager.os.rename', side_effect=fail_second):
+            with patch('shared.file_moves.os.rename', side_effect=fail_second):
                 with self.assertRaises(RuntimeError):
                     execute_moves(plan, logs)
             log, = logs.glob('*.json')

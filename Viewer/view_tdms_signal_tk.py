@@ -23,10 +23,10 @@ SIGNAL_COLORS = {
     "紺": "#253858", "青緑": "#007f86", "灰青": "#536878", "藍": "#4d58a6",
 }
 
-# Reuse the ML application's asynchronous server folder picker.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import ui_theme  # noqa: E402
-from ML.app_tk.server_browse import (
+# サーバーのフォルダ選択は MLパネルと共有（shared/server_browse.py）。
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # リポジトリ直下（shared/ を読むため）
+from shared import ui_theme  # noqa: E402
+from shared.server_browse import (  # noqa: E402
     SERVERS, FolderPickerDialog, check_component, list_server_shares, list_subfolders,
 )
 
