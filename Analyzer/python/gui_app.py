@@ -3,6 +3,7 @@
 Run:  python gui_app.py
 """
 import csv
+import os
 import re
 import sys
 import threading
@@ -26,7 +27,7 @@ import pandas as pd
 from PyQt6.QtCore import QObject, QSettings, Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QColor, QFont
 from PyQt6.QtWidgets import (
-    QAbstractItemView, QApplication, QButtonGroup, QCheckBox, QComboBox, QDialog, QDoubleSpinBox,
+    QAbstractItemView, QApplication, QButtonGroup, QCheckBox, QComboBox, QCompleter, QDialog, QDoubleSpinBox,
     QFileDialog, QFormLayout, QFrame, QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QLabel,
     QLineEdit, QListWidget, QMainWindow, QMessageBox, QPlainTextEdit, QProgressBar, QPushButton,
     QRadioButton, QSizePolicy, QSpinBox, QSplitter, QStackedWidget, QTableWidget, QTableWidgetItem, QTextBrowser,
@@ -45,6 +46,7 @@ import first_step_io
 import second_step_io
 import server_anal
 import server_bnal
+import viewer_rows
 from first_step import DEFAULT_CONDITION as FIRST_DEFAULT, long_path
 from second_step import DEFAULT_BASES, DEFAULT_CONDITION as SECOND_DEFAULT, condition_from_bc_table
 
@@ -2677,36 +2679,46 @@ def anal_folder(path):
     return max(found, key=lambda c: sum(1 for _ in c.glob("A@@*.tdms")), default=p)
 
 
-# AR Table value -> column of the folder file list
-FOLDER_COLS = [("信号数", "Signal#Sum"), ("バースト数", "Burst#Sum"), ("測定時間 [s]", "Total Time [s]"),
-               ("バースト時間 [s]", "B Region Time [s]"), ("信号頻度 [/s]", "Signal Freq [/s]"),
-               ("BL [pA]", "Region BL Mode [pA]"), ("STD [pA]", "Region STD Mode [pA]")]
+FOLDER_COLS, B_FOLDER_COLS = viewer_rows.A_COLS, viewer_rows.B_COLS
 
 
-def read_folder(folder, progress=lambda *a: None):
-    """One row per A@@ file of a folder from its AR Table only (the waveform is not read)."""
+def read_rows(folder, prefix, progress):
+    """One row per <prefix>*.tdms of a folder (viewer_rows: worker processes and a cache)."""
+    cols = viewer_rows.READERS[prefix][1]
     rows = []
-    files = sorted(Path(folder).glob("A@@*.tdms"))
-    for i, f in enumerate(files):
-        progress(int(100 * i / max(len(files), 1)), f"読み込み {i + 1}/{len(files)}")
-        row = {"#": server_anal.anal_key(f.name), "ファイル": f.name, "path": str(f), "エラー": ""}
-        try:
-            with TdmsFile.open(long_path(f)) as t:
-                ar = {c.name: c[0] for c in t["AR Table"].channels()}
-            for col, key in FOLDER_COLS:
-                try:
-                    row[col] = float(ar.get(key, "nan"))
-                except ValueError:
-                    row[col] = float("nan")
-            row["元データ"] = ar.get("Filename", "")
-        except Exception as e:
-            row.update({col: float("nan") for col, _ in FOLDER_COLS}, エラー=str(e), 元データ="")
+    for path, values, err in viewer_rows.read_rows(folder, prefix, progress):
+        row = {"#": server_anal.anal_key(path.name), "ファイル": path.name, "path": str(path), "エラー": err}
+        row.update(values or {col: float("nan") for col in cols})
         rows.append(row)
     # of one '#NNN' only the newest analysis counts (names start with the analysis time)
     newest = {r["#"]: r["ファイル"] for r in sorted(rows, key=lambda r: r["ファイル"])}
     for r in rows:
         r["重複"] = "" if newest[r["#"]] == r["ファイル"] else "古い解析（合計に含めない）"
     return rows
+
+
+def read_folder(folder, progress=lambda *a: None):
+    """One row per A@@ file of a folder from its AR Table only (the waveform is not read)."""
+    return read_rows(folder, "A@@", progress)
+
+
+def read_bfolder(folder, progress=lambda *a: None):
+    """One row per B@@ file of a BNAL@<target> folder (BR / BC / AR tables and the positions covered)."""
+    return read_rows(folder, "B@@", progress)
+
+
+def source_raw(b_path, a_name, known=None):
+    """Waveform of a B@@ file: its own Data channel (LabVIEW copies it), else the A@@ it was made from
+    (T\\ANAL, T\\ANAL\\stocked or next to it). Returns (raw [pA] or None, A@@ path or None)."""
+    b = Path(b_path)
+    cands = ([Path(known[a_name])] if known and a_name in known else []) + [
+        b.parent.parent / "ANAL" / a_name, b.parent.parent / "ANAL" / "stocked" / a_name,
+        b.parent / a_name, b.parent.parent / a_name]
+    for cand in cands if a_name else []:
+        if os.path.exists(long_path(cand)):
+            with TdmsFile.open(long_path(cand)) as t:
+                return t["Data"]["Ch1"][:] * 1000, cand
+    return None, None
 
 
 def hms(seconds):
@@ -2726,20 +2738,23 @@ class ViewerPage(QWidget):
         if kind == "A":
             row.addWidget(header("ANAL 結果ビューア", "サーバー・実験・サンプルを選ぶと、その T\\ANAL の A@@ をまとめて表示"
                                                      "（信号数・バースト数・時間の合計、ファイルごとの波形）"), 1)
-            b_dir = QPushButton("フォルダを指定…")
-            b_dir.setToolTip("一覧にないフォルダ（サンプルフォルダまたは T\\ANAL）を直接指定します")
-            b_dir.clicked.connect(lambda: self.open(QFileDialog.getExistingDirectory(
-                self, "サンプルフォルダ", settings().value("viewer_folder", ""))))
-            row.addWidget(b_dir)
+            dir_tip = "一覧にないフォルダ（サンプルフォルダまたは T\\ANAL）を直接指定します"
         else:
-            row.addWidget(header("BNAL 結果ビューア", "B@@ (2nd Step) ファイルの長い信号と塩基・アミノ酸の帰属を表示"), 1)
+            row.addWidget(header("BNAL 結果ビューア", "サーバー・実験・サンプル・target を選ぶと、その T\\BNAL@target の "
+                                                     "B@@ をまとめて表示（長い信号・カバレッジの合計、ファイルごとの帰属）"), 1)
+            dir_tip = "一覧にない BNAL@target フォルダを直接指定します"
+        self.folder_key = "viewer_folder" if kind == "A" else "bviewer_folder"
+        b_dir = QPushButton("フォルダを指定…")
+        b_dir.setToolTip(dir_tip)
+        b_dir.clicked.connect(lambda: self.open(QFileDialog.getExistingDirectory(
+            self, "フォルダ", settings().value(self.folder_key, ""))))
+        row.addWidget(b_dir)
         b = QPushButton("ファイルを開く…")
         b.clicked.connect(lambda: self.open(QFileDialog.getOpenFileName(
             self, "結果ファイル", "", "TDMS (A@@*.tdms)" if kind == "A" else "TDMS (B@@*.tdms)")[0]))
         row.addWidget(b)
         lay.addLayout(row)
-        if kind == "A":
-            lay.addLayout(self.build_picker())
+        lay.addLayout(self.build_picker())
         info = QHBoxLayout()
         self.file_label = QLabel("")
         self.file_label.setObjectName("subtitle")
@@ -2832,19 +2847,36 @@ class ViewerPage(QWidget):
         lay.addWidget(split, 1)
         self.mode = None
         self.folder_rows, self.folder_info = [], {}
-        if kind == "A":
-            self.load_db()
+        self.load_db()
 
-    # -- server / experiment / sample (from the experiment file database) ----------------
+    # -- server / experiment / sample (/ target) from the experiment file database ------------
     def build_picker(self):
         row = QHBoxLayout()
         self.p_group, self.p_exp, self.p_sample = QComboBox(), QComboBox(), QComboBox()
         self.p_group.setMinimumWidth(190)
         self.p_exp.setMinimumWidth(220)
         self.p_sample.setMinimumWidth(220)
-        for label, box in (("サーバー", self.p_group), ("実験", self.p_exp), ("サンプル", self.p_sample)):
+        boxes = [("サーバー", self.p_group), ("実験", self.p_exp), ("サンプル", self.p_sample)]
+        if self.kind == "B":
+            # a sample can hold hundreds of targets: type part of the name to find one
+            self.p_target = QComboBox()
+            self.p_target.setEditable(True)
+            self.p_target.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+            self.p_target.completer().setFilterMode(Qt.MatchFlag.MatchContains)
+            self.p_target.completer().setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+            self.p_target.setMinimumWidth(300)
+            self.p_target.setToolTip("名前の一部を入力して絞り込めます。サンプルを変えても同じ target を開きます")
+            boxes.append(("target", self.p_target))
+        for label, box in boxes:
+            box.setMaxVisibleItems(25)
             row.addWidget(QLabel(label))
             row.addWidget(box)
+        what = "target（最後まで行くと次のサンプル）" if self.kind == "B" else "サンプル"
+        for text, tip, step in (("◀", "前の", -1), ("▶", "次の", 1)):
+            b = QPushButton(text)
+            b.setToolTip(f"{tip}{what}を開きます")
+            b.clicked.connect(lambda _, s=step: self.step_pick(s))
+            row.addWidget(b)
         b_db = QPushButton("一覧を再読込")
         b_db.setToolTip("実験ファイル データベース（ANAL（サーバー）ページと同じ DB）からサンプル一覧を読み直します")
         b_db.clicked.connect(self.load_db)
@@ -2852,25 +2884,46 @@ class ViewerPage(QWidget):
         row.addStretch()
         self.p_group.currentIndexChanged.connect(self.fill_exps)
         self.p_exp.currentIndexChanged.connect(self.fill_samples)
-        self.p_sample.activated.connect(self.open_picked)
+        if self.kind == "A":
+            self.p_sample.activated.connect(self.open_picked)
+        else:
+            self.p_sample.activated.connect(lambda *_: self.fill_targets())
+            self.p_target.activated.connect(self.open_picked)
+            self.targets_listed.connect(self.targets_found)
         return row
 
+    def picked_row(self):
+        i = self.p_sample.currentData()
+        return None if i is None else self.db_rows[i]
+
+    def pick_key(self):
+        return "viewer_pick" if self.kind == "A" else "bviewer_pick"
+
     def load_db(self):
+        db = settings().value("inventory_db", str(server_anal.DEFAULT_DB))
         try:
-            rows = server_anal.load_samples(settings().value("inventory_db", str(server_anal.DEFAULT_DB)))
+            rows = server_anal.load_samples(db)
+            bnals = server_bnal.load_bnals(db) if self.kind == "B" else {}
         except Exception as e:
             self.file_label.setText(f"データベースを読めません: {e}")
-            rows = []
-        self.db_rows = [r for r in rows if (r["anal_tdms"] or 0) > 0]
-        last = settings().value("viewer_pick") or ["", "", ""]
+            rows, bnals = [], {}
+        if self.kind == "A":
+            self.db_rows = [r for r in rows if (r["anal_tdms"] or 0) > 0]
+        else:
+            # targets whose BNAL@ folder holds B@@ (or is not counted yet)
+            for r in rows:
+                counts = bnals.get((server_anal.identity(r["root"]), r["experiment"], r["sample"]), {})
+                r["targets"] = {n: c for n, c in counts.items() if c is None or c > 0}
+            self.db_rows = [r for r in rows if r["targets"]]
+        last = list(settings().value(self.pick_key()) or []) + ["", "", "", ""]
         self.p_group.blockSignals(True)
         self.p_group.clear()
         self.p_group.addItems(sorted({r["group"] for r in self.db_rows}))
         self.p_group.setCurrentText(last[0])
         self.p_group.blockSignals(False)
-        self.fill_exps(select=last[1], sample=last[2])
+        self.fill_exps(select=last[1], sample=last[2], target=last[3])
 
-    def fill_exps(self, *_, select=None, sample=None):
+    def fill_exps(self, *_, select=None, sample=None, target=None):
         g = self.p_group.currentText()
         self.p_exp.blockSignals(True)
         self.p_exp.clear()
@@ -2878,47 +2931,147 @@ class ViewerPage(QWidget):
         if select:
             self.p_exp.setCurrentText(select)
         self.p_exp.blockSignals(False)
-        self.fill_samples(sample=sample)
+        self.fill_samples(sample=sample, target=target)
 
-    def fill_samples(self, *_, sample=None):
+    def fill_samples(self, *_, sample=None, target=None):
         """List the samples of the experiment and show one at once (the given one, else the top one)."""
         g, e = self.p_group.currentText(), self.p_exp.currentText()
         self.p_sample.blockSignals(True)
         self.p_sample.clear()
-        for r in sorted((r for r in self.db_rows if r["group"] == g and r["experiment"] == e),
-                        key=lambda r: r["sample"].lower()):
-            self.p_sample.addItem(f"{r['sample']}　（ANAL {r['anal_tdms']}）", r)
-        names = [self.p_sample.itemData(i)["sample"] for i in range(self.p_sample.count())]
+        # the item data is the index into db_rows (the row itself would be copied by Qt)
+        for i in sorted((i for i, r in enumerate(self.db_rows) if r["group"] == g and r["experiment"] == e),
+                        key=lambda i: self.db_rows[i]["sample"].lower()):
+            r = self.db_rows[i]
+            label = f"ANAL {r['anal_tdms']}" if self.kind == "A" else f"target {len(r['targets'])}"
+            self.p_sample.addItem(f"{r['sample']}　（{label}）", i)
+        names = [self.db_rows[self.p_sample.itemData(i)]["sample"] for i in range(self.p_sample.count())]
         self.p_sample.setCurrentIndex(names.index(sample) if sample in names else 0 if names else -1)
         self.p_sample.blockSignals(False)
+        if self.kind == "B":
+            self.fill_targets(target)
         # only while the page is shown: no server access at start-up or from sync_picker
+        elif self.isVisible() and not getattr(self, "quiet", False):
+            self.open_picked()
+
+    def fill_targets(self, target=None):
+        """Targets of the sample; the target shown before stays chosen when this sample has it too."""
+        r = self.picked_row()
+        target = target or self.p_target.currentData()
+        self.p_target.blockSignals(True)
+        self.p_target.clear()
+        for name in sorted((r or {}).get("targets", {}), key=lambda n: (server_bnal.parent_target(n).lower(), n)):
+            n = r["targets"][name]
+            self.p_target.addItem(f"{name}　（B@@ {'?' if n is None else n}）", name)
+        names = [self.p_target.itemData(i) for i in range(self.p_target.count())]
+        self.p_target.setCurrentIndex(names.index(target) if target in names else 0 if names else -1)
+        self.p_target.blockSignals(False)
         if self.isVisible() and not getattr(self, "quiet", False):
             self.open_picked()
 
+    targets_listed = pyqtSignal(object, dict)
+
+    def list_targets(self, r):
+        """(thread) B@@ counts of the BNAL@ folders in T now: the database may know only some of them."""
+        t = server_anal.t_dir(r)
+        try:
+            with os.scandir(long_path(t)) as it:
+                names = [e.name[len("BNAL@"):] for e in it if e.is_dir() and e.name.startswith("BNAL@")]
+        except OSError:
+            return
+        counts = {}
+        for n in names:
+            try:
+                with os.scandir(long_path(t / f"BNAL@{n}")) as it:
+                    counts[n] = sum(1 for e in it if e.name.startswith("B@@") and e.name.lower().endswith(".tdms"))
+            except OSError:
+                pass
+        self.targets_listed.emit(r, counts)
+
+    def targets_found(self, r, counts):
+        """The live counts replace the saved ones; empty BNAL@ folders are left out."""
+        for n, c in counts.items():
+            if c:
+                r["targets"][n] = c
+            else:
+                r["targets"].pop(n, None)
+        if self.picked_row() is r:
+            self.quiet = True
+            self.fill_targets(self.p_target.currentData())
+            self.quiet = False
+            self.p_sample.setItemText(self.p_sample.currentIndex(), f"{r['sample']}　（target {len(r['targets'])}）")
+
+    def step_pick(self, step):
+        """◀ / ▶: the previous / next target (BNAL) or sample (ANAL); past the last target, the next sample."""
+        if self.kind == "B":
+            i = self.p_target.currentIndex() + step
+            if 0 <= i < self.p_target.count():
+                self.p_target.setCurrentIndex(i)
+                self.open_picked()
+                return
+        i = self.p_sample.currentIndex() + step
+        if not 0 <= i < self.p_sample.count():
+            return
+        self.p_sample.setCurrentIndex(i)
+        if self.kind == "B":
+            # the same target in the next sample when it has one, else its first / last target
+            keep = self.p_target.currentData()
+            self.quiet = True
+            self.fill_targets()
+            self.quiet = False
+            if self.p_target.currentData() != keep:
+                self.p_target.setCurrentIndex(0 if step > 0 else self.p_target.count() - 1)
+        self.open_picked()
+
     def showEvent(self, event):
         super().showEvent(event)
-        if self.kind == "A" and self.mode is None and not self.folder_rows and not self.busy.isVisible():
+        if self.mode is None and not self.folder_rows and not self.busy.isVisible():
             self.open_picked()
 
-    def open_picked(self, *_):
-        r = self.p_sample.currentData()
+    def picked_folder(self):
+        r = self.picked_row()
         if not r:
-            return
-        settings().setValue("viewer_pick", [r["group"], r["experiment"], r["sample"]])
-        self.open_folder(server_anal.t_dir(r) / "ANAL")
+            return None
+        if self.kind == "A":
+            settings().setValue(self.pick_key(), [r["group"], r["experiment"], r["sample"]])
+            return server_anal.t_dir(r) / "ANAL"
+        target = self.p_target.currentData()
+        if not target:
+            return None
+        settings().setValue(self.pick_key(), [r["group"], r["experiment"], r["sample"], target])
+        return server_anal.t_dir(r) / f"BNAL@{target}"
+
+    def open_picked(self, *_):
+        folder = self.picked_folder()
+        if folder:
+            self.open_folder(folder)
+        r = self.picked_row()
+        if self.kind == "B" and r and not r.get("listed"):
+            r["listed"] = True
+            threading.Thread(target=self.list_targets, args=(r,), daemon=True).start()
 
     def sync_picker(self, folder):
-        """Show the server / experiment / sample of a folder opened from elsewhere (ANAL page)."""
-        key = server_anal.identity(folder)
-        r = next((r for r in getattr(self, "db_rows", [])
-                  if server_anal.identity(server_anal.t_dir(r) / "ANAL") == key), None)
+        """Show the server / experiment / sample (/ target) of a folder opened from elsewhere."""
+        folder = Path(folder)
+        target = None
+        if self.kind == "A":
+            key = server_anal.identity(folder)
+            r = next((r for r in getattr(self, "db_rows", [])
+                      if server_anal.identity(server_anal.t_dir(r) / "ANAL") == key), None)
+        else:
+            if not folder.name.startswith("BNAL@"):
+                return
+            key, target = server_anal.identity(folder.parent), folder.name[len("BNAL@"):]
+            r = next((r for r in getattr(self, "db_rows", [])
+                      if server_anal.identity(server_anal.t_dir(r)) == key), None)
+            if r and target not in r["targets"]:
+                r["targets"][target] = None  # made after the database was updated
         if not r:
             return
         self.quiet = True
         self.p_group.blockSignals(True)
         self.p_group.setCurrentText(r["group"])
         self.p_group.blockSignals(False)
-        self.fill_exps(select=r["experiment"], sample=r["sample"])
+        self.fill_exps(select=r["experiment"], sample=r["sample"], target=target)
         self.quiet = False
 
     # -- y axis: automatic, or set by hand --------------------------------------------
@@ -2947,9 +3100,20 @@ class ViewerPage(QWidget):
             b.setToolTip(tip)
             b.clicked.connect(f)
             row.addWidget(b)
-        hint = QLabel("縦軸の上でホイール・ドラッグでも調整できます")
-        hint.setObjectName("subtitle")
-        row.addWidget(hint)
+        for text, tip, f in (("横に拡大", "時間の範囲を 0.5 倍", lambda: self.x_scale(0.5)),
+                             ("横に縮小", "時間の範囲を 2 倍", lambda: self.x_scale(2)),
+                             ("◀", "表示を前へ（範囲の 50%）", lambda: self.x_shift(-0.5)),
+                             ("▶", "表示を後へ（範囲の 50%）", lambda: self.x_shift(0.5))):
+            b = QPushButton(text)
+            b.setToolTip(tip)
+            b.clicked.connect(f)
+            row.addWidget(b)
+        self.show_bl = QCheckBox("ベースライン")
+        self.show_bl.setChecked(True)
+        self.show_bl.setToolTip("R Table の区間ごとの Region BL を階段状の線で表示します")
+        self.show_bl.toggled.connect(lambda on: self.bl_curve is not None and self.bl_curve.setVisible(on))
+        row.addWidget(self.show_bl)
+        self.bl_curve = None
         row.addStretch()
         self.plot.sigYRangeChanged.connect(self.y_changed)
         return row
@@ -2995,14 +3159,40 @@ class ViewerPage(QWidget):
         d = (hi - lo) * f
         self.set_y(lo + d, hi + d)
 
+    def x_set(self, lo, hi):
+        """Show lo..hi, kept inside the trace of an A@@ file."""
+        raw = getattr(self, "raw", None)
+        if self.mode == "A" and raw is not None and len(raw):
+            end = len(raw) / self.fs
+            w = min(hi - lo, end)
+            lo = min(max(lo, 0), end - w)
+            hi = lo + w
+        self.plot.setXRange(lo, hi, padding=0)
+        self.auto_y()
+
+    def x_scale(self, f):
+        lo, hi = self.plot.viewRange()[0]
+        mid, half = (lo + hi) / 2, max((hi - lo) / 2 * f, 0.0005)
+        self.x_set(mid - half, mid + half)
+
+    def x_shift(self, f):
+        lo, hi = self.plot.viewRange()[0]
+        d = (hi - lo) * f
+        self.x_set(lo + d, hi + d)
+
     # -- loading ------------------------------------------------------------
     def open(self, path):
         if not path:
             return
-        if Path(path).is_dir():
-            if self.kind == "A":
-                self.sync_picker(anal_folder(path))
+        path = Path(path)
+        if path.is_dir():
+            self.sync_picker(anal_folder(path) if self.kind == "A" else path)
             self.open_folder(path)
+            return
+        if self.kind == "B" and path.parent.name.startswith("BNAL@"):
+            # a B@@ of a BNAL@target folder: the whole folder with this file chosen
+            self.sync_picker(path.parent)
+            self.open_folder(path.parent, select=path.name)
             return
         self.leave_folder()
         self.open_file(path)
@@ -3046,31 +3236,28 @@ class ViewerPage(QWidget):
         self._bg = [(t, w) for t, w in getattr(self, "_bg", []) if t.isRunning()] + [(thread, worker)]
         thread.start()
 
-    def open_folder(self, path):
-        folder = anal_folder(path)
-        settings().setValue("viewer_folder", str(path))
+    def open_folder(self, path, select=None):
+        folder = anal_folder(path) if self.kind == "A" else Path(path)
+        settings().setValue(self.folder_key, str(path))
         self.leave_folder()
+        self.mode = None
         self.summary.setRowCount(0)
         self.items.setRowCount(0)
+        self.list_label.setText("")
+        self.seq_view.clear()
         self.plot.clear()
         self.overview.setVisible(False)
-        self.load(f"{folder}（A@@ の一覧と合計）", lambda log, progress: read_folder(folder, progress),
-                  lambda rows: self.show_folder(folder, rows))
+        self.pick_raw.setVisible(False)
+        prefix, read = ("A@@", read_folder) if self.kind == "A" else ("B@@", read_bfolder)
+        self.load(f"{folder}（{prefix} の一覧と合計）", lambda log, progress: read(folder, progress),
+                  lambda rows: self.show_folder(folder, rows, select))
 
-    def show_folder(self, folder, rows):
-        self.file_label.setText(str(folder))
-        if not rows:
-            QMessageBox.information(self, "結果ビューア", f"A@@ ファイルがありません。\n{folder}")
-            return
-        ok = [r for r in rows if not r["エラー"] and not r["重複"]]
+    def a_totals(self, folder, rows, ok, old_bad):
         total = lambda col: float(np.nansum([r[col] for r in ok]))
         time_s = total("測定時間 [s]")
-        bad, old = sum(bool(r["エラー"]) for r in rows), sum(bool(r["重複"]) for r in rows)
-        self.folder_rows = rows
-        self.folder_info = {
+        return {
             "フォルダ": str(folder),
-            "A@@ ファイル数": f"{len(rows)}" + (f"（同じ#番号の古い解析 {old} は合計に含めない）" if old else "")
-                              + (f"（読めない {bad}）" if bad else ""),
+            "A@@ ファイル数": f"{len(rows)}{old_bad}",
             "合計した測定数": len(ok),
             "信号数 合計": f"{total('信号数'):,.0f}",
             "バースト数 合計": f"{total('バースト数'):,.0f}",
@@ -3078,8 +3265,46 @@ class ViewerPage(QWidget):
             "バースト時間 合計": f"{total('バースト時間 [s]'):,.2f} s",
             "信号頻度（合計÷時間）": f"{total('信号数') / time_s:.4f} /s" if time_s else "-",
         }
+
+    def b_totals(self, folder, rows, ok, old_bad):
+        total = lambda col: float(np.nansum([r[col] for r in ok]))
+        time_s, sig, long_ = total("測定時間 [s]"), total("信号数"), total("長い信号数")
+        bc = next((r["bc"] for r in ok if r.get("bc")), {})
+        cp = next((r["Total CP"] for r in ok if r.get("Total CP", 0) > 0), 0)
+        covered = set().union(*(r.get("covered", set()) for r in ok))
+        mx = np.nanmax([r["MAX Right Read"] for r in ok]) if ok else float("nan")
+        return {
+            "フォルダ": str(folder),
+            "target": bc.get("Sample name", ""),
+            "Sample Sequence": bc.get("Sample Sequence", ""),
+            "Right Read MIN": bc.get("Right Read MIN [n]", ""),
+            "B@@ ファイル数": f"{len(rows)}{old_bad}",
+            "合計した測定数": len(ok),
+            "信号数 合計": f"{sig:,.0f}",
+            "長い信号数 合計": f"{long_:,.0f}" + (f"（{long_ / sig * 100:.2f} %）" if sig else ""),
+            "MAX Right Read（最大）": "-" if mx != mx else f"{mx:.0f}",
+            "Coverage（全ファイル）": f"{len(covered) / cp * 100:.1f} %（{len(covered)} / {cp:.0f}）" if cp else "-",
+            "Long Read 合計": f"{total('Long Read [bp]'):,.0f} bp",
+            "Long Right Read 合計": f"{total('Long Right Read [bp]'):,.0f} bp",
+            "測定時間 合計": f"{time_s:,.1f} s（{hms(time_s)}）",
+            "長い信号の頻度（合計÷時間）": f"{long_ / time_s:.4f} /s" if time_s else "-",
+        }
+
+    def show_folder(self, folder, rows, select=None):
+        self.file_label.setText(str(folder))
+        prefix = "A@@" if self.kind == "A" else "B@@"
+        if not rows:  # no dialog: ◀ ▶ go on through the targets / samples
+            self.file_label.setText(f"✖ {prefix} ファイルがありません（またはフォルダを開けません）: {folder}")
+            self.file_label.setStyleSheet(f"color:{DANGER}")
+            return
+        ok = [r for r in rows if not r["エラー"] and not r["重複"]]
+        bad, old = sum(bool(r["エラー"]) for r in rows), sum(bool(r["重複"]) for r in rows)
+        old_bad = (f"（同じ#番号の古い解析 {old} は合計に含めない）" if old else "") + (f"（読めない {bad}）" if bad else "")
+        self.folder_rows = rows
+        self.folder_info = (self.a_totals if self.kind == "A" else self.b_totals)(folder, rows, ok, old_bad)
         self.fill_summary(self.folder_info)
-        cols = ["#"] + [c for c, _ in FOLDER_COLS] + ["ファイル", "重複", "エラー"]
+        value_cols = [c for c, _ in FOLDER_COLS] if self.kind == "A" else [c for c, _ in B_FOLDER_COLS] + ["測定時間 [s]"]
+        cols = ["#"] + value_cols + ["ファイル", "重複", "エラー"]
         self.files.blockSignals(True)
         self.files.setSortingEnabled(False)
         self.files.clear()
@@ -3099,10 +3324,12 @@ class ViewerPage(QWidget):
         self.files.resizeColumnsToContents()
         self.files.setSortingEnabled(True)
         self.files.blockSignals(False)
-        self.files_label.setText(f"ファイル一覧 ({len(rows)})　行を選ぶと波形と信号・バーストを表示")
+        what = "波形と信号・バースト" if self.kind == "A" else "長い信号と塩基の帰属"
+        self.files_label.setText(f"ファイル一覧 ({len(rows)})　行を選ぶと{what}を表示（↑↓ で移動）")
         self.files_label.setVisible(True)
         self.files.setVisible(True)
-        self.files.selectRow(0)
+        names = [r["ファイル"] for r in rows]
+        self.files.selectRow(names.index(select) if select in names else 0)
 
     def file_selected(self):
         rows = self.files.selectionModel().selectedRows()
@@ -3111,27 +3338,41 @@ class ViewerPage(QWidget):
         r = self.folder_rows[self.files.item(rows[0].row(), 0).data(Qt.ItemDataRole.UserRole)]
         self.open_file(r["path"])
 
+    A_TABLES = ["S Table", "R Table", "B Table", "AR Table"]
+    B_TABLES = ["LSP Table", "LTP Table", "BR Table", "BC Table"]
+
     def open_file(self, path):
+        known = dict(self.known_a)
+
         def read(log, progress):
+            # only the tables shown are read (a B@@ also holds large per-base tables)
             try:
-                return [TdmsFile.read(long_path(path))]
+                with viewer_rows.tdms(path) as t:
+                    kind = "B" if "BR Table" in t or Path(path).name.upper().startswith("B@@") else "A"
+                    tab = read_tables(t, self.B_TABLES if kind == "B" else self.A_TABLES)
+                    data = t["Data"]["Ch1"][:] * 1000 if "Data" in t and "Ch1" in t["Data"] else np.array([])
+                return [(kind, tab, data)]
             except Exception as e:
                 return [e]
 
         def show(out):
-            t = out[0] if out else RuntimeError("読み込めませんでした")
+            res = out[0] if out else RuntimeError("読み込めませんでした")
             try:
-                if isinstance(t, Exception):
-                    raise t
-                if "BS Table" in t:
-                    self.show_b(path, t)
+                if isinstance(res, Exception):
+                    raise res
+                kind, tab, data = res
+                if kind == "B":
+                    self.show_b(path, tab, data)
                 else:
-                    self.show_a(path, t)
+                    self.show_a(path, tab, data)
                 self.file_label.setText(str(path))
+                if kind == "B" and self.raw is None and self.a_name:
+                    self.fetch_raw(path, known)
             except Exception as e:
                 self.file_label.setText(f"✖ 読み込みエラー: {path}")
                 QMessageBox.warning(self, "読み込みエラー", f"{path}\n\n{e}")
-        self.load(f"{Path(path).name}（波形と信号・バースト）", read, show)
+        what = "波形と信号・バースト" if self.kind == "A" else "長い信号と波形"
+        self.load(f"{Path(path).name}（{what}）", read, show)
 
     def fill_summary(self, row):
         self.summary.setRowCount(0)
@@ -3153,10 +3394,9 @@ class ViewerPage(QWidget):
         self.items.resizeColumnsToContents()
         self.items.blockSignals(False)
 
-    def show_a(self, path, t):
+    def show_a(self, path, tab, raw):
         self.mode = "A"
-        tab = read_tables(t, ["S Table", "B Table", "AR Table"])
-        self.raw = t["Data"]["Ch1"][:] * 1000
+        self.raw = raw
         self.fs = 10000
         ar = tab["AR Table"].iloc[0]
         keys = ["Signal#Sum", "Burst#Sum", "Signal Freq [/s]", "B Duty Cycle [%]", "Region BL Mode [pA]",
@@ -3180,6 +3420,7 @@ class ViewerPage(QWidget):
             idx = np.clip(np.rint(pk * self.fs).astype(int), 0, len(self.raw) - 1)
             self.plot.plot(pk, self.raw[idx], pen=None, symbol="o", symbolSize=5,
                            symbolBrush="#fbbf24", symbolPen=None, name="Signal peak")
+        self.bl_curve = self.draw_baseline(tab.get("R Table"), s)
         for _, b in self.btab.iterrows():
             reg = pg.LinearRegionItem((float(b["B Start [s]"]), float(b["B End [s]"])), movable=False,
                                       brush=pg.mkBrush(239, 68, 68, 22), pen=pg.mkPen(None))
@@ -3189,7 +3430,26 @@ class ViewerPage(QWidget):
         self.auto_y()
         self.seq_view.setHtml("<span style='color:#8b9a92'>赤い帯 = バースト、黄色の点 = 信号のピーク。"
                               "一覧のバースト・信号を選ぶと拡大します（右上で切り替え）。"
-                              "上の全体図の青い帯をドラッグすると表示位置が動きます（緑 = バースト）。</span>")
+                              "上の全体図の青い帯をドラッグすると表示位置が動きます（緑 = バースト）。"
+                              "白い階段線 = 区間ごとのベースライン（Region BL）。"
+                              "軸の上でホイール・ドラッグしても拡大・縮小できます。</span>")
+
+    def draw_baseline(self, r, s):
+        """Region BL of each region (R Table) as a step line; a region is "Read Region Point" samples."""
+        if r is None or "Region BL [pA]" not in r or not len(r):
+            return None
+        bl = r["Region BL [pA]"].astype(float).to_numpy()
+        col = next((c for c in s.columns if c.startswith("Read Region Point")), None) if len(s) else None
+        try:
+            rrp = int(float(s[col].iloc[0]))
+        except (TypeError, ValueError, KeyError):
+            rrp = len(self.raw) // len(bl)
+        edges = np.arange(len(bl) + 1) * rrp / self.fs
+        curve = self.plot.plot(edges, bl, stepMode="center", name="Baseline (Region BL)",
+                               pen=pg.mkPen("#f1f5f9", width=2))
+        curve.setZValue(5)
+        curve.setVisible(self.show_bl.isChecked())
+        return curve
 
     def draw_overview(self, ar):
         """Min/max envelope of the whole trace with the bursts as green ticks."""
@@ -3245,51 +3505,74 @@ class ViewerPage(QWidget):
             self.list_label.setText(f"バースト一覧 ({len(self.btab)})")
             self.fill_items(self.btab, self.B_COLS)
 
-    def show_b(self, path, t):
+    def show_b(self, path, tab, raw):
         self.mode = "B"
         self.list_kind.setVisible(False)
         self.overview.setVisible(False)
-        tab = read_tables(t, ["LSP Table", "LTP Table", "BR Table", "BC Table"])
         br = tab["BR Table"].iloc[0]
         bc = tab["BC Table"].iloc[0]
-        self.sample = bc["Sample Sequence"]
+        # without long signals LabVIEW writes no LSP / LTP table
+        for n in ("LSP Table", "LTP Table"):
+            tab.setdefault(n, pd.DataFrame(columns=["L#", "File name"]))
+        self.sample, self.b_path = bc["Sample Sequence"], str(path)
         info = {"Sample name": bc["Sample name"], "Sample Sequence": self.sample}
         info.update({k: br[k] for k in br.index if "BNAL" not in k})
+        if self.folder_info:  # folder totals stay on top, the selected file below
+            info = {**self.folder_info, "── 選択ファイル": Path(path).name, **info}
         self.fill_summary(info)
         self.lsp, self.ltp = tab["LSP Table"], tab["LTP Table"]
         self.list_label.setText(f"長い信号 (Right Read ≥ {bc['Right Read MIN [n]']}) {len(self.lsp)} 件")
-        self.fill_items(self.lsp, ["L#", "Signal Start [s]", "Base Number", "Mx Right Read Seq",
-                                   "Mx Right No", "M_MxRight_No", "Direction"])
-        # raw data comes from the A@@ file named in the tables
-        self.raw = None
-        self.a_name = self.lsp["File name"].iloc[0] if len(self.lsp) else ""
-        cands = [Path(path).parent.parent / self.a_name, Path(path).parent / self.a_name]
-        if self.a_name in self.known_a:
-            cands.insert(0, Path(self.known_a[self.a_name]))
-        for cand in cands:
-            if self.a_name and cand.exists():
-                self.load_raw(cand)
-                break
-        self.pick_raw.setVisible(bool(self.a_name) and self.raw is None)
+        self.fill_items(self.lsp, [c for c in ["L#", "Signal Start [s]", "Base Number", "Mx Right Read Seq",
+                                               "Mx Right No", "M_MxRight_No", "Direction"] if c in self.lsp])
+        # the waveform: the B@@ Data channel, else the A@@ named in the tables (fetch_raw, after this)
+        self.raw = raw if raw is not None and len(raw) else None
+        self.a_name = str(self.lsp["File name"].iloc[0]) if len(self.lsp) and "File name" in self.lsp else ""
+        self.pick_raw.setVisible(False)
         self.plot.clear()
-        self.seq_view.setHtml("<span style='color:#8b9a92'>一覧の長い信号を選ぶと、生データと塩基の帰属を表示します。"
-                              + ("" if self.raw is not None or not self.a_name else
-                                 f"<br>※ 元の A@@ ({self.a_name}) が見つからないため帰属点のみ表示します。"
-                                 "「元の A@@ を指定…」で生データも表示できます。")
-                              + "</span>")
+        self.seq_view.setHtml("<span style='color:#8b9a92'>" + ("一覧の長い信号を選ぶと、生データと塩基の帰属を表示します。"
+                              if len(self.lsp) else "このファイルに長い信号はありません。") + "</span>")
         if len(self.lsp):
             self.items.selectRow(0)
 
-    def load_raw(self, a_path):
-        self.raw = TdmsFile.read(long_path(a_path))["Data"]["Ch1"][:] * 1000
-        self.known_a[Path(a_path).name] = str(a_path)
+    def fetch_raw(self, path, known):
+        """The tables are shown already; the waveform of the A@@ the B@@ was made from follows."""
+        a_name = self.a_name
+
+        def read(log, progress):
+            return [source_raw(path, a_name, known)]
+
+        def done(out):
+            raw, a_path = out[0] if out else (None, None)
+            self.file_label.setText(str(path))
+            if raw is None:
+                self.pick_raw.setVisible(True)
+                self.seq_view.append(f"<span style='color:{WARNING}'>※ 元の A@@ ({a_name}) が見つからないため"
+                                     "帰属点のみ表示します。「元の A@@ を指定…」で生データも表示できます。</span>")
+                return
+            self.raw = raw
+            self.known_a[Path(a_path).name] = str(a_path)
+            self.item_selected()
+        self.load(f"{a_name}（元の A@@ の波形）", read, done)
 
     def choose_raw(self):
         path, _ = QFileDialog.getOpenFileName(self, f"元の A@@ ({self.a_name})", "", "TDMS (A@@*.tdms)")
-        if path:
-            self.load_raw(path)
+        if not path:
+            return
+
+        def read(log, progress):
+            with TdmsFile.open(long_path(path)) as t:
+                return [t["Data"]["Ch1"][:] * 1000]
+
+        def done(out):
+            if not out:
+                QMessageBox.warning(self, "読み込みエラー", f"波形を読めません:\n{path}")
+                return
+            self.raw = out[0]
+            self.known_a[Path(path).name] = path
             self.pick_raw.setVisible(False)
+            self.file_label.setText(f"{self.b_path}　（波形: {path}）")
             self.item_selected()
+        self.load(f"{Path(path).name}（波形）", read, done)
 
     # -- selection ----------------------------------------------------------
     def item_selected(self):
@@ -3319,7 +3602,7 @@ class ViewerPage(QWidget):
         t0, t1 = float(sig["Signal Start [s]"]), float(sig["Signal End [s]"])
         pad = max((t1 - t0) * 0.6, 0.002)
         if self.raw is not None:
-            i0, i1 = int((t0 - pad) * 10000), int((t1 + pad) * 10000)
+            i0, i1 = max(int((t0 - pad) * 10000), 0), min(int((t1 + pad) * 10000), len(self.raw))
             tt = np.arange(i0, i1) / 10000
             self.plot.plot(tt, self.raw[i0:i1], pen=pg.mkPen("#4b5263", width=1.2),
                            symbol="o", symbolSize=3, symbolBrush="#4b5263", symbolPen=None, name="Raw")
@@ -3454,6 +3737,7 @@ def main():
     app.setWindowIcon(qt_theme.window_icon(APP_ICON, ACCENT))
     w = MainWindow()
     w.show()
+    viewer_rows.warm_up()  # the result viewers read folders in worker processes
     sys.exit(app.exec())
 
 
