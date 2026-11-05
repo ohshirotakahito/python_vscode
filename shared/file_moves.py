@@ -16,6 +16,7 @@ import time
 import uuid
 
 from shared import REPO_ROOT
+from shared.rack_store import as_numbers, measurement_key
 
 
 def journal_dir(entity):
@@ -35,11 +36,13 @@ def scan_anal(folder, entity='ANAL'):
             if path.is_symlink() or not path.is_file() or path.suffix.lower() != '.tdms':
                 continue
             stat = path.stat()
-            # Same measurement-number rule as the database's ANAL progress panel.
-            match = re.search(r'#(\d+)\.tdms$', path.name, re.I)
-            result.append(dict(path=str(path.absolute()), location=location,
-                               number=int(match[1]) if match else None,
+            result.append(dict(path=str(path.absolute()), location=location, key=measurement_key(path.name),
                                size=stat.st_size, modified_ns=stat.st_mtime_ns))
+    # Same measurement-number rule as the database's ANAL progress (rack_store.measurement_key / as_numbers).
+    numbers = as_numbers(r['key'] for r in result)
+    for row in result:
+        key = numbers[row.pop('key')]
+        row['number'] = key if isinstance(key, int) else None
     counts = Counter(r['number'] for r in result if r['number'] is not None)
     for row in result:
         row['candidate'] = row['number'] is not None and counts[row['number']] > 1

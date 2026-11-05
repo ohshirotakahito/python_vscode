@@ -35,8 +35,8 @@ class BnalManagerTest(unittest.TestCase):
             other = Path(tmp) / 'BNAL@other'
             folder.mkdir()
             other.mkdir()
-            first = folder / 'B@@2025_0101_old#001.tdms'
-            second = folder / 'B@@2025_0201_new#001.tdms'
+            first = folder / 'B@@2025_0101_1200_S1_10k_Sample#001.tdms'
+            second = folder / 'B@@2025_0201_1200_S1_10k_Sample#001.tdms'
             first.write_bytes(b'old')
             second.write_bytes(b'new')
             untouched = other / second.name

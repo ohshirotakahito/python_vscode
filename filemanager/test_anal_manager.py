@@ -55,8 +55,8 @@ class AnalManagerTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             folder = Path(tmp) / 'ANAL'
             folder.mkdir()
-            (folder / 'sample old#001.tdms').write_bytes(b'old')
-            (folder / 'sample new#001.TDMS').write_bytes(b'new')
+            (folder / 'A@@2025_0101_1200_00_S1_10k_Sample#001.tdms').write_bytes(b'old')
+            (folder / 'A@@2025_0201_1200_00_S1_10k_Sample#001.TDMS').write_bytes(b'new')
             (folder / 'ignored.txt').touch()
             rows = scan_anal(folder)
             self.assertEqual(len(rows), 2)
@@ -90,8 +90,8 @@ class AnalManagerTest(unittest.TestCase):
     def test_groups_keep_counts_and_unique_numbers_visible(self):
         with tempfile.TemporaryDirectory() as tmp:
             folder = Path(tmp)
-            for name in ('A@@2025_0308_old#001.tdms', 'A@@2025_0308_old#002.tdms',
-                         'A@@2025_0819_new#001.tdms'):
+            for name in ('A@@2025_0308_1200_00_S1_10k_Sample#001.tdms', 'A@@2025_0308_1201_00_S1_10k_Sample#002.tdms',
+                         'A@@2025_0819_1200_00_S1_10k_Sample#001.tdms'):
                 (folder / name).write_bytes(b'content')
             groups = analysis_groups(scan_anal(folder))
             self.assertEqual([g['age'] for g in groups], ['古い', '新しい'])
@@ -102,8 +102,8 @@ class AnalManagerTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             folder = Path(tmp) / 'ANAL'
             folder.mkdir()
-            older = folder / 'A@@2025_0308_old#001.tdms'
-            newer = folder / 'A@@2025_0819_new#001.tdms'
+            older = folder / 'A@@2025_0308_1200_00_S1_10k_Sample#001.tdms'
+            newer = folder / 'A@@2025_0819_1200_00_S1_10k_Sample#001.tdms'
             older.write_bytes(b'old analysis')
             newer.write_bytes(b'new analysis')
             rows = scan_anal(folder)

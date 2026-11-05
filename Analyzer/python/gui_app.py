@@ -45,6 +45,7 @@ from shared import qt_theme, ui_theme  # noqa: E402
 import first_step_io
 import second_step_io
 import server_anal
+import anal_status
 import conditions
 import server_bnal
 import viewer_rows
@@ -242,8 +243,9 @@ class RunPanel(QWidget):
         self.stop.setEnabled(False)
         self.log.appendPlainText("… 中止します（今のファイルが終わるまで待ってください）")
 
-    def start(self, job):
-        """job(log, progress, cancelled) -> list of output paths; cancelled() is checked between files."""
+    def start(self, job, done=None):
+        """job(log, progress, cancelled) -> list of output paths; cancelled() is checked between files.
+        done(outputs) runs in the GUI thread after the panel's own finish."""
         self.button.setEnabled(False)
         self.stop.setEnabled(True)
         self.cancel.clear()
@@ -255,6 +257,8 @@ class RunPanel(QWidget):
         self.worker.progress.connect(self._progress)
         self.worker.log.connect(self.log.appendPlainText)
         self.worker.finished.connect(self._done)
+        if done:
+            self.worker.finished.connect(done)
         self.worker.finished.connect(self.thread.quit)
         self.thread.start()
 
@@ -993,7 +997,11 @@ class ServerAnalPage(QWidget):
         self.table.setToolTip("行をダブルクリックすると、そのサンプルの ANAL を結果ビューアで表示します")
         self.table.cellDoubleClicked.connect(
             lambda i, _: self.open_in_viewer(str(server_anal.t_dir(self.shown[i]) / "ANAL")))
-        lay.addWidget(self.table, 4)
+        split = QSplitter(Qt.Orientation.Vertical)
+        split.addWidget(self.table)
+        split.addWidget(self.build_status())
+        split.setSizes([420, 260])
+        lay.addWidget(split, 5)
 
         sel = QHBoxLayout()
         for text, slot, tip in [
@@ -1011,8 +1019,9 @@ class ServerAnalPage(QWidget):
             b.setToolTip(tip)
             b.clicked.connect(slot)
             sel.addWidget(b)
-        self.b_check = QPushButton("実フォルダを確認")
-        self.b_check.setToolTip("チェックしたサンプルの T と ANAL をサーバーで読み、未解析のファイル数を表示")
+        self.b_check = QPushButton("現状を調べる")
+        self.b_check.setToolTip("チェックしたサンプルの T・T/stocked・ANAL・ANAL/stocked をサーバーで読み（変更はしません）、"
+                                "未解析の数と、整理が必要なもの（T の A@@・空ファイル・退避・重複・番号の付け直し）を下の一覧に出します")
         self.b_check.clicked.connect(self.check_folders)
         sel.addWidget(self.b_check)
         self.b_restore = QPushButton("T/stocked → T に戻す")
@@ -1026,14 +1035,6 @@ class ServerAnalPage(QWidget):
             "stocked 内で #番号が重なるものは新しい方だけ戻します。記録はファイル管理アプリの ANAL 整理の履歴に残り、そこから元に戻せます")
         self.b_restore_anal.clicked.connect(lambda: self.restore_stocked("ANAL"))
         sel.addWidget(self.b_restore_anal)
-        self.b_dups = QPushButton("重複を整理…")
-        self.b_dups.setToolTip(
-            "チェックしたサンプルの T 直下と ANAL の #番号重複を調べ、内容を確認してから整理します。\n"
-            "・生データ：同じ内容なら1つ残し、違えば測定日時の新しい方を残す（残さない方は T/duplicate へ移動・元に戻せます）\n"
-            "・ANAL：元の生データを AR Table の Filename で判定。同じ生データの解析し直しは新しい方を残して古い方を削除。"
-            "別の測定（実験の重複）は、残した生データ（無ければ測定日時の新しい方）の ANAL を残し、ほかは ANAL/duplicate へ移動")
-        self.b_dups.clicked.connect(self.tidy_duplicates)
-        sel.addWidget(self.b_dups)
         sel.addStretch()
         self.count = QLabel("")
         sel.addWidget(self.count)
@@ -1066,8 +1067,8 @@ class ServerAnalPage(QWidget):
         auto = QHBoxLayout()
         self.b_auto = QPushButton("▶▶  全自動着手")
         self.b_auto.setObjectName("primary")
-        self.b_auto.setToolTip("チェックした未着手・進行中のサンプルを順番に：T/stocked を T へ戻す → ANAL の重複（古い方）を削除"
-                               " → 未解析の T 直下を解析 → DB 更新。内容はレポートに記録し、中止しても再開できます")
+        self.b_auto.setToolTip("チェックした未着手・進行中のサンプルを順番に：T/stocked を T へ戻す → 整理できるものを整理"
+                               "（同じ #番号の別の測定があるサンプルは飛ばす） → 未解析の T 直下を解析 → DB 更新。内容はレポートに記録し、中止しても再開できます")
         self.b_auto.clicked.connect(self.start_auto)
         auto.addWidget(self.b_auto)
         b_db = QPushButton("DB を更新（チェックしたサンプル）")
@@ -1324,136 +1325,227 @@ class ServerAnalPage(QWidget):
         self.background(move, lambda _: (button.setEnabled(True), self.run.bar.setFormat(f"{title} 完了")))
 
     # -- duplicated numbers ----------------------------------------------------------
-    def tidy_duplicates(self):
-        rows = [r for r in self.selected() if r["reachable"]]
-        if not rows:
-            QMessageBox.information(self, "重複を整理", "調べるサンプルにチェックを入れてください（接続できるグループのみ）。")
-            return
-        self.b_dups.setEnabled(False)
+    # -- current state (anal_status): survey the checked samples, put right what can be ---------
+    ISSUE_COLS = ["対処", "グループ", "実験", "サンプル", "内容", "件数", "説明", "手作業・対処"]
+    # order in which checked actions are carried out (results and broken files first, then stocked, then duplicates)
+    ACTION_ORDER = ["results_in_t", "empty_raw", "restore_t", "raw_copy", "old_anal", "restore_anal"]
+    ACTION_TEXT = {"results_in_t": "ANAL へ移す", "empty_raw": "T/broken へ移す", "restore_t": "T に戻す",
+                   "raw_copy": "T/duplicate へ移す", "old_anal": "削除（元に戻せる）", "restore_anal": "ANAL に戻す"}
+    MANUAL_KINDS = ("renumber", "renumber_anal", "results_b", "empty_raw_stocked")
 
-        def plan(log, progress):
-            out = []
-            for i, r in enumerate(rows):
-                progress(int(100 * i / len(rows)), f"重複を調査 {r['sample']}")
-                t = server_anal.t_dir(r)
-                try:
-                    p = server_anal.duplicate_plan(t)
-                    note = server_anal.anomaly_text(server_anal.t_anomalies(t))
-                except Exception as e:
-                    log(f"✖ {r['experiment']} / {r['sample']}: {e}")
-                    continue
-                if p["raw"] or p["anal"] or note:
-                    out.append((r, p, note))
-                log(f"{r['experiment']} / {r['sample']}: 生データ {len(p['raw'])} 件、ANAL {len(p['anal'])} 件"
-                    + (f"　{note}" if note else ""))
-            return out
-        self.background(plan, self.confirm_duplicates)
-
-    def confirm_duplicates(self, plans):
-        self.b_dups.setEnabled(True)
-        work = [x for x in plans if x[1]["raw"] or x[1]["anal"]]
-        notes = [f"{r['experiment']} / {r['sample']}: {note}" for r, _, note in plans if note]
-        if not work:
-            QMessageBox.information(self, "重複を整理", "整理する重複はありません。"
-                                    + ("\n\n要確認（自動では整理しません）:\n" + "\n".join(notes[:20]) if notes else ""))
-            return
-        n_raw = sum(len(p["raw"]) for _, p, _ in work)
-        n_del = sum(a == "delete" for _, p, _ in work for *_, a in p["anal"])
-        n_aside = sum(a == "aside" for _, p, _ in work for *_, a in p["anal"])
-        n_redo = sum(len(p["redo"]) for _, p, _ in work)
-        detail = []
-        for r, p, note in work:
-            detail.append(f"■ {r['group']} / {r['experiment']} / {r['sample']}")
-            detail += [f"  生データ → T/duplicate（{why}）: {q.name}\n      残す: {kept.name}" for q, kept, why in p["raw"]]
-            detail += [f"  ANAL を{'削除' if a == 'delete' else ' ANAL/duplicate へ移動'}（{why}）: {q.name}"
-                       for q, why, a in p["anal"]]
-            if p["redo"]:
-                detail.append("  再解析が必要: " + ", ".join(f"#{k:03d}" for k in p["redo"]))
-        if notes:
-            detail += ["", "要確認（実験ID が複数など。自動では整理しません）:"] + notes
-        box = QMessageBox(self)
-        box.setWindowTitle("重複を整理")
-        box.setText(f"{len(work)} サンプルの重複を整理します。\n"
-                    f"・生データ {n_raw} 件を T/duplicate へ移動（ファイル管理アプリの履歴から元に戻せます）\n"
-                    f"・同じ生データを解析し直した古い ANAL {n_del} 件を削除（元に戻せません。生データから作り直せます）\n"
-                    f"・別の測定（実験の重複）の ANAL {n_aside} 件を ANAL/duplicate へ移動（元に戻せます）"
-                    + (f"\n・ANAL が無くなる番号 {n_redo} 件は、あとで「解析を実行」か全自動着手で解析されます" if n_redo else "")
-                    + "\n\n内容は「詳細を表示」で確認できます。よろしいですか？")
-        box.setDetailedText("\n".join(detail))
-        box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        if box.exec() != QMessageBox.StandardButton.Yes:
-            return
-        self.b_dups.setEnabled(False)
-        db_path = self.db.text().strip() if self.update_db.isChecked() else None
-
-        def apply(log, progress):
-            server_anal.AUTO_DIR.mkdir(parents=True, exist_ok=True)
-            report = server_anal.Report(server_anal.AUTO_DIR / f"重複整理_{datetime.now():%Y%m%d_%H%M%S}.txt")
-            for i, (r, p, note) in enumerate(work):
-                progress(int(100 * i / len(work)), f"整理 {r['sample']}")
-                head = f"■ {r['group']} / {r['experiment']} / {r['sample']}"
-                report.write(head)
-                log(head)
-                try:
-                    for line in server_anal.apply_duplicate_plan(server_anal.t_dir(r), p):
-                        report.write("  " + line)
-                        log("  " + line)
-                except Exception as e:
-                    report.write(f"  ✖ {e}")
-                    log(f"  ✖ {e}")
-                if note:
-                    report.write(f"  要確認: {note}")
-                if db_path:
-                    try:
-                        server_anal.refresh_db(db_path, r)
-                    except Exception as e:
-                        log(f"  ✖ DB 更新 {r['sample']}: {e}")
-            log(f"レポート: {report.path}")
-            if db_path:
-                self.db_changed.emit()
-            return []
-        self.background(apply, lambda _: (self.b_dups.setEnabled(True), self.run.bar.setFormat("重複の整理 完了")))
+    def build_status(self):
+        box = QWidget()
+        bl = QVBoxLayout(box)
+        bl.setContentsMargins(0, 6, 0, 0)
+        row = QHBoxLayout()
+        self.status_label = QLabel("現状: チェックしたサンプルで「現状を調べる」を押すと、整理が必要なものを一覧にします")
+        row.addWidget(self.status_label, 1)
+        self.only_todo = QCheckBox("未解析だけのものは隠す")
+        self.only_todo.setChecked(False)
+        self.only_todo.toggled.connect(self.fill_issues)
+        row.addWidget(self.only_todo)
+        self.b_fix = QPushButton("チェックした対処を実行…")
+        self.b_fix.setObjectName("primary")
+        self.b_fix.setToolTip("下の一覧でチェックした対処を、実行前に調べ直してから行います。移動・削除はすべて記録され、"
+                              "ファイル管理アプリの履歴から元に戻せます（削除は ANAL\\.整理履歴 への移動）")
+        self.b_fix.clicked.connect(self.run_actions)
+        row.addWidget(self.b_fix)
+        b_all = QPushButton("対処をすべてチェック")
+        b_all.clicked.connect(lambda: self.check_issues(True))
+        row.addWidget(b_all)
+        b_redo = QPushButton("ANAL をやり直す…")
+        b_redo.setToolTip("番号を付け直したサンプルなど：チェックしたサンプルの ANAL と ANAL/stocked の A@@ をすべて "
+                          "ANAL\\.整理履歴 へ移し（元に戻せます）、T の生データをすべて解析し直せる状態にします")
+        b_redo.clicked.connect(self.redo_selected)
+        row.addWidget(b_redo)
+        bl.addLayout(row)
+        self.issue_table = QTableWidget(0, len(self.ISSUE_COLS))
+        self.issue_table.setHorizontalHeaderLabels(self.ISSUE_COLS)
+        self.issue_table.verticalHeader().setVisible(False)
+        self.issue_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.issue_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.issue_table.setToolTip("行をダブルクリックすると、そのサンプルの T フォルダをエクスプローラーで開きます")
+        self.issue_table.cellDoubleClicked.connect(self.open_issue_folder)
+        bl.addWidget(self.issue_table, 1)
+        self.issues = []  # [(row, issue)]
+        return box
 
     def check_folders(self):
-        rows = self.selected()
+        """Survey the checked samples on the server (nothing is changed)."""
+        rows = [r for r in self.selected() if r["reachable"]]
         if not rows:
-            QMessageBox.information(self, "ANAL（サーバー）", "確認するサンプルにチェックを入れてください。")
+            QMessageBox.information(self, "ANAL（サーバー）", "調べるサンプルにチェックを入れてください（接続できるグループのみ）。")
             return
         settle = self.settle.value()
         self.b_check.setEnabled(False)
-        self.b_check.setText("確認中…")
+        self.b_check.setText("調査中…")
 
         def job(log, progress):
             out = []
             for i, r in enumerate(rows):
-                progress(int(100 * i / len(rows)), f"確認 {r['sample']}")
+                progress(int(100 * i / len(rows)), f"現状を調査 {r['sample']}（{i + 1}/{len(rows)}）")
                 try:
-                    t = server_anal.t_dir(r)
-                    todo, busy = server_anal.pending_files(t, settle)
-                    who = server_anal.anal_operators(t)
-                    out.append((self.key(r), f"未解析 {len(todo)}" + (f" / 書込中 {len(busy)}" if busy else "")
-                                + ("　ANAL: " + "、".join(f"{k} {v}" for k, v in who.items()) if who else ""),
-                                server_anal.anomaly_text(server_anal.t_anomalies(t))))
+                    out.append((r, anal_status.survey(server_anal.t_dir(r), settle), ""))
                 except Exception as e:
-                    out.append((self.key(r), f"エラー: {e}", ""))
+                    out.append((r, [], str(e)))
             return out
-        self.check_thread = QThread()
-        self.check_worker = Worker(job)
-        self.check_worker.moveToThread(self.check_thread)
-        self.check_thread.started.connect(self.check_worker.run)
-        self.check_worker.progress.connect(self.run._progress)
-        self.check_worker.finished.connect(self.checked_folders)
-        self.check_worker.finished.connect(self.check_thread.quit)
-        self.check_thread.start()
+        self.background(job, self.surveyed)
 
-    def checked_folders(self, results):
-        self.live.update({k: text for k, text, _ in results})
-        self.t_notes.update({k: note for k, _, note in results})
+    def surveyed(self, results):
+        keys = {self.key(r) for r, _, _ in results}
+        self.surveyed_keys = getattr(self, "surveyed_keys", set()) | keys
+        self.issues = [(r, i) for r, i in self.issues if self.key(r) not in keys]
+        for r, issues, err in results:
+            k = self.key(r)
+            if err:
+                self.live[k], self.t_notes[k] = f"エラー: {err}", ""
+                continue
+            pending = next((i for i in issues if i["kind"] == "pending"), None)
+            fix = [i for i in issues if i["action"]]
+            manual = [i for i in issues if i["kind"] in self.MANUAL_KINDS]
+            self.live[k] = "　".join(x for x in (
+                f"未解析 {pending['count']}" if pending else "未解析 0",
+                f"整理 {len(fix)} 種" if fix else "", f"手作業 {len(manual)} 種" if manual else "") if x)
+            self.t_notes[k] = "、".join(i["label"] for i in manual)
+            self.issues += [(r, i) for i in issues]
         self.b_check.setEnabled(True)
-        self.b_check.setText("実フォルダを確認")
-        self.run.bar.setFormat(f"確認完了 ({len(results)} サンプル)")
+        self.b_check.setText("現状を調べる")
+        self.run.bar.setFormat(f"調査完了 ({len(results)} サンプル)")
         self.run.bar.setValue(100)
         self.fill()
+        self.fill_issues()
+
+    def fill_issues(self, *_):
+        shown = [(r, i) for r, i in self.issues if not (self.only_todo.isChecked() and i["kind"] == "pending")]
+        # what needs doing first: hand work, then what can be put right here, then information
+        rank = lambda i: 0 if i["kind"] in self.MANUAL_KINDS else 1 if i["action"] else 2
+        shown.sort(key=lambda ri: (rank(ri[1]), ri[0]["group"], ri[0]["experiment"], ri[0]["sample"]))
+        self.issue_shown = shown
+        self.issue_table.setRowCount(len(shown))
+        tints = {0: ui_theme.row("danger", 0.22), 1: ui_theme.row("warning", 0.18), 2: FIELD}
+        for n, (r, i) in enumerate(shown):
+            todo = self.ACTION_TEXT.get(i["action"], "") if i["action"] else i["manual"]
+            values = ["", r["group"], r["experiment"], r["sample"], i["label"], i["count"], i["detail"], todo]
+            for c, v in enumerate(values):
+                item = QTableWidgetItem(str(v))
+                item.setBackground(QColor(tints[rank(i)]))
+                if c == 0 and i["action"]:
+                    item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+                    item.setCheckState(Qt.CheckState.Unchecked)
+                elif c == 0:  # hand work and information: nothing to carry out here
+                    item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
+                if c in (6, 7) or c == 4:
+                    files = "\n".join(Path(f).name for f in i["files"][:30]) + ("\n…" if len(i["files"]) > 30 else "")
+                    item.setToolTip(i["detail"] + (f"\n\n{files}" if files else ""))
+                if c == 4 and rank(i) == 0:
+                    item.setForeground(QColor(DANGER))
+                self.issue_table.setItem(n, c, item)
+        self.issue_table.resizeColumnsToContents()
+        n_fix = sum(1 for _, i in shown if i["action"])
+        n_manual = sum(1 for _, i in shown if i["kind"] in self.MANUAL_KINDS)
+        samples, with_issues = len(getattr(self, "surveyed_keys", ())), len({self.key(r) for r, _ in self.issues})
+        self.status_label.setText(f"現状: {samples} サンプルを調査（問題あり {with_issues}）　手作業が必要 {n_manual} 件（赤）・"
+                                  f"ここで整理できる {n_fix} 件（黄・チェックして実行）・情報（そのほか）")
+
+    def check_issues(self, on):
+        for n, (_, i) in enumerate(self.issue_shown):
+            if i["action"]:
+                self.issue_table.item(n, 0).setCheckState(Qt.CheckState.Checked if on else Qt.CheckState.Unchecked)
+
+    def open_issue_folder(self, n, _):
+        import os as _os
+        try:
+            _os.startfile(str(server_anal.t_dir(self.issue_shown[n][0])))
+        except OSError as e:
+            QMessageBox.warning(self, "ANAL（サーバー）", f"フォルダを開けません:\n{e}")
+
+    def run_actions(self):
+        picked = [(r, i) for n, (r, i) in enumerate(self.issue_shown)
+                  if i["action"] and self.issue_table.item(n, 0).checkState() == Qt.CheckState.Checked]
+        if not picked:
+            QMessageBox.information(self, "現状の整理", "一覧で、実行する対処にチェックを入れてください。")
+            return
+        if self.running_now():
+            return
+        text = "\n".join(f"・{r['experiment']} / {r['sample']}: {i['label']} {i['count']} 件 → {self.ACTION_TEXT[i['action']]}"
+                         for r, i in picked[:25]) + (f"\n…ほか {len(picked) - 25} 件" if len(picked) > 25 else "")
+        if QMessageBox.question(self, "現状の整理", f"次の対処を行います（実行の直前にサーバーで調べ直します）。\n\n{text}\n\n"
+                                "移動・削除はすべて記録され、ファイル管理アプリの履歴から元に戻せます。実行しますか？"
+                                ) != QMessageBox.StandardButton.Yes:
+            return
+        by_sample = {}
+        for r, i in picked:
+            by_sample.setdefault(self.key(r), (r, set()))[1].add(i["action"])
+        settle = self.settle.value()
+        db_path = self.db.text().strip() if self.update_db.isChecked() else None
+
+        def job(log, progress, cancelled=lambda: False):
+            done = []
+            for n, (r, kinds) in enumerate(by_sample.values()):
+                log(f"■ {r['group']} / {r['experiment']} / {r['sample']}")
+                t = server_anal.t_dir(r)
+                for kind in [k for k in self.ACTION_ORDER if k in kinds]:
+                    progress(int(100 * n / len(by_sample)), f"整理 {r['sample']}: {self.ACTION_TEXT[kind]}")
+                    try:
+                        for line in anal_status.apply(t, kind, settle):
+                            log("  " + line)
+                    except Exception as e:
+                        log(f"  ✖ {self.ACTION_TEXT[kind]}: {e}")
+                if db_path:
+                    try:
+                        new = server_anal.refresh_db(db_path, r)
+                        log(f"  DB 更新: T {new['t_tdms']}  ANAL {new['anal_tdms']}")
+                    except Exception as e:
+                        log(f"  ✖ DB 更新: {e}")
+                done.append(r)
+            return []
+        done = []
+        self.run.start(job, lambda _: self.actions_done(done))
+
+    def actions_done(self, rows):
+        if self.update_db.isChecked():
+            self.db_changed.emit()
+        if rows:  # show the state after the changes
+            self.set_checked(self.checked | {self.key(r) for r in rows})
+            self.check_folders()
+
+    def redo_selected(self):
+        rows = [r for r in self.selected() if r["reachable"]]
+        if not rows:
+            QMessageBox.information(self, "ANAL をやり直す", "やり直すサンプルにチェックを入れてください。")
+            return
+        if self.running_now():
+            return
+
+        def count(log, progress):
+            return [(r, len(anal_status.redo_files(server_anal.t_dir(r)))) for r in rows]
+
+        def confirm(counts):
+            text = "\n".join(f"・{r['experiment']} / {r['sample']}: A@@ {n} 件" for r, n in counts[:25])
+            if QMessageBox.warning(
+                    self, "ANAL をやり直す",
+                    f"次のサンプルの ANAL と ANAL/stocked の A@@ をすべて ANAL\\.整理履歴 へ移します。\n\n{text}\n\n"
+                    "移したあとは T の生データがすべて未解析になります（「解析を実行」で解析し直してください）。"
+                    "移した A@@ はファイル管理アプリの履歴から元に戻せます。\n"
+                    "※ この A@@ から作った BNAL（B@@）も、解析し直したあとで作り直しが必要です。\n\n実行しますか？",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
+                return
+            db_path = self.db.text().strip() if self.update_db.isChecked() else None
+
+            def job(log, progress, cancelled=lambda: False):
+                for r, _ in counts:
+                    log(f"■ {r['experiment']} / {r['sample']}")
+                    try:
+                        for line in anal_status.redo(server_anal.t_dir(r)):
+                            log("  " + line)
+                        if db_path:
+                            server_anal.refresh_db(db_path, r)
+                    except Exception as e:
+                        log(f"  ✖ {e}")
+                return []
+            self.run.start(job, lambda _: self.actions_done([r for r, _ in counts]))
+        self.background(count, confirm)
 
     # -- run ------------------------------------------------------------------
     def build_job(self):
@@ -1597,9 +1689,9 @@ class ServerAnalPage(QWidget):
         stocked = sum(r["t_stocked_tdms"] or 0 for r in rows)
         text = (f"{len(rows)} サンプルを順番に処理します。\n"
                 f"  1. T/stocked のファイルを T 直下へ戻す（DB 上 {stocked} 件、同名があるものは戻さない）\n"
-                "     T 直下に同じ #番号の生データが複数あれば、同じ内容なら1つ、違えば新しい方を残し、"
-                "ほかは T/duplicate へ移動（元に戻せます）\n"
-                "  2. ANAL に同じ #番号が重複していれば古い方を削除（.tdms と .tdms_index）\n"
+                "  2. 整理できるものを整理（元に戻せます）：T の A@@ → ANAL、空の生データ → T/broken、"
+                "同じ内容の生データのコピー → T/duplicate、同じ生データの古い ANAL を削除\n"
+                "     同じ #番号の別の測定があるサンプルは、番号の付け直しが必要なので解析しません（レポートに記録）\n"
                 "  3. ANAL に同じ #番号がある T 直下のファイルは解析しない。残りを解析\n"
                 + ("  4. DB を更新\n" if self.update_db.isChecked() else "")
                 + (f"\n（完了のサンプル {other} 件は対象外）" if other else "")
@@ -1676,14 +1768,22 @@ class ServerAnalPage(QWidget):
                         for name, why in skipped:
                             report.write(f"  T/stocked に残したもの: {name}（{why}）")
                         log(f"  T/stocked → T {moved} 件" + (f"、残した {len(skipped)} 件" if skipped else ""))
-                    # 2. duplicated raw numbers (identical: keep one, otherwise the newest -> others to T/duplicate)
-                    #    and duplicated ANAL (keep the one made from the kept raw file, else the newest)
-                    for line in server_anal.apply_duplicate_plan(t, server_anal.duplicate_plan(t)):
-                        report.write("  " + line)
-                        log("  " + line)
-                    note = server_anal.anomaly_text(server_anal.t_anomalies(t))
-                    if note:
-                        report.write(f"  要確認: {note}")
+                    # 2. tidy what can be (A@@ in T, empty raw files, identical copies, older analyses of one raw
+                    #    file). One number used by two measurements needs new numbers first: the sample waits for that.
+                    issues = anal_status.survey(t, settle)
+                    block = anal_status.blocking(issues)
+                    if block:
+                        s["status"] = "要確認"
+                        for i in block:
+                            report.write(f"  ⚠ {i['label']}: {i['detail']} → {i['manual']}（このサンプルは解析しません）")
+                            log(f"  ⚠ {i['label']}（解析しません）")
+                        server_anal.save_state(state)
+                        continue
+                    for kind in ("results_in_t", "empty_raw", "raw_copy", "old_anal"):
+                        if any(i["action"] == kind for i in issues):
+                            for line in anal_status.apply(t, kind, settle):
+                                report.write("  " + line)
+                                log("  " + line)
                     # 3. analyse T files without ANAL
                     todo, busy = server_anal.pending_files(t, settle)
                     todo = broken_out(t, todo, log, report)
