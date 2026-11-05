@@ -40,7 +40,7 @@ from nptdms import TdmsFile
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
-from shared import qt_theme, ui_theme  # noqa: E402
+from shared import qt_theme, t_stock, ui_theme  # noqa: E402
 
 import first_step_io
 import second_step_io
@@ -933,6 +933,155 @@ def ask_condition(parent, kind, summary="", bc_choices=None):
     return d.result_set if d.exec() == QDialog.DialogCode.Accepted else None
 
 
+# ---------------------------------------------------------------------------
+# history of the journaled moves (file_moves): list them and undo one
+# ---------------------------------------------------------------------------
+JOURNAL_KINDS = {"ANAL": "ANAL の整理", "T_stock": "T（Data）の退避・整理", "BNAL": "BNAL の整理"}
+JOURNAL_ACTIONS = {"restore": "T/stocked → T", "archive": "T → T/stocked", "extract": "ANAL/stocked → ANAL",
+                   "delete": "削除（.整理履歴 へ移動）", "undo": "元に戻す", "broken": "→ T/broken",
+                   "duplicate": "→ duplicate", "results_to_anal": "T の A@@ → ANAL"}
+
+
+def read_journals(kinds=("ANAL", "T_stock"), limit=400):
+    """Newest first: [dict(path, kind, time, action, folder, count, status, undone)] of the move journals."""
+    from shared import file_moves
+    import json
+    rows, undone = [], set()
+    for kind in kinds:
+        folder = file_moves.journal_dir(kind)
+        for p in sorted(folder.glob("*.json"), reverse=True)[:limit] if folder.is_dir() else []:
+            try:
+                rec = json.loads(p.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            if rec.get("undo_of"):
+                undone.add(str(Path(rec["undo_of"]).resolve()))
+            ops = rec.get("operations", [])
+            rows.append(dict(path=str(p), kind=kind, time=rec.get("created_at", "")[:19].replace("T", " "),
+                             action=rec.get("action") or ("restore" if rec.get("restore") else "archive"),
+                             folder=rec.get("folder", ""), count=sum(1 for o in ops if o.get("status") == "完了"),
+                             total=len(ops), status=rec.get("status", "")))
+    for r in rows:
+        r["undone"] = str(Path(r["path"]).resolve()) in undone
+    return sorted(rows, key=lambda r: r["time"], reverse=True)
+
+
+class JournalDialog(QDialog):
+    """Moves made from here and from the file manager, newest first; a chosen one can be undone."""
+    COLS = ["日時", "種類", "操作", "対象フォルダ", "移動", "状態"]
+
+    def __init__(self, parent, kinds=("ANAL", "T_stock")):
+        super().__init__(parent)
+        self.kinds = kinds
+        self.setWindowTitle("整理の履歴（移動・削除の記録）")
+        self.resize(1200, 600)
+        lay = QVBoxLayout(self)
+        note = QLabel("ANAL（サーバー）とファイル管理アプリで行った移動・削除の記録です。行を選んで「元に戻す」と、"
+                      "その操作で動かしたファイルを元の場所へ戻します（戻す前に内容が変わっていないか確かめます）。")
+        note.setWordWrap(True)
+        lay.addWidget(note)
+        self.table = QTableWidget(0, len(self.COLS))
+        self.table.setHorizontalHeaderLabels(self.COLS)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        lay.addWidget(self.table, 1)
+        row = QHBoxLayout()
+        b_open = QPushButton("記録のフォルダを開く")
+        b_open.clicked.connect(self.open_folder)
+        row.addWidget(b_open)
+        row.addStretch()
+        self.b_undo = QPushButton("元に戻す…")
+        self.b_undo.setObjectName("primary")
+        self.b_undo.clicked.connect(self.undo)
+        row.addWidget(self.b_undo)
+        b_close = QPushButton("閉じる")
+        b_close.clicked.connect(self.accept)
+        row.addWidget(b_close)
+        lay.addLayout(row)
+        self.fill()
+
+    def done(self, code):
+        if getattr(self, "thread", None) is not None and self.thread.isRunning():
+            return  # an undo is moving files: the window stays until it has finished
+        super().done(code)
+
+    def fill(self):
+        self.rows = read_journals(self.kinds)
+        self.table.setRowCount(len(self.rows))
+        for n, r in enumerate(self.rows):
+            state = r["status"] + ("（元に戻し済み）" if r["undone"] else "")
+            values = [r["time"], JOURNAL_KINDS.get(r["kind"], r["kind"]), JOURNAL_ACTIONS.get(r["action"], r["action"]),
+                      r["folder"], f"{r['count']} / {r['total']}", state]
+            for c, v in enumerate(values):
+                item = QTableWidgetItem(str(v))
+                if r["undone"] or r["action"] == "undo":
+                    item.setForeground(QColor(MUTED))
+                elif r["status"] != "完了":
+                    item.setForeground(QColor(WARNING))
+                item.setToolTip(r["path"])
+                self.table.setItem(n, c, item)
+        self.table.resizeColumnsToContents()
+
+    def open_folder(self):
+        import os as _os
+        from shared import file_moves
+        folder = file_moves.journal_dir(self.kinds[0])
+        n = self.table.currentRow()
+        if n >= 0:
+            folder = Path(self.rows[n]["path"]).parent
+        folder.mkdir(parents=True, exist_ok=True)
+        _os.startfile(str(folder))
+
+    def undo(self):
+        from shared import file_moves
+        n = self.table.currentRow()
+        if n < 0:
+            QMessageBox.information(self, "元に戻す", "元に戻す操作を選んでください。")
+            return
+        r = self.rows[n]
+        if r["action"] == "undo":
+            QMessageBox.information(self, "元に戻す", "「元に戻す」の記録です。戻した操作のほうを選んでください。")
+            return
+        if r["undone"] and QMessageBox.question(self, "元に戻す", "この操作は元に戻し済みです。もう一度戻しますか？"
+                                                ) != QMessageBox.StandardButton.Yes:
+            return
+        try:
+            plan = file_moves.undo_plan(r["path"])
+        except Exception as e:
+            QMessageBox.warning(self, "元に戻す", f"戻せません:\n{e}")
+            return
+        sample = "\n".join(f"  {Path(o['source']).name} → {Path(o['target']).parent}" for o in plan["operations"][:15])
+        more = f"\n  …ほか {len(plan['operations']) - 15} 件" if len(plan["operations"]) > 15 else ""
+        if QMessageBox.question(self, "元に戻す", f"{r['time']}  {JOURNAL_ACTIONS.get(r['action'], r['action'])}\n"
+                                f"{r['folder']}\n\n{len(plan['operations'])} ファイルを元の場所へ戻します。\n\n{sample}{more}\n\n"
+                                "実行しますか？") != QMessageBox.StandardButton.Yes:
+            return
+        self.b_undo.setEnabled(False)
+        self.b_undo.setText("戻しています…")
+
+        def job(log, progress):
+            try:
+                file_moves.execute_moves(plan, Path(r["path"]).parent)
+                return []
+            except Exception as e:
+                return [str(e)]
+
+        def done(errors):
+            self.b_undo.setEnabled(True)
+            self.b_undo.setText("元に戻す…")
+            if errors:
+                QMessageBox.warning(self, "元に戻す", f"途中で止まりました:\n{errors[0]}")
+            self.fill()
+        self.thread, self.worker = QThread(), Worker(job)
+        self.worker.moveToThread(self.thread)
+        self.thread.started.connect(self.worker.run)
+        self.worker.finished.connect(done)
+        self.worker.finished.connect(self.thread.quit)
+        self.thread.start()
+
+
 class ServerAnalPage(QWidget):
     db_changed = pyqtSignal()
     samples_done = pyqtSignal(list)
@@ -1358,6 +1507,15 @@ class ServerAnalPage(QWidget):
                           "ANAL\\.整理履歴 へ移し（元に戻せます）、T の生データをすべて解析し直せる状態にします")
         b_redo.clicked.connect(self.redo_selected)
         row.addWidget(b_redo)
+        b_archive = QPushButton("解析済み T → T/stocked…")
+        b_archive.setToolTip("チェックしたサンプルの、解析済みの生データを T/stocked へ退避します（ファイル管理の「Data 退避」と同じ）。"
+                             "未解析・欠番は T に残します")
+        b_archive.clicked.connect(self.archive_t)
+        row.addWidget(b_archive)
+        b_hist = QPushButton("整理の履歴…")
+        b_hist.setToolTip("こことファイル管理アプリで行った移動・削除の記録を一覧にし、選んだ操作を元に戻します")
+        b_hist.clicked.connect(self.show_journals)
+        row.addWidget(b_hist)
         bl.addLayout(row)
         self.issue_table = QTableWidget(0, len(self.ISSUE_COLS))
         self.issue_table.setHorizontalHeaderLabels(self.ISSUE_COLS)
@@ -1369,6 +1527,67 @@ class ServerAnalPage(QWidget):
         bl.addWidget(self.issue_table, 1)
         self.issues = []  # [(row, issue)]
         return box
+
+    def show_journals(self):
+        JournalDialog(self, ("ANAL", "T_stock")).exec()
+
+    def archive_t(self):
+        """Analysed raw files of the checked samples: T -> T/stocked (what the file manager's Data 退避 tab did)."""
+        rows = [r for r in self.selected() if r["reachable"]]
+        if not rows:
+            QMessageBox.information(self, "T → T/stocked", "退避するサンプルにチェックを入れてください。")
+            return
+        if self.running_now():
+            return
+        box = QMessageBox(self)
+        box.setWindowTitle("T → T/stocked")
+        box.setText(f"{len(rows)} サンプルの、解析済み（ANAL に同じ番号の空でない A@@ がある）生データを T/stocked へ移す"
+                    "予定を作ります。未解析・欠番の生データは T に残します。")
+        keep = QCheckBox("最後の解析番号は T に残す（書きかけ対策）")
+        keep.setChecked(True)
+        box.setCheckBox(keep)
+        box.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+        if box.exec() != QMessageBox.StandardButton.Ok:
+            return
+        keep_last = keep.isChecked()
+
+        def plan(log, progress):
+            out = []
+            for i, r in enumerate(rows):
+                progress(int(100 * i / len(rows)), f"退避の予定 {r['sample']}")
+                try:
+                    p, skipped = t_stock.plan_moves(t_stock.scan_t(server_anal.t_dir(r)), False, keep_last)
+                    out.append((r, p, skipped, ""))
+                except Exception as e:
+                    out.append((r, None, [], str(e)))
+            return out
+
+        def confirm(plans):
+            todo = [(r, p) for r, p, _, err in plans if p and p["operations"]]
+            files = lambda p: len({Path(o["source"]).stem for o in p["operations"]})
+            lines = [f"・{r['experiment']} / {r['sample']}: " + (f"エラー {err}" if err else
+                     f"{files(p)} 件を退避" + (f"、残す {len(skipped)} 件" if skipped else ""))
+                     for r, p, skipped, err in plans]
+            if not todo:
+                QMessageBox.information(self, "T → T/stocked", "退避するファイルはありません。\n\n" + "\n".join(lines[:30]))
+                return
+            if QMessageBox.question(self, "T → T/stocked", "\n".join(lines[:30]) + "\n\n実行しますか？（記録が残り、"
+                                    "「整理の履歴…」から元に戻せます）") != QMessageBox.StandardButton.Yes:
+                return
+            db_path = self.db.text().strip() if self.update_db.isChecked() else None
+
+            def job(log, progress, cancelled=lambda: False):
+                for r, p in todo:
+                    try:
+                        journal = server_anal.execute_restore(p)
+                        log(f"■ {r['experiment']} / {r['sample']}: T → T/stocked {files(p)} 件（記録 {journal}）")
+                        if db_path:
+                            server_anal.refresh_db(db_path, r)
+                    except Exception as e:
+                        log(f"✖ {r['experiment']} / {r['sample']}: {e}")
+                return []
+            self.run.start(job, lambda _: self.actions_done([r for r, _ in todo]))
+        self.background(plan, confirm)
 
     def check_folders(self):
         """Survey the checked samples on the server (nothing is changed)."""

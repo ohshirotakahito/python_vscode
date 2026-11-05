@@ -566,15 +566,10 @@ class App(tk.Tk):
         self.tabs.pack(fill='x', padx=12)
         self.copy_tab()
         self.sample_rename_tab()
-        from filemanager.anal_manager import AnalPanel
+        # ANAL と Data（T ⇄ T/stocked）の整理は、シグナル解析の ANAL（サーバー）の「現状」と「整理の履歴…」へ移した
         from filemanager.bnal_manager import BnalPanel
-        self.anal_panel = AnalPanel(self)
-        self.tabs.add(self.anal_panel, text='ANAL 重複・退避・復帰整理')
         self.bnal_panel = BnalPanel(self)
         self.tabs.add(self.bnal_panel, text='BNAL 重複・退避・復帰整理')
-        from filemanager.t_stock_manager import TStockPanel
-        self.t_stock_panel = TStockPanel(self)
-        self.tabs.add(self.t_stock_panel, text='Data 退避・退避整理')
         self.rename_tab()
         self.folder_tab()
         status = ttk.Frame(self, padding=12)

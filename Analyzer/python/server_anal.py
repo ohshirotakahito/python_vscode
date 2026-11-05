@@ -175,9 +175,9 @@ def restore_plan(r):
     return plan, skipped, t_stock.describe(plan)
 
 
-def execute_restore(plan, log_dir=T_STOCK_LOGS):
+def execute_restore(plan, log_dir=None):
     """Move the files; the journal is written to the file manager's t_stock_logs (undo from its history)."""
-    return file_moves.execute_moves(plan, log_dir)
+    return file_moves.execute_moves(plan, log_dir or T_STOCK_LOGS)
 
 
 # ANAL/stocked -> ANAL (journal in the file manager's anal_logs, as its ANAL tab writes)
