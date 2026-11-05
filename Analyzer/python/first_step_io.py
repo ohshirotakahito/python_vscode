@@ -261,9 +261,11 @@ class StringChannel(ChannelObject):
         return types.String
 
 
-def write_tdms(path, raw, str_tables, an_time):
+def write_tdms(path, raw, str_tables, an_time, cond=None):
+    # the condition set (Analyzer/conditions) is kept with the result; its values are in the AC Table
     root = RootObject({"name": an_time.strftime("%Y_%m%d_%H_%M_%S.") + f"{an_time.microsecond // 1000:03d}",
-                       **operator_properties("ANAL ")})
+                       **operator_properties("ANAL "),
+                       "ANAL Condition Set": (cond or {}).get("condition_set", "")})
     objs = [root, GroupObject("Data"), ChannelObject("Data", "Ch1", np.asarray(raw, dtype=np.float64)),
             GroupObject("Table Tag")]
     order = ["S Table", "R Table", "B Table", "AR Table", "AC Table"]
@@ -293,7 +295,7 @@ def process_file(raw_path, out_dir=None, cond=None, csv=False, progress=None, fo
     # write under a temporary name so an interrupted run never leaves a half-written A@@ .tdms
     part = out.with_name(out.name + ".part")
     try:
-        write_tdms(part, raw, str_tables, an_time)
+        write_tdms(part, raw, str_tables, an_time, cond)
     except BaseException:
         if os.path.exists(long_path(part)):
             os.remove(long_path(part))

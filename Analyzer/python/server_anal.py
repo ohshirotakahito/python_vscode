@@ -31,10 +31,9 @@ from shared import catalog, file_moves, progress, rack_store, t_stock  # noqa: E
 DEFAULT_DB = catalog.DEFAULT_DB
 LOG_CSV = Path(__file__).resolve().parent.parent / "logs" / "anal_runs.csv"
 
-# '#NNN' is read exactly as the database / file manager do (shared.rack_store.measurement_key);
-# only the fallback for names without a number differs (original_key / anal_key pair T and ANAL names).
+# the measurement of a T / ANAL / BNAL file is read exactly as the database / file manager do
+# (shared.rack_store.measurement_key), so the progress here and there always agrees
 SAMPLE_NUMBER, NUMBER = rack_store.SAMPLE_NUMBER, rack_store.NUMBER
-A_PREFIX = re.compile(r"^A@@\d{4}_\d{4}_\d{4}_\d{2}_")
 
 TODO, RUNNING, DONE, COPY, EMPTY = "未着手", "進行中", "完了", "解析用コピー", "対象なし"
 EXCESS, UNKNOWN = "超過", "確認不可"  # ANAL が元より多い（要確認）/ T が未調査（DB の更新が必要）
@@ -96,13 +95,13 @@ def t_dir(r):
 
 
 def original_key(name):
-    m = SAMPLE_NUMBER.search(name) or NUMBER.search(name)
-    return int(m[1]) if m else Path(name).stem.split(" ")[0]
+    """Measurement of a T file: '#NNN' (int), or '<first word>' such as 'ABex1T01#001' (str)."""
+    return rack_store.measurement_key(name)
 
 
 def anal_key(name):
-    m = SAMPLE_NUMBER.search(name) or NUMBER.search(name)
-    return int(m[1]) if m else A_PREFIX.sub("", Path(name).stem)
+    """Measurement of an A@@ / B@@ file, the same key as its original in T."""
+    return rack_store.measurement_key(name)
 
 
 def _tdms(folder):

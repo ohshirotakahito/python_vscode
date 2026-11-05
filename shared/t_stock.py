@@ -6,7 +6,7 @@ T のファイルは ANAL か ANAL/stocked に同じ測定番号（rack_store.me
 import os
 from pathlib import Path
 
-from shared.rack_store import measurement_key
+from shared.rack_store import as_numbers, measurement_key
 
 
 SUFFIXES = ('.tdms', '.tdms_index')
@@ -28,18 +28,18 @@ def _groups(folder, orphans=False):
             if any(p.suffix.lower() == '.tdms' for p in files) != orphans}
 
 
-def _anal_numbers(t):
-    numbers = set()
+def _anal_keys(t):
+    keys = set()
     for folder in (t / 'ANAL', t / 'ANAL' / 'stocked'):
         if not folder.is_dir():
             continue
         for path in folder.iterdir():
             key = measurement_key(path.name)
             # A zero-byte ANAL file is an interrupted write, not a finished analysis.
-            if (isinstance(key, int) and path.suffix.lower() == '.tdms' and path.is_file()
+            if (path.suffix.lower() == '.tdms' and path.is_file()
                     and not path.is_symlink() and path.stat().st_size > 0):
-                numbers.add(key)
-    return numbers
+                keys.add(key)
+    return keys
 
 
 def scan_t(t):
@@ -47,20 +47,25 @@ def scan_t(t):
     t = Path(t)
     if not t.is_dir():
         raise ValueError(f'Tフォルダが見つかりません: {t}')
-    analysed = _anal_numbers(t)
+    anal_keys = _anal_keys(t)
+    groups = [(location, stem, paths, next(p for p in paths if p.suffix.lower() == '.tdms'))
+              for folder, location in ((t, 'T'), (t / 'stocked', 'T/stocked'))
+              for stem, paths in sorted(_groups(folder).items())]
+    # only '#NNN' numbers are moved: 'prefix#NNN' too when the sample has that one numbering (rack_store.as_numbers)
+    anal_number = as_numbers(anal_keys)
+    t_number = as_numbers(measurement_key(main.name) for *_, main in groups)
+    analysed = {anal_number[k] for k in anal_keys if isinstance(anal_number[k], int)}
     files = []
-    for folder, location in ((t, 'T'), (t / 'stocked', 'T/stocked')):
-        for stem, paths in sorted(_groups(folder).items()):
-            main = next(p for p in paths if p.suffix.lower() == '.tdms')
-            key = measurement_key(main.name)
-            number = key if isinstance(key, int) else None
-            files.append(dict(location=location, stem=stem, number=number,
-                              analysed=number is not None and number in analysed,
-                              name=main.name, extra=sorted(p.name for p in paths if p != main),
-                              size=sum(p.stat().st_size for p in paths),
-                              modified_ns=main.stat().st_mtime_ns,
-                              paths=[dict(path=str(p.absolute()), size=p.stat().st_size,
-                                          modified_ns=p.stat().st_mtime_ns) for p in sorted(paths)]))
+    for location, stem, paths, main in groups:
+        key = t_number[measurement_key(main.name)]
+        number = key if isinstance(key, int) else None
+        files.append(dict(location=location, stem=stem, number=number,
+                          analysed=number is not None and number in analysed,
+                          name=main.name, extra=sorted(p.name for p in paths if p != main),
+                          size=sum(p.stat().st_size for p in paths),
+                          modified_ns=main.stat().st_mtime_ns,
+                          paths=[dict(path=str(p.absolute()), size=p.stat().st_size,
+                                      modified_ns=p.stat().st_mtime_ns) for p in sorted(paths)]))
     orphans = [dict(location=location, stem=stem, name=paths[0].name,
                     paths=[dict(path=str(p.absolute()), size=p.stat().st_size, modified_ns=p.stat().st_mtime_ns)
                            for p in sorted(paths)])

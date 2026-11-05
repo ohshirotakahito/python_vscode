@@ -17,6 +17,20 @@ class SharedRulesTests(unittest.TestCase):
             self.assertEqual(server_anal.original_key(name), rack_store.measurement_key(name))
             self.assertEqual(server_anal.anal_key(name), rack_store.measurement_key(name))
 
+    def test_one_measurement_one_key_across_name_styles(self):
+        key = rack_store.measurement_key
+        # LabVIEW ANAL keeps the full original name, the Python ANAL its first word: the same measurement
+        raw = "L3D1tryptophan#013 D_20191121_0824 TOAN#1Pex1n1_LD-tryptophan_EXSV#1_x_DV_.tdms"
+        self.assertEqual({key(raw), key("A@@2019_1121_1806_02_" + raw), key("A@@2026_1030_2138_47_L3D1tryptophan#013.tdms")},
+                         {"L3D1tryptophan#013"})
+        # series numbered again from #001 stay apart
+        self.assertNotEqual(key("A@@2026_1104_1250_36_ABex1T01#001.tdms"), key("ABex1T02#001 20131105_x_001.lvm.tdms"))
+        self.assertEqual(key("A@@2026_1104_1250_36_ABex1T01#001.tdms"), key("ABex1T01#001 20131105_x_001.lvm.tdms"))
+        # the usual sample numbering stays a number, for A@@ and B@@ alike
+        self.assertEqual({key("KSN3_10k_Sample#007 D_x UNAN#2Pex1n2_EXSV#10_x.tdms"),
+                          key("A@@2026_0902_0701_00_KSN3_10k_Sample#007.tdms"),
+                          key("B@@2026_0902_0735_KSN3_10k_Sample#007.tdms")}, {7})
+
     def test_roots_and_db_are_the_shared_ones(self):
         self.assertEqual(server_anal.identity(r"\\QTserver\analysis" + "\\"), catalog.root_identity(r"\\qtserver\Analysis"))
         self.assertEqual(Path(server_anal.DEFAULT_DB), REPO_ROOT / "database" / "inventory.sqlite3")

@@ -37,6 +37,9 @@
      `ALTER TABLE ... ADD COLUMN` によって行い、古いDBもそのまま開けるようにする。列の削除・意味の変更はしない。
    - `root` は `catalog.root_identity()`（大文字小文字・区切り文字を揃えた形）で比べる。
    - 測定番号は `rack_store.measurement_key()` だけで数える（ANAL 進捗・Data 退避・BNAL 退避で同じ規則）。
+     `_Sample#NNN` は番号 NNN、それ以外は名前の最初の語（`ABex1T01#001`。A@@/B@@ の日時は除く）で、
+     LabVIEW の長い A@@ 名と Python の短い A@@ 名が同じ測定になる。再開地点・欠番・退避で番号として扱うのは
+     `rack_store.as_numbers()` が数字にしたものだけ（T 側・ANAL 側それぞれで系列が1つのとき）。
    - 「解析が済んだか・まだ必要か」の判定は `progress.py` だけで行う。アプリごとに別の式を書かない。
      数えていない値（None）は 0 とみなさず「確認不可」「未計数」として残し、異常（超過・ANALなし など）は隠さない。
      判定を変えたら `shared/test_progress.py` と各アプリのテストを実行し、実際の DB で変わる件数を確認する。

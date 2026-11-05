@@ -20,7 +20,7 @@ from filemanager.anal_manager import (execute_moves, journal_dir, matches_invent
 
 # T ⇄ T/stocked の計画は shared/t_stock.py（Analyzer と共有）。
 from shared.t_stock import (  # noqa: F401
-    SUFFIXES, _groups, _anal_numbers, scan_t, summary, plan_moves, pair_up, describe,
+    SUFFIXES, _groups, _anal_keys, scan_t, summary, plan_moves, pair_up, describe,
 )
 
 

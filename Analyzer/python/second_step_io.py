@@ -124,7 +124,8 @@ def write_b_file(path, a_path, results, c, anal_seconds):
     tag_order = ["S Table", "R Table", "B Table", "AR Table", "AC Table", "BC Table", "LSP Table",
                  "LCP Table", "LTP Table", "BS Table", "LAP Table", "LL Table", "BR Table"]
     all_tables = {**first, **tables}
-    objs = [RootObject({**dict(a.properties), **first_step_io.operator_properties("BNAL ")}), GroupObject("Data"),
+    objs = [RootObject({**dict(a.properties), **first_step_io.operator_properties("BNAL "),
+                        "BNAL Condition Set": c.get("condition_set", "")}), GroupObject("Data"),
             ChannelObject("Data", "Ch1", np.array([], dtype=np.float64)), GroupObject("Table Tag")]
     # column names of the copied 1st step tables come from the A@@ Table Tag (a table without rows has no channels)
     a_tags = {c.name: list(c[:]) for c in a["Table Tag"].channels()} if "Table Tag" in a else {}

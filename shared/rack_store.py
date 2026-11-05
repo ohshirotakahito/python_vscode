@@ -70,8 +70,11 @@ def sample_counts(target, cancel, bnal_paths=None):
                 anal_stocked = entry.path
     t_stocked_keys = None if t_stocked is None else tdms_keys(t_stocked, cancel)
     anal_stocked_keys = None if anal_stocked is None else tdms_keys(anal_stocked, cancel)
+    originals = t_keys + (t_stocked_keys or [])
     analysed = (anal_numbers or set()) | set(anal_stocked_keys or [])
-    resume, missing = missing_numbers(t_keys + (t_stocked_keys or []), analysed)
+    t_number, anal_number = as_numbers(originals), as_numbers(analysed)
+    originals, analysed = [t_number[k] for k in originals], {anal_number[k] for k in analysed}
+    resume, missing = missing_numbers(originals, analysed)
     last = max((key for key in analysed if isinstance(key, int)), default=None)
     return dict(t_tdms=tdms, anal_tdms=anal_tdms, bnal_folders=bnals, t_bytes=t_bytes, anal_bytes=anal_bytes,
                 t_stocked_tdms=None if t_stocked_keys is None else len(t_stocked_keys),
@@ -86,9 +89,42 @@ NUMBER = re.compile(r'#(\d+)\.tdms$', re.I)
 SAMPLE_NUMBER = re.compile(r'_Sample#(\d+)', re.I)
 
 
+# analysis results start with the run time: 'A@@2026_0902_0701_00_', 'B@@2026_0902_0735_' (result folder '...@')
+RUN_STAMP = re.compile(r'^[AB]@@?(?:\d{4}_\d{4}_\d{4}(?:_\d{2})?[_@])?', re.I)
+HEAD_NUMBER = re.compile(r'(.*?)#(\d+)')
+SERIES_KEY = re.compile(r'(.+)#(\d{3,})')
+
+
 def measurement_key(name):
-    match = SAMPLE_NUMBER.search(name) or NUMBER.search(name)
-    return int(match[1]) if match else name
+    """The measurement a T / ANAL / BNAL file belongs to.
+
+    '<sample>_10k_Sample#NNN' -> NNN (int). Other originals are told apart by their first word, which the Python
+    ANAL keeps as its name and LabVIEW keeps at the start of the full original name:
+    'ABex1T01#001 2013..._001.lvm.tdms', 'A@@2019_0219_1524_52_ABex1T01#001 2013....tdms' and
+    'A@@2026_1104_1250_36_ABex1T01#001.tdms' -> 'ABex1T01#001' (str; ABex1T02#001 is another measurement)."""
+    match = SAMPLE_NUMBER.search(name)
+    if match:
+        return int(match[1])
+    base = RUN_STAMP.sub('', name)
+    if base.lower().endswith('.tdms'):
+        base = base[:-len('.tdms')]
+    head = base.split(' ')[0]
+    match = HEAD_NUMBER.fullmatch(head)
+    if match:
+        return f'{match[1]}#{int(match[2]):03d}' if match[1] else int(match[2])
+    return head
+
+
+def as_numbers(keys):
+    """{key: '#NNN' number or the key} for the measurement keys of one folder side (T + T/stocked, or ANAL +
+    ANAL/stocked). 'prefix#NNN' keys count as numbers when that side has the one numbering only, so the resume
+    point, gaps and T -> stocked work as for '_Sample#NNN' (also when T was renamed after the analysis); with
+    several prefixes ('ABex1T01#001', 'ABex1T02#001') a number alone would not tell them apart."""
+    keys = set(keys)
+    series = {m[1] for k in keys if isinstance(k, str) and (m := SERIES_KEY.fullmatch(k))}
+    one = len(series) == 1 and not any(isinstance(k, int) for k in keys)
+    return {k: int(SERIES_KEY.fullmatch(k)[2]) if one and isinstance(k, str) and SERIES_KEY.fullmatch(k) else k
+            for k in keys}
 
 
 def tdms_keys(folder, cancel):

@@ -28,7 +28,7 @@ from PyQt6.QtCore import QObject, QSettings, Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QColor, QFont
 from PyQt6.QtWidgets import (
     QAbstractItemView, QApplication, QButtonGroup, QCheckBox, QComboBox, QCompleter, QDialog, QDoubleSpinBox,
-    QFileDialog, QFormLayout, QFrame, QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QLabel,
+    QFileDialog, QFormLayout, QFrame, QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel,
     QLineEdit, QListWidget, QMainWindow, QMessageBox, QPlainTextEdit, QProgressBar, QPushButton,
     QRadioButton, QSizePolicy, QSpinBox, QSplitter, QStackedWidget, QTableWidget, QTableWidgetItem, QTextBrowser,
     QVBoxLayout, QWidget,
@@ -45,6 +45,7 @@ from shared import qt_theme, ui_theme  # noqa: E402
 import first_step_io
 import second_step_io
 import server_anal
+import conditions
 import server_bnal
 import viewer_rows
 from first_step import DEFAULT_CONDITION as FIRST_DEFAULT, long_path
@@ -297,9 +298,9 @@ class FirstStepPage(QWidget):
         gl.addWidget(w)
         top.addWidget(g_files, 3)
 
-        g_cond = QGroupBox("解析条件")
+        g_cond = QGroupBox("解析条件（初期値は ANAL の「現在の条件」）")
         form = QFormLayout(g_cond)
-        c = FIRST_DEFAULT
+        c = {**FIRST_DEFAULT, **conditions.current("anal")["values"]}
         self.point = spin(c["point"], 1, 100000)
         self.cut = spin(c["cut_region"], 1, 100000)
         self.bl = QComboBox()
@@ -730,6 +731,204 @@ def broken_out(t, files, log, report=None):
     return [f for f in files if f.name not in names]
 
 
+# ---------------------------------------------------------------------------
+# analysis condition sets (conditions.py): checked right before every server run
+# ---------------------------------------------------------------------------
+class ConditionDialog(QDialog):
+    """Choose / check the condition set before a run (run=True) or manage the sets (run=False).
+
+    Values can be edited here; edited values are saved as a new dated set (it becomes the current one) or used
+    for this run only. bc_choices (BNAL): {"kind": list kind, "files": [BC files], "selected": file of the page}."""
+
+    def __init__(self, parent, kind, run=True, summary="", bc_choices=None):
+        super().__init__(parent)
+        self.kind, self.bc = kind, bc_choices
+        self.result_set = None
+        self.setWindowTitle(f"解析条件 — {conditions.KINDS[kind]}")
+        self.resize(720, 560)
+        lay = QVBoxLayout(self)
+        if summary:
+            s = QLabel(summary)
+            s.setWordWrap(True)
+            lay.addWidget(s)
+        row = QHBoxLayout()
+        row.addWidget(QLabel("条件セット"))
+        self.box = QComboBox()
+        self.box.setMinimumWidth(360)
+        row.addWidget(self.box, 1)
+        self.b_current = QPushButton("現在の条件にする")
+        self.b_current.setToolTip("選んだ条件セットを、これからの解析で使う「現在の条件」にします（日時を記録）")
+        self.b_current.clicked.connect(self.make_current)
+        row.addWidget(self.b_current)
+        lay.addLayout(row)
+        self.info = QLabel("")
+        self.info.setObjectName("subtitle")
+        self.info.setWordWrap(True)
+        lay.addWidget(self.info)
+
+        fields = conditions.FIELDS[kind] + ([("bc_file", f"BC ファイル（{bc_choices['kind']}）", str,
+                                              bc_choices["files"])] if bc_choices else [])
+        self.table = QTableWidget(len(fields), 3)
+        self.table.setHorizontalHeaderLabels(["項目", "この解析で使う値", "既定値"])
+        self.table.verticalHeader().setVisible(False)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.editors = {}
+        defaults = conditions.DEFAULT_VALUES[kind]
+        for i, (key, label, typ, spec) in enumerate(fields):
+            self.table.setItem(i, 0, QTableWidgetItem(label))
+            if typ is str:
+                w = QComboBox()
+                w.addItems(list(spec))
+                w.currentTextChanged.connect(self.edited)
+            else:
+                w = spin(0, spec[0], spec[1], 1 if typ is int else 0.5, None if typ is int else 2)
+                w.valueChanged.connect(self.edited)
+            self.editors[key] = w
+            self.table.setCellWidget(i, 1, w)
+            d = defaults.get(key, "（ページの選択）" if key == "bc_file" else "")
+            self.table.setItem(i, 2, QTableWidgetItem(str(d)))
+        lay.addWidget(self.table, 1)
+        self.diff = QLabel("")
+        self.diff.setWordWrap(True)
+        lay.addWidget(self.diff)
+
+        buttons = QHBoxLayout()
+        b_save = QPushButton("新しい条件セットとして保存…")
+        b_save.setToolTip("表の値を、今日の日付の新しい条件セットとして保存し「現在の条件」にします")
+        b_save.clicked.connect(self.save_new)
+        buttons.addWidget(b_save)
+        buttons.addStretch()
+        b_cancel = QPushButton("キャンセル" if run else "閉じる")
+        b_cancel.clicked.connect(self.reject)
+        buttons.addWidget(b_cancel)
+        if run:
+            b_run = QPushButton("この条件で実行")
+            b_run.setObjectName("primary")
+            b_run.setDefault(True)
+            b_run.clicked.connect(self.run_now)
+            buttons.addWidget(b_run)
+        lay.addLayout(buttons)
+        self.box.currentIndexChanged.connect(self.show_set)
+        self.fill_sets(conditions.current(kind)["name"])
+
+    def fill_sets(self, select):
+        cur = conditions.current(self.kind)["name"]
+        self.box.blockSignals(True)
+        self.box.clear()
+        for s in conditions.sets(self.kind):
+            self.box.addItem(conditions.describe(self.kind, s) + ("　★現在" if s["name"] == cur else ""), s["name"])
+        names = [self.box.itemData(i) for i in range(self.box.count())]
+        self.box.setCurrentIndex(names.index(select) if select in names else 0)
+        self.box.blockSignals(False)
+        self.show_set()
+
+    def chosen(self):
+        return conditions.find(self.kind, self.box.currentData()) or conditions.default_set(self.kind)
+
+    def bc_of(self, s):
+        return (s["values"].get("bc_files") or {}).get(self.bc["kind"]) or self.bc["selected"] if self.bc else None
+
+    def show_set(self, *_):
+        s = self.chosen()
+        self.loading = True
+        for key, w in self.editors.items():
+            v = self.bc_of(s) if key == "bc_file" else s["values"].get(key, conditions.DEFAULT_VALUES[self.kind][key])
+            if isinstance(w, QComboBox):
+                w.setCurrentText(str(v))
+            else:
+                w.setValue(v)
+        self.loading = False
+        cur = conditions.current(self.kind)["name"]
+        self.b_current.setEnabled(s["name"] != cur)
+        self.info.setText(" / ".join(x for x in (
+            "★ 現在の条件" if s["name"] == cur else "（現在の条件ではありません）",
+            f"{s['since']} から使用" if s.get("since") else "", f"作成 {s['operator']}" if s.get("operator") else "",
+            s.get("note", "")) if x))
+        self.edited()
+
+    def values(self):
+        out = {}
+        for key, _, typ, _ in conditions.FIELDS[self.kind]:
+            w = self.editors[key]
+            v = w.currentText() if isinstance(w, QComboBox) else w.value()
+            out[key] = int(v) if typ is int else v
+        if self.bc:
+            out["bc_files"] = {**(self.chosen()["values"].get("bc_files") or {}),
+                               self.bc["kind"]: self.editors["bc_file"].currentText()}
+        return out
+
+    def changed(self):
+        """Edited away from the chosen set (the BC file counts when the set names one, or differs from the page)."""
+        s, v = self.chosen(), self.values()
+        keys = [k for k, *_ in conditions.FIELDS[self.kind]]
+        return (any(v[k] != s["values"].get(k) for k in keys)
+                or bool(self.bc) and v["bc_files"][self.bc["kind"]] != self.bc_of(s))
+
+    def edited(self, *_):
+        if getattr(self, "loading", False):
+            return
+        v = self.values()
+        diffs = conditions.differences(self.kind, v)
+        defaults = conditions.DEFAULT_VALUES[self.kind]
+        for i, (key, *_) in enumerate(conditions.FIELDS[self.kind]):
+            item = self.table.item(i, 0)
+            item.setForeground(QColor(WARNING if v[key] != defaults[key] else TEXT))
+        labels = {k: label for k, label, *_ in conditions.FIELDS[self.kind]}
+        text = ("既定値と違う項目: " + "、".join(f"{labels[k]} = {a}（既定 {b}）" for k, a, b in diffs)
+                if diffs else "すべて既定値です。")
+        if self.changed():
+            text += f"<br><span style='color:{DANGER}'>選んだ条件セットから値を変更しています（未保存）。</span>"
+        self.diff.setText(text)
+
+    def make_current(self):
+        conditions.set_current(self.kind, self.chosen()["name"])
+        self.fill_sets(self.chosen()["name"])
+
+    def save_new(self):
+        name, ok = QInputDialog.getText(self, "新しい条件セット", f"名前（使い始める日 {datetime.now():%Y-%m-%d} を記録します）:",
+                                        text=f"{datetime.now():%Y-%m-%d} 条件")
+        if not ok:
+            return False
+        note, ok = QInputDialog.getText(self, "新しい条件セット", "メモ（変更の理由など）:")
+        if not ok:
+            return False
+        try:
+            s = conditions.add_set(self.kind, name, self.values(), note)
+        except ValueError as e:
+            QMessageBox.warning(self, "条件セット", str(e))
+            return False
+        self.fill_sets(s["name"])
+        return True
+
+    def run_now(self):
+        if self.changed():
+            box = QMessageBox(self)
+            box.setWindowTitle("解析条件")
+            box.setText("選んだ条件セットから値を変更しています。")
+            b_save = box.addButton("保存して実行", QMessageBox.ButtonRole.AcceptRole)
+            b_once = box.addButton("保存せず今回だけ使う", QMessageBox.ButtonRole.DestructiveRole)
+            box.addButton("戻る", QMessageBox.ButtonRole.RejectRole)
+            box.exec()
+            if box.clickedButton() is b_save:
+                if not self.save_new():
+                    return
+            elif box.clickedButton() is b_once:
+                self.result_set = {"name": f"{self.chosen()['name']}（今回だけ変更）", "values": self.values()}
+                self.accept()
+                return
+            else:
+                return
+        self.result_set = {"name": self.chosen()["name"], "values": self.values()}
+        self.accept()
+
+
+def ask_condition(parent, kind, summary="", bc_choices=None):
+    """The condition set (name + values) for a run, or None when cancelled."""
+    d = ConditionDialog(parent, kind, True, summary, bc_choices)
+    return d.result_set if d.exec() == QDialog.DialogCode.Accepted else None
+
+
 class ServerAnalPage(QWidget):
     db_changed = pyqtSignal()
     samples_done = pyqtSignal(list)
@@ -737,11 +936,10 @@ class ServerAnalPage(QWidget):
     COLS = ["グループ", "実験", "サンプル", "T", "T/stocked", "ANAL", "ANAL/stocked", "進捗", "状態",
             "再開#", "注意", "実フォルダ（確認結果）", "DB 取得日時"]
 
-    def __init__(self, open_in_viewer, send_to_queue, condition):
+    def __init__(self, open_in_viewer, send_to_queue):
         super().__init__()
         self.open_in_viewer = open_in_viewer
         self.send_to_queue = send_to_queue
-        self.condition = condition
         self.rows, self.shown, self.checked, self.live = [], [], set(), {}
         self.t_notes = {}  # suspicious T contents found by the live check
         lay = QVBoxLayout(self)
@@ -799,7 +997,8 @@ class ServerAnalPage(QWidget):
 
         sel = QHBoxLayout()
         for text, slot, tip in [
-                ("全部選択", self.select_all, "表示中の未着手・進行中をすべて選択（接続できないグループは除く）"),
+                ("全部選択", self.select_all, "表示中の行をすべて選択（接続できないグループは除く）。"
+                                           "解析するのは各サンプルの T のうち A@@ の無いファイルだけです"),
                 ("全解除", self.clear_selection, ""),
                 ("自動選択", self.auto_select, "表示中の未着手・進行中のうち、接続できるグループで、注意欄（欠番・退避・混在・要更新）が"
                                              "空のものを選択（外した理由はログに表示）"),
@@ -854,9 +1053,14 @@ class ServerAnalPage(QWidget):
         opt.addWidget(self.settle)
         opt.addWidget(QLabel("以内のファイルは測定中（書き込み中）として飛ばす"))
         opt.addStretch()
-        note = QLabel("解析条件は「1st Step（ファイル）」ページの設定を使います")
-        note.setObjectName("subtitle")
-        opt.addWidget(note)
+        self.cond_label = QLabel("")
+        self.cond_label.setObjectName("subtitle")
+        opt.addWidget(self.cond_label)
+        b_cond = QPushButton("解析条件…")
+        b_cond.setToolTip("ANAL の条件セットの確認・追加・「現在の条件」の切り替え（解析の実行前にも確認します）")
+        b_cond.clicked.connect(self.manage_conditions)
+        opt.addWidget(b_cond)
+        self.show_condition()
         lay.addLayout(opt)
 
         auto = QHBoxLayout()
@@ -977,8 +1181,15 @@ class ServerAnalPage(QWidget):
         self.fill()
 
     def select_all(self):
-        self.set_checked(self.checked | {self.key(r) for r in self.shown if r["reachable"]
-                                         and r["state"] in (server_anal.TODO, server_anal.RUNNING)})
+        rows = [r for r in self.shown if r["reachable"]]
+        self.set_checked(self.checked | {self.key(r) for r in rows})
+        states = {}
+        for r in rows:
+            states[r["state"]] = states.get(r["state"], 0) + 1
+        skipped = len(self.shown) - len(rows)
+        self.run.log.appendPlainText(f"全部選択: 表示中 {len(self.shown)} 件のうち {len(rows)} 件を選択（"
+                                     + "、".join(f"{k} {v}" for k, v in states.items()) + "）"
+                                     + (f"。接続できないグループの {skipped} 件は除外" if skipped else ""))
 
     def clear_selection(self):
         self.set_checked(set())
@@ -1255,7 +1466,10 @@ class ServerAnalPage(QWidget):
                 self, "ANAL（サーバー）", f"DB で接続失敗になっているグループのサンプルが {len(down)} 件あります。"
                                          "このまま試しますか？") != QMessageBox.StandardButton.Yes:
             return None
-        cond, folder, settle = self.condition(), self.folder.isChecked(), self.settle.value()
+        chosen = self.ask_condition(f"{len(rows)} サンプルの T 直下にある未解析のファイルを、この条件で解析します。")
+        if not chosen:
+            return None
+        cond, folder, settle = chosen, self.folder.isChecked(), self.settle.value()
         db_path = self.db.text().strip() if self.update_db.isChecked() else None
 
         def refresh(log):
@@ -1323,13 +1537,13 @@ class ServerAnalPage(QWidget):
                     log(f"  ✖ {f.name}\n    {e}")
                     server_anal.log_run(group=r["group"], experiment=r["experiment"], sample=r["sample"],
                                         raw=str(f), out="", seconds=f"{time.perf_counter() - t0:.1f}",
-                                        status="error", error=str(e))
+                                        status="error", error=str(e), condition_set=cond["condition_set"])
                     continue
                 ar = tables["AR Table"].iloc[0]
                 log(f"  ● {out.name}  信号 {int(ar['Signal#Sum'])}  バースト {int(ar['Burst#Sum'])}")
                 server_anal.log_run(group=r["group"], experiment=r["experiment"], sample=r["sample"],
                                     raw=str(f), out=str(out), seconds=f"{time.perf_counter() - t0:.1f}",
-                                    status="ok", error="")
+                                    status="ok", error="", condition_set=cond["condition_set"])
                 outs.append(str(out))
             log(f"完了 {len(outs)} / {len(plan)} ファイル" + (f"　失敗 {len(failed)}" if failed else "")
                 + f"　記録: {server_anal.LOG_CSV}")
@@ -1392,9 +1606,12 @@ class ServerAnalPage(QWidget):
                 + "\n\n中止するとファイルの区切りで止まり、あとから再開できます。始めますか？")
         if QMessageBox.question(self, "全自動着手", text) != QMessageBox.StandardButton.Yes:
             return
+        cond = self.ask_condition(f"全自動着手の {len(rows)} サンプルを、この条件で解析します。")
+        if not cond:
+            return
         state = {"started": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "status": "実行中", "current": None,
                  "report": str(server_anal.Report().path),
-                 "options": {"cond": self.condition(), "folder": self.folder.isChecked(),
+                 "options": {"cond": cond, "folder": self.folder.isChecked(),
                              "settle": self.settle.value(),
                              "db_path": self.db.text().strip() if self.update_db.isChecked() else None},
                  "samples": [{"root": r["root"], "experiment": r["experiment"], "sample": r["sample"],
@@ -1506,7 +1723,8 @@ class ServerAnalPage(QWidget):
                         status, err = "error", str(e)
                     server_anal.log_run(group=s["group"], experiment=s["experiment"], sample=s["sample"], raw=str(f),
                                         out=str(out) if status == "ok" else "",
-                                        seconds=f"{time.perf_counter() - t0:.1f}", status=status, error=err)
+                                        seconds=f"{time.perf_counter() - t0:.1f}", status=status, error=err,
+                                        condition_set=cond.get("condition_set", "（記録なし）"))
                     state["current"] = {"sample": f"{s['experiment']} / {s['sample']}", "file": f.name}
                     server_anal.save_state(state)
                 if db_path:
@@ -1544,6 +1762,20 @@ class ServerAnalPage(QWidget):
             self.auto_changed.emit()
             return outs
         return job
+
+    # -- analysis conditions ----------------------------------------------------
+    def show_condition(self):
+        self.cond_label.setText("解析条件: " + conditions.describe("anal", conditions.current("anal")))
+
+    def manage_conditions(self):
+        ConditionDialog(self, "anal", run=False).exec()
+        self.show_condition()
+
+    def ask_condition(self, summary):
+        """Values of the chosen set with its name (cond["condition_set"]), or None when cancelled."""
+        chosen = ask_condition(self, "anal", summary)
+        self.show_condition()
+        return None if chosen is None else {**chosen["values"], "condition_set": chosen["name"]}
 
     def update_db_now(self):
         rows = self.selected()
@@ -1947,6 +2179,16 @@ class ServerBnalPage(QWidget):
         form.addRow("noise MAX", self.noise)
         form.addRow("Filter P", self.filter_p)
         l3.addLayout(form)
+        cr = QHBoxLayout()
+        self.cond_label = QLabel("")
+        self.cond_label.setObjectName("subtitle")
+        cr.addWidget(self.cond_label, 1)
+        b_cond = QPushButton("解析条件…")
+        b_cond.setToolTip("BNAL の条件セット（BC・Right Read MIN・noise MAX・Filter P）の確認・追加・"
+                          "「現在の条件」の切り替え（解析の実行前にも確認します）")
+        b_cond.clicked.connect(self.manage_conditions)
+        cr.addWidget(b_cond)
+        l3.addLayout(cr)
         self.base_label = QLabel("Base Table（選択中の target）")
         l3.addWidget(self.base_label)
         # Base Table at about half the panel width, the run options beside it
@@ -2012,6 +2254,8 @@ class ServerBnalPage(QWidget):
         self.db_changed.connect(self.reload)
         self.combos_done.connect(self.drop_combos)
         self.fill_dirs()
+        self.apply_condition(conditions.current("bnal")["values"])
+        self.show_condition()
         self.reload()
 
     # -- data -------------------------------------------------------------------
@@ -2413,6 +2657,10 @@ class ServerBnalPage(QWidget):
         if not pairs:
             QMessageBox.information(self, "BNAL（サーバー）", "組み合わせを追加してください。")
             return None
+        chosen = self.ask_condition(f"{len(pairs)} 組（サンプル × target）を、この条件で解析します。"
+                                    "target ごとに Base Table で変えたレベルはそのまま使います。")
+        if not chosen:
+            return None
         bc = self.bc()
         if not bc:
             QMessageBox.warning(self, "BNAL（サーバー）", "BC（電流値）ファイルを読めません。")
@@ -2425,7 +2673,7 @@ class ServerBnalPage(QWidget):
                 continue
             conds[name] = {"sample_name": name, "sample_sequence": seq, "right_read_min": self.rrmin.value(),
                            "noise_max": self.noise.value(), "filter_p": self.filter_p.value(),
-                           "bases": bases, "base_stds": stds}
+                           "bases": bases, "base_stds": stds, "condition_set": chosen}
         if bad:
             QMessageBox.warning(self, "BNAL（サーバー）", f"{self.bc_box.currentText()} に無い文字を含む target は"
                                 "解析しません:\n" + "\n".join(bad[:10]))
@@ -2439,7 +2687,8 @@ class ServerBnalPage(QWidget):
             return None
         db_path = self.db.text().strip() if self.update_db.isChecked() else None
         history = {
-            "conditions": {"list_kind": self.kind_box.currentText(), "target_csv": self.csv_box.currentText(),
+            "conditions": {"condition_set": chosen,
+                           "list_kind": self.kind_box.currentText(), "target_csv": self.csv_box.currentText(),
                            "bc_file": self.bc_box.currentText(), "right_read_min": self.rrmin.value(),
                            "noise_max": self.noise.value(), "filter_p": self.filter_p.value(),
                            "overrides": dict(self.overrides),
@@ -2480,7 +2729,8 @@ class ServerBnalPage(QWidget):
                     log(f"  - {a.name}  （ほかで解析済みのため飛ばします）")
                     continue
                 t0 = time.perf_counter()
-                row = dict(group=r["group"], experiment=r["experiment"], sample=r["sample"], target=name, anal=str(a))
+                row = dict(group=r["group"], experiment=r["experiment"], sample=r["sample"], target=name, anal=str(a),
+                           condition_set=chosen)
                 try:
                     out, res = second_step_io.process_file(
                         a, conds[name], folder, False, make_progress(progress, k, len(plan), f"{name}  {a.name}"))
@@ -2539,6 +2789,36 @@ class ServerBnalPage(QWidget):
     def finished(self, outputs):
         pass
 
+    # -- analysis conditions ----------------------------------------------------
+    def bc_choices(self):
+        return {"kind": self.kind_box.currentText(), "selected": self.bc_box.currentText(),
+                "files": [self.bc_box.itemText(i) for i in range(self.bc_box.count())]}
+
+    def apply_condition(self, values):
+        """Show the values of a condition set in (3) (the BC file of the current list kind when the set has one)."""
+        self.rrmin.setValue(values["right_read_min"])
+        self.noise.setValue(values["noise_max"])
+        self.filter_p.setValue(values["filter_p"])
+        bc = (values.get("bc_files") or {}).get(self.kind_box.currentText())
+        if bc and self.bc_box.findText(bc) >= 0:
+            self.bc_box.setCurrentText(bc)
+
+    def show_condition(self):
+        self.cond_label.setText("解析条件: " + conditions.describe("bnal", conditions.current("bnal")))
+
+    def manage_conditions(self):
+        ConditionDialog(self, "bnal", run=False, bc_choices=self.bc_choices()).exec()
+        self.apply_condition(conditions.current("bnal")["values"])
+        self.show_condition()
+
+    def ask_condition(self, summary):
+        """Name of the chosen set after its values are put into (3), or None when cancelled."""
+        chosen = ask_condition(self, "bnal", summary, self.bc_choices())
+        self.show_condition()
+        if chosen is None:
+            return None
+        self.apply_condition(chosen["values"])
+        return chosen["name"]
 
 # ---------------------------------------------------------------------------
 # queue page
@@ -3673,7 +3953,7 @@ class MainWindow(QMainWindow):
         self.viewer, self.bviewer = ViewerPage("A"), ViewerPage("B")
         self.queue = QueuePage(self.show_result, self.queue_changed)
         first = FirstStepPage(self.show_result, self.queue.add)
-        pages = [("①  ANAL（サーバー）", ServerAnalPage(self.show_result, self.queue.add, first.condition)),
+        pages = [("①  ANAL（サーバー）", ServerAnalPage(self.show_result, self.queue.add)),
                  ("①  1st Step（ファイル）", first),
                  ("②  BNAL（サーバー）", ServerBnalPage(self.show_result, self.queue.add)),
                  ("②  2nd Step（ファイル）", SecondStepPage(self.show_result, self.queue.add)),
