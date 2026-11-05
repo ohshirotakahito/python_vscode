@@ -21,7 +21,8 @@ STATUS_TEXT = dict(unknown='未計数・対象なし', unstarted='未着手', pa
 # ANAL の注意。BLOCKING は「先に片付けが必要」、INFO は参考（DB の ANAL進捗タブの凡例と同じ区分）
 ANAL_FLAGS = dict(欠番='ANAL の途中に抜けがある（最後の #番号より前が未解析）', 退避='ANAL/stocked に退避中',
                   混在='ANAL に同じ #番号がある（世代混在の疑い）', 差異='共有間で T（元ファイル）数が違う',
-                  要更新='再開地点が未取得（Analysis_server で更新）', コピー不足='解析用コピーの ANAL が元より少ない')
+                  要更新='再開地点が未取得（Analysis_server で更新）', コピー不足='解析用コピーの ANAL が元より少ない',
+                  **{'T内A@@': 'T 直下に解析結果（A@@・B@@）がある（T の件数には入れない。ANAL（サーバー）の「現状」で ANAL へ移す）'})
 ANAL_BLOCKING = ('欠番', '退避', '混在')
 ANAL_INFO = ('差異', '要更新', 'コピー不足')
 
@@ -58,6 +59,7 @@ def anal_share(row):
     resume, gaps = resume_point(row)
     cell = dict(total=total, analysed=analysed, resume=resume, gaps=gaps,
                 checked=bool(row.get('anal_missing_checked')), stocked=row.get('anal_stocked_tdms') or 0,
+                results=row.get('t_results_tdms') or 0,
                 mixed=row['anal_tdms'] - row['anal_distinct'] if row.get('anal_distinct') is not None and row.get('anal_tdms') else 0)
     if total is None or (total == 0 and not analysed):
         return dict(cell, status='unknown', ratio=None, remaining=None, state='確認不可' if total is None else '対象なし（T 0件）')
@@ -74,7 +76,7 @@ def anal_share(row):
 
 
 def share_flags(cell):
-    """Flags of one share by itself (欠番・退避・混在・要更新)."""
+    """Flags of one share by itself (欠番・退避・混在・T内A@@・要更新)."""
     flags = []
     if cell['gaps']:
         flags.append('欠番')
@@ -82,6 +84,8 @@ def share_flags(cell):
         flags.append('退避')
     if cell['mixed']:
         flags.append('混在')
+    if cell.get('results'):
+        flags.append('T内A@@')
     if cell['status'] not in DONE_STATES and cell['status'] != 'unknown' and not cell['checked']:
         flags.append('要更新')
     return flags
@@ -100,7 +104,7 @@ def best_share(cells):
 def assess_sample(cells):
     """(best share, flags) of one sample over every share holding it; sets 'coverage' on its analysis copies.
 
-    Flags: 差異 (T counts differ between shares), 欠番 / 要更新 (of the best share), 退避 / 混在 (any share),
+    Flags: 差異 (T counts differ between shares), 欠番 / 要更新 (of the best share), 退避 / 混在 / T内A@@ (any share),
     コピー不足 (an analysis copy holds fewer ANAL than the best share)."""
     best = best_share(cells)
     copies = [c for c in cells if c['status'] == 'copy' and c is not best]
@@ -115,6 +119,8 @@ def assess_sample(cells):
         flags.append('退避')
     if any(c['mixed'] for c in cells):
         flags.append('混在')
+    if any(c.get('results') for c in cells):
+        flags.append('T内A@@')
     if best['status'] not in DONE_STATES and best['status'] != 'unknown' and not best['checked']:
         flags.append('要更新')
     if any(c['coverage'] is not None and c['coverage'] < 1 for c in copies):
