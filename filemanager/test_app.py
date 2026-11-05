@@ -332,7 +332,7 @@ class AppTests(unittest.TestCase):
         window = app.App()
         window.withdraw()
         try:
-            self.assertEqual(len(window.tabs.tabs()), 5)
+            self.assertEqual(len(window.tabs.tabs()), 4)
             fields = window.fields['rename']
             fields['root'].set('C:/fixture')
             fields['old'].set('old')

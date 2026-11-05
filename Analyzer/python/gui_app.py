@@ -30,7 +30,8 @@ from PyQt6.QtWidgets import (
     QAbstractItemView, QApplication, QButtonGroup, QCheckBox, QComboBox, QCompleter, QDialog, QDoubleSpinBox,
     QFileDialog, QFormLayout, QFrame, QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel,
     QLineEdit, QListWidget, QMainWindow, QMessageBox, QPlainTextEdit, QProgressBar, QPushButton,
-    QRadioButton, QSizePolicy, QSpinBox, QSplitter, QStackedWidget, QTableWidget, QTableWidgetItem, QTextBrowser,
+    QRadioButton, QSizePolicy, QSpinBox, QSplitter, QStackedWidget, QTabWidget, QTableWidget, QTableWidgetItem,
+    QTextBrowser,
     QVBoxLayout, QWidget,
 )
 import pyqtgraph as pg
@@ -46,6 +47,7 @@ import first_step_io
 import second_step_io
 import server_anal
 import anal_status
+import bnal_status
 import conditions
 import server_bnal
 import viewer_rows
@@ -942,7 +944,7 @@ JOURNAL_ACTIONS = {"restore": "T/stocked → T", "archive": "T → T/stocked", "
                    "duplicate": "→ duplicate", "results_to_anal": "T の A@@ → ANAL"}
 
 
-def read_journals(kinds=("ANAL", "T_stock"), limit=400):
+def read_journals(kinds=("ANAL", "T_stock", "BNAL"), limit=400):
     """Newest first: [dict(path, kind, time, action, folder, count, status, undone)] of the move journals."""
     from shared import file_moves
     import json
@@ -970,7 +972,7 @@ class JournalDialog(QDialog):
     """Moves made from here and from the file manager, newest first; a chosen one can be undone."""
     COLS = ["日時", "種類", "操作", "対象フォルダ", "移動", "状態"]
 
-    def __init__(self, parent, kinds=("ANAL", "T_stock")):
+    def __init__(self, parent, kinds=("ANAL", "T_stock", "BNAL")):
         super().__init__(parent)
         self.kinds = kinds
         self.setWindowTitle("整理の履歴（移動・削除の記録）")
@@ -1529,7 +1531,7 @@ class ServerAnalPage(QWidget):
         return box
 
     def show_journals(self):
-        JournalDialog(self, ("ANAL", "T_stock")).exec()
+        JournalDialog(self, ("ANAL", "T_stock", "BNAL")).exec()
 
     def archive_t(self):
         """Analysed raw files of the checked samples: T -> T/stocked (what the file manager's Data 退避 tab did)."""
@@ -2550,7 +2552,11 @@ class ServerBnalPage(QWidget):
         top.splitterMoved.connect(lambda *_: settings().setValue("bnal_splitter", top.sizes()))
         lay.addWidget(top, 3)
 
-        # (4) combinations
+        # (4) combinations to analyse, and the current state of the checked samples
+        self.bottom = QTabWidget()
+        combo_box = QWidget()
+        cl = QVBoxLayout(combo_box)
+        cl.setContentsMargins(0, 4, 0, 0)
         st = QHBoxLayout()
         add = QPushButton("↓  チェックしたサンプル × target を組み合わせに追加")
         add.setObjectName("primary")
@@ -2562,9 +2568,12 @@ class ServerBnalPage(QWidget):
         self.b_check = QPushButton("実フォルダを確認")
         self.b_check.clicked.connect(self.check_folders)
         st.addWidget(self.b_check)
-        lay.addLayout(st)
+        cl.addLayout(st)
         self.status = check_table(self.STATUS_COLS)
-        lay.addWidget(self.status, 3)
+        cl.addWidget(self.status, 1)
+        self.bottom.addTab(combo_box, "④ 組み合わせ（解析）")
+        self.bottom.addTab(self.build_state(), "現状（整理）")
+        lay.addWidget(self.bottom, 3)
 
         self.run = RunPanel(self.finished, self.send)
         self.run.button.setText("▶  組み合わせを解析")
@@ -2933,6 +2942,220 @@ class ServerBnalPage(QWidget):
                                   f"　DB 上 BNAL {totals[0]} / {totals[1]} TDMS")
 
     # -- live check -------------------------------------------------------------
+    # -- current state (bnal_status): survey the samples checked in (1), put right what can be ------------
+    B_ISSUE_COLS = ["✓", "グループ", "実験", "サンプル", "target", "内容", "件数", "説明", "手作業・対処"]
+    B_ACTION_ORDER = ["restore_anal", "empty_b", "old_b", "orphan_b"]
+    B_ACTION_TEXT = {"restore_anal": "ANAL に戻す", "empty_b": "削除（元に戻せる）", "old_b": "削除（元に戻せる）",
+                     "orphan_b": "old へ移す"}
+    B_MANUAL = ("renumber", "renumber_anal")
+
+    def build_state(self):
+        box = QWidget()
+        bl = QVBoxLayout(box)
+        bl.setContentsMargins(0, 4, 0, 0)
+        row = QHBoxLayout()
+        self.b_survey = QPushButton("現状を調べる")
+        self.b_survey.setToolTip("① でチェックしたサンプルの ANAL と、T にあるすべての BNAL@ フォルダをサーバーで読みます"
+                                 "（変更はしません）")
+        self.b_survey.clicked.connect(self.survey_samples)
+        row.addWidget(self.b_survey)
+        self.state_label = QLabel("① でサンプルにチェックを入れて「現状を調べる」を押すと、target ごとの整理が必要なものと"
+                                  "未解析を一覧にします")
+        row.addWidget(self.state_label, 1)
+        b_all = QPushButton("対処をすべてチェック")
+        b_all.clicked.connect(lambda: self.check_state(lambda i: bool(i["action"])))
+        row.addWidget(b_all)
+        b_fix = QPushButton("チェックした対処を実行…")
+        b_fix.setObjectName("primary")
+        b_fix.setToolTip("チェックした対処を、実行の直前に調べ直してから行います。移動・削除は記録され、"
+                         "「整理の履歴…」から元に戻せます")
+        b_fix.clicked.connect(self.run_state_actions)
+        row.addWidget(b_fix)
+        b_pending = QPushButton("チェックした未解析を ④ に追加")
+        b_pending.setToolTip("チェックした「未解析の A@@」の行（サンプル × target）を ④ の組み合わせに追加します。"
+                             "配列は ② のリスト、無ければその target の B@@ の BC Table から取ります")
+        b_pending.clicked.connect(self.add_pending)
+        row.addWidget(b_pending)
+        b_hist = QPushButton("整理の履歴…")
+        b_hist.clicked.connect(lambda: JournalDialog(self, ("BNAL", "ANAL", "T_stock")).exec())
+        row.addWidget(b_hist)
+        bl.addLayout(row)
+        self.state_table = QTableWidget(0, len(self.B_ISSUE_COLS))
+        self.state_table.setHorizontalHeaderLabels(self.B_ISSUE_COLS)
+        self.state_table.verticalHeader().setVisible(False)
+        self.state_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.state_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.state_table.setToolTip("行をダブルクリックすると、その BNAL@ フォルダ（target の無い行は T）を開きます")
+        self.state_table.cellDoubleClicked.connect(self.open_state_folder)
+        bl.addWidget(self.state_table, 1)
+        self.state = []  # [(row, issue)]
+        return box
+
+    def survey_samples(self):
+        rows = [r for r in self.samples if self.key(r) in self.checked and r["reachable"]]
+        if not rows:
+            QMessageBox.information(self, "BNAL（サーバー）", "① で調べるサンプルにチェックを入れてください。")
+            return
+        self.b_survey.setEnabled(False)
+        self.b_survey.setText("調査中…")
+
+        def job(log, progress):
+            out = []
+            for i, r in enumerate(rows):
+                progress(int(100 * i / len(rows)), f"現状を調査 {r['sample']}（{i + 1}/{len(rows)}）")
+                try:
+                    out.append((r, bnal_status.survey(server_anal.t_dir(r)), ""))
+                except Exception as e:
+                    out.append((r, [], str(e)))
+            return out
+
+        def done(results):
+            keys = {self.key(r) for r, _, _ in results}
+            self.state = [(r, i) for r, i in self.state if self.key(r) not in keys]
+            for r, issues, err in results:
+                if err:
+                    issues = [dict(kind="error", label="調べられません", target=None, count=0, files=[], detail=err,
+                                   action=None, manual="")]
+                self.state += [(r, i) for i in issues]
+            self.surveyed_b = getattr(self, "surveyed_b", set()) | keys
+            self.b_survey.setEnabled(True)
+            self.b_survey.setText("現状を調べる")
+            self.fill_state()
+            self.bottom.setCurrentIndex(1)
+        self.background(job, done)
+
+    def background(self, job, done):
+        thread, worker = QThread(), Worker(job)
+        worker.moveToThread(thread)
+        thread.started.connect(worker.run)
+        worker.progress.connect(self.run._progress)
+        worker.log.connect(self.run.log.appendPlainText)
+        worker.finished.connect(done)
+        worker.finished.connect(thread.quit)
+        self._bg = [(t, w) for t, w in getattr(self, "_bg", []) if t.isRunning()] + [(thread, worker)]
+        thread.start()
+
+    def fill_state(self):
+        rank = lambda i: 0 if i["kind"] in self.B_MANUAL or i["kind"] == "error" else 1 if i["action"] else \
+            2 if i["kind"] == "pending" else 3
+        shown = sorted(self.state, key=lambda ri: (rank(ri[1]), ri[0]["group"], ri[0]["experiment"], ri[0]["sample"],
+                                                   ri[1]["target"] or ""))
+        self.state_shown = shown
+        tints = {0: ui_theme.row("danger", 0.22), 1: ui_theme.row("warning", 0.18), 2: ui_theme.row("info", 0.16), 3: FIELD}
+        t = self.state_table
+        t.setRowCount(len(shown))
+        for n, (r, i) in enumerate(shown):
+            todo = self.B_ACTION_TEXT.get(i["action"], "") if i["action"] else i["manual"]
+            values = ["", r["group"], r["experiment"], r["sample"], i["target"] or "（サンプル）", i["label"], i["count"],
+                      i["detail"], todo]
+            for c, v in enumerate(values):
+                item = QTableWidgetItem(str(v))
+                item.setBackground(QColor(tints[rank(i)]))
+                if c == 0:
+                    if i["action"] or i["kind"] == "pending":
+                        item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+                        item.setCheckState(Qt.CheckState.Unchecked)
+                    else:
+                        item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
+                if c in (5, 7):
+                    files = "\n".join(Path(f).name for f in i["files"][:30]) + ("\n…" if len(i["files"]) > 30 else "")
+                    item.setToolTip(i["detail"] + (f"\n\n{files}" if files else ""))
+                if c == 5 and rank(i) == 0:
+                    item.setForeground(QColor(DANGER))
+                t.setItem(n, c, item)
+        t.resizeColumnsToContents()
+        count = lambda f: sum(1 for _, i in shown if f(i))
+        self.state_label.setText(
+            f"{len(getattr(self, 'surveyed_b', ()))} サンプルを調査　手作業 {count(lambda i: rank(i) == 0)} 件（赤）・"
+            f"整理できる {count(lambda i: bool(i['action']))} 件（黄）・未解析の組 {count(lambda i: i['kind'] == 'pending')} 件（青）")
+
+    def check_state(self, want):
+        for n, (_, i) in enumerate(self.state_shown):
+            if i["action"] or i["kind"] == "pending":
+                self.state_table.item(n, 0).setCheckState(Qt.CheckState.Checked if want(i) else Qt.CheckState.Unchecked)
+
+    def checked_state(self, want):
+        return [(r, i) for n, (r, i) in enumerate(getattr(self, "state_shown", []))
+                if want(i) and self.state_table.item(n, 0).checkState() == Qt.CheckState.Checked]
+
+    def open_state_folder(self, n, _):
+        import os as _os
+        r, i = self.state_shown[n]
+        folder = server_anal.t_dir(r) / (f"BNAL@{i['target']}" if i["target"] else "")
+        try:
+            _os.startfile(str(folder))
+        except OSError as e:
+            QMessageBox.warning(self, "BNAL（サーバー）", f"フォルダを開けません:\n{e}")
+
+    def run_state_actions(self):
+        picked = self.checked_state(lambda i: bool(i["action"]))
+        if not picked:
+            QMessageBox.information(self, "現状の整理", "一覧で、実行する対処（黄の行）にチェックを入れてください。")
+            return
+        if self.run.thread is not None and self.run.thread.isRunning():
+            QMessageBox.information(self, "現状の整理", "実行中の処理が終わってから操作してください。")
+            return
+        text = "\n".join(f"・{r['sample']} / {i['target'] or 'サンプル'}: {i['label']} {i['count']} 件 → "
+                         f"{self.B_ACTION_TEXT[i['action']]}" for r, i in picked[:25]) + \
+            (f"\n…ほか {len(picked) - 25} 件" if len(picked) > 25 else "")
+        if QMessageBox.question(self, "現状の整理", f"次の対処を行います（実行の直前に調べ直します）。\n\n{text}\n\n"
+                                "移動・削除は記録され、「整理の履歴…」から元に戻せます。実行しますか？"
+                                ) != QMessageBox.StandardButton.Yes:
+            return
+        order = {k: n for n, k in enumerate(self.B_ACTION_ORDER)}
+        picked.sort(key=lambda ri: (self.key(ri[0]), order[ri[1]["action"]], ri[1]["target"] or ""))
+        db_path = self.db.text().strip() if self.update_db.isChecked() else None
+        rows = list({self.key(r): r for r, _ in picked}.values())
+
+        def job(log, progress, cancelled=lambda: False):
+            for n, (r, i) in enumerate(picked):
+                progress(int(100 * n / len(picked)), f"整理 {r['sample']} {i['target'] or ''}")
+                try:
+                    for line in bnal_status.apply(server_anal.t_dir(r), i["target"], i["action"]):
+                        log(f"{r['experiment']} / {r['sample']}: {line}")
+                except Exception as e:
+                    log(f"✖ {r['experiment']} / {r['sample']} {i['target'] or ''}: {e}")
+            for r in rows if db_path else []:
+                try:
+                    server_anal.refresh_db(db_path, r)
+                except Exception as e:
+                    log(f"✖ DB 更新 {r['sample']}: {e}")
+            return []
+
+        def done(_):
+            if db_path:
+                self.db_changed.emit()
+            self.set_samples(self.checked | {self.key(r) for r in rows})
+            self.survey_samples()
+        self.run.start(job, done)
+
+    def add_pending(self):
+        picked = self.checked_state(lambda i: i["kind"] == "pending")
+        if not picked:
+            QMessageBox.information(self, "BNAL（サーバー）", "一覧で「未解析の A@@」の行（青）にチェックを入れてください。")
+            return
+        known = dict(self.targets)
+
+        def job(log, progress):
+            out = []
+            for n, (r, i) in enumerate(picked):
+                progress(int(100 * n / len(picked)), f"配列を確認 {i['target']}")
+                seq = known.get(i["target"]) or bnal_status.sequence_of(server_anal.t_dir(r), i["target"])
+                out.append((r, i["target"], seq))
+            return out
+
+        def done(found):
+            missing = [f"{r['sample']} / {name}" for r, name, seq in found if not seq]
+            for r, name, seq in found:
+                if seq:
+                    self.add_combo(next((x for x in self.samples if self.key(x) == self.key(r)), r), name, seq)
+            self.fill_status()
+            self.bottom.setCurrentIndex(0)
+            if missing:
+                QMessageBox.warning(self, "BNAL（サーバー）", "配列が分からないため追加しなかった組（② で target リストを"
+                                    "読み込んでから追加してください）:\n" + "\n".join(missing[:20]))
+        self.background(job, done)
+
     def check_folders(self):
         combos = list(self.combos)
         if not combos:
