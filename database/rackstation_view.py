@@ -13,8 +13,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # リポジトリ�
 from shared import catalog, progress, ui_theme  # noqa: E402
 try:
     from . import inventory_views
+    from .scan_lock import ScanLock
 except ImportError:
     import inventory_views
+    from scan_lock import ScanLock
 # DB の読み書き・測定番号の規則は shared/rack_store.py（filemanager・Plotting と共有）。
 # この画面と既存の呼び出し側のため、同じ名前でここからも使えるようにしている。
 from shared.rack_store import (  # noqa: E402,F401
@@ -331,6 +333,11 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
             count_bnal = lambda experiment: query in experiment.casefold()  # noqa: E731
         roots = {label: group_views[label]['root'].get() for label in labels}
         servers = {label: group_views[label]['server'] for label in labels}
+        lock = ScanLock('実験ファイルDB（Analysis_server の更新）')
+        if scan_labels and not lock.acquire():
+            messagebox.showinfo('走査中', f'ほかの走査が実行中です。終わってから実行してください。\n{lock.holder()}',
+                                parent=window)
+            return
         shown_roots.update(roots)
         loading = True
         scanning = bool(scan_labels)
@@ -372,6 +379,8 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
                 events.put(('done', None, (rows, saved_states, results)))
             except Exception as exc:
                 events.put(('error', None, str(exc)))
+            finally:
+                lock.release()
 
         threading.Thread(target=worker, daemon=True).start()
 

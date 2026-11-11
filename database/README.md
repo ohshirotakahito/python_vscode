@@ -20,6 +20,23 @@ python database/app.py
 
 Analysis_server は、初回表示・DB再表示・グループ更新の完了時に、全グループの保存済み行を `D:\Qstatus\database\analysis_server_all.csv` に自動保存します（UTF-8 BOM付き）。検索条件には影響されません。「最終取得 UTC」は各行のデータ取得日時、「CSV出力日時 UTC」はCSVを出力した日時です。失敗・中止したグループには以前の取得結果が残る場合があります。CSVは書き込み完了後に置き換え、保存失敗時は画面に理由を表示します。Excelで開いていて置き換えられない場合は、閉じて「DBを再表示」で再保存してください。このパス自体のPC間同期は行いません。
 
+## 台帳の共有（計測PC向け・1時間ごと）
+
+`publish.py` が、保存済みDBから台帳を `D:\Qstatus\database\` に書き出します。計測PCはこのフォルダの同期から、アップロード後の進捗（解析着手・ANAL・BNAL）を確認できます。CSVはすべてUTF-8（BOM付き）で、書き終えてから置き換えます。
+
+| ファイル | 中身 |
+|---|---|
+| `sq_experiments.csv` | SQserver 実験一覧（装置・元の名前・解析着手・TDMS数・区分） |
+| `analysis_server_all.csv` | 解析サーバーのサンプルごとのANAL進捗（Analysis_serverタブと同じ） |
+| `bnal_progress.csv` | BNAL進捗（サンプル台帳で対象、またはBNAL@がある、対象外でないサンプル）。SEQlist未設定のサンプルは実在するBNAL@だけを載せます |
+| `ledger_status.csv` | 各台帳を書いた日時・PC・行数、走査の結果 |
+
+- **手動**: 画面上部の「台帳の共有」→「今すぐ実行（走査＋書き出し）」または「書き出しのみ」。コマンドでは `python database/publish.py`（`--no-scan` で走査なし、`--full` で夜間と同じ走査）。手動実行は自動実行の有効・無効に関係なく動きます。
+- **自動**: 「台帳の共有」で「タスクを登録」（タスク スケジューラに `Qstatus Ledger Publish` を毎時5分で登録）し、「1時間ごとの自動実行を有効にする」をオンにします。オフにするとタスクは起動しても何もしません。設定は `database/publish.json`（このPCだけ、Git管理外）。
+- **走査の範囲**: 毎時は SQserver の Recent_Data と解析サーバー全グループ。`nightly_hour`（既定 3時）の実行では Archived_Data・Stocked_Data と、全実験の BNAL TDMS 数も確認します。
+- **同時実行の防止**: この画面の更新ボタンと publish.py は同じロック（`logs/scan.lock`）を使い、走査は1つずつです。ほかの走査中に自動実行が来たら走査を省き、保存済みDBから書き出します。
+- **記録**: ログは `logs/publish.log`、前回の結果は `logs/publish_status.json`。
+
 ## サーバー・実験ごとの更新と進捗
 
 - **Recent_Data / Archived_Data / Stocked_Data を更新**: SQserverの保存先設定のうち、その段階（backup_01〜08 / data / data_stocked）の共有を順番に更新します。他サーバーは走査しません。
