@@ -1,5 +1,5 @@
 """Last source-folder listing per machine/selection, so a rescan can be skipped."""
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import os
 from pathlib import Path
@@ -7,6 +7,8 @@ from pathlib import Path
 import pc_config
 
 DEFAULT_PATH = pc_config.DEFAULT_DIR / 'source_cache.json'
+STALE_DAYS = 1  # a listing this many days old is shown as a warning
+FORMAT = '%Y/%m/%d %H:%M:%S'
 
 
 def _key(machine, selection):
@@ -35,7 +37,7 @@ def load(machine, selection, path=DEFAULT_PATH):
 def save(machine, selection, root, folders, path=DEFAULT_PATH, now=None):
     path = Path(path)
     data = _read(path)
-    entry = dict(updated=(now or datetime.now()).strftime('%Y/%m/%d %H:%M:%S'), root=str(root),
+    entry = dict(updated=(now or datetime.now()).strftime(FORMAT), root=str(root),
                  folders=[[name, *counts] for name, counts in folders])
     data[_key(machine, selection)] = entry
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -46,3 +48,17 @@ def save(machine, selection, root, folders, path=DEFAULT_PATH, now=None):
     finally:
         temp.unlink(missing_ok=True)
     return entry
+
+
+def age_days(entry, now=None):
+    """Whole days since the listing was taken, or None if the time is unreadable."""
+    try:
+        updated = datetime.strptime(entry['updated'], FORMAT)
+    except (KeyError, TypeError, ValueError):
+        return None
+    return max((now or datetime.now()) - updated, timedelta()).days
+
+
+def is_stale(entry, now=None):
+    days = age_days(entry, now)
+    return days is None or days >= STALE_DAYS

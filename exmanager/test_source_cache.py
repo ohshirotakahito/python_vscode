@@ -28,6 +28,15 @@ class SourceCacheTest(unittest.TestCase):
             source_cache.save('AXN3', 'Recent_Data', 'r', [], path)
             self.assertEqual(source_cache.load('AXN3', 'Recent_Data', path)['folders'], [])
 
+    def test_age_and_staleness(self):
+        entry = {'updated': '2026/10/18 13:27:09'}
+        self.assertEqual(source_cache.age_days(entry, datetime(2026, 10, 18, 20, 0)), 0)
+        self.assertFalse(source_cache.is_stale(entry, datetime(2026, 10, 18, 20, 0)))
+        self.assertEqual(source_cache.age_days(entry, datetime(2026, 11, 5, 9, 0)), 17)
+        self.assertTrue(source_cache.is_stale(entry, datetime(2026, 11, 5, 9, 0)))
+        self.assertIsNone(source_cache.age_days({'updated': '保存失敗: x'}))
+        self.assertTrue(source_cache.is_stale({'updated': '保存失敗: x'}))
+
 
 if __name__ == '__main__':
     unittest.main()

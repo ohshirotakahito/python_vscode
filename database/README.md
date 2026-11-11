@@ -18,6 +18,8 @@ python database/app.py
 
 更新ボタンは常にこのアプリのローカル `inventory.sqlite3` を更新します。別のDBを閲覧中でも配布用DBを更新することはありません。一覧選択からの実験更新はローカルDB表示中のみ利用できます。
 
+Analysis_server は、初回表示・DB再表示・グループ更新の完了時に、全グループの保存済み行を `D:\Qstatus\database\analysis_server_all.csv` に自動保存します（UTF-8 BOM付き）。検索条件には影響されません。「最終取得 UTC」は各行のデータ取得日時、「CSV出力日時 UTC」はCSVを出力した日時です。失敗・中止したグループには以前の取得結果が残る場合があります。CSVは書き込み完了後に置き換え、保存失敗時は画面に理由を表示します。Excelで開いていて置き換えられない場合は、閉じて「DBを再表示」で再保存してください。このパス自体のPC間同期は行いません。
+
 ## サーバー・実験ごとの更新と進捗
 
 - **Recent_Data / Archived_Data / Stocked_Data を更新**: SQserverの保存先設定のうち、その段階（backup_01〜08 / data / data_stocked）の共有を順番に更新します。他サーバーは走査しません。

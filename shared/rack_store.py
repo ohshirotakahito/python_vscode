@@ -13,7 +13,7 @@ import time
 
 from shared import catalog
 
-ANALYSIS_GROUPS = (('Rackstation', 'analysis'), ('Rackstation', 'archive'),
+ANALYSIS_GROUPS = (('Rackstation', 'analysis'), ('Rackstation', 'archive'), ('Rackstation', 'backup'),
                    ('QTserver', 'analysis'), ('QTserver', 'backup'),
                    ('QDserver', 'analysis'), ('QDserver', 'backup'), ('QKserver', 'analysis'))
 
