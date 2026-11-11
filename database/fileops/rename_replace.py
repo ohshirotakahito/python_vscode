@@ -34,7 +34,7 @@ old_string を含むファイル名・フォルダ名をすべて new_string に
 
   2. リネーム履歴のログ保存（本実行時のみ）
      本実行のたびに、変更内容の対応表を
-     filemanager/rename_logs/ 以下にCSVとして保存する
+     database/file_logs/rename_logs/ 以下にCSVとして保存する
      （例: replace_log_20260819_144501.csv）。
      列: old_path, new_path, item_type(file/folder), renamed_at
 
@@ -64,6 +64,7 @@ include_folders = True   # フォルダ名も対象にするか
 
 import csv
 import os
+import sys
 from datetime import datetime
 
 try:
@@ -83,8 +84,10 @@ def now_str():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-# リネーム履歴ログの保存先（このスクリプトと同じ場所の rename_logs/ 配下）
-LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'rename_logs')
+# リネーム履歴ログの保存先（database/file_logs/rename_logs。旧 filemanager/rename_logs の記録はここへ移す）
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))  # リポジトリ直下
+from shared.file_moves import log_dir  # noqa: E402
+LOG_DIR = str(log_dir('rename_logs'))
 
 
 def _new_log_path():
@@ -290,7 +293,7 @@ if False and __name__ == '__main__':
     # 使って以下のように実行する:
     #
     # from rename_replace import undo_from_log
-    # undo_from_log(r"D:\Python_VScode\filemanager\rename_logs\replace_log_20260819_144501.csv")
+    # undo_from_log(r"D:\GitHub\Python_VScode\database\file_logs\rename_logs\replace_log_20260819_144501.csv")
     # ============================================================
 
 
@@ -321,7 +324,7 @@ if __name__ == '__main__':
     # 取り消す場合だけ、本実行で作成されたCSVのフルパスを指定する。
     # 通常の置換では None のままにする。
     UNDO_LOG_PATH = None
-    # UNDO_LOG_PATH = r'D:\GitHub\Python_VScode\filemanager\rename_logs\replace_log_YYYYMMDD_HHMMSS.csv'
+    # UNDO_LOG_PATH = r'D:\GitHub\Python_VScode\database\file_logs\rename_logs\replace_log_YYYYMMDD_HHMMSS.csv'
 
     if UNDO_LOG_PATH is not None:
         print(f"次のログに記録された名前変更を取り消します:\n{UNDO_LOG_PATH}")

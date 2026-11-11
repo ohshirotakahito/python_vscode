@@ -34,15 +34,14 @@ Python_VScode/
 ├── ML_N/                   # 元TDMSからのsignal検出・特徴量保存の新パイプライン(pyproject管理)
 ├── Plotting/               # 配列アセンブリ: BNAL の位置ごとの分布・アセンブリ・q値・修飾率の可視化(python Plotting/app.py)
 ├── Viewer/                 # TDMS波形の可視化・ノイズ推定(python Viewer/view_tdms_signal_tk.py)
-├── database/               # 各サーバーのファイル保存状況をSQLiteで管理(python database/app.py)
+├── database/               # 各サーバーのファイル保存状況をSQLiteで管理・ファイル操作(コピー・リネーム・フォルダ作成)(python database/app.py)
 ├── exmanager/              # 実験データの転送・履歴管理(python exmanager/app.py)
-├── filemanager/            # フォルダ作成・転送・リネーム・ZIP化(python filemanager/app.py)
 ├── shared/                 # アプリ間で共有する部品(テーマ・サーバー選択・DBの窓口など)
 ├── launcher.py             # アプリランチャー(launch_apps.bat から起動)
 └── conftest.py             # pytest 用: どこから実行しても shared/ を読めるようにする
 ```
 
-アプリ(exmanager / ML パネル / filemanager / Viewer / database / Plotting / Analyzer)は、
+アプリ(exmanager / ML パネル / Viewer / database / Plotting / Analyzer)は、
 ルートの `launch_apps.bat`(ランチャー画面 `launcher.py`)から起動できる。Analyzer だけ PyQt6、ほかは Tkinter。
 
 アプリ同士は直接 import せず、共有するものはすべて `shared/` を通す(画面の配色は
@@ -91,7 +90,7 @@ ML/ 直下のスクリプトは UI から `importlib` でモジュール名指�
 ## ⚙️ 環境構築
 
 Windows + Anaconda(conda)環境で使用している。
-`database/`・`exmanager/`・`filemanager/` は Python 標準ライブラリ(Tkinter)のみで動作する。
+`database/`・`exmanager/` は Python 標準ライブラリ(Tkinter)のみで動作する。
 ML/ は numpy / pandas / tsfresh / xgboost / lightgbm / streamlit 等が必要。
 `ML_N/` は `pip install -e ML_N` でインストールする。
 
@@ -120,7 +119,7 @@ streamlit run ML/app/Home.py    # Streamlit 版
 各フォルダに同名モジュール(`app.py` 等)があるため、フォルダごとに実行する。
 
 ```bash
-for d in shared ML/tests database exmanager filemanager Viewer Plotting Analyzer/python; do python -m pytest -q $d; done
+for d in shared ML/tests database exmanager Viewer Plotting Analyzer/python; do python -m pytest -q $d; done
 ```
 
 ---

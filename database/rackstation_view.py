@@ -17,7 +17,7 @@ try:
 except ImportError:
     import inventory_views
     from scan_lock import ScanLock
-# DB の読み書き・測定番号の規則は shared/rack_store.py（filemanager・Plotting と共有）。
+# DB の読み書き・測定番号の規則は shared/rack_store.py（Analyzer・Plotting と共有）。
 # この画面と既存の呼び出し側のため、同じ名前でここからも使えるようにしている。
 from shared.rack_store import (  # noqa: E402,F401
     entries, sample_counts, NUMBER, SAMPLE_NUMBER, measurement_key, tdms_keys,
@@ -318,7 +318,8 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
 
     def load(scan_labels=()):
         nonlocal loading, scanning
-        if loading or (scan_labels and (parent.busy or getattr(parent, 'rack_busy', False))):
+        if loading or (scan_labels and (parent.busy or getattr(parent, 'rack_busy', False)
+                                        or getattr(getattr(parent, 'fileops', None), 'busy', False))):
             messagebox.showinfo('更新中', '現在の処理が終わってから実行してください。', parent=window)
             return
         path = catalog.DEFAULT_DB if scan_labels else parent.db_path

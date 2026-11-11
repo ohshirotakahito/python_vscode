@@ -8,6 +8,8 @@ ML/cluster_results/
 ML/mix_results/
 Viewer/output_pdf/
 Viewer/csv_data/
+# 移動・名前変更の記録（PCごと）。filemanager/ の下は実験ファイルDBへ統合する前の置き場所（初回起動時に移す）
+database/file_logs/
 filemanager/rename_logs/
 filemanager/anal_logs/
 filemanager/bnal_logs/

@@ -4,8 +4,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from filemanager import sample_rename as rename
-from filemanager.job_control import JobCancelled
+from database.fileops import sample_rename as rename
+from database.fileops.job_control import JobCancelled
 
 
 class SampleRenameTests(unittest.TestCase):

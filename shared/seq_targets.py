@@ -1,4 +1,4 @@
-"""SEQlist の target CSV（BNAL の解析対象一覧）の読み込み（database と filemanager で共通）。"""
+"""SEQlist の target CSV（BNAL の解析対象一覧）の読み込み（database で使用）。"""
 from pathlib import Path
 
 from shared import machinedb

@@ -28,6 +28,10 @@ try:
     from .scan_lock import ScanLock
 except ImportError:
     from scan_lock import ScanLock
+try:
+    from .fileops.panel import FileOpsPanel
+except ImportError:
+    from fileops.panel import FileOpsPanel
 
 BASE =Path(__file__).resolve().parent
 CONFIG = BASE / 'sources.json'
@@ -74,7 +78,7 @@ class App(tk.Tk):
         self.geometry('1450x950')
         style = ui_theme.apply(self, ui_theme.DATABASE)
         style.configure('Treeview', rowheight=26)
-        ui_theme.header(self, '実験ファイル データベース', 'サーバーごとのファイル保存状況と解析着手状況',
+        ui_theme.header(self, '実験ファイル データベース', 'サーバーごとのファイル保存状況と解析着手状況・ファイル操作',
                         '\uEE94', ui_theme.DATABASE, on_close=lambda: self.close()).pack(fill='x')
         self.db_path = catalog.DEFAULT_DB
         catalog.initialize(self.db_path)
@@ -106,6 +110,9 @@ class App(tk.Tk):
         self.main_tabs.add(self.bnal_panel, text='BNAL進捗')
         self.plan_panel = ttk.Frame(self.main_tabs)
         self.main_tabs.add(self.plan_panel, text='サンプル台帳')
+        # もとのファイル管理アプリ（コピー・サンプル名変更・名前変更・フォルダ作成）。処理中は DB の更新と同時に走らせない
+        self.fileops = FileOpsPanel(self.main_tabs, owner=self)
+        self.main_tabs.add(self.fileops, text='ファイル操作')
         self.buttons = []
         target = ttk.LabelFrame(self.sq_panel, text='更新する範囲を選択（ほかの範囲の記録は保持します）', padding=8)
         target.pack(fill='x', padx=8)
@@ -628,6 +635,9 @@ class App(tk.Tk):
     def run_jobs(self, jobs):
         if self.busy or getattr(self, 'rack_busy', False):
             return
+        if self.fileops.busy:
+            messagebox.showinfo('ファイル操作中', 'ファイル操作タブの処理が終わってから更新してください。')
+            return
         if not jobs:
             messagebox.showinfo('更新対象なし', '保存先の共有パスを設定し、更新するサーバー・共有・実験を選んでください。')
             return
@@ -920,6 +930,9 @@ class App(tk.Tk):
         describe()
 
     def close(self):
+        if not self.fileops.can_close():
+            self.main_tabs.select(self.fileops)
+            return
         if getattr(self, 'rack_busy', False):
             self.rack_cancel.set()
             self.main_tabs.select(self.active_analysis_panel)

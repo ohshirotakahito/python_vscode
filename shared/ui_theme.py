@@ -23,7 +23,6 @@ HEADER_TO = '#24452f'
 # アプリごとのアクセント色(ランチャーのカードと同じ)
 EXMANAGER = '#4fc1b5'
 ML = '#8fd18b'
-FILEMANAGER = '#e8b45e'
 VIEWER = '#6aa8ff'
 DATABASE = '#c58af9'
 PLOTTING = '#f08c6c'

@@ -1,6 +1,7 @@
 # 実験ファイル データベース
 
 5台のサーバーにあるファイルの保存状況を、ローカルSQLiteに保存します。
+「ファイル操作」タブで、コピー・サンプル名変更・名前変更・フォルダ作成もできます（もとのファイル管理アプリ。[下記](#ファイル操作タブもとのファイル管理アプリ)）。
 Python標準ライブラリのみ使用します。GUIにはTkinterが必要です。
 
 ```powershell
@@ -114,7 +115,7 @@ TOは操作者、AN#1は装置、3は実験回数、0は繰り返し回数です
 ## 他のアプリ用の共通API
 
 DBの窓口は `shared/` にあります（`shared/catalog.py`：files/folders/sources/updates、`shared/rack_store.py`：rack_samples/rack_roots/rack_bnals）。
-DBファイル自体は従来どおり `database/inventory.sqlite3` です。filemanager・Plotting はこの窓口だけを使い、`database/` は import しません。
+DBファイル自体は従来どおり `database/inventory.sqlite3` です。Plotting・Analyzer はこの窓口だけを使い、`database/` は import しません。
 テーブルの列や意味を変えるときの取り決めは [shared/README.md](../shared/README.md) を参照してください。
 
 ```python
@@ -202,8 +203,52 @@ Analysis_serverタブの更新では、各サンプルの `10k_Sample/T` を一�
 
 BNAL進捗の明細には、配列種別・基本配列名・基本配列TDMS数・ANAL数との一致・基本配列との一致を表示します。末尾が `_N_数字` または `_M_数字` のtargetは修飾配列として扱い、同じ実験・サンプル・共有にある基本配列のTDMS数と比較します（基本配列がCSVの対象外でも比較します）。基本配列の未作成と未計数は区別して表示します。修飾配列の完了には、ANAL数との一致と基本配列との一致の両方が必要です。進捗の百分率は従来どおりANAL数を基準にします。超過は要確認として扱い、完了件数に含めません。
 
+## ファイル操作タブ（もとのファイル管理アプリ）
+
+ファイル管理アプリ（`filemanager/app.py`）はこのタブに統合しました。ランチャーからは起動しません。
+コードは `database/fileops/`（画面 `panel.py`、処理 `jobs.py`、既存スクリプト `create_folders.py`・`transfer_copy.py`・`rename_replace.py`・`file_rename.py`・`sample_rename.py` など）にあります。
+処理は `jobs.py --worker` を別プロセスで実行し、ログ・進捗・変更予定をタブ下部に表示します。
+ファイル操作の処理中は Data_server・Analysis_server の更新と BNAL・ANAL 進捗からの移動を、更新中はファイル操作を実行できません（どちらも終わってから実行します）。処理中に画面を閉じることもできません。
+
+子タブの順は「ファイルコピー → サンプル名一括変更・復元 → 名前変更・復元 → フォルダ作成」です。
+ANAL・BNAL の整理（重複・退避・復帰）と Data 退避（解析済み T ⇄ T/stocked）は、シグナル解析アプリの「ANAL（サーバー）」「BNAL（サーバー）」にあります（「整理の履歴…」で元に戻せます）。
+
+- **ファイルコピー**：コピー元サーバー、共有名（初期値 `analysis`）、実験名、サンプル名を指定します。一覧ボタンはサーバー直下の共有、共有直下の実験、実験直下のサンプルを読み込みます（直接入力も可。サンプルは Ctrl / Shift で複数選択、空欄は全サンプル）。
+  周波数（10kHz / 100kHz）と Sample / Blank で接尾辞が決まります（初期値 `_10k_Sample`）。コピー対象は「接尾辞フォルダ直下の `.txt`」「`T` 直下の `.tdms`」「`T/ANAL` 直下の `.tdms`」「`T` 内の各 `BNAL@*` 直下の `.tdms`」から複数選べます（初期状態は `T/ANAL`）。BNAL は「すべて」か「一覧から選択」です。コピー元・サンプル・周波数・区分を変えると BNAL の選択はクリアされます。
+  **実際の書き込み先はコピー元サーバー上の同期用共有**です（例：Rackstation → QTserver は `//Rackstation/RT_server/実験名/...`）。元ファイルは削除しません。同期完了の判断と同期先の analysis への移動は手動です。標準フォルダ構造を作り、T・stocked・T/ANAL・T/stocked を補います。既存ファイルはスキップします（上書きしません）。
+
+  | 組み合わせ（順不同） | 自動入力する共有名 |
+  |---|---|
+  | Rackstation / QTserver | RT_server |
+  | Rackstation / QDserver | RD_server |
+  | Rackstation / QKserver | RK_server |
+  | QDserver / QTserver | DT_server |
+  | QDserver / QKserver | DK_server |
+  | QTserver / QKserver | TK_server |
+
+  「コピー予定を確認」はコピー／スキップ件数・予定サイズ・コピー元と先・ファイル一覧をログに出すだけで、何も変更しません。「stockedを確認・取り出し」は選んだサンプル・接尾辞配下の stocked 直下のファイルを一覧にし、選んだものを親フォルダへ移してからコピー予定を再確認します（同名は上書きせず stocked に残します）。stocked 内のファイルは通常のコピー対象に含みません。
+  コピー中は転送バイト数による進捗率・件数・経過時間・残り時間・終了見込み・平均速度を表示します。コピーは同じ保存先内の一時ファイル（`.fileops-*.part`）へ行い、完了後に正式名へ変えます。
+- **サンプル名一括変更・復元**：サーバー・共有・実験・対象サンプルフォルダ・現サンプル名・新サンプル名を指定します（例：対象フォルダ `L-aTNA-T-re`、現サンプル名 `L-aTNA-T`、新サンプル名 `L-aTNA-T-re`）。英数字・ハイフンが直前直後にある別名は置換しません。
+  走査対象はサンプルフォルダ自身、直下の `*_10k_Sample` / `*_100k_Sample` / `*_10k_Blank` / `*_100k_Blank`、各測定フォルダ直下の txt、stocked 直下、100k Sample・Blank 直下の tdms、T 直下の tdms、T/stocked 直下、T/ANAL 配下（ここだけ再帰）、BNAL・BNAL@ の名前と直下のフォルダ名です。PS・BS フォルダ内、BNAL 内のファイル、raw data などは走査しません。ファイル内容は変更しません。
+  「変更予定を表示」→ 予定表（300件ずつ・全件検索・グループ別の色）を確認 →「確認して変更を実行」の順です。子から親の順に変更し、1件ごとに履歴へ記録します。後日の復元は「履歴を選択・復元予定を表示」→「確認して復元を実行」です（対象が変わっていれば止めます）。複数回変更した場合は新しい履歴から順に戻してください。
+- **名前変更・復元**：対象フォルダを選びます。「置換」は配下を再帰的に、「整形」は直下のファイルを正規表現ルールで整形します。変更予定を表示してから実行します（入力を変えたら再表示が必要）。件数制限の初期値は2件です。「履歴CSVから復元…」で元に戻せます。
+- **フォルダ作成**：サンプル名をカンマ区切りで入力すると、`create_folders.py`（`shared/folder_layout.py`）の標準構成を作ります。未作成の実験フォルダは作成します。
+
+「中断」は確認中・サンプル名変更中・復元中・コピー中に使えます（従来の名前変更・CSV復元・フォルダ作成の実行中は止められません）。変更済みの分は残り、履歴から戻せます。
+
+### 記録（このPCの `database/file_logs/`・Git 管理外）
+
+| フォルダ | 中身 |
+|---|---|
+| `rename_logs/` | 名前変更のCSV、`samples/`（サンプル名変更の履歴JSON）、`previews/`（実行待ちの変更予定） |
+| `anal_logs/`・`bnal_logs/`・`t_stock_logs/` | シグナル解析・BNAL/ANAL 進捗からのファイル移動の記録（`shared/file_moves.journal_dir()`） |
+
+以前の `filemanager/rename_logs`・`anal_logs`・`bnal_logs`・`t_stock_logs` は、各PCで最初にアプリ（実験ファイルDB・シグナル解析）を使ったときに自動でここへ移します（`shared/file_moves.log_dir()`）。履歴フォルダは保管してください。
+
 ## 検証
 
 ```powershell
+python -m pytest -q database                     # database/fileops（ファイル操作）のテストを含む
+
 python -m unittest database.test_catalog database.test_inventory_views database.test_partial_updates database.test_update_selection database.test_rackstation_view database.test_bnal_progress -v
 ```

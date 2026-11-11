@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """shared/server_browse.py（元は ML/app_tk/server_browse.py。MLパネルとTDMSビューアで共有）
 
-計測サーバー上のフォルダを一覧から選ぶための部品（filemanager/app.py と同じ操作感）。
+計測サーバー上のフォルダを一覧から選ぶための部品（実験ファイルDBのファイル操作タブと同じ操作感）。
 
     //<サーバー>/<共有フォルダ>/<実験フォルダ>/<サンプル>/<サンプル>_10k_Sample/T/...ANAL...
 
@@ -22,7 +22,7 @@ _INVALID_CHARS = '<>:"/\\|?*'
 
 
 def list_server_shares(server):
-    """Windowsの共有列挙APIでサーバー直下のディスク共有を取得する（filemanager/app.py と同じ）。"""
+    """Windowsの共有列挙APIでサーバー直下のディスク共有を取得する（database/fileops/jobs.py と同じ）。"""
     import ctypes
     from ctypes import wintypes
 

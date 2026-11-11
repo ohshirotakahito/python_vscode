@@ -19,7 +19,7 @@ zip_stocked.py	溜まったフォルダをZIP圧縮して元を削除	✅
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # リポジトリ直下（shared/ を読むため）
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))  # リポジトリ直下（shared/ を読むため）
 from shared.folder_layout import create_sample_folders  # noqa: E402,F401  (fo_xx と exmanager が同じ構成を使う)
 
 

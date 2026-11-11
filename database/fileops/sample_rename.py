@@ -7,7 +7,10 @@ import time
 import uuid
 from datetime import datetime
 from pathlib import Path
-from filemanager.job_control import check_cancel
+try:
+    from .job_control import check_cancel
+except ImportError:  # jobs.py の処理用プロセスからは同じフォルダの名前で読む
+    from job_control import check_cancel
 
 
 def save(path, data):

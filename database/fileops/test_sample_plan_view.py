@@ -2,7 +2,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 import unittest
 
-from filemanager.app import App, sample_plan_group
+from database.fileops.panel import FileOpsPanel as App, sample_plan_group
 
 
 class SamplePlanViewTest(unittest.TestCase):

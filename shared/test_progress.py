@@ -1,4 +1,4 @@
-"""shared/progress.py の判定規則（DB・ファイル管理・Analyzer の共通の基準）のテスト。"""
+"""shared/progress.py の判定規則（DB・Analyzer の共通の基準）のテスト。"""
 from unittest import TestCase
 
 from shared import progress

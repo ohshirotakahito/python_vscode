@@ -1,4 +1,4 @@
-"""ローカルの一時フォルダだけでGUIの処理を検証する。"""
+"""ローカルの一時フォルダだけで「ファイル操作」タブ（もとのファイル管理アプリ）の処理を検証する。"""
 import contextlib
 import io
 import json
@@ -10,19 +10,39 @@ import unittest
 from unittest.mock import patch
 from unittest.mock import Mock
 import threading
+import tkinter as tk
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import app
+from database.fileops import jobs, panel  # jobs が同じフォルダを import パスに入れる
 import create_folders
 import data_transfer_common as common
 import file_rename
 import rename_replace
 
 
+_ROOT = None
+
+
+def make_window():
+    """実験ファイルDBの代わりの隠したウィンドウに、ファイル操作タブだけを置く。
+
+    Tk() を何度も作ると Windows の Tcl が tk.tcl を見失うことがあるので、ルートは1つを使い回す。"""
+    global _ROOT
+    if _ROOT is None:
+        _ROOT = tk.Tk()
+        _ROOT.withdraw()
+    window = panel.FileOpsPanel(_ROOT)
+    window.pack()
+    return window
+
+
+def tearDownModule():
+    if _ROOT is not None:
+        _ROOT.destroy()
+
+
 class AppTests(unittest.TestCase):
     def test_stop_button_terminates_only_preview(self):
-        window = app.App()
-        window.withdraw()
+        window = make_window()
         try:
             with tempfile.TemporaryDirectory() as temp:
                 for preview in (True, False):
@@ -48,17 +68,17 @@ class AppTests(unittest.TestCase):
             (source / 'S_10k_Sample#001.tdms').write_bytes(b'data')
             data = dict(kind='sample_rename', server='Rackstation', share='analysis',
                         experiment='E', folder='S', old='S', new='New', preview=True)
-            with patch.object(app, 'BASE', base), patch.object(common, 'server_path', return_value=str(experiment)), contextlib.redirect_stdout(io.StringIO()):
-                app.run_job(data)
+            with patch.object(jobs, 'RENAME_LOGS', base / 'rename_logs'), patch.object(common, 'server_path', return_value=str(experiment)), contextlib.redirect_stdout(io.StringIO()):
+                jobs.run_job(data)
                 self.assertTrue(source.exists())
-                app.run_job({**data, 'preview': False})
+                jobs.run_job({**data, 'preview': False})
                 renamed = experiment / 'New' / 'New_10k_Sample' / 'T' / 'New_10k_Sample#001.tdms'
                 self.assertEqual(renamed.read_bytes(), b'data')
                 history = next((base / 'rename_logs' / 'samples').glob('*.json'))
                 undo = dict(kind='sample_restore', history=str(history), preview=True)
-                app.run_job(undo)
+                jobs.run_job(undo)
                 self.assertTrue(renamed.exists())
-                app.run_job({**undo, 'preview': False})
+                jobs.run_job({**undo, 'preview': False})
                 self.assertEqual((source / 'S_10k_Sample#001.tdms').read_bytes(), b'data')
 
     def test_stocked_restore_conflict_and_repreview(self):
@@ -77,11 +97,11 @@ class AppTests(unittest.TestCase):
                         destination='RT_server', experiment='E', samples='S', suffix='_10k_Sample',
                         target_text=False, target_raw=True, target_anal=False, target_bnal=False, preview=True)
             with patch.object(common, 'server_path', local_path), contextlib.redirect_stdout(io.StringIO()):
-                app.run_job(data)
+                jobs.run_job(data)
                 self.assertTrue((stocked / 'a.tdms').exists())
                 output = io.StringIO()
                 with contextlib.redirect_stdout(output):
-                    app.run_job({**data, 'stocked_action': 'restore',
+                    jobs.run_job({**data, 'stocked_action': 'restore',
                                  'stocked_selected': [str(stocked / 'a.tdms'), str(stocked / 'b.tdms')]})
                 self.assertIn('コピー予定: 2件', output.getvalue())
                 self.assertIn('同名あり', output.getvalue())
@@ -101,22 +121,21 @@ class AppTests(unittest.TestCase):
             (dest / 'existing.tdms').write_bytes(b'keep')
             output = io.StringIO()
             with contextlib.redirect_stdout(output):
-                app.copy_with_progress([(str(source), str(dest), '.tdms')])
-            progress = [json.loads(line[len(app.PROGRESS_PREFIX):]) for line in output.getvalue().splitlines()
-                        if line.startswith(app.PROGRESS_PREFIX)]
+                jobs.copy_with_progress([(str(source), str(dest), '.tdms')])
+            progress = [json.loads(line[len(jobs.PROGRESS_PREFIX):]) for line in output.getvalue().splitlines()
+                        if line.startswith(jobs.PROGRESS_PREFIX)]
             self.assertEqual(progress[-1]['done'], 4096)
             self.assertEqual(progress[-1]['total'], 4096)
             self.assertEqual(progress[-1]['completed'], 1)
             self.assertEqual(progress[-1]['skipped'], 1)
             self.assertEqual((dest / 'existing.tdms').read_bytes(), b'keep')
             (source / 'failure.tdms').write_bytes(b'content')
-            with patch.object(app.shutil, 'copymode', side_effect=PermissionError('denied')), contextlib.redirect_stdout(io.StringIO()):
+            with patch.object(jobs.shutil, 'copymode', side_effect=PermissionError('denied')), contextlib.redirect_stdout(io.StringIO()):
                 with self.assertRaises(PermissionError):
-                    app.copy_with_progress([(str(source), str(dest), '.tdms')])
+                    jobs.copy_with_progress([(str(source), str(dest), '.tdms')])
             self.assertFalse((dest / 'failure.tdms').exists())
             self.assertFalse(list(dest.glob('*.part')))
-        window = app.App()
-        window.withdraw()
+        window = make_window()
         try:
             window.show_copy_progress(dict(done=100, total=200, completed=0, count=1, skipped=0, elapsed=10))
             self.assertEqual(float(window.progress['value']), 50)
@@ -131,18 +150,18 @@ class AppTests(unittest.TestCase):
                 (PermissionError(errno.EACCES, 'denied', 'target/path'), 'アクセスが拒否'),
                 (OSError(errno.ENOSPC, 'full', 'target/path'), '空き容量'),
                 (FileNotFoundError(errno.ENOENT, 'missing', 'target/path'), '見つかりません')):
-            detail = app.describe_error(exc)
+            detail = jobs.describe_error(exc)
             self.assertIn(expected, detail)
             self.assertIn('target/path', detail)
             self.assertIn('確認事項', detail)
         with tempfile.TemporaryDirectory() as temp:
             path = str(Path(temp, 'missing.csv'))
-            result = subprocess.run([sys.executable, '-X', 'utf8', str(app.BASE / 'app.py'), '--worker'],
+            result = subprocess.run([sys.executable, '-X', 'utf8', str(jobs.BASE / 'jobs.py'), '--worker'],
                                     input=json.dumps(dict(kind='undo', log=path)), capture_output=True,
                                     text=True, encoding='utf-8')
             self.assertNotEqual(result.returncode, 0)
-            line = next(line for line in result.stdout.splitlines() if line.startswith(app.ERROR_PREFIX))
-            detail = json.loads(line[len(app.ERROR_PREFIX):])
+            line = next(line for line in result.stdout.splitlines() if line.startswith(jobs.ERROR_PREFIX))
+            detail = json.loads(line[len(jobs.ERROR_PREFIX):])
             self.assertIn(path, detail)
             self.assertIn('見つかりません', detail)
 
@@ -155,12 +174,12 @@ class AppTests(unittest.TestCase):
             data = dict(kind='rename', root=temp, mode='置換', old='old', new='new',
                         include_folders=True, limit='', preview=True)
             with contextlib.redirect_stdout(io.StringIO()), patch.object(rename_replace, 'LOG_DIR', str(root / 'logs')):
-                app.run_job(data)
+                jobs.run_job(data)
                 self.assertTrue((folder / 'old.txt').exists())
-                app.run_job({**data, 'preview': False})
+                jobs.run_job({**data, 'preview': False})
                 self.assertEqual((root / 'new_dir' / 'new.txt').read_text(), 'sample')
                 log = next((root / 'logs').glob('*.csv'))
-                app.run_job(dict(kind='undo', log=str(log)))
+                jobs.run_job(dict(kind='undo', log=str(log)))
                 self.assertTrue((folder / 'old.txt').exists())
 
     def test_copy_and_folders_on_local_fixture(self):
@@ -177,15 +196,15 @@ class AppTests(unittest.TestCase):
                         suffix='_10k_Sample', subpath='T', keyword='', tree='T')
             import transfer_copy
             with patch.object(common, 'server_path', local_path), patch.object(transfer_copy, 'server_path', local_path), contextlib.redirect_stdout(io.StringIO()):
-                app.run_job(data)
+                jobs.run_job(data)
                 target = Path(temp, 'Rackstation', 'destination', 'experiment', 'S1', 'S1_10k_Sample', 'T', 'data.tdms')
                 self.assertEqual(target.read_bytes(), b'example')
                 target.write_bytes(b'existing')
-                app.run_job(data)
+                jobs.run_job(data)
                 self.assertEqual(target.read_bytes(), b'existing')
                 self.assertFalse(target.with_name('other.txt').exists())
                 with patch.object(create_folders, 'fo_xx') as make:
-                    app.run_job(dict(kind='folders', server='Rackstation', share='source', experiment='experiment', samples='S1,S2'))
+                    jobs.run_job(dict(kind='folders', server='Rackstation', share='source', experiment='experiment', samples='S1,S2'))
                     self.assertEqual(make.call_count, 2)
 
     def test_worker_protocol_and_utf8(self):
@@ -194,7 +213,7 @@ class AppTests(unittest.TestCase):
             file.write_text('unchanged')
             data = dict(kind='rename', root=temp, mode='置換', old='旧', new='新',
                         include_folders=False, limit='2', preview=True)
-            result = subprocess.run([sys.executable, '-X', 'utf8', str(app.BASE / 'app.py'), '--worker'],
+            result = subprocess.run([sys.executable, '-X', 'utf8', str(jobs.BASE / 'jobs.py'), '--worker'],
                                     input=json.dumps(data), capture_output=True, text=True, encoding='utf-8')
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn('新.txt', result.stdout)
@@ -209,19 +228,19 @@ class AppTests(unittest.TestCase):
             data = dict(kind='rename', root=temp, mode='整形', pattern=file_rename.DEFAULT_PATTERN,
                         extension='.tdms', limit='', preview=True)
             with contextlib.redirect_stdout(io.StringIO()), patch.object(file_rename, 'LOG_DIR', str(root / 'logs')):
-                app.run_job(data)
+                jobs.run_job(data)
                 self.assertTrue(source.exists())
                 self.assertFalse(target.exists())
-                app.run_job({**data, 'preview': False})
+                jobs.run_job({**data, 'preview': False})
                 self.assertEqual(target.read_bytes(), b'data')
-                app.run_job(dict(kind='undo', log=str(next((root / 'logs').glob('*.csv')))))
+                jobs.run_job(dict(kind='undo', log=str(next((root / 'logs').glob('*.csv')))))
                 self.assertTrue(source.exists())
 
     def test_invalid_inputs(self):
         base = dict(kind='folders', server='test', share='analysis', experiment='E', samples='S')
         for changes in ({'experiment': '../escape'}, {'samples': ''}, {'share': 'C:\\data'}):
             with self.subTest(changes=changes), self.assertRaises(ValueError):
-                app.validate({**base, **changes})
+                jobs.validate({**base, **changes})
 
     def test_selected_targets_and_standard_structure(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -243,7 +262,7 @@ class AppTests(unittest.TestCase):
             before = {p.relative_to(temp).as_posix() for p in Path(temp).rglob('*')}
             preview_output = io.StringIO()
             with patch.object(common, 'server_path', local_path), contextlib.redirect_stdout(preview_output):
-                app.run_job({**data, 'preview': True})
+                jobs.run_job({**data, 'preview': True})
             self.assertEqual(before, {p.relative_to(temp).as_posix() for p in Path(temp).rglob('*')})
             self.assertIn('=== コピー予定の概要 ===', preview_output.getvalue())
             self.assertIn('コピー予定: 5件', preview_output.getvalue())
@@ -252,11 +271,11 @@ class AppTests(unittest.TestCase):
             self.assertEqual(preview_output.getvalue().count('コピー元フォルダ:'), 5)
             with patch.object(common, 'server_path', local_path), contextlib.redirect_stdout(io.StringIO()):
                 destination = Path(local_path('Rackstation', 'RT_server', 'E', 'S', 'S_100k_Blank'))
-                app.run_job({**data, 'target_text': False, 'target_raw': False, 'target_anal': False,
+                jobs.run_job({**data, 'target_text': False, 'target_raw': False, 'target_anal': False,
                              'bnal_mode': '一覧から選択', 'bnal_selection': json.dumps([['S', 'BNAL@123']])})
                 self.assertEqual({p.relative_to(destination).as_posix() for p in destination.rglob('*') if p.is_file()},
                                  {'T/BNAL@123/c.tdms'})
-                app.run_job(data)
+                jobs.run_job(data)
                 actual = {p.relative_to(destination).as_posix() for p in destination.rglob('*') if p.is_file()}
                 self.assertEqual(actual, {'notes.txt', 'T/raw.tdms', 'T/ANAL/processed.tdms',
                                           'T/BNAL@anything/b.tdms', 'T/BNAL@123/c.tdms'})
@@ -264,21 +283,20 @@ class AppTests(unittest.TestCase):
                 self.assertTrue((destination.parent / 'S_10k_Sample' / 'T' / 'ANAL').is_dir())
                 self.assertFalse(Path(temp, 'QTserver').exists())
                 (destination / 'notes.txt').write_bytes(b'existing')
-                app.run_job(data)
+                jobs.run_job(data)
                 self.assertEqual((destination / 'notes.txt').read_bytes(), b'existing')
                 output = io.StringIO()
                 with contextlib.redirect_stdout(output):
-                    app.run_job({**data, 'preview': True})
+                    jobs.run_job({**data, 'preview': True})
                 self.assertIn('コピー予定: 0件', output.getvalue())
                 self.assertIn('スキップ予定: 5件', output.getvalue())
             with self.assertRaises(ValueError):
-                app.validate({**data, **{'target_' + key: False for key, *_ in app.COPY_TARGETS}})
+                jobs.validate({**data, **{'target_' + key: False for key, *_ in jobs.COPY_TARGETS}})
             with self.assertRaises(ValueError):
-                app.validate({**data, 'bnal_mode': '一覧から選択', 'bnal_selection': '[]'})
+                jobs.validate({**data, 'bnal_mode': '一覧から選択', 'bnal_selection': '[]'})
 
     def test_destination_pairs_and_manual_override(self):
-        window = app.App()
-        window.withdraw()
+        window = make_window()
         try:
             fields = window.fields['copy']
             expected = [('Rackstation', 'QTserver', 'RT_server'),
@@ -321,23 +339,22 @@ class AppTests(unittest.TestCase):
                         experiment='analysis_ex', samples='S', extension='.tdms', suffix='_10k_Sample',
                         subpath='T', keyword='ANAL', tree='T')
             with patch.object(common, 'server_path', local_path), patch.object(transfer_copy, 'server_path', local_path), contextlib.redirect_stdout(io.StringIO()):
-                app.run_job(data)
+                jobs.run_job(data)
             target = Path(local_path('QDserver', 'DT_server', 'analysis_ex', 'S', 'S_10k_Sample', 'T', 'ANAL_analysis', 'analysis.tdms'))
             self.assertEqual(target.read_bytes(), b'original')
             self.assertFalse(Path(local_path('QTserver', 'DT_server')).exists())
             with self.assertRaises(ValueError):
-                app.validate({**data, 'dest_server': 'QDserver'})
+                jobs.validate({**data, 'dest_server': 'QDserver'})
 
     def test_gui_preview_gate(self):
-        window = app.App()
-        window.withdraw()
+        window = make_window()
         try:
             self.assertEqual(len(window.tabs.tabs()), 4)
             fields = window.fields['rename']
             fields['root'].set('C:/fixture')
             fields['old'].set('old')
             fields['new'].set('new')
-            with patch.object(app.messagebox, 'showinfo') as info, patch.object(window, 'start') as start:
+            with patch.object(panel.messagebox, 'showinfo') as info, patch.object(window, 'start') as start:
                 window.submit('rename')
                 info.assert_called_once()
                 start.assert_not_called()
@@ -352,13 +369,12 @@ class AppTests(unittest.TestCase):
             window.destroy()
 
     def test_sample_rename_preview_gate(self):
-        window = app.App()
-        window.withdraw()
+        window = make_window()
         try:
             fields = window.fields['sample_rename']
             for key, value in dict(experiment='E', folder='S-re', old='S', new='S-re').items():
                 fields[key].set(value)
-            with patch.object(app.messagebox, 'showinfo'), patch.object(app.messagebox, 'askyesno', return_value=True), patch.object(window, 'start') as start:
+            with patch.object(panel.messagebox, 'showinfo'), patch.object(panel.messagebox, 'askyesno', return_value=True), patch.object(window, 'start') as start:
                 window.submit('sample_rename')
                 start.assert_not_called()
                 window.submit('sample_rename', True)
@@ -373,15 +389,14 @@ class AppTests(unittest.TestCase):
             window.destroy()
 
     def test_copy_folder_selection_keeps_share_and_sets_experiment(self):
-        window = app.App()
-        window.withdraw()
+        window = make_window()
         try:
             fields = window.fields['copy']
             self.assertTrue(window.apply_copy_folder(
                 'share', r'\\Rackstation\analysis\Kumamoto_N2', 'Rackstation', 'analysis'))
             self.assertEqual(fields['share'].get(), 'analysis')
             self.assertEqual(fields['experiment'].get(), 'Kumamoto_N2')
-            with patch.object(app.messagebox, 'showerror'):
+            with patch.object(panel.messagebox, 'showerror'):
                 for path in ('//QDserver/analysis/E', '//Rackstation/analysis/E/sample', 'C:/local'):
                     self.assertFalse(window.apply_copy_folder('share', path, 'Rackstation', 'analysis'))
                 self.assertEqual(fields['experiment'].get(), 'Kumamoto_N2')

@@ -12,7 +12,7 @@ _next_check = 0
 
 def check_cancel():
     global _next_check
-    path = os.environ.get('FILEMANAGER_CANCEL_FILE')
+    path = os.environ.get('FILEOPS_CANCEL_FILE')
     if not path:
         return
     now = time.monotonic()

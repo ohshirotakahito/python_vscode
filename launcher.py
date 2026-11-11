@@ -2,7 +2,7 @@
 """プロジェクト内のTkinterアプリを起動するランチャー。
 
 起動: launch_apps.bat をダブルクリック、または python launcher.py
-カードをクリック(または数字キー 1〜7)で各アプリを別プロセスとして起動する。
+カードをクリック(または数字キー 1〜6)で各アプリを別プロセスとして起動する。
 ランチャーを閉じても起動済みのアプリは終了しない。
 """
 
@@ -40,21 +40,19 @@ class App:
         return str(Path(self.cwd) / self.script).lstrip('.\\')
 
 
-# データの流れの順: 転送・整理 → 保存状況の記録 → 解析（ANAL・BNAL）→ ANAL の確認・機械学習 → BNAL の可視化
+# データの流れの順: 転送・整理 → 保存状況の記録・ファイル操作 → 解析（ANAL・BNAL）→ ANAL の確認・機械学習 → BNAL の可視化
 APPS = [
     App('1', '実験データ整理', '元実験の転送セット作成・照合・コピーと履歴管理',
         r'exmanager\app.py', '.', '\uE8AB', ui_theme.EXMANAGER),
-    App('2', 'ファイル管理', 'フォルダ作成・転送・stocked 取り出し・リネーム',
-        r'filemanager\app.py', '.', '\uE8B7', ui_theme.FILEMANAGER),
-    App('3', '実験ファイルDB', 'サーバーごとのファイル保存状況と解析着手状況',
+    App('2', '実験ファイルDB', 'ファイル保存状況・解析着手状況と、コピー・リネーム・フォルダ作成',
         r'database\app.py', '.', '\uEE94', ui_theme.DATABASE),
-    App('4', '\u30B7\u30B0\u30CA\u30EB\u89E3\u6790', '1st Step\uFF08ANAL\uFF09\u30FB2nd Step\uFF08BNAL\uFF09\u306E\u89E3\u6790\u3068\u7D50\u679C\u30D3\u30E5\u30FC\u30A2',
+    App('3', '\u30B7\u30B0\u30CA\u30EB\u89E3\u6790', '1st Step\uFF08ANAL\uFF09\u30FB2nd Step\uFF08BNAL\uFF09\u306E\u89E3\u6790\u3068\u7D50\u679C\u30D3\u30E5\u30FC\u30A2',
         r'python\gui_app.py', 'Analyzer', '\uE9F5', ui_theme.ANALYZER),
-    App('5', 'TDMSビューア', 'TDMS 波形の表示・ノイズ推定・PDF 出力',
+    App('4', 'TDMSビューア', 'TDMS 波形の表示・ノイズ推定・PDF 出力',
         r'Viewer\view_tdms_signal_tk.py', '.', '\uE9D9', ui_theme.VIEWER),
-    App('6', 'MLパネル', '特徴量抽出・統計・学習・混合予測・クラスタリング',
+    App('5', 'MLパネル', '特徴量抽出・統計・学習・混合予測・クラスタリング',
         r'app_tk\main.py', 'ML', '\uEBD2', ui_theme.ML),
-    App('7', '\u914D\u5217\u30A2\u30BB\u30F3\u30D6\u30EA', 'BNAL \u306E\u4F4D\u7F6E\u3054\u3068\u306E\u5206\u5E03\u30FB\u30A2\u30BB\u30F3\u30D6\u30EA\u30FBq\u5024\u30FB\u4FEE\u98FE\u7387\u306E\u53EF\u8996\u5316',
+    App('6', '\u914D\u5217\u30A2\u30BB\u30F3\u30D6\u30EA', 'BNAL \u306E\u4F4D\u7F6E\u3054\u3068\u306E\u5206\u5E03\u30FB\u30A2\u30BB\u30F3\u30D6\u30EA\u30FBq\u5024\u30FB\u4FEE\u98FE\u7387\u306E\u53EF\u8996\u5316',
         r'Plotting\app.py', '.', '\uE9D2', ui_theme.PLOTTING),
 ]
 

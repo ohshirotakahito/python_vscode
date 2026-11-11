@@ -238,7 +238,7 @@ def plan(source, target, sample, kind, progress=None, verify=False, reserved=Non
         prefix = f'{sample}_{rate}_{kind}'
         dest = target / prefix
         if not dest.is_dir() or (rate == '10k' and not (dest / 'T').is_dir()):
-            raise ValueError(f'保存先をcreate_folders.pyで作成してください: {dest}')
+            raise ValueError(f'保存先を実験ファイルDBの「ファイル操作」→「フォルダ作成」で作成してください: {dest}')
         index, highest, occupied = {}, 0, {}
         pattern = re.compile(re.escape(prefix) + r'#(\d+) (.+)')
         for directory in ([dest, dest / 'T'] if rate == '10k' else [dest]):

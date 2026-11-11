@@ -41,7 +41,7 @@ def sample_choices(samples):
     return sorted({(row['experiment'], row['sample']) for row in samples}, key=lambda key: (key[0].casefold(), key[1].casefold()))
 
 
-# 1つの BNAL@ フォルダの判定は shared/progress.py（Analyzer・ファイル管理と共通）
+# 1つの BNAL@ フォルダの判定は shared/progress.py（Analyzer と共通）
 occurrence_state = progress.bnal_state
 
 
@@ -900,8 +900,10 @@ def create_map_view(frame, jump):
 
 def run_moves(parent, window, title, targets, empty_text, planner, describe, intro, done):
     """Plan on the servers for the given rack_samples rows, confirm, move, re-read their counts, then done()."""
-    if Path(parent.db_path) != Path(catalog.DEFAULT_DB) or getattr(parent, 'rack_busy', False) or parent.busy:
-        messagebox.showinfo(title, 'ローカルDBを表示中で、更新処理が動いていないときに実行してください。', parent=window)
+    if (Path(parent.db_path) != Path(catalog.DEFAULT_DB) or getattr(parent, 'rack_busy', False) or parent.busy
+            or getattr(getattr(parent, 'fileops', None), 'busy', False)):
+        messagebox.showinfo(title, 'ローカルDBを表示中で、更新処理・ファイル操作が動いていないときに実行してください。',
+                            parent=window)
         return
     if not targets:
         messagebox.showinfo(title, empty_text + '\n（記録はAnalysis_serverの更新時点のものです）', parent=window)

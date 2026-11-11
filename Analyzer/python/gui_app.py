@@ -732,7 +732,7 @@ def broken_out(t, files, log, report=None):
         if report:
             report.write(line)
     if journal and report:
-        report.write(f"    移動の記録 {journal}（ファイル管理アプリの履歴から元に戻せます）")
+        report.write(f"    移動の記録 {journal}（「整理の履歴…」から元に戻せます）")
     names = {f.name for f, _ in bad}
     return [f for f in files if f.name not in names]
 
@@ -978,7 +978,7 @@ class JournalDialog(QDialog):
         self.setWindowTitle("整理の履歴（移動・削除の記録）")
         self.resize(1200, 600)
         lay = QVBoxLayout(self)
-        note = QLabel("ANAL（サーバー）とファイル管理アプリで行った移動・削除の記録です。行を選んで「元に戻す」と、"
+        note = QLabel("ANAL・BNAL（サーバー）と実験ファイルDB（旧ファイル管理アプリを含む）で行った移動・削除の記録です。行を選んで「元に戻す」と、"
                       "その操作で動かしたファイルを元の場所へ戻します（戻す前に内容が変わっていないか確かめます）。")
         note.setWordWrap(True)
         lay.addWidget(note)
@@ -1177,13 +1177,13 @@ class ServerAnalPage(QWidget):
         sel.addWidget(self.b_check)
         self.b_restore = QPushButton("T/stocked → T に戻す")
         self.b_restore.setToolTip("チェックしたサンプルの T/stocked のファイルを T 直下へ移動（同名があるものは移動しない）。"
-                                  "記録はファイル管理アプリの履歴に残り、そこから元に戻せます")
+                                  "記録が残り、「整理の履歴…」から元に戻せます")
         self.b_restore.clicked.connect(lambda: self.restore_stocked("T"))
         sel.addWidget(self.b_restore)
         self.b_restore_anal = QPushButton("ANAL/stocked → ANAL に戻す")
         self.b_restore_anal.setToolTip(
             "チェックしたサンプルの ANAL/stocked の A@@ を ANAL 直下へ移動。ANAL に同名・同じ #番号があるものは移動せず、"
-            "stocked 内で #番号が重なるものは新しい方だけ戻します。記録はファイル管理アプリの ANAL 整理の履歴に残り、そこから元に戻せます")
+            "stocked 内で #番号が重なるものは新しい方だけ戻します。記録が残り、「整理の履歴…」から元に戻せます")
         self.b_restore_anal.clicked.connect(lambda: self.restore_stocked("ANAL"))
         sel.addWidget(self.b_restore_anal)
         sel.addStretch()
@@ -1446,7 +1446,7 @@ class ServerAnalPage(QWidget):
         box.setWindowTitle(title)
         box.setText(f"{len(plans)} サンプルの {what}/stocked から {what} 直下へ {n} 件（付属の .tdms_index を含む）を移動します。"
                     + (f"\n移動しないもの {len(skipped)} 件（同名・同じ番号あり など）" if skipped else "")
-                    + "\n\nよろしいですか？（ファイル管理アプリの履歴から元に戻せます）")
+                    + "\n\nよろしいですか？（「整理の履歴…」から元に戻せます）")
         box.setDetailedText("\n".join([p[3] for p in plans if p[3]] + (["移動しないもの:"] + skipped if skipped else [])))
         box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if box.exec() != QMessageBox.StandardButton.Yes:
@@ -1498,7 +1498,7 @@ class ServerAnalPage(QWidget):
         self.b_fix = QPushButton("チェックした対処を実行…")
         self.b_fix.setObjectName("primary")
         self.b_fix.setToolTip("下の一覧でチェックした対処を、実行前に調べ直してから行います。移動・削除はすべて記録され、"
-                              "ファイル管理アプリの履歴から元に戻せます（削除は ANAL\\.整理履歴 への移動）")
+                              "「整理の履歴…」から元に戻せます（削除は ANAL\\.整理履歴 への移動）")
         self.b_fix.clicked.connect(self.run_actions)
         row.addWidget(self.b_fix)
         b_all = QPushButton("対処をすべてチェック")
@@ -1510,12 +1510,12 @@ class ServerAnalPage(QWidget):
         b_redo.clicked.connect(self.redo_selected)
         row.addWidget(b_redo)
         b_archive = QPushButton("解析済み T → T/stocked…")
-        b_archive.setToolTip("チェックしたサンプルの、解析済みの生データを T/stocked へ退避します（ファイル管理の「Data 退避」と同じ）。"
+        b_archive.setToolTip("チェックしたサンプルの、解析済みの生データを T/stocked へ退避します。"
                              "未解析・欠番は T に残します")
         b_archive.clicked.connect(self.archive_t)
         row.addWidget(b_archive)
         b_hist = QPushButton("整理の履歴…")
-        b_hist.setToolTip("こことファイル管理アプリで行った移動・削除の記録を一覧にし、選んだ操作を元に戻します")
+        b_hist.setToolTip("ここと実験ファイルDBで行った移動・削除の記録を一覧にし、選んだ操作を元に戻します")
         b_hist.clicked.connect(self.show_journals)
         row.addWidget(b_hist)
         bl.addLayout(row)
@@ -1691,7 +1691,7 @@ class ServerAnalPage(QWidget):
         text = "\n".join(f"・{r['experiment']} / {r['sample']}: {i['label']} {i['count']} 件 → {self.ACTION_TEXT[i['action']]}"
                          for r, i in picked[:25]) + (f"\n…ほか {len(picked) - 25} 件" if len(picked) > 25 else "")
         if QMessageBox.question(self, "現状の整理", f"次の対処を行います（実行の直前にサーバーで調べ直します）。\n\n{text}\n\n"
-                                "移動・削除はすべて記録され、ファイル管理アプリの履歴から元に戻せます。実行しますか？"
+                                "移動・削除はすべて記録され、「整理の履歴…」から元に戻せます。実行しますか？"
                                 ) != QMessageBox.StandardButton.Yes:
             return
         by_sample = {}
@@ -1747,7 +1747,7 @@ class ServerAnalPage(QWidget):
                     self, "ANAL をやり直す",
                     f"次のサンプルの ANAL と ANAL/stocked の A@@ をすべて ANAL\\.整理履歴 へ移します。\n\n{text}\n\n"
                     "移したあとは T の生データがすべて未解析になります（「解析を実行」で解析し直してください）。"
-                    "移した A@@ はファイル管理アプリの履歴から元に戻せます。\n"
+                    "移した A@@ は「整理の履歴…」から元に戻せます。\n"
                     "※ この A@@ から作った BNAL（B@@）も、解析し直したあとで作り直しが必要です。\n\n実行しますか？",
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                     QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:

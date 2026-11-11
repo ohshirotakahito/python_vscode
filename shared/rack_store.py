@@ -1,7 +1,7 @@
 """解析サーバーのサンプル集計（rack_samples / rack_roots / rack_bnals テーブル）の取り決めと読み書き。
 
-database アプリの Analysis_server 調査が全体を書き、filemanager はファイル移動後に refresh_sample で
-1サンプルだけ同じ形で書き直し、filemanager・Plotting・database の各画面がこれを読む。
+database アプリの Analysis_server 調査が全体を書き、ファイルを移動したアプリ（Analyzer・database）は refresh_sample で
+1サンプルだけ同じ形で書き直し、Analyzer・Plotting・database の各画面がこれを読む。
 測定番号の数え方（measurement_key）もここで決める。テーブルの列や意味を変えるときは shared/README.md を参照。
 """
 from pathlib import Path
@@ -317,7 +317,7 @@ def scan_samples(source, path, cancel, emit, count_bnal=None):
 def refresh_sample(path, root, experiment, sample, cancel=None):
     """Re-read one sample's T and count every BNAL@, saved exactly as a full scan would save that sample.
 
-    For the file manager after it moves files: one T listing, ANAL (+stocked) and one listing per BNAL@."""
+    For an app after it moves files: one T listing, ANAL (+stocked) and one listing per BNAL@."""
     cancel = cancel or threading.Event()
     root_key = os.path.normcase(os.path.normpath(str(root)))
     target = Path(root) / experiment / sample / (sample + '_10k_Sample') / 'T'
