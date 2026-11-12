@@ -88,6 +88,13 @@ def refresh_all_sources(machines, include_archived=False, notify=lambda *args: N
     return results
 
 
+def machine_label(code, row):
+    """装置の表示名：Machine_N.csv の PC selection（例 'NI OUN#5'）から「AXN1（OUN#5）」。PC がなければコードのまま。"""
+    pc = (row.get('PC selection') or '').strip()
+    pc = pc[3:].strip() if pc.upper().startswith('NI ') else pc
+    return f'{code}（{pc}）' if pc else code
+
+
 def history_summary(records):
     # Legacy history has no server path: count recorded experiment/sample/type.
     destinations = {(r[7], r[8], r[9], r[13]) for r in records}
@@ -444,7 +451,11 @@ class App(tk.Tk):
         self.events.put(('progress', phase, count, total, detail))
 
     def values(self):
-        return {key: value.get() for key, value in self.vars.items()}
+        values = {key: value.get() for key, value in self.vars.items()}
+        if 'machine' in values:
+            codes = {label: code for code, label in getattr(self, 'machine_labels', {}).items()}
+            values['machine'] = codes.get(values['machine'], values['machine'])
+        return values
 
     def log(self, text):
         follow = self.output.yview()[1] >= 0.999
@@ -517,7 +528,12 @@ class App(tk.Tk):
             return results
         def done(data):
             self.machine_data = data.get('machines', {})
-            self.set_choices('machine', list(self.machine_data))
+            # 表示は「AXN1（OUN#5）」、内部（履歴CSV・前回の選択）は装置コード「AXN1」のまま
+            self.machine_labels = {code: machine_label(code, row) for code, row in self.machine_data.items()}
+            current = self.vars['machine'].get()
+            if current in self.machine_labels:
+                self.vars['machine'].set(self.machine_labels[current])
+            self.set_choices('machine', list(self.machine_labels.values()))
             operators = data.get('operators', [])
             self.people = {f'{r[0]} ({r[1]})':r[1] for r in operators if len(r)>=2 and r[0] and r[1]}
             self.set_choices('uploader', list(self.people))
@@ -783,7 +799,7 @@ class App(tk.Tk):
             return folders, core.history(v['legacy'], v['local']), updated
         def done(data):
             folders, history, updated = data
-            if (v['machine'], v['selection']) != (self.vars['machine'].get(), self.vars['selection'].get()):
+            if (v['machine'], v['selection']) != (self.values()['machine'], self.vars['selection'].get()):
                 return self.show_cached_sources()  # selection changed while loading
             self.clear_sources('')
             self.source_context = (v['machine'], v['selection'])
