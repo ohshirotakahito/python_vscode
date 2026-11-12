@@ -68,6 +68,21 @@ def refresh_targets(keys, samples, roots, is_dir=lambda path: Path(path).is_dir(
     return [(root, experiment, sample) for (_, experiment, sample), root in found.items()]
 
 
+def why_missing(experiment, sample, roots, listdir=lambda path: [x.name for x in Path(path).iterdir()]):
+    """Why a sample was not found on any share: '' when no share has its folder, else where the folder is and what
+    its 10k_Sample folder is called there (e.g. a sample folder renamed but not the folders inside it)."""
+    notes = []
+    for root in roots:
+        try:
+            names = listdir(Path(root) / experiment / sample)
+        except OSError:
+            continue
+        inner = sorted(n for n in names if n.endswith('_10k_Sample'))
+        notes.append(f'{root} にフォルダはあるが {sample}_10k_Sample/T がない'
+                     + (f'（中は {"・".join(inner)}。中のフォルダ名が古い可能性）' if inner else '（10k_Sample フォルダなし）'))
+    return '；'.join(notes)
+
+
 def create_panel(parent, window):
     bar = ttk.Frame(window, padding=8)
     bar.pack(fill='x')
@@ -212,19 +227,34 @@ def create_panel(parent, window):
                         failed.append(f'{experiment}/{sample}（{root}）: {exc}')
             except OSError as exc:
                 failed.append(str(exc))
-            window.after(0, lambda: finish(results, failed))
+            found = {(e, s) for _, e, s in results}
+            reasons = {}
+            for e, s in keys:
+                if (e, s) not in found:
+                    try:
+                        reasons[(e, s)] = why_missing(e, s, roots)
+                    except OSError:
+                        reasons[(e, s)] = ''
+            window.after(0, lambda: finish(results, failed, reasons))
 
-        def finish(results, failed):
+        def finish(results, failed, reasons):
             parent.sample_refresh_busy = False
             found = {(e, s) for _, e, s in results}
-            missing = [f'{e}/{s}' for e, s in keys if (e, s) not in found]
+            nowhere = [f'{e}/{s}' for (e, s), why in reasons.items() if not why]
+            misnamed = [f'{e}/{s}: {why}' for (e, s), why in reasons.items() if why]
             reload()
             for name in ('anal', 'bnal'):
                 (parent.progress_reloads.get(name) or (lambda: None))()
             status.set(f'再取得 {len(found)}/{len(keys)} サンプル（{len(results)} 共有）'
-                       + (f'　どの解析サーバーにもない: {"、".join(missing[:5])}{" …" if len(missing) > 5 else ""}'
-                          if missing else '')
+                       + (f'　どの解析サーバーにもない: {"、".join(nowhere[:5])}{" …" if len(nowhere) > 5 else ""}'
+                          if nowhere else '')
                        + (f'　失敗 {len(failed)}件: {failed[0]}' if failed else ''))
+            if misnamed:
+                messagebox.showinfo('解析サーバーから再取得', 'サンプルのフォルダはあるのに読めなかったものがあります。\n'
+                                    '⑤ File Ops の「サンプル名一括変更」で中のフォルダ名を揃えてから、もう一度再取得してください。\n\n'
+                                    + '\n'.join(misnamed[:20])
+                                    + (f'\n…ほか {len(misnamed) - 20} 件' if len(misnamed) > 20 else ''),
+                                    parent=window)
 
         threading.Thread(target=work, daemon=True).start()
 
