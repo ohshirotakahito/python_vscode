@@ -13,6 +13,18 @@ BNAL = "B@@2026_01{:02d}_1300_S1_10k_Sample#{:03d}.tdms"
 RAW = "S1_10k_Sample#{:03d} D_20250401_1040 UNAN#2_x_EXSV#1_20250401_1000_SGM  D0.540nm.tdms"
 
 
+def tdms_bytes(tag=b""):
+    """A small complete TDMS file (tag makes files of one content differ)."""
+    import io
+    import numpy as np
+    from nptdms import ChannelObject, GroupObject, RootObject, TdmsWriter
+    buf = io.BytesIO()
+    with TdmsWriter(buf) as w:
+        w.write_segment([RootObject({"name": tag.decode() or "x"}), GroupObject("Data"),
+                         ChannelObject("Data", "Ch1", np.zeros(4))])
+    return buf.getvalue()
+
+
 class BnalStatusTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -26,16 +38,16 @@ class BnalStatusTests(unittest.TestCase):
             self.addCleanup(p.stop)
         for n in (1, 2, 3):
             (self.t / RAW.format(n)).write_bytes(b"raw")
-            (self.t / "ANAL" / ANAL.format(1, n)).write_bytes(b"a")
+            (self.t / "ANAL" / ANAL.format(1, n)).write_bytes(tdms_bytes())
 
     def tearDown(self):
         self.tmp.cleanup()
 
-    def b(self, n, day=2, target="seq", content=b"b", result_folder=False):
+    def b(self, n, day=2, target="seq", content=None, result_folder=False):
         folder = self.t / f"BNAL@{target}"
         folder.mkdir(exist_ok=True)
         p = folder / BNAL.format(day, n)
-        p.write_bytes(content)
+        p.write_bytes(tdms_bytes() if content is None else content)
         if result_folder:
             (folder / p.name.replace("_1300_", "_1300@").replace(".tdms", "")).mkdir()
         return p
@@ -70,7 +82,7 @@ class BnalStatusTests(unittest.TestCase):
     def test_b_without_anal_goes_to_old_and_b_before_a_reanalysis_is_only_reported(self):
         stale = self.b(1, day=1)  # B@@ 2026_0101_1300 is newer than A@@ 2026_0101_1200: fine
         self.assertNotIn("stale_b", self.kinds())
-        (self.t / "ANAL" / ANAL.format(5, 1)).write_bytes(b"a2")  # #001 analysed again on 01-05
+        (self.t / "ANAL" / ANAL.format(5, 1)).write_bytes(tdms_bytes(b"2"))  # #001 analysed again on 01-05
         orphan = self.b(9)
         found = self.kinds()
         # made from an earlier A@@: information for the sample only, never moved from here
@@ -83,9 +95,20 @@ class BnalStatusTests(unittest.TestCase):
         self.assertTrue(stale.exists() and (self.t / "BNAL@seq" / "old" / orphan.name).exists())
         self.assertEqual(self.kinds()["pending"]["count"], 2)  # #002, #003 (the stale #001 still counts as made)
 
+    def test_cut_b_is_found_and_deleted(self):
+        whole = self.b(1)
+        for n in (2, 3):
+            self.b(n)
+        cut = self.b(3, day=4, content=tdms_bytes()[:len(tdms_bytes()) // 2])  # the newest, cut short
+        found = self.kinds()
+        self.assertEqual(found["broken_b"]["files"], [str(cut)])
+        self.assertNotIn("old_b", found)  # the cut one is not counted as the newer #003
+        bnal_status.apply(self.t, "seq", "broken_b")
+        self.assertTrue(whole.exists() and not cut.exists())
+
     def test_sample_level_anal_stocked_and_empty_folders(self):
         (self.t / "ANAL" / "stocked").mkdir()
-        (self.t / "ANAL" / "stocked" / ANAL.format(1, 4)).write_bytes(b"a")
+        (self.t / "ANAL" / "stocked" / ANAL.format(1, 4)).write_bytes(tdms_bytes())
         (self.t / "BNAL@nothing").mkdir()
         found = {i["kind"]: i for i in bnal_status.survey(self.t, 0)}
         self.assertEqual(found["anal_stocked"]["action"], "restore_anal")

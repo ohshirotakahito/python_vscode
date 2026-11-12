@@ -1479,9 +1479,10 @@ class ServerAnalPage(QWidget):
     # -- current state (anal_status): survey the checked samples, put right what can be ---------
     ISSUE_COLS = ["対処", "グループ", "実験", "サンプル", "内容", "件数", "説明", "手作業・対処"]
     # order in which checked actions are carried out (results and broken files first, then stocked, then duplicates)
-    ACTION_ORDER = ["results_in_t", "empty_raw", "restore_t", "raw_copy", "old_anal", "restore_anal"]
+    ACTION_ORDER = ["results_in_t", "empty_raw", "restore_t", "raw_copy", "broken_anal", "old_anal", "restore_anal"]
     ACTION_TEXT = {"results_in_t": "ANAL へ移す", "empty_raw": "T/broken へ移す", "restore_t": "T に戻す",
-                   "raw_copy": "T/duplicate へ移す", "old_anal": "削除（元に戻せる）", "restore_anal": "ANAL に戻す"}
+                   "raw_copy": "T/duplicate へ移す", "old_anal": "削除（元に戻せる）",
+                   "broken_anal": "削除して解析し直す（元に戻せる）", "restore_anal": "ANAL に戻す"}
     MANUAL_KINDS = ("renumber", "renumber_anal", "results_b", "empty_raw_stocked")
 
     def build_status(self):
@@ -2000,7 +2001,7 @@ class ServerAnalPage(QWidget):
                             log(f"  ⚠ {i['label']}（解析しません）")
                         server_anal.save_state(state)
                         continue
-                    for kind in ("results_in_t", "empty_raw", "raw_copy", "old_anal"):
+                    for kind in ("results_in_t", "empty_raw", "raw_copy", "broken_anal", "old_anal"):
                         if any(i["action"] == kind for i in issues):
                             for line in anal_status.apply(t, kind, settle):
                                 report.write("  " + line)
@@ -2944,9 +2945,9 @@ class ServerBnalPage(QWidget):
     # -- live check -------------------------------------------------------------
     # -- current state (bnal_status): survey the samples checked in (1), put right what can be ------------
     B_ISSUE_COLS = ["✓", "グループ", "実験", "サンプル", "target", "内容", "件数", "説明", "手作業・対処"]
-    B_ACTION_ORDER = ["restore_anal", "empty_b", "old_b", "orphan_b"]
+    B_ACTION_ORDER = ["restore_anal", "empty_b", "broken_b", "old_b", "orphan_b"]
     B_ACTION_TEXT = {"restore_anal": "ANAL に戻す", "empty_b": "削除（元に戻せる）", "old_b": "削除（元に戻せる）",
-                     "orphan_b": "old へ移す"}
+                     "broken_b": "削除して解析し直す（元に戻せる）", "orphan_b": "old へ移す"}
     B_MANUAL = ("renumber", "renumber_anal")
 
     def build_state(self):
