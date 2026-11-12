@@ -36,8 +36,8 @@ class SharedRulesTests(unittest.TestCase):
         self.assertEqual(Path(server_anal.DEFAULT_DB), REPO_ROOT / "database" / "inventory.sqlite3")
 
     def test_journals_go_to_the_file_manager_history(self):
-        self.assertEqual(server_anal.T_STOCK_LOGS, REPO_ROOT / "filemanager" / "t_stock_logs")
-        self.assertEqual(server_anal.ANAL_LOGS, REPO_ROOT / "filemanager" / "anal_logs")
+        self.assertEqual(server_anal.T_STOCK_LOGS, REPO_ROOT / "database" / "file_logs" / "t_stock_logs")
+        self.assertEqual(server_anal.ANAL_LOGS, REPO_ROOT / "database" / "file_logs" / "anal_logs")
 
     def test_t_stocked_restore_is_journaled_and_undoable(self):
         with tempfile.TemporaryDirectory() as tmp:

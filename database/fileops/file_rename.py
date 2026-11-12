@@ -26,7 +26,7 @@ TOP_file_rename_for_ANAL_20250206.py を data_transfer_common.py ベースに
 
   2. リネーム履歴のログ保存（本実行時のみ）
      本実行(dry_run=False)のたびに、実行した変更の対応表を
-     filemanager/rename_logs/ 以下にCSVとして保存する
+     database/file_logs/rename_logs/ 以下にCSVとして保存する
      （例: rename_log_20260819_144501.csv）。
      列: old_path, new_path, renamed_at
 
@@ -79,8 +79,10 @@ from data_transfer_common import (
 # 例: "AB@1234_5678_9012_ID01xxx.tdms" -> "AB@1234_5678_9012_ID01.tdms"
 DEFAULT_PATTERN = r"([A-Z@0-9]+)(\d{4}_\d{4}_\d{4})_([A-Za-z0-9#]+).*"
 
-# リネーム履歴ログの保存先（このスクリプトと同じ場所の rename_logs/ 配下）
-LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'rename_logs')
+# リネーム履歴ログの保存先（database/file_logs/rename_logs。旧 filemanager/rename_logs の記録はここへ移す）
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))  # リポジトリ直下
+from shared.file_moves import log_dir  # noqa: E402
+LOG_DIR = str(log_dir('rename_logs'))
 
 
 def _new_log_path():
@@ -100,7 +102,7 @@ def rename_files(file_paths, pattern=DEFAULT_PATTERN, ext=".tdms",
     max_files : 指定すると、対象ファイルの先頭からこの件数だけを処理する
                 （少数のファイルだけで試したいときに使う）。
     log_path  : 本実行時にログを書き込むCSVパス。省略時は自動生成される
-                （filemanager/rename_logs/rename_log_<timestamp>.csv）。
+                （database/file_logs/rename_logs/rename_log_<timestamp>.csv）。
 
     戻り値: (renamed, skipped, log_path)
       renamed  : 実際に（またはdry_runなら予定として）リネームされる
@@ -313,5 +315,5 @@ if __name__ == '__main__':
     # 使って以下のように実行する（別途、対話環境やコメントアウトを外して使用）:
     #
     # from file_rename import undo_from_log
-    # undo_from_log(r"D:\Python_VScode\filemanager\rename_logs\rename_log_20260819_144501.csv")
+    # undo_from_log(r"D:\GitHub\Python_VScode\database\file_logs\rename_logs\rename_log_20260819_144501.csv")
     # ============================================================

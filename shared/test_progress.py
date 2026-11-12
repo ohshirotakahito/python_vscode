@@ -1,4 +1,4 @@
-"""shared/progress.py の判定規則（DB・ファイル管理・Analyzer の共通の基準）のテスト。"""
+"""shared/progress.py の判定規則（DB・Analyzer の共通の基準）のテスト。"""
 from unittest import TestCase
 
 from shared import progress
@@ -39,6 +39,12 @@ class AnalShareTests(TestCase):
         unchecked = progress.anal_share(dict(row(anal=4), anal_missing_checked=0))
         self.assertEqual(progress.share_flags(unchecked), ['要更新'])
         self.assertEqual(progress.share_flags(progress.anal_share(dict(row(), anal_missing_checked=0))), [])
+
+    def test_results_in_t_are_flagged_on_the_share_and_the_sample(self):
+        cell = progress.anal_share(dict(row(anal=8), t_results_tdms=3))
+        self.assertIn('T内A@@', progress.share_flags(cell))
+        self.assertIn('T内A@@', progress.assess_sample([cell, progress.anal_share(row(anal=8))])[1])
+        self.assertNotIn('T内A@@', progress.ANAL_BLOCKING + progress.ANAL_INFO)  # put right, the auto run does it
 
     def test_sample_flags_over_shares(self):
         main = progress.anal_share(row(t=10, anal=10))

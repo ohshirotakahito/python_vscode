@@ -1,8 +1,9 @@
-"""履歴（ジャーナル）を残すファイル移動と、その取り消し（filemanager と Analyzer で共通）。
+"""履歴（ジャーナル）を残すファイル移動と、その取り消し（実験ファイルDB と Analyzer で共通）。
 
 計画（plan）は dict(folder, operations=[dict(source, target, size, modified_ns, status)]) で、
 execute_moves() が移動前に全対応を JSON に保存し、1件ごとに状態を書き足す。undo_plan() でその JSON から戻せる。
-履歴は filemanager の履歴画面から見えるよう journal_dir() のフォルダに保存する（Analyzer からの移動も同じ場所）。
+履歴は journal_dir() のフォルダ（database/file_logs/）に保存し、どのアプリからの移動も
+シグナル解析の「整理の履歴…」から元に戻せる。
 """
 from collections import Counter
 from datetime import datetime
@@ -19,9 +20,34 @@ from shared import REPO_ROOT
 from shared.rack_store import as_numbers, measurement_key
 
 
+LOG_ROOT = REPO_ROOT / 'database' / 'file_logs'
+LEGACY_LOG_ROOT = REPO_ROOT / 'filemanager'  # ファイル管理アプリを実験ファイルDBへ統合する前の置き場所
+
+
+def log_dir(name):
+    """記録フォルダ database/file_logs/<name>。旧 filemanager/<name> に残っている記録は、ここへ移してから返す。
+
+    Git 管理外の記録は PC ごとにあるので、各 PC で初めて使ったときに移す。同名がすでにある項目は移さない。"""
+    folder = LOG_ROOT / name
+    legacy = LEGACY_LOG_ROOT / name
+    if legacy.is_dir():
+        folder.mkdir(parents=True, exist_ok=True)
+        for item in legacy.iterdir():
+            if not (folder / item.name).exists():
+                try:
+                    os.rename(item, folder / item.name)
+                except OSError:
+                    pass  # 別のアプリが同時に移した・使用中: 次の呼び出しで再試行する
+        try:
+            legacy.rmdir()
+        except OSError:
+            pass
+    return folder
+
+
 def journal_dir(entity):
-    """移動履歴の保存先: 'ANAL' -> filemanager/anal_logs, 'BNAL' -> bnal_logs, 'T_stock' -> t_stock_logs。"""
-    return REPO_ROOT / 'filemanager' / f'{entity.lower()}_logs'
+    """移動履歴の保存先: 'ANAL' -> database/file_logs/anal_logs, 'BNAL' -> bnal_logs, 'T_stock' -> t_stock_logs。"""
+    return log_dir(f'{entity.lower()}_logs')
 
 
 def scan_anal(folder, entity='ANAL'):

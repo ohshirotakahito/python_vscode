@@ -1,4 +1,4 @@
-"""Data 退避の計画: 解析済みの元ファイル T -> T/stocked と、その逆（filemanager と Analyzer で共通）。
+"""Data 退避の計画: 解析済みの元ファイル T -> T/stocked と、その逆（Analyzer で使用）。
 
 T のファイルは ANAL か ANAL/stocked に同じ測定番号（rack_store.measurement_key）の空でない TDMS があるとき解析済み。
 未解析・欠番は常に T に残す。.tdms_index など同じ名前の付属ファイルは一緒に移す。実行は file_moves.execute_moves。

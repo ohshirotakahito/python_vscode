@@ -2,6 +2,7 @@
 from pathlib import Path, PureWindowsPath
 import csv
 import json
+import os
 import queue
 import threading
 import time
@@ -23,8 +24,16 @@ except ImportError:
     import bnal_progress
     import anal_progress
     import plan_view
+try:
+    from .scan_lock import ScanLock
+except ImportError:
+    from scan_lock import ScanLock
+try:
+    from .fileops.panel import FileOpsPanel
+except ImportError:
+    from fileops.panel import FileOpsPanel
 
-BASE = Path(__file__).resolve().parent
+BASE =Path(__file__).resolve().parent
 CONFIG = BASE / 'sources.json'
 DEFAULTS = [dict(server=name, root='\\\\' + name + '\\analysis', kind='analysis')
             for name in ('Rackstation', 'QTserver', 'QDserver', 'QKserver')]
@@ -33,6 +42,11 @@ DEFAULTS.append(dict(server='SQserver', root='', kind='experiment'))
 SOURCE_COLUMN_WIDTHS = {'server': 140, 'root': 300, 'status': 140, 'file_count': 140, 'bytes': 140,
                         'volume': 200, 'volume_rate': 80, 'folder_count': 140, 'last_success': 195,
                         'last_attempt': 208, 'error': 185}
+# 「SQserver 実験一覧」の列（共有フォルダへ書き出す sq_experiments.csv も同じ列）
+SQ_ENTRY_COLUMNS = ('group', 'container', 'machine', 'name', 'analysis_state', 'exsv_t_tdms', 'exzsv_tdms',
+                    'experiment_at', 'analysis_started_at', 'last_success', 'status')
+SQ_ENTRY_TITLES = ('グループ', 'backup / ANフォルダ', '装置', '元の名前', '解析着手', 'EXSV/T TDMS数', 'EXZSV TDMS数',
+                   '実験日時', '解析着手日時', '最終取得 UTC', '取得状態')
 
 
 def selected_source_kind(server, root):
@@ -64,7 +78,7 @@ class App(tk.Tk):
         self.geometry('1450x950')
         style = ui_theme.apply(self, ui_theme.DATABASE)
         style.configure('Treeview', rowheight=26)
-        ui_theme.header(self, '実験ファイル データベース', 'サーバーごとのファイル保存状況と解析着手状況',
+        ui_theme.header(self, '実験ファイル データベース', 'サーバーごとのファイル保存状況と解析着手状況・ファイル操作',
                         '\uEE94', ui_theme.DATABASE, on_close=lambda: self.close()).pack(fill='x')
         self.db_path = catalog.DEFAULT_DB
         catalog.initialize(self.db_path)
@@ -96,6 +110,9 @@ class App(tk.Tk):
         self.main_tabs.add(self.bnal_panel, text='BNAL進捗')
         self.plan_panel = ttk.Frame(self.main_tabs)
         self.main_tabs.add(self.plan_panel, text='サンプル台帳')
+        # もとのファイル管理アプリ（コピー・サンプル名変更・名前変更・フォルダ作成）。処理中は DB の更新と同時に走らせない
+        self.fileops = FileOpsPanel(self.main_tabs, owner=self)
+        self.main_tabs.add(self.fileops, text='ファイル操作')
         self.buttons = []
         target = ttk.LabelFrame(self.sq_panel, text='更新する範囲を選択（ほかの範囲の記録は保持します）', padding=8)
         target.pack(fill='x', padx=8)
@@ -134,7 +151,8 @@ class App(tk.Tk):
         self.buttons.append(settings_button)
         ttk.Button(target, text='Recent_Data 着手状況',
                    command=lambda: recent_progress.open_window(self)).grid(row=0, column=10, padx=4)
-        target.columnconfigure(11, weight=1)  # 入力欄は固定幅。余白は右端へ
+        ttk.Button(target, text='台帳の共有', command=self.publish_settings).grid(row=0, column=11, padx=4)
+        target.columnconfigure(12, weight=1)  # 入力欄は固定幅。余白は右端へ
         # 2本のバーを見出しと色で区別する（サーバー更新＝アプリの紫、表示の読み込み＝紫寄りの青）
         style = ttk.Style(self)
         bars = ttk.Frame(self.sq_panel)
@@ -191,9 +209,7 @@ class App(tk.Tk):
             ('sq_groups', 'SQserver グループ集計',
              ('server', 'group', 'container', 'folder_count', 'archive_count', 'started_count', 'pending_count', 'started_rate', 'history_note', 'root', 'last_success', 'status'),
              ('サーバー', 'グループ', 'backup / ANフォルダ', '直下フォルダ数', '圧縮ファイル数', '着手数', '未着手数', '着手率', '履歴照合の確認事項', '保存先', '最終取得 UTC', '取得状態')),
-            ('sq_entries', 'SQserver 実験一覧',
-             ('group', 'container', 'machine', 'name', 'analysis_state', 'exsv_t_tdms', 'exzsv_tdms', 'experiment_at', 'analysis_started_at', 'last_success', 'status'),
-             ('グループ', 'backup / ANフォルダ', '装置', '元の名前', '解析着手', 'EXSV/T TDMS数', 'EXZSV TDMS数', '実験日時', '解析着手日時', '最終取得 UTC', '取得状態')),
+            ('sq_entries', 'SQserver 実験一覧', SQ_ENTRY_COLUMNS, SQ_ENTRY_TITLES),
             ('updates', '更新状況・履歴',
              ('server', 'share_name', 'status', 'direct_folders', 'analysis_started', 'analysis_pending', 'analysis_rate', 'folder_count', 'elapsed', 'started', 'finished', 'error', 'count_note', 'root'),
              ('サーバー', '共有名', '状態', '直下実験フォルダ総数', '解析着手数', '未着手数', '着手率', '確認フォルダ数（全階層）', '経過秒', '開始 UTC', '終了 UTC', '処理中の場所・エラー', '着手照合の確認事項', '共有')),
@@ -619,8 +635,15 @@ class App(tk.Tk):
     def run_jobs(self, jobs):
         if self.busy or getattr(self, 'rack_busy', False):
             return
+        if self.fileops.busy:
+            messagebox.showinfo('ファイル操作中', 'ファイル操作タブの処理が終わってから更新してください。')
+            return
         if not jobs:
             messagebox.showinfo('更新対象なし', '保存先の共有パスを設定し、更新するサーバー・共有・実験を選んでください。')
+            return
+        lock = ScanLock('実験ファイルDB（Data_server の更新）')
+        if not lock.acquire():
+            messagebox.showinfo('走査中', f'ほかの走査が実行中です。終わってから実行してください。\n{lock.holder()}')
             return
         self.db_path = catalog.DEFAULT_DB
         self.busy = True
@@ -643,6 +666,12 @@ class App(tk.Tk):
         self.update_total()
 
         def worker():
+            try:
+                scan()
+            finally:
+                lock.release()
+
+        def scan():
             failures = 0
             for i, (source, scope) in enumerate(jobs):
                 key = str(i)
@@ -822,7 +851,88 @@ class App(tk.Tk):
             except OSError as exc:
                 messagebox.showerror('保存失敗', str(exc))
 
+    def publish_settings(self):
+        """台帳を共有フォルダへ書き出す処理（publish.py）の有効・無効と手動実行。"""
+        try:
+            from . import publish
+        except ImportError:
+            import publish
+        window = tk.Toplevel(self)
+        window.title('台帳の共有')
+        window.configure(bg=ui_theme.BG)
+        window.transient(self)
+        frame = ttk.Frame(window, padding=12)
+        frame.pack(fill='both', expand=True)
+        ttk.Label(frame, text=f'書き出し先: {publish.PUBLISH_DIR}\n'
+                              f'台帳: {", ".join(publish.FILES.values())}\n'
+                              '計測PCはこのフォルダの同期から、実験のアップロード後の進捗（解析着手・ANAL・BNAL）を確認します。',
+                  wraplength=640, justify='left').pack(anchor='w')
+        settings = publish.load_settings()
+        enabled = tk.BooleanVar(value=settings['enabled'])
+        task_state = tk.StringVar()
+        last_run = tk.StringVar()
+
+        def describe():
+            registered = publish.task_registered()
+            task_state.set(('タスク スケジューラ: 登録済み（毎時 5 分に起動）' if registered else
+                            'タスク スケジューラ: 未登録（「タスクを登録」を押してください）') +
+                           ('' if enabled.get() else '　※自動実行は無効のため、起動しても何もしません'))
+            status = publish.load_status()
+            if not status:
+                last_run.set('前回の実行: なし')
+                return
+            exports = '　'.join(f"{publish.FILES[name]} {'%s行' % r['rows'] if r['ok'] else '失敗'}"
+                               for name, r in status.get('exports', {}).items())
+            failed = [f'{name}: {r["result"]}' for name, r in status.get('scans', {}).items()
+                      if not r['result'].startswith('完了')]
+            last_run.set(f"前回の実行（UTC）: {status.get('started')} ～ {status.get('finished')}"
+                         f"{'（走査なし）' if not status.get('scanned') else ''}\n{exports}" +
+                         ('\n走査の注意: ' + ' ／ '.join(failed) if failed else ''))
+
+        def toggle():
+            current = publish.load_settings()
+            current['enabled'] = enabled.get()
+            try:
+                publish.save_settings(current)
+            except OSError as exc:
+                messagebox.showerror('保存失敗', str(exc), parent=window)
+            describe()
+
+        def install():
+            result = publish.install_task()
+            if result.returncode != 0:
+                messagebox.showerror('タスクの登録', (result.stderr or result.stdout).strip(), parent=window)
+            describe()
+
+        def start(*args):
+            publish.start_background(*args)
+            messagebox.showinfo('台帳の共有', 'バックグラウンドで開始しました。終わったら「表示を更新」で結果を確認できます。'
+                                f'\n経過はログに記録されます: {publish.LOG_PATH}', parent=window)
+
+        ttk.Checkbutton(frame, text='1時間ごとの自動実行を有効にする（走査してから書き出す）', variable=enabled,
+                        command=toggle).pack(anchor='w', pady=(10, 0))
+        ttk.Label(frame, textvariable=task_state, style='Muted.TLabel').pack(anchor='w')
+        ttk.Label(frame, text=f"毎時: SQserver Recent_Data と解析サーバーを走査。{settings['nightly_hour']}時台: "
+                              'Archived/Stocked と BNAL TDMS 数も確認。ほかの走査が実行中なら走査を省き、保存済みDBから書き出します。',
+                  style='Muted.TLabel', wraplength=640, justify='left').pack(anchor='w')
+        ttk.Label(frame, textvariable=last_run, wraplength=640, justify='left').pack(anchor='w', pady=(10, 0))
+        buttons = ttk.Frame(frame)
+        buttons.pack(fill='x', pady=(12, 0))
+        ttk.Button(buttons, text='今すぐ実行（走査＋書き出し）', style='Primary.TButton',
+                   command=lambda: start()).pack(side='left')
+        ttk.Button(buttons, text='書き出しのみ', command=lambda: start('--no-scan')).pack(side='left', padx=6)
+        ttk.Button(buttons, text='表示を更新', command=describe).pack(side='left')
+        ttk.Button(buttons, text='タスクを登録', command=install).pack(side='left', padx=6)
+        ttk.Button(buttons, text='ログを開く',
+                   command=lambda: publish.LOG_PATH.exists() and os.startfile(publish.LOG_PATH)).pack(side='left')
+        ttk.Button(buttons, text='書き出し先を開く',
+                   command=lambda: publish.PUBLISH_DIR.exists() and os.startfile(publish.PUBLISH_DIR)).pack(side='left', padx=6)
+        describe()
+
     def close(self):
+        if not self.fileops.can_close():
+            self.main_tabs.select(self.fileops)
+            return
         if getattr(self, 'rack_busy', False):
             self.rack_cancel.set()
             self.main_tabs.select(self.active_analysis_panel)

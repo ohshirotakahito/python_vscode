@@ -10,12 +10,14 @@ Each issue says whether it can be put right here (action) or needs work by hand 
     restore_anal    ANAL/stocked           -> ANAL                          (numbers ANAL does not have)
     raw_copy        identical copies of one raw file: one stays, the others -> T/duplicate
     old_anal        older analyses of the same raw file, and 0-byte A@@ -> ANAL/.整理履歴 (deleted, restorable)
+    broken_anal     A@@ cut short (checked: much smaller than the others, and the newest) -> ANAL/.整理履歴
 
     manual
     renumber        one '#NNN' used by different measurements (raw files, or the raw files behind the A@@):
                     give them new numbers (file manager: rename), then analyse the sample again (redo)
     results_b       B@@ files in T (belong in T/BNAL@<target>)
     no_raw          A@@ whose raw file is not in T (an analysis copy, or raw files moved elsewhere)  (info)
+    conditions      A@@ made with another condition set than the current one                         (info)
     pending         raw files in T without A@@ (run the analysis)                                    (info)
 
 redo_plan(t) is the sample-level fresh start after renumbering: every A@@ of ANAL and ANAL/stocked goes to
@@ -56,8 +58,9 @@ def _same_file(a, b):
     return file_moves.checksum(long_path(a)) == file_moves.checksum(long_path(b))
 
 
-def survey(t, settle_min=5.0, sources=None):
-    """Issues of one T folder (list of dicts, see the module docstring). sources: {A@@ path: raw name} cache."""
+def survey(t, settle_min=5.0, sources=None, check_conditions=True):
+    """Issues of one T folder (list of dicts, see the module docstring). sources: {A@@ path: raw name} cache.
+    check_conditions: also read the condition set of every A@@ in ANAL (one short read per file)."""
     t = Path(t)
     if not os.path.isdir(long_path(t)):
         raise FileNotFoundError(f"T フォルダが見つかりません: {t}")
@@ -111,15 +114,20 @@ def survey(t, settle_min=5.0, sources=None):
         issues.append(_issue("renumber", "同じ #番号の別の測定（生データ）",
                              sorted({p for p, _, _ in renumber_raw} | {k for _, k, _ in renumber_raw}),
                              f"内容の違う生データが同じ番号を使っています: {', '.join(keys[:10])}",
-                             manual="ファイル管理のリネームで番号を付け直し、そのあと「ANAL をやり直す」で解析し直してください"))
+                             manual="実験ファイルDBの「ファイル操作」→「名前変更・復元」で番号を付け直し、そのあと「ANAL をやり直す」で解析し直してください"))
 
     # ANAL: 0-byte files, then numbers with more than one A@@ (ANAL and ANAL/stocked)
     a_all = {**{t / "ANAL" / n: st for n, st in anal.items() if n.upper().startswith("A@@")},
              **{t / "ANAL" / "stocked" / n: st for n, st in anal_st.items() if n.upper().startswith("A@@")}}
     zero = [p for p, st in a_all.items() if st.st_size == 0]
+    cut = cut_files({p: st.st_size for p, st in a_all.items() if st.st_size and p.parent.name == "ANAL"})
+    if cut:
+        issues.append(_issue("broken_anal", "途中で切れた A@@", list(cut),
+                             "書き込みが途中で止まった A@@ です（" + next(iter(cut.values())) + "）。削除して"
+                             "（ANAL/.整理履歴 に保管し、元に戻せます）、その番号を解析し直します。", "broken_anal"))
     groups = defaultdict(list)
     for p, st in a_all.items():
-        if st.st_size:
+        if st.st_size and p not in cut:
             groups[rack_store.measurement_key(p.name)].append(p)
     sources = {} if sources is None else sources
     old, renumber_anal = list(zero), []
@@ -167,6 +175,13 @@ def survey(t, settle_min=5.0, sources=None):
                              manual="生データの場所を確かめてください（情報）"))
         issues[-1]["count"] = len(orphans)
 
+    if check_conditions:
+        import conditions
+        made = [p for p, st in a_all.items() if st.st_size and p.parent.name == "ANAL"]
+        found = condition_issue(made, conditions.current("anal")["name"])
+        if found:
+            issues.append(found)
+
     todo, busy = server_anal.pending_files(t, settle_min)
     if todo or busy:
         issues.append(_issue("pending", "未解析の生データ", todo,
@@ -175,6 +190,145 @@ def survey(t, settle_min=5.0, sources=None):
                                 if renumber_raw or renumber_anal else ""),
                              manual="「解析を実行」で解析します"))
     return issues
+
+
+# ---------------------------------------------------------------------------
+# the condition set an A@@ was made with (root property 'ANAL Condition Set', written by the Python ANAL)
+# ---------------------------------------------------------------------------
+# TDMS property data types and their sizes (strings are read apart)
+_TYPES = {1: "<b", 2: "<h", 3: "<i", 4: "<q", 5: "<B", 6: "<H", 7: "<I", 8: "<Q", 9: "<f", 10: "<d",
+          0x19: "<f", 0x1A: "<d", 0x21: "<?"}
+
+
+def root_properties(path, limit=1 << 20):
+    """Root properties of a TDMS file from its first segment only (one short read; nptdms would read the
+    metadata of every segment). {} when the file has none or cannot be read."""
+    import struct
+    try:
+        with open(long_path(path), "rb") as f:
+            lead = f.read(28)
+            if len(lead) < 28 or lead[:4] != b"TDSm":
+                return {}
+            toc, _, _, meta_len = struct.unpack("<iiqq", lead[4:28])
+            if not toc & 2:  # kTocMetaData
+                return {}
+            data = f.read(min(meta_len, limit))
+    except OSError:
+        return {}
+    pos = 0
+
+    def take(fmt):
+        nonlocal pos
+        size = struct.calcsize(fmt)
+        value = struct.unpack_from(fmt, data, pos)[0]
+        pos += size
+        return value
+
+    def text():
+        n = take("<I")
+        nonlocal pos
+        value = data[pos:pos + n].decode("utf-8", "replace")
+        pos += n
+        return value
+    try:
+        for _ in range(take("<I")):
+            name = text()
+            index = take("<I")
+            if index not in (0, 0xFFFFFFFF):  # raw data index: skip its description
+                pos += index - 4 if index != 0 else 0
+            props = {}
+            for _ in range(take("<I")):
+                key, kind = text(), take("<i")
+                if kind == 0x20:
+                    props[key] = text()
+                elif kind == 0x44:
+                    pos += 16
+                elif kind in _TYPES:
+                    props[key] = take(_TYPES[kind])
+                else:
+                    return props if name == "/" else {}  # a type not read here: stop
+            if name == "/":
+                return props
+    except (struct.error, IndexError):
+        pass
+    return {}
+
+
+def condition_sets(paths, workers=8):
+    """{A@@ path: condition set name, or '' when the A@@ has none (LabVIEW, or made before the sets)}."""
+    from concurrent.futures import ThreadPoolExecutor
+    paths = [str(p) for p in paths]
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        names = pool.map(lambda p: str(root_properties(p).get("ANAL Condition Set", "")), paths)
+        return dict(zip(paths, names))
+
+
+def condition_issue(a_paths, current_name, sets=None):
+    """Information line when A@@ were made with another condition set than the current one (None otherwise).
+    A@@ without a recorded set (LabVIEW, or older Python runs) are counted apart, not as different."""
+    sets = condition_sets(a_paths) if sets is None else sets
+    by_name = defaultdict(list)
+    for p, name in sets.items():
+        by_name[name].append(p)
+    other = {n: ps for n, ps in by_name.items() if n and n != current_name}
+    if not other:
+        return None
+    unknown = len(by_name.get("", []))
+    detail = ("今の条件（" + current_name + "）と違う条件の A@@: "
+              + "、".join(f"{n} {len(ps)} 件" for n, ps in sorted(other.items(), key=lambda kv: -len(kv[1])))
+              + (f"（記録なし {unknown} 件は数えていません）" if unknown else ""))
+    return _issue("conditions", "今と違う条件の A@@", [p for ps in other.values() for p in ps], detail,
+                  manual="条件をそろえる場合は「ANAL をやり直す」で解析し直してください（情報）")
+
+
+# ---------------------------------------------------------------------------
+# files cut short (a copy or a write that stopped): the segment lead-ins say how long each segment is
+# ---------------------------------------------------------------------------
+def truncated(path, small=8 << 20):
+    """Why a TDMS file is cut short ('' when every segment is complete). Reads only the 28-byte lead-ins
+    (a small file is read in one go, since a share answers slowly per request)."""
+    import io
+    import struct
+    try:
+        size = os.path.getsize(long_path(path))
+        f = open(long_path(path), "rb")
+    except OSError as e:
+        return f"読めません: {e}"
+    with f:
+        if size <= small:
+            f = io.BytesIO(f.read())
+        pos, n = 0, 0
+        while pos < size:
+            f.seek(pos)
+            lead = f.read(28)
+            n += 1
+            if len(lead) < 28 or lead[:4] != b"TDSm":
+                return f"区間 {n} の先頭が壊れています（{pos:,} バイト目）"
+            nxt = struct.unpack("<q", lead[12:20])[0]
+            if nxt < 0 or pos + 28 + nxt > size:
+                return f"区間 {n} が途中で切れています（必要 {pos + 28 + max(nxt, 0):,} バイト、実際 {size:,} バイト）"
+            pos += 28 + nxt
+    return ""
+
+
+def suspects(sizes, ratio=0.9):
+    """Paths worth checking for a cut: smaller than ratio x the folder's median (every file when there are
+    fewer than 3 to compare). A LabVIEW B@@ has hundreds of segments, so checking every file would mean
+    hundreds of requests per file on a share."""
+    if len(sizes) < 3:
+        return sorted(sizes, key=lambda p: Path(p).name)
+    ordered = sorted(sizes.values())
+    median = ordered[len(ordered) // 2]
+    return sorted((p for p, s in sizes.items() if s < median * ratio), key=lambda p: Path(p).name)
+
+
+def cut_files(sizes):
+    """{path: reason} of the suspects that are cut short."""
+    from concurrent.futures import ThreadPoolExecutor
+    paths = suspects(sizes)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        reasons = pool.map(truncated, paths)
+    return {p: why for p, why in zip(paths, reasons) if why}
 
 
 def blocking(issues):
@@ -250,9 +404,9 @@ def apply(t, kind, settle_min=5.0):
         journal, moved, skipped = server_anal.move_aside(t, paths, "duplicate")
         lines.append(f"同じ生データのコピー → T/duplicate: {len(moved)} 件" + (f"（記録 {journal}）" if journal else ""))
         lines += [f"  移さなかったもの: {n}（{why}）" for n, why in skipped]
-    elif kind == "old_anal":
-        journal = _trash(t, paths, "old_anal")
-        lines.append(f"古い解析・空の A@@ を削除（ANAL/.整理履歴 に保管）: {len(paths)} 件" + (f"（記録 {journal}）" if journal else ""))
+    elif kind in ("old_anal", "broken_anal"):
+        journal = _trash(t, paths, kind)
+        lines.append(f"{issue['label']}を削除（ANAL/.整理履歴 に保管）: {len(paths)} 件" + (f"（記録 {journal}）" if journal else ""))
     else:
         raise ValueError(f"この対処はできません: {kind}")
     return lines

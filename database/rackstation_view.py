@@ -1,5 +1,9 @@
 """Analysis_server panel: every analysis server/share plus one combined table."""
 from pathlib import Path, PurePosixPath
+import csv
+from datetime import datetime, timezone
+import os
+import tempfile
 import queue
 import threading
 import sys
@@ -9,9 +13,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # リポジトリ�
 from shared import catalog, progress, ui_theme  # noqa: E402
 try:
     from . import inventory_views
+    from .scan_lock import ScanLock
 except ImportError:
     import inventory_views
-# DB の読み書き・測定番号の規則は shared/rack_store.py（filemanager・Plotting と共有）。
+    from scan_lock import ScanLock
+# DB の読み書き・測定番号の規則は shared/rack_store.py（Analyzer・Plotting と共有）。
 # この画面と既存の呼び出し側のため、同じ名前でここからも使えるようにしている。
 from shared.rack_store import (  # noqa: E402,F401
     entries, sample_counts, NUMBER, SAMPLE_NUMBER, measurement_key, tdms_keys,
@@ -74,6 +80,35 @@ CAPACITY_COLUMNS = ('group', 'root', 'status', 'experiments', 'samples', 't_tdms
 CAPACITY_TITLES = ('グループ', '解析ルート', '状態', '実験数', 'サンプル数', 'T直下TDMS数', 'ANAL解析数',
                    'TDMS容量（T+ANAL）', 'ボリューム使用量 / 全体', '使用率', '最終全体取得 UTC', '最終試行 UTC', 'エラー・除外')
 OVERALL = '全体まとめ'
+CSV_PATH = Path(r'D:\Qstatus\database\analysis_server_all.csv')
+
+
+def export_all_csv(rows_by_group, cell, destination=CSV_PATH):
+    """Export every saved group, independent of the UI search, replacing only a complete CSV."""
+    destination = Path(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    exported_at = datetime.now(timezone.utc).isoformat(timespec='seconds')
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8-sig', newline='',
+                                         dir=destination.parent, suffix='.tmp', delete=False) as stream:
+            temporary = Path(stream.name)
+            writer = csv.writer(stream)
+            writer.writerow(('グループ',) + TITLES + ('CSV出力日時 UTC',))
+            for original in combine_groups(rows_by_group):
+                row = dict(original)
+                row['anal_progress'] = analysis_progress(row)[0]
+                size = sample_bytes(row)
+                row['tdms_bytes'] = ('未取得（要更新）' if size is None
+                                     else cell(dict(bytes=size), 'bytes'))
+                for key in ('t_stocked_tdms', 'anal_stocked_tdms'):
+                    row[key] = row.get(key) or '—'
+                writer.writerow([cell(row, key) for key in ('group',) + COLUMNS] + [exported_at])
+        os.replace(temporary, destination)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+    return exported_at
 # 「保存先の状態」表の列幅（px）
 CAPACITY_WIDTHS = {'group': 140, 'root': 207, 'status': 130, 'experiments': 130, 'samples': 130, 't_tdms': 130,
                    'anal_tdms': 130, 'tdms_bytes': 182, 'volume': 180, 'volume_rate': 80, 'last_success': 186,
@@ -213,6 +248,8 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
                            '行をダブルクリックすると詳細を表示します。', padding=(8, 4)).pack(fill='x')
     status = tk.StringVar(value='指定構造の10k_Sample/Tを集計します。構造が異なるフォルダは対象外です。')
     ttk.Label(window, textvariable=status, padding=8, wraplength=1300).pack(fill='x')
+    csv_status = tk.StringVar(value=f'CSV保存先: {CSV_PATH}')
+    ttk.Label(window, textvariable=csv_status, padding=(8, 0, 8, 4)).pack(fill='x')
     events = queue.Queue()
     cancel = threading.Event()
     loading = False
@@ -281,7 +318,8 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
 
     def load(scan_labels=()):
         nonlocal loading, scanning
-        if loading or (scan_labels and (parent.busy or getattr(parent, 'rack_busy', False))):
+        if loading or (scan_labels and (parent.busy or getattr(parent, 'rack_busy', False)
+                                        or getattr(getattr(parent, 'fileops', None), 'busy', False))):
             messagebox.showinfo('更新中', '現在の処理が終わってから実行してください。', parent=window)
             return
         path = catalog.DEFAULT_DB if scan_labels else parent.db_path
@@ -296,6 +334,11 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
             count_bnal = lambda experiment: query in experiment.casefold()  # noqa: E731
         roots = {label: group_views[label]['root'].get() for label in labels}
         servers = {label: group_views[label]['server'] for label in labels}
+        lock = ScanLock('実験ファイルDB（Analysis_server の更新）')
+        if scan_labels and not lock.acquire():
+            messagebox.showinfo('走査中', f'ほかの走査が実行中です。終わってから実行してください。\n{lock.holder()}',
+                                parent=window)
+            return
         shown_roots.update(roots)
         loading = True
         scanning = bool(scan_labels)
@@ -328,9 +371,17 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
                         # One unreachable server must not stop the others.
                         results[label] = f'失敗: {exc}'
                 rows = {label: inventory(path, roots[label]) for label in labels}
-                events.put(('done', None, (rows, root_states(path), results)))
+                saved_states = root_states(path)
+                try:
+                    exported_at = export_all_csv(rows, parent.cell)
+                    events.put(('csv', None, f'CSV保存済み: {CSV_PATH} ／ 出力日時 UTC: {exported_at}'))
+                except Exception as exc:
+                    events.put(('csv', None, f'CSV保存失敗: {CSV_PATH} ／ {exc}'))
+                events.put(('done', None, (rows, saved_states, results)))
             except Exception as exc:
                 events.put(('error', None, str(exc)))
+            finally:
+                lock.release()
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -340,6 +391,9 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
         try:
             while True:
                 event, label, data = events.get_nowait()
+                if event == 'csv':
+                    csv_status.set(data)
+                    continue
                 if event == 'progress':
                     status.set(data if label is None else f'{label}: {data}')
                     continue

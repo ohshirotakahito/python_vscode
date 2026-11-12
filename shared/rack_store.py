@@ -1,7 +1,7 @@
 """解析サーバーのサンプル集計（rack_samples / rack_roots / rack_bnals テーブル）の取り決めと読み書き。
 
-database アプリの Analysis_server 調査が全体を書き、filemanager はファイル移動後に refresh_sample で
-1サンプルだけ同じ形で書き直し、filemanager・Plotting・database の各画面がこれを読む。
+database アプリの Analysis_server 調査が全体を書き、ファイルを移動したアプリ（Analyzer・database）は refresh_sample で
+1サンプルだけ同じ形で書き直し、Analyzer・Plotting・database の各画面がこれを読む。
 測定番号の数え方（measurement_key）もここで決める。テーブルの列や意味を変えるときは shared/README.md を参照。
 """
 from pathlib import Path
@@ -13,7 +13,7 @@ import time
 
 from shared import catalog
 
-ANALYSIS_GROUPS = (('Rackstation', 'analysis'), ('Rackstation', 'archive'),
+ANALYSIS_GROUPS = (('Rackstation', 'analysis'), ('Rackstation', 'archive'), ('Rackstation', 'backup'),
                    ('QTserver', 'analysis'), ('QTserver', 'backup'),
                    ('QDserver', 'analysis'), ('QDserver', 'backup'), ('QKserver', 'analysis'))
 
@@ -40,11 +40,14 @@ def sample_counts(target, cancel, bnal_paths=None):
     BNAL@ folder names come from the same T listing; pass a dict as bnal_paths to collect {target: path}.
     T/stocked (original measurement files moved out of T) and T/ANAL/stocked (ANAL files set aside to restart
     an interrupted BNAL run) are listed only when present; their counts are None when the folder does not exist."""
-    tdms = bnals = t_bytes = 0
+    tdms = bnals = t_bytes = results = 0
     anal = t_stocked = anal_stocked = None
     t_keys = []
     for entry in entries(target, cancel):
         if entry.name.lower().endswith('.tdms') and entry.is_file(follow_symlinks=False):
+            if entry.name.upper().startswith(RESULT_PREFIXES):
+                results += 1  # an analysis result left in T is not an original measurement
+                continue
             tdms += 1
             t_bytes += entry.stat(follow_symlinks=False).st_size
             t_keys.append(measurement_key(entry.name))
@@ -76,13 +79,16 @@ def sample_counts(target, cancel, bnal_paths=None):
     originals, analysed = [t_number[k] for k in originals], {anal_number[k] for k in analysed}
     resume, missing = missing_numbers(originals, analysed)
     last = max((key for key in analysed if isinstance(key, int)), default=None)
-    return dict(t_tdms=tdms, anal_tdms=anal_tdms, bnal_folders=bnals, t_bytes=t_bytes, anal_bytes=anal_bytes,
+    return dict(t_tdms=tdms, t_results_tdms=results, anal_tdms=anal_tdms, bnal_folders=bnals, t_bytes=t_bytes,
+                anal_bytes=anal_bytes,
                 t_stocked_tdms=None if t_stocked_keys is None else len(t_stocked_keys),
                 anal_stocked_tdms=None if anal_stocked_keys is None else len(anal_stocked_keys),
                 anal_distinct=None if anal_numbers is None else len(anal_numbers),
                 anal_resume=resume, anal_missing=missing, anal_last=last, anal_missing_checked=1)
 
 
+# A@@ / B@@ directly in T are analysis results put in the wrong place: counted apart (t_results_tdms), not as T
+RESULT_PREFIXES = ('A@@', 'B@@')
 NUMBER = re.compile(r'#(\d+)\.tdms$', re.I)
 # Originals carry the number right after the sample folder name and more '#' later
 # ('KSN3_10k_Sample#001 D_... ANAN#1Pex1n2_..._EXSV#10_....tdms'); ANAL ends with it ('..._Sample#001.tdms').
@@ -194,7 +200,7 @@ def ensure_tables(db):
         t_tdms INTEGER, anal_tdms INTEGER, bnal_folders INTEGER,
         last_success TEXT, status TEXT, PRIMARY KEY(root,experiment,sample))""")
     existing = {row[1] for row in db.execute('PRAGMA table_info(rack_samples)')}
-    for column in ('t_bytes', 'anal_bytes', 'anal_stocked_tdms', 't_stocked_tdms', 'anal_distinct'):
+    for column in ('t_bytes', 'anal_bytes', 'anal_stocked_tdms', 't_stocked_tdms', 'anal_distinct', 't_results_tdms'):
         if column not in existing:
             db.execute(f'ALTER TABLE rack_samples ADD COLUMN {column} INTEGER')
     # anal_resume: first original '#NNN' missing from ANAL (+ ANAL/stocked); anal_missing: every missing number
@@ -311,7 +317,7 @@ def scan_samples(source, path, cancel, emit, count_bnal=None):
 def refresh_sample(path, root, experiment, sample, cancel=None):
     """Re-read one sample's T and count every BNAL@, saved exactly as a full scan would save that sample.
 
-    For the file manager after it moves files: one T listing, ANAL (+stocked) and one listing per BNAL@."""
+    For an app after it moves files: one T listing, ANAL (+stocked) and one listing per BNAL@."""
     cancel = cancel or threading.Event()
     root_key = os.path.normcase(os.path.normpath(str(root)))
     target = Path(root) / experiment / sample / (sample + '_10k_Sample') / 'T'

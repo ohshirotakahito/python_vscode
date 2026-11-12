@@ -106,7 +106,7 @@ def create_panel(parent, window):
                   for lv in plan_check.LEVELS}
         status.set(f"表示 {len(shown):,} / {len(saved['rows']):,} サンプル　"
                    + '　'.join(f'{lv} {n:,}' for lv, n in counts.items())
-                   + (f"　⚠ 台帳に Dropbox の競合コピーがあります: {'、'.join(p.name for p in saved['conflicts'])}"
+                   + (f"　⚠ 台帳に同期の競合コピーがあります: {'、'.join(p.name for p in saved['conflicts'])}"
                       if saved.get('conflicts') else ''))
 
     def reload():

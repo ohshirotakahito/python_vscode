@@ -53,6 +53,48 @@ def experiment_data_counts(folder):
     return tuple(counts)
 
 
+def cache_age_text(entry):
+    days = source_cache.age_days(entry)
+    return '取得日時不明' if days is None else '本日' if days == 0 else f'{days}日前'
+
+
+def refresh_all_sources(machines, include_archived=False, notify=lambda *args: None):
+    """Refresh each configured source sequentially; a failed source keeps its previous cache."""
+    selections = [('Recent_Data', 'Tmp_backup')]
+    if include_archived:
+        selections.append(('Archived_Data', 'SQ_backup'))
+    total = len(machines) * len(selections)
+    results = []
+    for machine, config in machines.items():
+        for selection, key in selections:
+            label = f'{machine} / {selection}'
+            notify('progress', 'コピー元一覧の一括更新', len(results), total, label)
+            try:
+                root_text = config.get(key, '').strip()
+                if not root_text:
+                    raise ValueError('コピー元パスが未設定です')
+                root = Path(root_text)
+                found = sorted((p for p in root.iterdir() if p.is_dir()), reverse=True)
+                folders = [(p.name, experiment_data_counts(p)) for p in found]
+                updated = source_cache.save(machine, selection, root, folders)['updated']
+                result = f'{label}: {len(folders)}フォルダ（一覧更新：{updated}）'
+                success = True
+            except Exception as exc:
+                result = f'{label}: 更新失敗（前回の一覧を保持）: {exc}'
+                success = False
+            results.append((success, result))
+            notify('log', result)
+            notify('progress', 'コピー元一覧の一括更新', len(results), total, label)
+    return results
+
+
+def machine_label(code, row):
+    """装置の表示名：Machine_N.csv の PC selection（例 'NI OUN#5'）から「AXN1（OUN#5）」。PC がなければコードのまま。"""
+    pc = (row.get('PC selection') or '').strip()
+    pc = pc[3:].strip() if pc.upper().startswith('NI ') else pc
+    return f'{code}（{pc}）' if pc else code
+
+
 def history_summary(records):
     # Legacy history has no server path: count recorded experiment/sample/type.
     destinations = {(r[7], r[8], r[9], r[13]) for r in records}
@@ -113,6 +155,11 @@ class App(tk.Tk):
         ttk.Button(select, text='保存履歴を開く', command=self.open_history_window).grid(row=1, column=5, sticky='w', padx=4)
         ttk.Button(select, text='装置CSVを閲覧・編集', command=lambda: self.edit_csv('machine')).grid(row=1, column=6, sticky='w', padx=4)
         ttk.Button(select, text='担当者CSVを閲覧・編集', command=lambda: self.edit_csv('operator')).grid(row=1, column=7, sticky='w', padx=4)
+        batch = ttk.Frame(source_tab)
+        batch.pack(fill='x', padx=4, pady=(0, 4))
+        ttk.Button(batch, text='全装置のRecent_Dataを更新', command=self.sources_all).pack(side='left', padx=4)
+        ttk.Button(batch, text='全装置のRecent_Data＋Archived_Dataを更新',
+                   command=lambda: self.sources_all(include_archived=True)).pack(side='left', padx=4)
         self.source_label = ttk.Label(upper, text='黄色の行：履歴あり ／ 無地の行：履歴なし ／ 紫の行：セット登録済み（履歴だけではスキップしません）')
         self.source_label.pack(anchor='w', padx=10, pady=(6, 0))
         tree_frame = ttk.Frame(upper)
@@ -404,7 +451,11 @@ class App(tk.Tk):
         self.events.put(('progress', phase, count, total, detail))
 
     def values(self):
-        return {key: value.get() for key, value in self.vars.items()}
+        values = {key: value.get() for key, value in self.vars.items()}
+        if 'machine' in values:
+            codes = {label: code for code, label in getattr(self, 'machine_labels', {}).items()}
+            values['machine'] = codes.get(values['machine'], values['machine'])
+        return values
 
     def log(self, text):
         follow = self.output.yview()[1] >= 0.999
@@ -477,7 +528,12 @@ class App(tk.Tk):
             return results
         def done(data):
             self.machine_data = data.get('machines', {})
-            self.set_choices('machine', list(self.machine_data))
+            # 表示は「AXN1（OUN#5）」、内部（履歴CSV・前回の選択）は装置コード「AXN1」のまま
+            self.machine_labels = {code: machine_label(code, row) for code, row in self.machine_data.items()}
+            current = self.vars['machine'].get()
+            if current in self.machine_labels:
+                self.vars['machine'].set(self.machine_labels[current])
+            self.set_choices('machine', list(self.machine_labels.values()))
             operators = data.get('operators', [])
             self.people = {f'{r[0]} ({r[1]})':r[1] for r in operators if len(r)>=2 and r[0] and r[1]}
             self.set_choices('uploader', list(self.people))
@@ -577,7 +633,7 @@ class App(tk.Tk):
         """The sample ledger, or {} with a log line when it cannot be read (never stops the transfer work)."""
         try:
             for copy in sample_plan.conflicted_copies():
-                self.log(f'サンプル台帳に Dropbox の競合コピーがあります。内容を確認してまとめてください: {copy}')
+                self.log(f'サンプル台帳に同期の競合コピーがあります。内容を確認してまとめてください: {copy}')
             return sample_plan.load()
         except (OSError, ValueError) as exc:
             self.log(f'サンプル台帳を読めません: {exc}')
@@ -642,7 +698,7 @@ class App(tk.Tk):
         self.tree.delete(*self.tree.get_children())
         self.history_tree.delete(*self.history_tree.get_children())
         self.history_label.configure(text='実験を選択すると保存履歴を表示します。')
-        self.source_label.configure(text=text)
+        self.source_label.configure(text=text, foreground=ui_theme.TEXT)
 
     def show_cached_sources(self):
         """On machine/selection change, show the previous listing without rescanning."""
@@ -673,6 +729,10 @@ class App(tk.Tk):
         ttk.Label(dialog, text=f"{v['machine']} / {v['selection']}　前回更新：{cached['updated']}",
                   font=('', 11, 'bold')).pack(anchor='w', padx=12, pady=(12, 2))
         ttk.Label(dialog, text=f"{cached['root']} — {len(folders)}フォルダ（前回の内容）").pack(anchor='w', padx=12)
+        stale = source_cache.is_stale(cached)
+        if stale:
+            ttk.Label(dialog, text=f"⚠ 前回の一覧は{cache_age_text(cached)}のものです。新しいフォルダや件数の変化は反映されていません。",
+                      foreground=ui_theme.HUES['warning']).pack(anchor='w', padx=12, pady=(4, 0))
         frame = ttk.Frame(dialog)
         frame.pack(fill='both', expand=True, padx=12, pady=8)
         frame.rowconfigure(0, weight=1)
@@ -692,9 +752,32 @@ class App(tk.Tk):
         def choose(rescan):
             dialog.destroy()
             self.sources(cached=None if rescan else cached)
-        ttk.Button(buttons, text='前回の一覧を使う', style='Primary.TButton', command=lambda: choose(False)).pack(side='left')
-        ttk.Button(buttons, text='再取得して更新', style='Conditional.TButton', command=lambda: choose(True)).pack(side='left', padx=8)
+        # Lead with whichever choice fits the listing's age.
+        reuse = ('前回の一覧を使う', lambda: choose(False))
+        rescan = ('再取得して更新', lambda: choose(True))
+        for n, (text, command) in enumerate([rescan, reuse] if stale else [reuse, rescan]):
+            ttk.Button(buttons, text=text, style='Primary.TButton' if n == 0 else 'Conditional.TButton',
+                       command=command).pack(side='left', padx=(0 if n == 0 else 8, 0))
         ttk.Button(buttons, text='キャンセル', command=dialog.destroy).pack(side='right')
+
+    def sources_all(self, include_archived=False):
+        if self.busy:
+            return
+        machines = {name: dict(config) for name, config in getattr(self, 'machine_data', {}).items()}
+        if not machines:
+            messagebox.showinfo('装置未登録', '装置CSVを読み込んでください。')
+            return
+
+        def done(results):
+            failed = sum(not success for success, _ in results)
+            self.log(f'コピー元一覧の一括更新完了: 成功 {len(results) - failed}件 / 失敗 {failed}件')
+            self.show_cached_sources()
+            if failed:
+                messagebox.showwarning('コピー元一覧の一括更新',
+                                       f'{failed}件を更新できませんでした。詳細は画面下のログで確認できます。')
+
+        self.run(lambda: refresh_all_sources(machines, include_archived,
+                                             lambda *event: self.events.put(event)), done)
 
     def sources(self, cached=None):
         v = self.values()
@@ -716,7 +799,7 @@ class App(tk.Tk):
             return folders, core.history(v['legacy'], v['local']), updated
         def done(data):
             folders, history, updated = data
-            if (v['machine'], v['selection']) != (self.vars['machine'].get(), self.vars['selection'].get()):
+            if (v['machine'], v['selection']) != (self.values()['machine'], self.vars['selection'].get()):
                 return self.show_cached_sources()  # selection changed while loading
             self.clear_sources('')
             self.source_context = (v['machine'], v['selection'])
@@ -725,8 +808,12 @@ class App(tk.Tk):
                 self.source_histories[str(n)] = records
                 self.tree.insert('', 'end', iid=str(n), values=(p.name, *counts, *history_summary(records)), tags=('yes' if records else 'no',))
                 self.source_paths[str(n)] = p
-            state = f'前回の一覧（{updated} 取得）' if cached else f'一覧更新：{updated}'
-            self.source_label.configure(text=f'{root} — {state} — 黄色の行：履歴あり ／ 無地の行：履歴なし ／ 紫の行：セット登録済み')
+            stale = bool(cached) and source_cache.is_stale(cached)
+            state = f'前回の一覧（{updated} 取得・{cache_age_text(cached)}）' if cached else f'一覧更新：{updated}'
+            if stale:
+                state = f'⚠ {state} 最新ではありません。「① コピー元一覧を更新」→「再取得して更新」'
+            self.source_label.configure(text=f'{root} — {state} — 黄色の行：履歴あり ／ 無地の行：履歴なし ／ 紫の行：セット登録済み',
+                                        foreground=ui_theme.HUES['warning'] if stale else ui_theme.TEXT)
             self.mark_set_rows()
             self.log(f'コピー元一覧: {v["machine"]} / {v["selection"]} {len(folders)}フォルダ（{state}）')
         self.run(work, done)

@@ -15,7 +15,7 @@ except ImportError:
     import bnal_progress, rackstation_view
 from shared import catalog, ui_theme  # noqa: E402  (rackstation_view puts the repository root on sys.path)
 
-# 判定の規則（状態・再開地点・注意）は shared/progress.py（ファイル管理・Analyzer と共通）
+# 判定の規則（状態・再開地点・注意）は shared/progress.py（Analyzer と共通）
 from shared.progress import DONE_STATES, STATUS_TEXT, parse_ranges, resume_point  # noqa: E402,F401
 from shared import progress  # noqa: E402
 FLAG_LEGEND = ('⚠（黄の帯）＝先に片付けが必要：欠番＝ANALの途中に抜けがある（最後の#番号より前が未解析）　'

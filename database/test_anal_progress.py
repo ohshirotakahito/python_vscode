@@ -35,6 +35,18 @@ class ResumePointScanTests(TestCase):
         self.assertEqual((counts['anal_resume'], counts['anal_missing'], counts['anal_last']), (3, '#003-#004,#007-#008', 6))
         self.assertEqual(anal_progress.resume_point(counts), (7, [3, 4]))
 
+    def test_results_in_t_are_kept_out_of_the_t_count(self):
+        with TemporaryDirectory() as temp:
+            t = Path(temp) / 'T'
+            (t / 'ANAL').mkdir(parents=True)
+            for n in (1, 2):
+                (t / f'S1_10k_Sample#{n:03d} D_x.tdms').write_bytes(b'raw')
+            (t / 'A@@2026_0101_1200_00_S1_10k_Sample#003.tdms').write_bytes(b'a')
+            (t / 'B@@2026_0101_1300_S1_10k_Sample#001.tdms').write_bytes(b'b')
+            counts = rackstation_view.sample_counts(t, threading.Event())
+        self.assertEqual((counts['t_tdms'], counts['t_results_tdms'], counts['t_bytes']), (2, 2, 6))
+        self.assertEqual(counts['anal_missing'], '#001-#002')  # #003 of the stray A@@ is not an original
+
     def test_complete_and_unstarted_samples(self):
         with TemporaryDirectory() as temp:
             t = Path(temp) / 'T'

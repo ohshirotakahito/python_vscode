@@ -8,6 +8,7 @@ earlier analysis.
     action          what it does (journaled in the file manager's bnal_logs; undo from the history)
     empty_b         0-byte B@@ (an interrupted write)            -> BNAL@<target>/.整理履歴 (deleted, restorable)
     old_b           older B@@ of a number that has a newer one    -> BNAL@<target>/.整理履歴
+    broken_b        B@@ cut short (checked: much smaller than the others, and the newest) -> BNAL@<target>/.整理履歴
     orphan_b        B@@ of a number ANAL does not have            -> BNAL@<target>/old
     restore_anal    ANAL/stocked -> ANAL (the BNAL run analyses ANAL only; anal_status does the move)
 
@@ -79,9 +80,14 @@ def target_issues(t, target, anal_latest, direct):
     if empty:
         out.append(_issue("empty_b", "空の B@@（0 バイト）", target, empty,
                           "書き込みが途中で止まった B@@ です。削除します（.整理履歴 に保管し、元に戻せます）。", "empty_b"))
+    cut = anal_status.cut_files({p: size for p, size in files.items() if size})
+    if cut:
+        out.append(_issue("broken_b", "途中で切れた B@@", target, list(cut),
+                          "書き込みが途中で止まった B@@ です（" + next(iter(cut.values())) + "）。削除して"
+                          "（元に戻せます）、その番号を解析し直します。", "broken_b"))
     groups = defaultdict(list)
     for p, size in files.items():
-        if size:
+        if size and p not in cut:
             groups[rack_store.measurement_key(p.name)].append(p)
     old, stale, orphan, good = [], [], [], set()
     for key, paths in groups.items():
@@ -183,7 +189,7 @@ def _ops(folder, paths, parent):
 def apply(t, target, kind, settle_min=5.0):
     """Carry out one action for one target (target None: the sample's ANAL/stocked); returns report lines."""
     t = Path(t)
-    if kind not in ("restore_anal", "empty_b", "old_b", "orphan_b"):
+    if kind not in ("restore_anal", "empty_b", "old_b", "broken_b", "orphan_b"):
         raise ValueError(f"この対処はできません: {kind}")
     if kind == "restore_anal":
         return anal_status.apply(t, "restore_anal", settle_min)
@@ -191,7 +197,7 @@ def apply(t, target, kind, settle_min=5.0):
     if issue is None:
         return [f"BNAL@{target}: 対処することはありません（調べ直した結果）"]
     folder = t / f"BNAL@{target}"
-    if kind in ("empty_b", "old_b"):
+    if kind in ("empty_b", "old_b", "broken_b"):
         parent = folder / HISTORY / f"{datetime.now():%Y%m%d_%H%M%S}_{kind}_{uuid.uuid4().hex[:8]}"
         what = "削除（.整理履歴 に保管）"
     elif kind == "orphan_b":

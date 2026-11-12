@@ -3,12 +3,40 @@ from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
 import os
+import csv
 import threading
 from database import rackstation_view
 from shared import catalog, rack_store
 
 
 class RackstationTests(TestCase):
+    def test_csv_exports_all_groups_with_acquisition_and_export_times(self):
+        from database.app import App
+        rows = {'A': [dict(experiment='実験,甲', sample='S', t_tdms=2, anal_tdms=1,
+                           t_bytes=1000000000, anal_bytes=0, last_success='2026-11-04T03:43:42+00:00',
+                           status='完了')],
+                'B': [dict(experiment='別実験', sample='S', t_tdms=0, anal_tdms=3)]}
+        with TemporaryDirectory() as temp:
+            output = Path(temp) / 'nested' / 'all.csv'
+            timestamp = rackstation_view.export_all_csv(rows, App.cell, output)
+            self.assertTrue(output.read_bytes().startswith(b'\xef\xbb\xbf'))
+            with output.open(encoding='utf-8-sig', newline='') as stream:
+                exported = list(csv.DictReader(stream))
+            self.assertEqual(len(exported), 2)
+            self.assertEqual({r['グループ'] for r in exported}, {'A', 'B'})
+            self.assertTrue(all(r['CSV出力日時 UTC'] == timestamp for r in exported))
+            a = next(r for r in exported if r['グループ'] == 'A')
+            self.assertEqual(a['実験名'], '実験,甲')
+            self.assertEqual(a['最終取得 UTC'], rows['A'][0]['last_success'])
+            self.assertEqual(a['ANAL進捗'], '50.0%')
+            self.assertEqual(a['TDMS容量'], '1.000 GB')
+            with patch.object(rackstation_view.os, 'replace', side_effect=PermissionError('open in Excel')):
+                before = output.read_bytes()
+                with self.assertRaises(PermissionError):
+                    rackstation_view.export_all_csv({}, App.cell, output)
+                self.assertEqual(output.read_bytes(), before)
+            self.assertEqual(list(output.parent.glob('*.tmp')), [])
+
     def test_saved_unc_share_matches_with_or_without_trailing_separator(self):
         with TemporaryDirectory() as temp:
             db = Path(temp) / 'inventory.sqlite3'
@@ -245,11 +273,12 @@ class RackstationTests(TestCase):
 
     def test_registered_groups_and_default_roots(self):
         labels = [rackstation_view.group_label(*g) for g in rackstation_view.ANALYSIS_GROUPS]
-        self.assertEqual(labels, ['Rackstation/analysis', 'Rackstation/archive', 'QTserver/analysis', 'QTserver/backup',
+        self.assertEqual(labels, ['Rackstation/analysis', 'Rackstation/archive', 'Rackstation/backup', 'QTserver/analysis', 'QTserver/backup',
                                   'QDserver/analysis', 'QDserver/backup', 'QKserver/analysis'])
         configured = [dict(server='QTserver', root=r'\\qt\Analysis' + '\\', kind='analysis')]
         self.assertEqual(rackstation_view.default_root(configured, 'QTserver', 'analysis'), r'\\qt\Analysis' + '\\')
         self.assertEqual(rackstation_view.default_root(configured, 'Rackstation', 'archive'), r'\\Rackstation\archive')
+        self.assertEqual(rackstation_view.default_root(configured, 'Rackstation', 'backup'), r'\\Rackstation\backup')
 
     def test_scan_saves_tdms_sizes_and_share_state(self):
         with TemporaryDirectory() as temp:
