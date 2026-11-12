@@ -13,7 +13,7 @@
 | `qt_theme.py`, `qt_icons/` | `ui_theme` の色・ヘッダー・アイコンを PyQt6 で再現したもの（`apply()`・`Header`・`window_icon()`） | Analyzer |
 | `server_browse.py` | 計測サーバー → 共有 → 実験 → サンプルを一覧から選ぶダイアログ | ML, Viewer |
 | `folder_layout.py` | 解析サーバー上の標準サンプルフォルダ構成 `create_sample_folders()` | exmanager, database |
-| `machinedb.py` | machinedb の場所（`D:\My_Dropbox\ou&t\machinedb`。別の PC では環境変数 `PYVSCODE_MACHINEDB`） | 全アプリ |
+| `machinedb.py` | machinedb の場所（`D:\Qstatus\machinedb`。Qstatus のない PC は従来の `D:\My_Dropbox\ou&t\machinedb`。決め打ちは環境変数 `PYVSCODE_MACHINEDB`） | 全アプリ |
 | `seq_records.py` | SEQ の装置一覧CSV（`Machine_N.csv`）と転送履歴CSV（LabVIEW版 `Uploader.csv` ＋ Python版） | exmanager（書く）, database（読む） |
 | `seq_targets.py` | SEQlist の target CSV（BNAL 解析対象）の名前の読み込み | database |
 | `bnal_lists.py` | SEQlist（配列）と BC（コンダクタンス値）の読み込み、核酸・アミノ酸の判定（中身で判定） | Analyzer, database |
@@ -52,7 +52,7 @@
      どのアプリから移動してもシグナル解析の「整理の履歴…」から元に戻せる。記録の JSON の形は変えない。
 5. **データの置き場所は持ち主のアプリのフォルダ。** DB と移動・名前変更の記録（`database/file_logs/`）は `database/`、転送履歴は `exmanager/logs/` のまま。
    `shared/` にはパスの決め方だけを置く。
-   人が決める情報（SEQlist・BC・サンプル台帳）は machinedb（Dropbox）の1か所だけに置き、アプリ内にコピーを持たない。
+   人が決める情報（SEQlist・BC・サンプル台帳）は machinedb（D:\Qstatus）の1か所だけに置き、アプリ内にコピーを持たない。
    サンプル台帳は `sample_plan.update()` で変えた項目だけを書く（全体を書き戻すと別の PC の変更を消す）。
 
 ## アプリ側での読み込み方

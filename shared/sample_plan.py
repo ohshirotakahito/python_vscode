@@ -6,9 +6,9 @@
     bc       : 使う BC の CSV 名
     note     : メモ
 
-サーバーを調べた結果（実験ファイルDB）とは分けて、machinedb（Dropbox）に JSON で置き、各 PC から共有する。
+サーバーを調べた結果（実験ファイルDB）とは分けて、machinedb（D:\\Qstatus の共有フォルダ）に JSON で置き、各 PC から共有する。
 保存は「最新のファイルを読み直して、変えた項目だけを書き込む」ので、別の PC の変更を消さない。
-Dropbox が作る競合コピー（... (conflicted copy) ...）は conflicted_copies() で見つけて知らせる。
+同期ソフトが作る競合コピー（Synology の ..._Conflict...、Dropbox の (conflicted copy)）は conflicted_copies() で見つけて知らせる。
 """
 from datetime import datetime
 import json
@@ -83,11 +83,12 @@ def update(changes, who=None, path=None):
 
 
 def conflicted_copies(path=None):
-    """Dropbox conflict copies next to the ledger (edits made on two PCs at once): they must be merged by hand."""
+    """Sync conflict copies (Synology `_Conflict`, Dropbox `conflicted copy` / `競合コピー`) next to the ledger (edits made on two PCs at once): they must be merged by hand."""
     path = Path(path or machinedb.SAMPLE_PLAN)
     if not path.parent.is_dir():
         return []
-    return sorted(p for p in path.parent.glob(path.stem + '*' + path.suffix) if p != path and 'conflict' in p.name.lower())
+    return sorted(p for p in path.parent.glob(path.stem + '*' + path.suffix)
+                  if p != path and ('conflict' in p.name.lower() or '競合' in p.name))
 
 
 def import_bnal_groups(groups, who=None, path=None):

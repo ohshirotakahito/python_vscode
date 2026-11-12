@@ -167,7 +167,7 @@ Analysis_serverタブの更新では、各サンプルの `10k_Sample/T` を一�
 保存済みのAnalysis_server情報（`rack_samples` / `rack_bnals`）だけを読み、サーバーには接続しません。
 
 1. ①で実験・サンプル（10k_Sample）を選びます。絞り込み欄で部分一致検索ができ、Ctrl / Shiftで複数選択できます。
-2. ②でtargetリストCSVを選びます。既定のフォルダは `D:\Dropbox\ou&t\machinedb\SEQlist` です。CSVはヘッダーなしの `名前,配列,長さ` で、1列目を `BNAL@<名前>` と照合します。複数選択した場合は和集合を期待targetとします。
+2. ②でtargetリストCSVを選びます。既定のフォルダは `D:\Qstatus\machinedb\SEQlist` です。CSVはヘッダーなしの `名前,配列,長さ` で、1列目を `BNAL@<名前>` と照合します。複数選択した場合は和集合を期待targetとします。
 3. 「進捗を表示」を押すと、上の表にグループ別と全体の集計を、下の表にサンプル × target × グループの明細を表示します。
 
 - 結果は「全体マップ」と「明細」の2つのサブタブに表示します。

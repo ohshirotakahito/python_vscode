@@ -18,7 +18,7 @@ Python_VScode のアプリの1つとして、ルートの `launch_apps.bat`（�
 | T/stocked → T、ANAL/stocked → ANAL、重複の退避 | `t_stock`、`file_moves`（記録は `database/file_logs/`。「整理の履歴…」から元に戻せる） |
 | 測定番号 `#NNN` の読み取り | `rack_store.SAMPLE_NUMBER` / `NUMBER`（番号なしの名前の扱いだけ Analyzer 独自） |
 | ANAL・BNAL の状態と注意（超過・確認不可・未計数・ANALなし・差異・コピー不足 を含む） | `progress`（実験ファイルDBの ANAL進捗・BNAL進捗と同じ判定） |
-| SEQlist・BC の表 | `bnal_lists`（`D:\My_Dropbox\ou&t\machinedb` の SEQlist・BC を直接読み書き。核酸・アミノ酸は中身で判定） |
+| SEQlist・BC の表 | `bnal_lists`（`D:\Qstatus\machinedb` の SEQlist・BC を直接読み書き。核酸・アミノ酸は中身で判定） |
 | BNAL に回すかの振り分け | `sample_plan`（machinedb の `SamplePlan/sample_plan.json`。実験＋サンプルごと） |
 | 画面の色・ヘッダー・アイコン | `qt_theme`（PyQt6 版。色は `ui_theme.ANALYZER`） |
 

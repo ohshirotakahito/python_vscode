@@ -617,7 +617,7 @@ class App(tk.Tk):
         """The sample ledger, or {} with a log line when it cannot be read (never stops the transfer work)."""
         try:
             for copy in sample_plan.conflicted_copies():
-                self.log(f'サンプル台帳に Dropbox の競合コピーがあります。内容を確認してまとめてください: {copy}')
+                self.log(f'サンプル台帳に同期の競合コピーがあります。内容を確認してまとめてください: {copy}')
             return sample_plan.load()
         except (OSError, ValueError) as exc:
             self.log(f'サンプル台帳を読めません: {exc}')
