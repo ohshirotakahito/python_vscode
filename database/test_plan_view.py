@@ -38,6 +38,19 @@ class RefreshTargetsTests(TestCase):
         got = plan_view.refresh_targets({('Mitsuzawa', '1_0')}, self.samples, self.roots, lambda p: str(p) in exists)
         self.assertEqual(got, [(self.QD, 'Mitsuzawa', '1_0')])
 
+    def test_why_missing_names_the_old_inner_folder(self):
+        tree = {Path(self.QD, 'Mitsuzawa', 'GA_0'): ['1_0_10k_Sample', '1_0_100k_Sample', 'raw data']}
+
+        def listdir(path):
+            if path not in tree:
+                raise FileNotFoundError(path)
+            return tree[path]
+        why = plan_view.why_missing('Mitsuzawa', 'GA_0', self.roots, listdir)
+        self.assertIn(self.QD, why)
+        self.assertIn('GA_0_10k_Sample/T がない', why)
+        self.assertIn('中は 1_0_10k_Sample', why)
+        self.assertEqual(plan_view.why_missing('Mitsuzawa', 'GA_9', self.roots, listdir), '')
+
     def test_saved_share_is_not_probed_twice(self):
         got = plan_view.refresh_targets({('ex', 'A')}, self.samples, self.roots, lambda p: True)
         self.assertEqual(len(got), 2)
