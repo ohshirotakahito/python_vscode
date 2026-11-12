@@ -21,7 +21,16 @@ def save(path, data):
         json.dump(data, stream, ensure_ascii=False, indent=2)
         stream.flush()
         os.fsync(stream.fileno())
-    os.replace(temporary, path)
+    # The journal is rewritten after every rename; antivirus / the search indexer may hold the old copy for a
+    # moment, which makes os.replace fail with "access denied". Retry briefly rather than stop mid-rename.
+    for attempt in range(40):
+        try:
+            os.replace(temporary, path)
+            return
+        except PermissionError:
+            if attempt == 39:
+                raise
+            time.sleep(0.25)
 
 
 SCOPE = 'measurement_names_v6'
