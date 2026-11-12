@@ -30,6 +30,7 @@ Analysis_server は、初回表示・DB再表示・グループ更新の完了�
 | `sq_experiments.csv` | SQserver 実験一覧（装置・元の名前・解析着手・TDMS数・区分） |
 | `analysis_server_all.csv` | 解析サーバーのサンプルごとのANAL進捗（Analysis_serverタブと同じ） |
 | `bnal_progress.csv` | BNAL進捗（サンプル台帳で対象、またはBNAL@がある、対象外でないサンプル）。SEQlist未設定のサンプルは実在するBNAL@だけを載せます |
+| `sq_transfers.csv` | SQserver Recent_Data の実験ごとの解析サーバーへの転送（転送履歴の転送先 実験名・サンプル名、初回・最終転送日時）と、転送先での ANAL進捗（最も進んだ共有）。1行 = 1実験 × 転送先1サンプル、未転送の実験も1行。装置は Machine_N.csv の Tmp_backup で決める。AXN の Upload Check が読む（`transfer_ledger.py`） |
 | `ledger_status.csv` | 各台帳を書いた日時・PC・行数、走査の結果 |
 
 - **手動**: 画面上部の「台帳の共有」→「今すぐ実行（走査＋書き出し）」または「書き出しのみ」。コマンドでは `python database/publish.py`（`--no-scan` で走査なし、`--full` で夜間と同じ走査）。手動実行は自動実行の有効・無効に関係なく動きます。

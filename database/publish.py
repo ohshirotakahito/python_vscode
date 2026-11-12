@@ -14,7 +14,8 @@
     sq_experiments.csv       SQserver 実験一覧（装置・元の名前・解析着手・TDMS数）
     analysis_server_all.csv  解析サーバーのサンプルごとのANAL進捗（Analysis_serverタブと同じ）
     bnal_progress.csv        サンプル台帳で BNAL 対象のサンプルの target ごとのBNAL進捗
-    ledger_status.csv        上の3つをいつ・どのPCが書いたか、走査の結果
+    sq_transfers.csv         SQserver Recent_Data の実験ごとの解析サーバーへの転送と ANAL進捗（transfer_ledger.py）
+    ledger_status.csv        上の4つをいつ・どのPCが書いたか、走査の結果
 """
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
@@ -32,15 +33,16 @@ import threading
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # リポジトリ直下（shared/ を読むため）
-from shared import catalog, rack_store, sample_plan  # noqa: E402
+from shared import catalog, rack_store, sample_plan, seq_records  # noqa: E402
 
 try:
-    from . import bnal_progress, rackstation_view, sq_workflow
+    from . import bnal_progress, rackstation_view, sq_workflow, transfer_ledger
     from .scan_lock import ScanLock
 except ImportError:
     import bnal_progress
     import rackstation_view
     import sq_workflow
+    import transfer_ledger
     from scan_lock import ScanLock
 
 BASE = Path(__file__).resolve().parent
@@ -50,8 +52,9 @@ STATUS_PATH = BASE / 'logs' / 'publish_status.json'
 LOG_PATH = BASE / 'logs' / 'publish.log'
 TASK_NAME = 'Qstatus Ledger Publish'
 FILES = dict(sq='sq_experiments.csv', analysis=rackstation_view.CSV_PATH.name, bnal='bnal_progress.csv',
-             status='ledger_status.csv')
-LEDGER_TITLES = dict(sq='SQserver 実験一覧', analysis='解析サーバー ANAL進捗', bnal='BNAL進捗')
+             transfer='sq_transfers.csv', status='ledger_status.csv')
+LEDGER_TITLES = dict(sq='SQserver 実験一覧', analysis='解析サーバー ANAL進捗', bnal='BNAL進捗',
+                     transfer='SQserver→解析サーバー 転送・ANAL')
 DEFAULT_SETTINGS = dict(
     enabled=False,           # タスク スケジューラからの実行（--scheduled）をするか
     scan_sq=True,            # 毎回 SQserver の Recent_Data を走査する
@@ -216,7 +219,19 @@ def export_bnal(db, configured, destination, cell, plan=None):
     return len(rows)
 
 
-EXPORTERS = dict(sq=export_sq, analysis=export_analysis, bnal=export_bnal)
+def export_transfers(db, configured, destination, cell):
+    from_app = _app()
+    entries = from_app.App.read_inventory(db, '', configured)[4]
+    machines = seq_records.machines(seq_records.MACHINE_CSV)
+    history = seq_records.history(seq_records.LEGACY_HISTORY, seq_records.LOCAL_HISTORY)
+    rows = transfer_ledger.build_rows(entries, machines, history, analysis_rows_by_group(db, configured))
+    exported_at = now_utc()
+    write_csv(destination, transfer_ledger.TITLES + (EXPORTED_AT,),
+              [[row[key] for key in transfer_ledger.COLUMNS] + [exported_at] for row in rows])
+    return len(rows)
+
+
+EXPORTERS = dict(sq=export_sq, analysis=export_analysis, bnal=export_bnal, transfer=export_transfers)
 
 
 def export_all(db, configured, out_dir, scans):

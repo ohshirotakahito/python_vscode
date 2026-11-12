@@ -102,7 +102,7 @@ class ExportTests(TestCase):
             self.assertEqual(read(out / publish.FILES['sq'])[0][-2:], ['区分', publish.EXPORTED_AT])
             ledger = read(out / publish.FILES['status'])
             self.assertEqual([row[1] for row in ledger[1:]],
-                             [publish.FILES[name] for name in ('sq', 'analysis', 'bnal')])
+                             [publish.FILES[name] for name in ('sq', 'analysis', 'bnal', 'transfer')])
             self.assertEqual(json.loads(status_path.read_text(encoding='utf-8'))['exports']['sq']['rows'], 0)
 
     def test_scan_is_skipped_but_ledgers_written_while_another_scan_holds_the_lock(self):
