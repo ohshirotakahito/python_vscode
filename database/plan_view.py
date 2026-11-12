@@ -2,15 +2,19 @@
 
 Reading never touches the servers. Edits write only the chosen fields of the selected samples to the ledger
 (shared.sample_plan.update), so changes made meanwhile on another PC are kept.
+The right-click menu is the starting point for a sample: open it in ④ Progress (ANAL / BNAL), or re-read it from the
+analysis servers (only the selected samples; the one action here that touches the servers).
 """
+from pathlib import Path
+import threading
 import tkinter as tk
 from tkinter import ttk, messagebox
 
 try:
-    from . import bnal_progress
+    from . import bnal_progress, rackstation_view
 except ImportError:
-    import bnal_progress
-from shared import bnal_lists, machinedb, plan_check, sample_plan, ui_theme  # noqa: E402
+    import bnal_progress, rackstation_view
+from shared import bnal_lists, catalog, machinedb, plan_check, rack_store, sample_plan, ui_theme  # noqa: E402
 
 COLUMNS = ('experiment', 'sample', 'shares', 'anal', 'bnal_started', 'kind', 'bnal', 'seqlists', 'bc', 'issues', 'updated')
 TITLES = ('実験名', 'サンプル名', '共有', 'ANAL（最も進んだ共有）', 'BNAL開始target数', '試料の種類', 'BNAL', 'SEQlist', 'BC',
@@ -47,6 +51,23 @@ def changes_for(keys, kind, bnal, seqlist, bc):
     return {k: dict(fields) for k in keys} if fields else {}
 
 
+def refresh_targets(keys, samples, roots, is_dir=lambda path: Path(path).is_dir()):
+    """(root, experiment, sample) to re-read for the chosen (experiment, sample) keys.
+
+    Every share where the DB already has the sample, plus every analysis share whose T folder exists now (so a
+    sample copied since the last scan, or a ledger-only sample, is found). Roots are compared by identity."""
+    found = {}
+    for r in samples:
+        if (r['experiment'], r['sample']) in keys:
+            found.setdefault((catalog.root_identity(r['root']), r['experiment'], r['sample']), r['root'])
+    for experiment, sample in keys:
+        for root in roots:
+            ident = (catalog.root_identity(root), experiment, sample)
+            if ident not in found and is_dir(Path(root) / experiment / sample / f'{sample}_10k_Sample' / 'T'):
+                found[ident] = root
+    return [(root, experiment, sample) for (_, experiment, sample), root in found.items()]
+
+
 def create_panel(parent, window):
     bar = ttk.Frame(window, padding=8)
     bar.pack(fill='x')
@@ -79,6 +100,7 @@ def create_panel(parent, window):
     ttk.Label(window, padding=(8, 0), wraplength=1300, style='Muted.TLabel',
               text='確認事項　赤＝矛盾（台帳と実際が食い違う・参照先がない）　黄＝設定不足（未分類・種類・SEQlist・BC）　'
                    '青＝作業待ち（BNAL 対象で ANAL 完了なのに BNAL 未開始）。BNAL@ フォルダが空のものは開始に数えません。'
+                   '行を右クリック（ダブルクリック）で ④ Progress を開く・解析サーバーから再取得。'
                    'SEQlist・BC は machinedb の表で、核酸・アミノ酸は中身で判定します。').pack(side='bottom', fill='x')
     tree = parent.table(COLUMNS, TITLES, 18, True, parent=window)
     tree.configure(selectmode='extended')
@@ -148,6 +170,79 @@ def create_panel(parent, window):
             if tree.exists(k):
                 tree.selection_add(k)
 
+    def chosen():
+        """(experiment, sample) of the selected rows, in table order."""
+        rows = {r['key']: r for r in saved['rows']}
+        return [(rows[k]['experiment'], rows[k]['sample']) for k in tree.selection() if k in rows]
+
+    def open_progress(stage):
+        keys = chosen()
+        if keys:
+            parent.open_progress(stage, keys)
+
+    def refresh():
+        keys = chosen()
+        title = '解析サーバーから再取得'
+        if not keys:
+            return
+        if (Path(parent.db_path) != Path(catalog.DEFAULT_DB) or parent.busy or getattr(parent, 'rack_busy', False)
+                or getattr(parent, 'sample_refresh_busy', False) or getattr(parent.fileops, 'busy', False)):
+            messagebox.showinfo(title, 'ローカルDBを表示中で、更新処理・ファイル操作が動いていないときに実行してください。',
+                                parent=window)
+            return
+        roots = [rackstation_view.default_root(parent.configured, server, share)
+                 for server, share in rackstation_view.ANALYSIS_GROUPS]
+        try:
+            samples, _ = bnal_progress.load_saved(parent.db_path)
+        except Exception as exc:
+            status.set(f'DBを読めません: {exc}')
+            return
+        parent.sample_refresh_busy = True
+        status.set(f'{len(keys)} サンプルを解析サーバーから再取得しています…（サーバーを探してから T を読みます）')
+
+        def work():
+            results, failed = [], []
+            try:
+                targets = refresh_targets(set(keys), samples, roots)
+                for root, experiment, sample in targets:
+                    try:
+                        rack_store.refresh_sample(parent.db_path, root, experiment, sample)
+                        results.append((root, experiment, sample))
+                    except (OSError, ValueError) as exc:
+                        failed.append(f'{experiment}/{sample}（{root}）: {exc}')
+            except OSError as exc:
+                failed.append(str(exc))
+            window.after(0, lambda: finish(results, failed))
+
+        def finish(results, failed):
+            parent.sample_refresh_busy = False
+            found = {(e, s) for _, e, s in results}
+            missing = [f'{e}/{s}' for e, s in keys if (e, s) not in found]
+            reload()
+            for name in ('anal', 'bnal'):
+                (parent.progress_reloads.get(name) or (lambda: None))()
+            status.set(f'再取得 {len(found)}/{len(keys)} サンプル（{len(results)} 共有）'
+                       + (f'　どの解析サーバーにもない: {"、".join(missing[:5])}{" …" if len(missing) > 5 else ""}'
+                          if missing else '')
+                       + (f'　失敗 {len(failed)}件: {failed[0]}' if failed else ''))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    menu = tk.Menu(window, tearoff=False)
+    menu.add_command(label='④ Progress › Stage 1 · ANAL で開く', command=lambda: open_progress('anal'))
+    menu.add_command(label='④ Progress › Stage 2 · BNAL で開く（台帳の SEQlist で集計）', command=lambda: open_progress('bnal'))
+    menu.add_separator()
+    menu.add_command(label='選択サンプルを解析サーバーから再取得', command=refresh)
+
+    def popup(event):
+        item = tree.identify_row(event.y)
+        if item and item not in tree.selection():
+            tree.selection_set(item)
+        if tree.selection():
+            menu.tk_popup(event.x_root, event.y_root)
+
+    tree.bind('<Button-3>', popup)
+    tree.bind('<Double-1>', popup)
     query.trace_add('write', show)
     view.trace_add('write', show)
     window.after(0, reload)

@@ -21,7 +21,7 @@ STATUS_TEXT = dict(unknown='未計数・対象なし', unstarted='未着手', pa
 # ANAL の注意。BLOCKING は「先に片付けが必要」、INFO は参考（DB の ANAL進捗タブの凡例と同じ区分）
 ANAL_FLAGS = dict(欠番='ANAL の途中に抜けがある（最後の #番号より前が未解析）', 退避='ANAL/stocked に退避中',
                   混在='ANAL に同じ #番号がある（世代混在の疑い）', 差異='共有間で T（元ファイル）数が違う',
-                  要更新='再開地点が未取得（Analysis_server で更新）', コピー不足='解析用コピーの ANAL が元より少ない',
+                  要更新='再開地点が未取得（③ Analysis Servers で更新）', コピー不足='解析用コピーの ANAL が元より少ない',
                   **{'T内A@@': 'T 直下に解析結果（A@@・B@@）がある（T の件数には入れない。ANAL（サーバー）の「現状」で ANAL へ移す）'})
 ANAL_BLOCKING = ('欠番', '退避', '混在')
 ANAL_INFO = ('差異', '要更新', 'コピー不足')

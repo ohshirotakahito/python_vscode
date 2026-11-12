@@ -727,7 +727,7 @@ class FileOpsPanel(ttk.Frame):
     def start(self, data, signature=None):
         owner = self.owner
         if owner is not None and (getattr(owner, 'busy', False) or getattr(owner, 'rack_busy', False)):
-            messagebox.showinfo('処理中', 'Data_server・Analysis_server の更新が終わってから実行してください。', parent=self)
+            messagebox.showinfo('処理中', '② Source · SQserver・③ Analysis Servers の更新が終わってから実行してください。', parent=self)
             return
         self.busy = True
         self.active_kind = data['kind']
@@ -894,7 +894,7 @@ class FileOpsPanel(ttk.Frame):
         if not self.busy:
             return True
         if str(self.stop_button['state']) != 'disabled':
-            message = ('ファイル操作の処理中です。途中で止める場合は、ファイル操作タブ下部の「中断」を押してください。\n'
+            message = ('ファイル操作の処理中です。途中で止める場合は、⑤ File Ops 下部の「中断」を押してください。\n'
                        '中断が完了してから画面を閉じてください。')
         else:
             message = 'ファイル操作の処理または中断が完了してから画面を閉じてください。'
