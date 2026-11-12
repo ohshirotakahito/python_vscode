@@ -100,19 +100,22 @@ class App(tk.Tk):
         self.busy = False
         self.main_tabs = ttk.Notebook(self)
         self.main_tabs.pack(fill='both', expand=True)
+        # タブは作業の流れの順: ①気づく（計画・要対応）→ ②③実態を見る → ④進捗を確かめる → ⑤直す
+        self.plan_panel = ttk.Frame(self.main_tabs)
         self.sq_panel = ttk.Frame(self.main_tabs)
         self.analysis_panel = ttk.Frame(self.main_tabs)
-        self.main_tabs.add(self.sq_panel, text='Data_server')
-        self.main_tabs.add(self.analysis_panel, text='Analysis_server')
-        self.anal_panel = ttk.Frame(self.main_tabs)
-        self.main_tabs.add(self.anal_panel, text='ANAL進捗')
-        self.bnal_panel = ttk.Frame(self.main_tabs)
-        self.main_tabs.add(self.bnal_panel, text='BNAL進捗')
-        self.plan_panel = ttk.Frame(self.main_tabs)
-        self.main_tabs.add(self.plan_panel, text='サンプル台帳')
+        self.progress_tabs = ttk.Notebook(self.main_tabs)
+        self.anal_panel = ttk.Frame(self.progress_tabs)
+        self.bnal_panel = ttk.Frame(self.progress_tabs)
+        self.progress_tabs.add(self.anal_panel, text='Stage 1 · ANAL')
+        self.progress_tabs.add(self.bnal_panel, text='Stage 2 · BNAL')
         # もとのファイル管理アプリ（コピー・サンプル名変更・名前変更・フォルダ作成）。処理中は DB の更新と同時に走らせない
         self.fileops = FileOpsPanel(self.main_tabs, owner=self)
-        self.main_tabs.add(self.fileops, text='ファイル操作')
+        self.main_tabs.add(self.plan_panel, text='① Plan & Issues')
+        self.main_tabs.add(self.sq_panel, text='② Source · SQserver')
+        self.main_tabs.add(self.analysis_panel, text='③ Analysis Servers')
+        self.main_tabs.add(self.progress_tabs, text='④ Progress')
+        self.main_tabs.add(self.fileops, text='⑤ File Ops')
         self.buttons = []
         target = ttk.LabelFrame(self.sq_panel, text='更新する範囲を選択（ほかの範囲の記録は保持します）', padding=8)
         target.pack(fill='x', padx=8)
@@ -235,11 +238,19 @@ class App(tk.Tk):
         self.protocol('WM_DELETE_WINDOW', self.close)
         self.after(150, self.poll)
         self.select_server()
+        self.progress_focus, self.progress_reloads = {}, {}  # ④ Progress の各段階が登録（① から開くため）
         rackstation_view.create_panel(self, self.analysis_panel)
         anal_progress.create_panel(self, self.anal_panel)
         bnal_progress.create_panel(self, self.bnal_panel)
         plan_view.create_panel(self, self.plan_panel)
         self.refresh()
+
+    def open_progress(self, stage, keys):
+        """① Plan & Issues → ④ Progress: open Stage 1 (anal) or Stage 2 (bnal) on these (experiment, sample)."""
+        self.main_tabs.select(self.progress_tabs)
+        self.progress_tabs.select(self.anal_panel if stage == 'anal' else self.bnal_panel)
+        self.update_idletasks()
+        self.progress_focus[stage](keys)
 
     def table(self, columns, titles, height, expand=False, parent=None):
         frame = ttk.Frame(parent if parent is not None else self.sq_panel, padding=(8, 0))
@@ -636,12 +647,12 @@ class App(tk.Tk):
         if self.busy or getattr(self, 'rack_busy', False):
             return
         if self.fileops.busy:
-            messagebox.showinfo('ファイル操作中', 'ファイル操作タブの処理が終わってから更新してください。')
+            messagebox.showinfo('ファイル操作中', '⑤ File Ops の処理が終わってから更新してください。')
             return
         if not jobs:
             messagebox.showinfo('更新対象なし', '保存先の共有パスを設定し、更新するサーバー・共有・実験を選んでください。')
             return
-        lock = ScanLock('実験ファイルDB（Data_server の更新）')
+        lock = ScanLock('実験ファイルDB（② Source · SQserver の更新）')
         if not lock.acquire():
             messagebox.showinfo('走査中', f'ほかの走査が実行中です。終わってから実行してください。\n{lock.holder()}')
             return
@@ -936,7 +947,7 @@ class App(tk.Tk):
         if getattr(self, 'rack_busy', False):
             self.rack_cancel.set()
             self.main_tabs.select(self.active_analysis_panel)
-            self.status.set('中止を要求しました。Analysis_serverの処理終了後に閉じてください。')
+            self.status.set('中止を要求しました。③ Analysis Servers の処理終了後に閉じてください。')
             return
         if self.busy:
             self.cancel.set()

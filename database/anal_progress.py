@@ -20,7 +20,7 @@ from shared.progress import DONE_STATES, STATUS_TEXT, parse_ranges, resume_point
 from shared import progress  # noqa: E402
 FLAG_LEGEND = ('⚠（黄の帯）＝先に片付けが必要：欠番＝ANALの途中に抜けがある（最後の#番号より前が未解析）　'
                '退避＝ANAL/stockedに退避中　混在＝ANALに同じ#番号（世代混在の疑い）。'
-               '参考：差異＝共有間でT（元ファイル）数が違う　要更新＝再開地点が未取得（Analysis_serverで更新）　'
+               '参考：差異＝共有間でT（元ファイル）数が違う　要更新＝再開地点が未取得（③ Analysis Servers で更新）　'
                'コピー不足＝解析用コピーのANALが元より少ない')
 INFO_FLAGS = progress.ANAL_INFO
 
@@ -204,7 +204,7 @@ def create_map_view(frame, jump):
         entries = sort_entries(state['entries'], MAP_ORDERS[order.get()])
         if not entries:
             canvas.create_text(16, 16, anchor='nw', fill=ui_theme.MUTED, font=font,
-                               text='表示するサンプルがありません（Analysis_serverで更新するか、絞り込みを確認してください）。')
+                               text='表示するサンプルがありません（③ Analysis Servers で更新するか、絞り込みを確認してください）。')
             canvas.configure(scrollregion=(0, 0, 0, 0))
             return
         groups = state['groups']
@@ -333,7 +333,7 @@ def create_panel(parent, window):
     ttk.Label(bar, text='絞り込み（実験 / サンプル）').pack(side='left')
     ttk.Entry(bar, textvariable=query, width=30).pack(side='left', padx=6)
     ttk.Checkbutton(bar, text='未完了のみ', variable=incomplete_only, command=lambda: show()).pack(side='left', padx=6)
-    status = tk.StringVar(value='Analysis_serverタブで更新した保存済み情報から集計します（サーバーには接続しません）。')
+    status = tk.StringVar(value='③ Analysis Servers で更新した保存済み情報から集計します（サーバーには接続しません）。')
     ttk.Label(window, textvariable=status, padding=(8, 4), wraplength=1300).pack(side='bottom', fill='x')
     views = ttk.Notebook(window)
     views.pack(fill='both', expand=True, padx=8, pady=4)
@@ -410,7 +410,7 @@ def create_panel(parent, window):
         status.set(f"{total['samples']}サンプル: 完了 {total['complete']} / 進行中 {total['partial']} / "
                    f"未着手 {total['unstarted']} / 未計数 {total['unknown']}　"
                    f"全体の進捗 {bnal_progress.rate_text(total['done'], total['goal'])}（{total['done']:,} / {total['goal']:,} TDMS）"
-                   + (f"　再開地点が未取得 {stale}サンプル（Analysis_serverで更新すると表示されます）" if stale else ''))
+                   + (f"　再開地点が未取得 {stale}サンプル（③ Analysis Servers で更新すると表示されます）" if stale else ''))
 
     def reload_db():
         try:
@@ -434,6 +434,25 @@ def create_panel(parent, window):
         parent, window, selected_rows(bnal_progress.restore_wanted), reload_db)).pack(side='left', padx=(24, 0))
     ttk.Button(actions, text='選択行のANAL旧世代をANAL/oldへ…', command=lambda: bnal_progress.move_old_generations(
         parent, window, selected_rows(bnal_progress.old_wanted), reload_db)).pack(side='left', padx=6)
+    def focus(keys):
+        """From ① Plan & Issues: show every row of these (experiment, sample) in the detail tab, selected."""
+        wanted = set(keys)
+        incomplete_only.set(False)
+        query.set('')
+        reload_db()
+        views.select(detail_tab)
+        items = [item for item, key in row_keys.items() if key[:2] in wanted]
+        detail_tree.selection_set(items)
+        if items:
+            detail_tree.see(items[0])
+            detail_tree.focus(items[0])
+        found = {row_keys[i][:2] for i in items}
+        if len(found) < len(wanted):
+            status.set(f'選択 {len(wanted)} サンプルのうち {len(wanted) - len(found)} サンプルは DB にありません'
+                       '（① Plan & Issues の右クリック「再取得」か、③ Analysis Servers で更新してください）。')
+
     query.trace_add('write', show)
+    parent.progress_focus['anal'] = focus
+    parent.progress_reloads['anal'] = reload_db
     window.after(0, reload_db)
     return reload_db

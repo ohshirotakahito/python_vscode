@@ -132,7 +132,7 @@ def build_progress(selected, expected, samples, bnals, labels, show_extra=False)
                  if info[(catalog.root_identity(root), experiment, sample)]['folders']
                  > sum(catalog.root_identity(b['root']) == catalog.root_identity(root) for b in sample_bnals)]
         if stale:
-            warnings.append(prefix + f'BNAL@名が未取得の共有があります（{"、".join(stale)}）。Analysis_serverで更新してください。')
+            warnings.append(prefix + f'BNAL@名が未取得の共有があります（{"、".join(stale)}）。③ Analysis Servers で更新してください。')
             flags.append('未取得')
         flags = tuple(flags)
         first_row = len(rows)
@@ -204,7 +204,7 @@ def build_progress_by_plan(selected, plan, samples, bnals, labels, show_extra=Fa
     for experiment, sample in selected:
         lists = tuple(plan.get(sample_plan.key(experiment, sample), {}).get('seqlists', []))
         if not lists:
-            warnings.append(f'{experiment}/{sample}: 台帳に SEQlist が未設定のため集計していません（サンプル台帳タブで設定）。')
+            warnings.append(f'{experiment}/{sample}: 台帳に SEQlist が未設定のため集計していません（① Plan & Issues で設定）。')
             continue
         groups[lists].append((experiment, sample))
     rows, shares, expected_all = [], defaultdict(lambda: dict(started=0, complete=0, uncounted=0, done=0, goal=0)), []
@@ -906,7 +906,7 @@ def run_moves(parent, window, title, targets, empty_text, planner, describe, int
                             parent=window)
         return
     if not targets:
-        messagebox.showinfo(title, empty_text + '\n（記録はAnalysis_serverの更新時点のものです）', parent=window)
+        messagebox.showinfo(title, empty_text + '\n（記録は③ Analysis Servers の更新時点のものです）', parent=window)
         return
     window.config(cursor='watch')
     window.update_idletasks()
@@ -980,7 +980,7 @@ def create_panel(parent, window):
     ttk.Entry(filter_bar, textvariable=sample_filter, width=30).pack(side='left', padx=6)
     sample_list = tk.Listbox(left, selectmode='extended', height=10, exportselection=False)
     sample_list.pack(fill='both', expand=True, pady=(4, 0))
-    right = ttk.LabelFrame(top, text='② targetリスト（CSV）を選択（複数可）', padding=6)
+    right = ttk.LabelFrame(top, text='② 期待target：サンプル台帳の SEQlist（既定）／ 試しに CSV を選ぶ', padding=6)
     right.pack(side='left', fill='both', expand=True, padx=(8, 0))
     folder = tk.StringVar(value=DEFAULT_TARGET_DIR)
     folder_bar = ttk.Frame(right)
@@ -989,15 +989,20 @@ def create_panel(parent, window):
     ttk.Entry(folder_bar, textvariable=folder, width=45).pack(side='left', padx=6)
     csv_list = tk.Listbox(right, selectmode='extended', height=10, exportselection=False)
     csv_list.pack(fill='both', expand=True, pady=(4, 0))
-    use_plan = tk.BooleanVar(value=False)
-    ttk.Checkbutton(right, variable=use_plan,
-                    text='サンプル台帳の SEQlist を使う（サンプルごとに台帳の SEQlist で集計。上の CSV の選択は使わない）'
+    # 期待targetは台帳の SEQlist が基準（毎時の bnal_progress.csv と同じ）。CSV の手選択は台帳を使わずに試すとき
+    use_plan = tk.BooleanVar(value=True)
+
+    def plan_mode():
+        csv_list.configure(state='disabled' if use_plan.get() else 'normal')
+
+    ttk.Checkbutton(right, variable=use_plan, command=plan_mode,
+                    text='サンプル台帳の SEQlist を使う（既定。外すと上の CSV を選んで集計できます）'
                     ).pack(anchor='w', pady=(4, 0))
 
     actions = ttk.Frame(window, padding=(8, 0))
     actions.pack(fill='x')
     show_extra = tk.BooleanVar(value=False)
-    status = tk.StringVar(value='Analysis_serverタブで更新した保存済み情報から集計します（サーバーには接続しません）。')
+    status = tk.StringVar(value='③ Analysis Servers で更新した保存済み情報から集計します（サーバーには接続しません）。')
     ttk.Label(window, textvariable=status, padding=(8, 4), wraplength=1300).pack(side='bottom', fill='x')
     # 下半分は「全体マップ」（どのサンプルを次に解析するかの判断用）と「明細」の2つ
     views = ttk.Notebook(window)
@@ -1035,7 +1040,7 @@ def create_panel(parent, window):
     summary_tree.bind('<Double-1>', lambda event: parent.show_row_details(summary_tree))
     ttk.Label(detail_tab, text='進捗＝BNAL@直下TDMS数÷同じ共有のANAL（直下＋stocked）TDMS数。全体は各targetの最も進んだ共有の割合（最大100%）の平均。'
                                '赤：未着手　黄：進行中　緑：完了　紫：超過　青：複数サーバーで重複　灰：未計数・一覧外。'
-                               'TDMS数はAnalysis_serverの「BNAL内訳のTDMS数も取得」で更新します。',
+                               'TDMS数は③ Analysis Servers の「BNAL内訳のTDMS数も取得」で更新します。',
               padding=(8, 2), wraplength=1300).pack(fill='x')
 
     def jump(experiment, sample, target):
@@ -1074,14 +1079,16 @@ def create_panel(parent, window):
                 sample_list.selection_set(index)
 
     def fill_csvs():
+        csv_list.configure(state='normal')  # a disabled Listbox ignores delete / insert
         csv_list.delete(0, 'end')
         try:
             names = list_target_csvs(folder.get())
         except OSError as exc:
             status.set(f'CSVフォルダを読めません: {exc}')
-            return
+            names = []
         for name in names:
             csv_list.insert('end', name)
+        plan_mode()
 
     def reload_db():
         try:
@@ -1203,6 +1210,30 @@ def create_panel(parent, window):
     ttk.Checkbutton(actions, text='CSVにないBNAL@（一覧外）も表示', variable=show_extra).pack(side='left', padx=6)
     ttk.Button(actions, text='選択サンプルのANAL/stockedをANALへ戻す…', command=restore_selected).pack(side='left', padx=(24, 0))
     ttk.Button(actions, text='選択サンプルのANAL旧世代をANAL/oldへ…', command=move_old_selected).pack(side='left', padx=6)
+    def focus(keys):
+        """From ① Plan & Issues: select these (experiment, sample) and show them with the ledger's SEQlist."""
+        sample_filter.set('')
+        reload_db()
+        wanted = set(keys)
+        sample_list.selection_clear(0, 'end')
+        hits = [i for i, key in enumerate(choices) if key in wanted]
+        for i in hits:
+            sample_list.selection_set(i)
+        if not hits:
+            status.set(f'選択した {len(wanted)} サンプルは DB にありません'
+                       '（① Plan & Issues の右クリック「再取得」か、③ Analysis Servers で更新してください）。')
+            return
+        sample_list.see(hits[0])
+        use_plan.set(True)
+        plan_mode()
+        views.select(map_tab)
+        show()
+        if len(hits) < len(wanted):
+            status.set(status.get() + f'　（{len(wanted) - len(hits)} サンプルは DB になし）')
+
     sample_filter.trace_add('write', fill_samples)
+    parent.progress_focus['bnal'] = focus
+    parent.progress_reloads['bnal'] = reload_db
     window.after(0, fill_csvs)
+    window.after(0, plan_mode)
     window.after(0, reload_db)

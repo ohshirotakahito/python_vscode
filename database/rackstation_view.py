@@ -334,7 +334,7 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
             count_bnal = lambda experiment: query in experiment.casefold()  # noqa: E731
         roots = {label: group_views[label]['root'].get() for label in labels}
         servers = {label: group_views[label]['server'] for label in labels}
-        lock = ScanLock('実験ファイルDB（Analysis_server の更新）')
+        lock = ScanLock('実験ファイルDB（③ Analysis Servers の更新）')
         if scan_labels and not lock.acquire():
             messagebox.showinfo('走査中', f'ほかの走査が実行中です。終わってから実行してください。\n{lock.holder()}',
                                 parent=window)

@@ -114,7 +114,7 @@ def survey(t, settle_min=5.0, sources=None, check_conditions=True):
         issues.append(_issue("renumber", "同じ #番号の別の測定（生データ）",
                              sorted({p for p, _, _ in renumber_raw} | {k for _, k, _ in renumber_raw}),
                              f"内容の違う生データが同じ番号を使っています: {', '.join(keys[:10])}",
-                             manual="実験ファイルDBの「ファイル操作」→「名前変更・復元」で番号を付け直し、そのあと「ANAL をやり直す」で解析し直してください"))
+                             manual="実験ファイルDBの「⑤ File Ops」→「名前変更・復元」で番号を付け直し、そのあと「ANAL をやり直す」で解析し直してください"))
 
     # ANAL: 0-byte files, then numbers with more than one A@@ (ANAL and ANAL/stocked)
     a_all = {**{t / "ANAL" / n: st for n, st in anal.items() if n.upper().startswith("A@@")},
