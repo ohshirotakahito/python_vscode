@@ -14,12 +14,12 @@ try:
     from . import bnal_progress, rackstation_view
 except ImportError:
     import bnal_progress, rackstation_view
-from shared import bnal_lists, catalog, machinedb, plan_check, rack_store, sample_plan, ui_theme  # noqa: E402
+from shared import bnal_lists, catalog, ex_info_owners, machinedb, plan_check, rack_store, sample_plan, ui_theme  # noqa: E402
 
-COLUMNS = ('experiment', 'sample', 'shares', 'anal', 'bnal_started', 'kind', 'bnal', 'seqlists', 'bc', 'issues', 'updated')
-TITLES = ('実験名', 'サンプル名', '共有', 'ANAL（最も進んだ共有）', 'BNAL開始target数', '試料の種類', 'BNAL', 'SEQlist', 'BC',
+COLUMNS = ('experiment', 'sample', 'owner', 'shares', 'anal', 'bnal_started', 'kind', 'bnal', 'seqlists', 'bc', 'issues', 'updated')
+TITLES = ('実験名', 'サンプル名', 'Owner（Ex Info）', '共有', 'ANAL（最も進んだ共有）', 'BNAL開始target数', '試料の種類', 'BNAL', 'SEQlist', 'BC',
           '確認事項', '最終更新')
-WIDTHS = dict(experiment=170, sample=130, shares=210, anal=150, bnal_started=110, kind=80, bnal=70, seqlists=180,
+WIDTHS = dict(experiment=170, sample=130, owner=150, shares=210, anal=150, bnal_started=110, kind=80, bnal=70, seqlists=180,
               bc=110, issues=330, updated=230)
 VIEWS = {'すべて': lambda r: True, '確認事項あり': lambda r: r['issues'],
          '矛盾': lambda r: r['level'] == plan_check.CONFLICT, '設定不足': lambda r: plan_check.MISSING in
@@ -29,10 +29,18 @@ VIEWS = {'すべて': lambda r: True, '確認事項あり': lambda r: r['issues'
 KEEP, NONE = '変更しない', 'なし'
 LEVEL_TAGS = {plan_check.CONFLICT: ('danger', 0.3), plan_check.MISSING: ('warning', 0.14),
               plan_check.WAITING: ('info', 0.2)}
+ALL_OWNERS = 'すべてのOwner'
+OWNER_STATES = {'unset': 'Owner未設定', 'unmatched': 'Ex Info未照合', 'ambiguous': '照合要確認'}
+
+
+def owner_matches(row, selected):
+    return (selected == ALL_OWNERS or selected in row.get('owner_names', [])
+            or selected == OWNER_STATES.get(row.get('owner_state', 'unmatched')))
 
 
 def row_values(r):
     return dict(r, shares='、'.join(r['shares']) or '—', bnal=sample_plan.BNAL.get(r['bnal'], '未分類'),
+                owner='、'.join(r.get('owner_names', [])) or OWNER_STATES.get(r.get('owner_state'), 'Ex Info未照合'),
                 seqlists='、'.join(r['seqlists']), issues='、'.join(r['issues']),
                 updated=f"{r['updated']}（{r['updated_by']}）" if r['updated'] else '')
 
@@ -87,8 +95,12 @@ def create_panel(parent, window):
     bar = ttk.Frame(window, padding=8)
     bar.pack(fill='x')
     query, view = tk.StringVar(), tk.StringVar(value='確認事項あり')
+    owner = tk.StringVar(value=ALL_OWNERS)
     ttk.Label(bar, text='絞り込み（実験 / サンプル）').pack(side='left')
     ttk.Entry(bar, textvariable=query, width=28).pack(side='left', padx=6)
+    ttk.Label(bar, text='Owner').pack(side='left', padx=(8, 4))
+    owner_box = ttk.Combobox(bar, textvariable=owner, state='readonly', width=20, values=(ALL_OWNERS,))
+    owner_box.pack(side='left')
     ttk.Label(bar, text='表示').pack(side='left', padx=(10, 4))
     ttk.Combobox(bar, textvariable=view, values=list(VIEWS), state='readonly', width=22).pack(side='left')
     ttk.Button(bar, text='台帳とDBを再読み込み', command=lambda: reload()).pack(side='left', padx=10)
@@ -129,7 +141,7 @@ def create_panel(parent, window):
         text = query.get().strip().casefold()
         wanted = VIEWS[view.get()]
         tree.delete(*tree.get_children())
-        shown = [r for r in saved['rows'] if wanted(r)
+        shown = [r for r in saved['rows'] if wanted(r) and owner_matches(r, owner.get())
                  and (not text or text in r['experiment'].casefold() or text in r['sample'].casefold())]
         # worst first (矛盾 → 設定不足 → 作業待ち → none), then by experiment / sample
         shown.sort(key=lambda r: (plan_check.LEVELS.index(r['level']) if r['level'] else len(plan_check.LEVELS),
@@ -144,7 +156,8 @@ def create_panel(parent, window):
         status.set(f"表示 {len(shown):,} / {len(saved['rows']):,} サンプル　"
                    + '　'.join(f'{lv} {n:,}' for lv, n in counts.items())
                    + (f"　⚠ 台帳に同期の競合コピーがあります: {'、'.join(p.name for p in saved['conflicts'])}"
-                      if saved.get('conflicts') else ''))
+                      if saved.get('conflicts') else '')
+                   + saved.get('owner_warning', ''))
 
     def reload():
         try:
@@ -156,6 +169,17 @@ def create_panel(parent, window):
             return
         labels = bnal_progress.group_labels(parent.configured)
         saved['rows'] = plan_check.sample_rows(samples, bnals, plan, labels, seq_kinds, bc_kinds)
+        saved['owner_warning'] = ''
+        try:
+            definitions = ex_info_owners.load()
+        except (OSError, ValueError) as exc:
+            definitions = dict(projects=[], samples=[], locations=[])
+            saved['owner_warning'] = f'　Ex InfoのOwnerを読めません: {exc}'
+        saved['rows'] = ex_info_owners.attach(saved['rows'], samples, definitions)
+        names = sorted({n for row in saved['rows'] for n in row['owner_names']}, key=str.casefold)
+        owner_box['values'] = (ALL_OWNERS, *names, *OWNER_STATES.values())
+        if owner.get() not in owner_box['values']:
+            owner.set(ALL_OWNERS)
         saved['conflicts'] = sample_plan.conflicted_copies()
         label = dict(Nucleotide='核酸', Peptide='アミノ酸', Base='核酸', **{'Amino acid': 'アミノ酸'})
         choice['seqlist_box']['values'] = (KEEP, NONE, *(f'{n}（{label.get(k, "不明")}）' for n, k in seq_kinds.items()))
@@ -275,5 +299,6 @@ def create_panel(parent, window):
     tree.bind('<Double-1>', popup)
     query.trace_add('write', show)
     view.trace_add('write', show)
+    owner.trace_add('write', show)
     window.after(0, reload)
     return reload

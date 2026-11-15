@@ -117,8 +117,18 @@ class SampleRenameTests(unittest.TestCase):
     def test_outer_folder_also_renamed(self):
         planned = rename.plan(self.experiment, 'S-re', 'S-re', 'New')
         log = rename.execute(planned, self.base / 'history')
+        from shared import destination_history as dh
+        from datetime import datetime, timezone
+        before = '2000-01-01T00:00:00+00:00'
+        moves = dh.load_moves(self.base / 'history')
+        current, changed, uncertain = dh.trace(str(self.root), before, moves)
+        self.assertEqual((Path(current), changed, uncertain), (self.experiment / 'New', True, False))
+        transferred_while_renamed = datetime.now(timezone.utc).isoformat()
         self.assertTrue((self.experiment / 'New').is_dir())
         rename.restore(rename.restore_plan(log))
+        moves = dh.load_moves(self.base / 'history')
+        current, changed, uncertain = dh.trace(current, transferred_while_renamed, moves)
+        self.assertEqual((Path(current), changed, uncertain), (self.root, True, False))
         self.assertTrue(self.root.is_dir())
 
     def test_legacy_history_without_scope_still_restores(self):

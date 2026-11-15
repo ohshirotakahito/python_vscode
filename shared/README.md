@@ -17,10 +17,12 @@
 | `seq_records.py` | SEQ の装置一覧CSV（`Machine_N.csv`）と転送履歴CSV（LabVIEW版 `Uploader.csv` ＋ Python版） | exmanager（書く）, database（読む） |
 | `seq_targets.py` | SEQlist の target CSV（BNAL 解析対象）の名前の読み込み | database |
 | `bnal_lists.py` | SEQlist（配列）と BC（コンダクタンス値）の読み込み、核酸・アミノ酸の判定（中身で判定） | Analyzer, database |
+| `ex_info_links.py` | 計測の計画（AXN の Ex Info・G PSET が書く `machinedb\PLAN\MeasurementLinks.jsonl`・`ex_info.json`。読むだけ）と、転送の記録 `machinedb\SEQ\Transfers.jsonl`（1転送1行、解析サーバーの共有・Ex Info のキーつき。追記だけ） | exmanager（計画を読む・記録を書く）, database（記録を読む） |
 | `sample_plan.py` | サンプル台帳（試料の種類・BNAL に回すか・使う SEQlist / BC）。machinedb に置き各 PC で共有 | Analyzer（今後 exmanager・database） |
 | `catalog.py` | 実験ファイルDB の基本テーブル（sources / files / folders / updates）と接続 `connect()` | database, Plotting, Analyzer |
 | `rack_store.py` | 解析サーバーのサンプル集計（rack_samples / rack_roots / rack_bnals）、測定番号の規則 `measurement_key()` | database, Plotting, Analyzer |
 | `file_moves.py` | 記録（ジャーナル）つきのファイル移動・取り消し、記録の保存先 `journal_dir()`・`log_dir()`（`database/file_logs/`）、ANAL の一覧 | database, Analyzer |
+| `destination_history.py` | ローカル履歴と `SEQ/DestinationMoves/` の追跡記録から現在の保存先を求める。UNCフォルダ操作の追跡用記録を共有し、送信待ちを再送する。復元用履歴は各PCに保持 | database, Analyzer |
 | `t_stock.py` | Data 退避（T ⇄ T/stocked）の計画 | Analyzer |
 | `progress.py` | ANAL・BNAL の進捗の状態（未着手・進行中・完了・超過・解析用コピー・確認不可）と注意（欠番・退避・混在・差異・要更新・コピー不足）の判定 | database, Analyzer |
 
@@ -54,6 +56,42 @@
    `shared/` にはパスの決め方だけを置く。
    人が決める情報（SEQlist・BC・サンプル台帳）は machinedb（D:\Qstatus）の1か所だけに置き、アプリ内にコピーを持たない。
    サンプル台帳は `sample_plan.update()` で変えた項目だけを書く（全体を書き戻すと別の PC の変更を消す）。
+
+## Ex Infoの閲覧・編集
+
+`ex_info_store.py` はAXNと共通の `PLAN/ex_info.json` を読み書きします。
+研究Owner・研究／サンプルの説明のみ編集可能です。AXNと同じ `ex_info.lock`・revision・バックアップを使い、
+最新の台帳へ変更項目だけを反映します。同じ項目の競合や同期競合コピーがあれば保存を止めます。
+同期前の別PC同時編集を完全に排他する仕組みではありません。
+`ex_info_owners.py` は登録場所をDBの保存場所と照合し、OwnerをPlanへ表示します。
+
+## 転送後のフォルダ変更の追跡
+
+`destination_history.load_moves()` は `database/file_logs/` と `machinedb/SEQ/DestinationMoves/` を読みます。読み取り時には移行・書き込みを行いません。
+サンプル名変更のJSON履歴はフォルダのstep（identityのサイズがNone）、`file_moves` のJSON履歴は `dir=True` の操作だけを使います。
+ファイル単体の整理・名前変更はサンプルの保存先変更とみなしません。
+新しい履歴には操作ごとの `moved_at`、サンプル名変更の復元には `restored_at` を残します（既存JSONへの項目追加）。
+転送時の `Transfers.jsonl` は書き換えず、転送後の操作だけを順に適用します。元に戻す操作も転送時刻と比較します。
+
+復元時刻がない旧履歴、pending/restoringの操作、旧CSV形式のフォルダ名変更は現在地の根拠が足りないので要確認です。
+壊れた履歴は追跡を不確実にし、同名サンプルから完了を推測しません。
+復元用の完全な履歴はPCごとに保持します。新しいサンプル名変更・復元と `file_moves` のUNCフォルダ操作では、
+追跡に必要なフォルダの対応・時刻・確定状態だけを `machinedb/SEQ/DestinationMoves/` へ共有します（schema_version 1）。
+ファイル単体の名前・内容・ハッシュ・identityは共有しません。PCローカルのドライブ文字は別PCで同じ保存先を示せないため対象外です。
+
+共有するJSONは履歴キー・版番号・内容ハッシュごとに別ファイルへ追加します。他PCの記録や以前の版を書き換えません。
+読み取り側は履歴ごとの最新版だけを使い、同じ版で内容が競合した場合は要確認とします。
+同じ履歴のローカル版があるPCではローカル履歴を優先し、共有版を重ねて再生しません。
+共有前にローカル履歴と同じフォルダの `.tracking/` に送信待ちを永続保存します。
+共有失敗は警告を出してローカルの操作・復元用履歴を保持し、次の同種操作・復元や台帳出力で再送します。
+既存履歴の初回共有や障害復旧後の手動再送は、履歴を持つPCで次を実行します（本番の共有先へ書きます）：
+
+```powershell
+& 'C:\Users\ohshi\anaconda3\python.exe' -m shared.destination_history --sync
+```
+
+旧CSV形式の履歴の共有は未対応です。記録を残さない手作業の移動も追跡できません。
+同期が終わるまでは新しい記録を参照できません。「履歴なし」は移動していない証明ではありません。
 
 ## アプリ側での読み込み方
 

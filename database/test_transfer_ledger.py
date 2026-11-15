@@ -1,6 +1,8 @@
 from unittest import TestCase
 
 from database import transfer_ledger as tl
+from shared.ex_info_links import Planned, transfer_record
+from shared.destination_history import Move, timestamp
 
 MACHINES = {'AXN2': {'Tmp_backup': r'\\SQserver\backup_06'}, 'AXN4': {'Tmp_backup': r'\\SQserver\backup_07'},
             'C_Local': {'Tmp_backup': r'C:\MCBJ'}}
@@ -20,6 +22,30 @@ def sample(experiment, name, t, anal, **extra):
 
 
 class TransferLedgerTest(TestCase):
+    def test_renamed_sample_uses_current_path_and_keeps_original_transfer_fields(self):
+        old = r'\\QTserver\analysis\Exp\S1'
+        new = r'\\QDserver\analysis\OtherExp\Renamed'
+        # Use fixed times so a later rename cannot be applied to a new sample reusing the old name.
+        from shared.ex_info_links import Transfer
+        transfer = Transfer('AXN2', 'E1', 'Recent_Data', r'\\QTserver\analysis', 'Exp', 'S1', 'Sample',
+                            planned=True, sample_key='K1', transferred_at='2026-11-13T00:00:00+00:00')
+        history_rows = [history('2026/11/13_09:00', 'AXN2', 'E1', 'Exp', 'S1')]
+        groups = {'QTserver/analysis': [sample('Exp', 'S1', 10, 10)],
+                  'QDserver/analysis': [sample('OtherExp', 'Renamed', 10, 3)]}
+        moves = [Move(old, new, timestamp('2026-11-13T01:00:00+00:00'))]
+        (row,) = tl.build_rows([entry('E1')], MACHINES, history_rows, groups, [transfer], moves)
+        self.assertEqual((row['anal_state'], row['locations']), ('進行中', 'QDserver/analysis'))
+        self.assertEqual((row['dest_experiment'], row['dest_sample'], row['dest_shares'], row['as_planned']),
+                         ('Exp', 'S1', 'QTserver/analysis', 'はい'))
+        self.assertEqual((row['current_destinations'], row['path_tracking']), (new, '履歴で追跡'))
+        (missing,) = tl.build_rows([entry('E1')], MACHINES, history_rows,
+                                  {'QTserver/analysis': groups['QTserver/analysis']}, [transfer], moves)
+        self.assertEqual(missing['anal_state'], tl.NOT_FOUND)
+        (unsure,) = tl.build_rows([entry('E1')], MACHINES, history_rows, groups,
+                                 [transfer], [Move(old, new, None)])
+        self.assertEqual((unsure['anal_state'], unsure['flags'], unsure['current_destinations']),
+                         (tl.NOT_FOUND, tl.TRACKING_UNCERTAIN, ''))
+
     def test_machine_comes_from_tmp_backup(self):
         self.assertEqual(tl.machine_by_backup(MACHINES), {'backup_06': 'AXN2', 'backup_07': 'AXN4'})
 
@@ -59,3 +85,30 @@ class TransferLedgerTest(TestCase):
         rows = tl.build_rows(entries, MACHINES, records, {})
         self.assertEqual([(r['machine'], r['name'], r['transfer']) for r in rows],
                          [('AXN2', 'E1', tl.NOT_TRANSFERRED)])
+
+    def test_recorded_share_decides_anal_when_the_same_names_are_on_several_shares(self):
+        records = [history('2026/11/13_10:00', 'AXN2', 'E1', 'Exp', 'S1')]
+        groups = {'QDserver/backup': [sample('Exp', 'S1', 10, 10)],      # same names, another share
+                  'QTserver/analysis': [sample('Exp', 'S1', 10, 3)]}
+        plan = Planned('E1', 'Exp', 'S1', 'Sample', 'P1', 'K1', 'L1', r'\\QTserver\analysis', 'Exp', 'S1')
+        transfer = transfer_record('AXN2', 'E1', 'Recent_Data', r'\\QTserver\analysis', 'Exp', 'S1', 'Sample', plan)
+        (row,) = tl.build_rows([entry('E1')], MACHINES, records, groups, [transfer])
+        self.assertEqual((row['anal_state'], row['locations'], row['flags']), ('進行中', 'QTserver/analysis', ''))
+        self.assertEqual((row['dest_shares'], row['as_planned'], row['sample_key']), ('QTserver/analysis', 'はい', 'K1'))
+        # without the record: every share is searched, as before
+        (old,) = tl.build_rows([entry('E1')], MACHINES, records, groups)
+        self.assertEqual((old['anal_state'], old['dest_shares'], old['as_planned']), ('完了', '', ''))
+
+    def test_sample_moved_away_from_the_recorded_share_is_flagged(self):
+        records = [history('2026/11/13_10:00', 'AXN2', 'E1', 'Exp', 'S1')]
+        groups = {'QDserver/analysis': [sample('Exp', 'S1', 10, 10)]}
+        transfer = transfer_record('AXN2', 'E1', 'Recent_Data', r'\\QTserver\analysis', 'Exp', 'S1', 'Blank')
+        (row,) = tl.build_rows([entry('E1')], MACHINES, records, groups, [transfer])
+        self.assertEqual((row['anal_state'], row['locations'], row['flags'], row['as_planned']),
+                         ('完了', 'QDserver/analysis', tl.OTHER_SHARE, ''))
+
+    def test_root_label(self):
+        self.assertEqual(tl.root_label('\\\\QDserver\\analysis\\'), 'QDserver/analysis')
+        self.assertEqual(tl.root_label('//QDserver/analysis'), 'QDserver/analysis')
+        self.assertEqual(tl.root_label(r'D:\analysis'), '')
+        self.assertEqual(tl.root_label(r'\\QDserver\analysis\Exp'), '')

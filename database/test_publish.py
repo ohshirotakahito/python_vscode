@@ -1,6 +1,7 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase
+import unittest
 from unittest.mock import patch
 import csv
 import json
@@ -8,6 +9,19 @@ import json
 from database import publish
 from database.scan_lock import ScanLock
 from shared import catalog
+
+
+def setUpModule():
+    # unittest discover must also keep automatic outbox retries away from production storage.
+    from shared import destination_history as dh
+    temporary = TemporaryDirectory()
+    unittest.addModuleCleanup(temporary.cleanup)
+    base = Path(temporary.name)
+    for obj, name, value in ((dh, 'SHARED_MOVES', base / 'shared'),
+                             (dh.file_moves, 'LOG_ROOT', base / 'logs')):
+        patcher = patch.object(obj, name, value)
+        patcher.start()
+        unittest.addModuleCleanup(patcher.stop)
 
 
 def read(path):
@@ -51,6 +65,47 @@ class SettingsTests(TestCase):
 
 
 class ExportTests(TestCase):
+    def test_transfer_export_uses_another_pcs_shared_journal_and_publishes_current_destination(self):
+        from unittest.mock import Mock
+        from shared import destination_history as dh
+        from shared.ex_info_links import Transfer
+        from database import transfer_ledger as tl
+        with TemporaryDirectory() as temp:
+            base = Path(temp)
+            old, current = r'\\QTserver\analysis\Exp\S', r'\\QTserver\analysis\Exp\New'
+            journal = base / 'file_logs'
+            journal.mkdir()
+            (journal / 'rename.json').write_text(json.dumps(dict(version=1,
+                created_at='2026-11-13T01:00:00+00:00', steps=[dict(source=old, target=current,
+                identity=[1, 2, None, None], state='done', moved_at='2026-11-13T01:00:00+00:00')]
+            )), encoding='utf-8')
+            shared_moves = base / 'shared_moves'
+            self.assertTrue(dh.share_journal(journal / 'rename.json',
+                json.loads((journal / 'rename.json').read_text(encoding='utf-8')), shared_moves))
+            record = Transfer('AXN2', 'E1', 'Recent_Data', r'\\QTserver\analysis', 'Exp', 'S', 'Sample',
+                              planned=True, transferred_at='2026-11-13T00:00:00+00:00')
+            app = Mock()
+            app.App.read_inventory.return_value = (None,) * 4 + ([dict(group='Recent_Data',
+                container='backup_06', name='E1')],)
+            history = [('2026/11/13_09:00', 'UN', 'AXN2', 'Recent_Data', '', 'UN', 'E1', 'Exp', 'S') + ('',) * 8]
+            groups = {'QTserver/analysis': [dict(experiment='Exp', sample='New', t_tdms=10,
+                      anal_tdms=4, anal_missing_checked=1)]}
+            with patch.object(publish, '_app', return_value=app), \
+                    patch.object(publish.seq_records, 'machines', return_value={'AXN2': {'Tmp_backup': r'\\SQserver\backup_06'}}), \
+                    patch.object(publish.seq_records, 'history', return_value=history), \
+                    patch.object(publish.ex_info_links, 'load_transfers', return_value=[record]), \
+                    patch.object(publish, 'analysis_rows_by_group', return_value=groups), \
+                    patch.object(dh.file_moves, 'LOG_ROOT', base / 'other_pc_logs'), \
+                    patch.object(dh, 'SHARED_MOVES', shared_moves):
+                out = base / 'sq_transfers.csv'
+                self.assertEqual(publish.export_transfers(None, [], out, lambda row, key: row[key]), 1)
+            with out.open(encoding='utf-8-sig', newline='') as stream:
+                (row,) = list(csv.DictReader(stream))
+            self.assertEqual(row['現在の保存先（履歴）'], current)
+            self.assertEqual(row['保存先の追跡'], '履歴で追跡')
+            self.assertEqual((row['転送先のサンプル名'], row['計画どおり'], row['ANAL状態']), ('S', 'はい', '進行中'))
+            self.assertEqual(set(row), set(tl.TITLES) | {publish.EXPORTED_AT})
+
     def test_write_csv_keeps_previous_file_when_replace_fails(self):
         with TemporaryDirectory() as temp:
             out = Path(temp) / 'a' / 'x.csv'

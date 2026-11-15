@@ -33,7 +33,7 @@ import threading
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # リポジトリ直下（shared/ を読むため）
-from shared import catalog, rack_store, sample_plan, seq_records  # noqa: E402
+from shared import catalog, ex_info_links, rack_store, sample_plan, seq_records  # noqa: E402
 
 try:
     from . import bnal_progress, rackstation_view, sq_workflow, transfer_ledger
@@ -220,11 +220,19 @@ def export_bnal(db, configured, destination, cell, plan=None):
 
 
 def export_transfers(db, configured, destination, cell):
+    from shared import destination_history
     from_app = _app()
     entries = from_app.App.read_inventory(db, '', configured)[4]
     machines = seq_records.machines(seq_records.MACHINE_CSV)
     history = seq_records.history(seq_records.LEGACY_HISTORY, seq_records.LOCAL_HISTORY)
-    rows = transfer_ledger.build_rows(entries, machines, history, analysis_rows_by_group(db, configured))
+    try:
+        records = ex_info_links.load_transfers()
+    except OSError as exc:      # without the record the shares are unknown; the names still find the samples
+        log.warning('転送の記録（%s）を読めません: %s', ex_info_links.TRANSFERS, exc)
+        records = []
+    destination_history.flush_pending(warn=log.warning)
+    moves = destination_history.load_moves()
+    rows = transfer_ledger.build_rows(entries, machines, history, analysis_rows_by_group(db, configured), records, moves)
     exported_at = now_utc()
     write_csv(destination, transfer_ledger.TITLES + (EXPORTED_AT,),
               [[row[key] for key in transfer_ledger.COLUMNS] + [exported_at] for row in rows])

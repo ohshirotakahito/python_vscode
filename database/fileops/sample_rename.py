@@ -167,17 +167,22 @@ def execute(preview, history_dir):
     journal = dict(version=1, created_at=datetime.now().isoformat(), root=preview['root'],
                    scope=preview.get('scope', 'all'), steps=[])
     save(path, journal)
+    from shared.destination_history import share_journal, flush_pending
+    flush_pending(Path(history_dir))
     print(f'復元用履歴: {path}', flush=True)
     for source, target in preview['operations']:
         check_cancel()
         step = dict(source=source, target=target, identity=identity(source), state='pending')
         journal['steps'].append(step)
         save(path, journal)
+        share_journal(path, journal)
         if os.path.lexists(target):
             raise FileExistsError(target)
         os.rename(source, target)
+        step['moved_at'] = datetime.now().astimezone().isoformat()
         step['state'] = 'done'
         save(path, journal)
+        share_journal(path, journal)
         print(f'変更: {source} → {target}', flush=True)
     return path
 
@@ -222,11 +227,13 @@ def restore_plan(path):
 
 
 def restore(preview):
+    from shared.destination_history import share_journal, flush_pending
     current = restore_plan(preview['history'])
     if current != preview:
         raise ValueError('確認後に対象が変わりました。復元予定を再表示してください。')
     path = Path(preview['history'])
     journal = json.loads(path.read_text(encoding='utf-8'))
+    flush_pending(path.parent)
     for source, target in preview['operations']:
         check_cancel()
         if os.path.lexists(target):
@@ -235,7 +242,10 @@ def restore(preview):
                     if s['target'] == source and s['source'] == target)
         step['state'] = 'restoring'
         save(path, journal)
+        share_journal(path, journal)
         os.rename(source, target)
+        step['restored_at'] = datetime.now().astimezone().isoformat()
         step['state'] = 'restored'
         save(path, journal)
+        share_journal(path, journal)
         print(f'復元: {source} → {target}', flush=True)

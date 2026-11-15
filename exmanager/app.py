@@ -11,7 +11,7 @@ import core  # noqa: E402
 import pc_config  # noqa: E402
 import source_cache  # noqa: E402
 from csv_editor import CsvEditor  # noqa: E402
-from shared import sample_plan, ui_theme  # noqa: E402
+from shared import ex_info_links, sample_plan, ui_theme  # noqa: E402
 
 # サンプル台帳（machinedb）の項目。転送するときに試料の種類と BNAL に回すかを決めておく
 PLAN_KINDS = ('未設定', *sample_plan.KINDS)
@@ -117,6 +117,7 @@ class App(tk.Tk):
         self.busy = False
         self.current = None
         self.sets = []
+        self.plans = {}     # 測定フォルダ名 → ex_info_links.Planned（コピー元一覧を出すたびに読み直す）
         self.vars = {}
         self.boxes = {}
         self.pc = pc_config.load()
@@ -166,7 +167,10 @@ class App(tk.Tk):
         tree_frame.pack(fill='x', padx=10)
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
-        self.tree = ttk.Treeview(tree_frame, columns=('name','10khz','100khz','history','destinations','latest'), show='headings', height=7, selectmode='extended')
+        self.tree = ttk.Treeview(tree_frame, columns=('name','10khz','100khz','history','destinations','latest','plan'), show='headings', height=7, selectmode='extended')
+        # 計画: 計測PC（AXN）の Ex Info・G PSET で決めた送り先（machinedb\PLAN\MeasurementLinks.jsonl）
+        self.tree.heading('plan', text='計画（Ex Info の送り先）')
+        self.tree.column('plan', width=360)
         self.tree.heading('10khz', text='10kHz件数')
         self.tree.heading('100khz', text='100kHz件数')
         self.tree.column('10khz', width=90, stretch=False, anchor='e')
@@ -260,15 +264,16 @@ class App(tk.Tk):
         self.plan_status.pack(side='left', padx=12)
         ttk.Button(select, text='② 選択内容を転送セットに追加', style='Primary.TButton', command=self.add_set).grid(row=1, column=3, sticky='w', padx=(12, 4))
         ttk.Button(select, text='保存先実験・サンプルを追加', style='Conditional.TButton', command=self.add_destination).grid(row=1, column=4, sticky='w', padx=4)
+        ttk.Button(select, text='計画どおりにセットへ追加', style='Primary.TButton', command=self.add_planned_sets).grid(row=1, column=5, sticky='w', padx=4)
         ttk.Label(upper, text='3. 登録内容の確認').pack(anchor='w', padx=10, pady=(8, 0))
         batch_frame = ttk.Frame(upper)
         batch_frame.pack(fill='both', expand=True, padx=10)
         batch_frame.rowconfigure(0, weight=1)
         batch_frame.columnconfigure(0, weight=1)
-        self.batch_tree = ttk.Treeview(batch_frame, columns=('set','source','target','plan','name_check','source10','target10','source100','target100','duplicates','nonduplicates','person'), show='headings', height=7)
+        self.batch_tree = ttk.Treeview(batch_frame, columns=('set','source','target','ex_plan','plan','name_check','source10','target10','source100','target100','duplicates','nonduplicates','person'), show='headings', height=7)
         # 名前の照合が「不一致」「判定不可」のセットは行を橙にする（一致しなくても正しい場合があるので目安）
         self.batch_tree.tag_configure('name_mismatch', background=ui_theme.row('warning', 0.22), foreground=ui_theme.TEXT)
-        for key, title, width in [('set','セット',55),('source','コピー元実験',250),('target','保存先・区分',300),('plan','台帳（種類・BNAL）',150),('name_check','名前の照合',170),('source10','元10kHz',90),('target10','先10kHz',90),('source100','元100kHz',90),('target100','先100kHz',90),('duplicates','内容重複確認',160),('nonduplicates','重複なし（TDMS）',180),('person','アップロード担当者',160)]:
+        for key, title, width in [('set','セット',55),('source','コピー元実験',250),('target','保存先・区分',300),('ex_plan','計画との照合',130),('plan','台帳（種類・BNAL）',150),('name_check','名前の照合',170),('source10','元10kHz',90),('target10','先10kHz',90),('source100','元100kHz',90),('target100','先100kHz',90),('duplicates','内容重複確認',160),('nonduplicates','重複なし（TDMS）',180),('person','アップロード担当者',160)]:
             self.batch_tree.heading(key, text=title)
             self.batch_tree.column(key, width=width)
         self.batch_tree.grid(row=0, column=0, sticky='nsew')
@@ -796,9 +801,9 @@ class App(tk.Tk):
                                                 [(p.name, c) for p, c in folders])['updated']
                 except OSError as exc:
                     updated = f'保存失敗: {exc}'
-            return folders, core.history(v['legacy'], v['local']), updated
+            return folders, core.history(v['legacy'], v['local']), updated, self.load_plans()
         def done(data):
-            folders, history, updated = data
+            folders, history, updated, self.plans = data
             if (v['machine'], v['selection']) != (self.values()['machine'], self.vars['selection'].get()):
                 return self.show_cached_sources()  # selection changed while loading
             self.clear_sources('')
@@ -806,7 +811,9 @@ class App(tk.Tk):
             for n,(p, counts) in enumerate(folders):
                 records = [r for r in history if r[2]==v['machine'] and r[6]==p.name]
                 self.source_histories[str(n)] = records
-                self.tree.insert('', 'end', iid=str(n), values=(p.name, *counts, *history_summary(records)), tags=('yes' if records else 'no',))
+                self.tree.insert('', 'end', iid=str(n), values=(p.name, *counts, *history_summary(records),
+                                                                core.plan_text(self.plans.get(p.name))),
+                                 tags=('yes' if records else 'no',))
                 self.source_paths[str(n)] = p
             stale = bool(cached) and source_cache.is_stale(cached)
             state = f'前回の一覧（{updated} 取得・{cache_age_text(cached)}）' if cached else f'一覧更新：{updated}'
@@ -817,6 +824,14 @@ class App(tk.Tk):
             self.mark_set_rows()
             self.log(f'コピー元一覧: {v["machine"]} / {v["selection"]} {len(folders)}フォルダ（{state}）')
         self.run(work, done)
+
+    def load_plans(self):
+        """Ex Info の計画（作業スレッドから呼ぶ）。読めなくても転送は手で続けられるので、ログに残して {} を返す。"""
+        try:
+            return ex_info_links.load_plans()
+        except (OSError, ValueError) as exc:
+            self.events.put(('log', f'計測の計画（{ex_info_links.LINKS}）を読めません: {exc}'))
+            return {}
 
     def open_history_window(self):
         self.show_history()
@@ -880,14 +895,89 @@ class App(tk.Tk):
                 + f'{check}\n\n' + '\n'.join(mismatched[:10]) + ('\n…' if len(mismatched) > 10 else '')
                 + '\n\nこのまま追加しますか？（意図して別名にする場合は「はい」）'):
             return
+        different = core.plan_mismatches(sources, self.plans, v['root'], v['experiment'], v['sample'], v['kind'])
+        if different and not messagebox.askyesno(
+                '計画との照合', f'選択した保存先（{dst} [{v["kind"]}]）は、計測時に Ex Info で決めた送り先と違います。\n\n'
+                + '\n'.join(f'{name}\n　計画: {text}' for name, text in different[:8]) + ('\n…' if len(different) > 8 else '')
+                + '\n\nこのまま追加しますか？（計画どおりに送るなら「いいえ」→「計画どおりにセットへ追加」）'):
+            return
         again = [f"{p.name}（セット{', '.join(map(str, registered[p]))}）" for p in sources if p in registered]
         if again and not messagebox.askyesno(
                 '登録済みのコピー元', f'選択したコピー元のうち {len(again)} 件は、すでにセットに登録済みです。\n'
                 + '\n'.join(again[:10]) + ('\n…' if len(again) > 10 else '')
                 + '\n\n別の保存先として追加しますか？'):
             return
+        context['plans'] = {p.name: self.plans[p.name] for p in sources if p.name in self.plans}
         self.sets.append(dict(sources=sources, target=dst, context=context, legacy=v['legacy'], local=v['local']))
         self.refresh_sets()
+
+    def add_planned_sets(self):
+        """選んだ実験を、Ex Info の計画の送り先ごとにセットへ追加する（送り先フォルダがなければ確認して作る）。"""
+        if self.busy:
+            return
+        self.current = None
+        v = self.values()
+        selected = self.tree.selection()
+        if not selected or not v['uploader']:
+            messagebox.showinfo('選択不足', 'コピー元の実験とアップロード担当者を選択してください。')
+            return
+        if self.source_context != (v['machine'], v['selection']):
+            messagebox.showinfo('一覧更新', 'コピー元一覧を更新してください。')
+            return
+        if Path(v['legacy']).resolve() == Path(v['local']).resolve():
+            messagebox.showerror('設定', 'LabVIEW版CSVとPython版CSVは別のパスにしてください。')
+            return
+        if self.sets and (v['legacy'], v['local']) != (self.sets[0]['legacy'], self.sets[0]['local']):
+            messagebox.showerror('履歴設定', '同じ一括処理では履歴CSVの設定を統一してください。')
+            return
+        sources = [self.source_paths[s] for s in selected]
+        groups, skipped = core.plan_groups(sources, self.plans, self.boxes['root']['values'])
+        registered = self.registered_sources()
+        for (root, experiment, sample, kind), paths in list(groups.items()):
+            target = Path(root) / experiment / sample
+            same = [p for p in paths if any(self.sets[n - 1]['target'] == target and self.sets[n - 1]['context']['kind'] == kind
+                                            for n in registered.get(p, []))]
+            skipped += [(p.name, f'同じ保存先・区分のセットに登録済み（{target} [{kind}]）') for p in same]
+            groups[(root, experiment, sample, kind)] = [p for p in paths if p not in same]
+        groups = {key: paths for key, paths in groups.items() if paths}
+        skipped_text = ('\n\n計画どおりに追加できないもの（手で保存先を選んで「②」で追加してください）:\n'
+                        + '\n'.join(f'・{name}: {reason}' for name, reason in skipped[:12])
+                        + ('\n…' if len(skipped) > 12 else '')) if skipped else ''
+        if not groups:
+            messagebox.showinfo('計画どおりにセットへ追加', '計画どおりに追加できる実験はありません。' + skipped_text)
+            return
+        uploader, machine, selection = self.people[v['uploader']], v['machine'], v['selection']
+        targets = [Path(root) / experiment / sample for root, experiment, sample, _ in groups]
+
+        def checked(missing):
+            lines = [f'・{Path(root) / experiment / sample} [{kind}] ← {len(paths)}実験'
+                     for (root, experiment, sample, kind), paths in groups.items()]
+            text = f'次の {len(groups)} セットを追加します。\n' + '\n'.join(lines)
+            if missing:
+                text += ('\n\nまだサーバーにない送り先サンプルフォルダ（10k/100k の Sample・Blank、T などのいつものツリーを作ります）:\n'
+                         + '\n'.join(f'・{m}' for m in missing))
+            if not messagebox.askyesno('計画どおりにセットへ追加', text + skipped_text + '\n\n' +
+                                       ('フォルダを作ってから追加しますか？' if missing else '追加しますか？')):
+                return
+
+            def created(_):
+                for (root, experiment, sample, kind), paths in groups.items():
+                    context = dict(uploader=uploader, machine=machine, selection=selection, kind=kind,
+                                   plans={p.name: self.plans[p.name] for p in paths})
+                    self.sets.append(dict(sources=paths, target=Path(root) / experiment / sample, context=context,
+                                          legacy=v['legacy'], local=v['local']))
+                if missing:
+                    self.log('保存先フォルダ作成完了: ' + ' / '.join(map(str, missing)))
+                self.log(f'計画どおりにセットへ追加: {len(groups)}セット・{sum(map(len, groups.values()))}実験'
+                         + (f'（追加できなかった実験 {len(skipped)}件）' if skipped else ''))
+                self.refresh_sets()
+
+            def create():
+                for target in missing:
+                    core.create_destinations(target.parent.parent, target.parent.name, [target.name])
+            self.run(create, created)
+
+        self.run(lambda: core.missing_destinations(targets), checked)
 
     def registered_sources(self):
         """{コピー元のパス: [登録されているセット番号, ...]}"""
@@ -980,6 +1070,7 @@ class App(tk.Tk):
             c = spec['context']
             check, mismatched = core.name_check(spec['sources'], Path(spec['target']).name)
             self.batch_tree.insert('', 'end', iid=str(n), values=(n+1, ' / '.join(p.name for p in spec['sources']), f"{spec['target']} [{c['kind']}]",
+                                                                     core.plan_state(spec['sources'], c.get('plans', {}), spec['target'], c['kind']),
                                                                      plan_summary(plan.get(sample_plan.key(Path(spec['target']).parent.name, Path(spec['target']).name), {})),
                                                                      check, *('集計中',)*4, '未確認', '未確認', c['uploader']),
                                    tags=('name_mismatch',) if mismatched else ())

@@ -221,6 +221,8 @@ def execute_moves(plan, log_dir):
         validate_operations(plan)
     log_dir = Path(log_dir)
     log_dir.mkdir(parents=True, exist_ok=True)
+    from shared.destination_history import flush_pending
+    flush_pending(log_dir)
     log = log_dir / (datetime.now().strftime('%Y%m%d_%H%M%S_') + uuid.uuid4().hex + '.json')
     record = dict(plan, created_at=datetime.now().astimezone().isoformat(), status='実行中')
 
@@ -228,6 +230,8 @@ def execute_moves(plan, log_dir):
         temp = log.with_suffix('.tmp')
         temp.write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding='utf-8')
         replace_retrying(temp, log)
+        from shared.destination_history import share_journal
+        share_journal(log, record)
 
     save()  # Persist the complete source/target mapping before any move.
     try:
@@ -241,6 +245,7 @@ def execute_moves(plan, log_dir):
                 os.link(source, target)
                 source.unlink()
             operation['status'] = '完了'
+            operation['moved_at'] = datetime.now().astimezone().isoformat()
             save()
         record['status'] = '完了'
     except Exception as exc:

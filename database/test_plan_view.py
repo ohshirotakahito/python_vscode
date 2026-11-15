@@ -3,8 +3,45 @@ from pathlib import Path
 from unittest import TestCase
 
 from database import plan_view
+from shared import ex_info_owners
 
 KEEP = plan_view.KEEP
+
+
+class OwnerTests(TestCase):
+    def test_owner_comes_from_registered_location_and_multiple_owners_can_filter(self):
+        root = r'\\Server\analysis'
+        rows = [dict(experiment='Folder', sample='A'), dict(experiment='Folder', sample='B')]
+        samples = [dict(root=root.upper(), **row) for row in rows]
+        data = dict(projects=[dict(key='P', name='Different display name', owner_names=['Alice', 'Bob'])],
+                    samples=[dict(key='S', project_key='P', name='Different sample name')],
+                    locations=[dict(project_key='P', sample_key='S', root_path=root,
+                                    experiment_folder='Folder', sample_folder='A')])
+        a, b = ex_info_owners.attach(rows, samples, data)
+        self.assertEqual(a['owner_names'], ['Alice', 'Bob'])
+        self.assertTrue(plan_view.owner_matches(a, 'Alice'))
+        self.assertTrue(plan_view.owner_matches(a, 'Bob'))
+        self.assertFalse(plan_view.owner_matches(b, 'Alice'))
+        self.assertTrue(plan_view.owner_matches(b, 'Ex Info未照合'))
+        self.assertTrue(plan_view.owner_matches(b, plan_view.ALL_OWNERS))
+        data['projects'][0]['owner_names'] = []
+        a, _ = ex_info_owners.attach(rows, samples, data)
+        self.assertTrue(plan_view.owner_matches(a, 'Owner未設定'))
+
+    def test_same_names_on_another_share_do_not_assign_an_owner_and_conflicts_are_explicit(self):
+        rows = [dict(experiment='E', sample='S')]
+        samples = [dict(root=r'\\Server\analysis', **rows[0])]
+        data = dict(projects=[dict(key='P', owner_names=['Alice'])],
+                    samples=[dict(key='S1', project_key='P'), dict(key='S2', project_key='P')],
+                    locations=[dict(project_key='P', sample_key='S1', root_path=r'\\Other\analysis',
+                                    experiment_folder='E', sample_folder='S')])
+        (row,) = ex_info_owners.attach(rows, samples, data)
+        self.assertEqual(row['owner_state'], 'unmatched')
+        loc = dict(data['locations'][0], root_path=r'\\Server\analysis')
+        data['locations'] = [loc, dict(loc, sample_key='S2')]
+        (row,) = ex_info_owners.attach(rows, samples, data)
+        self.assertEqual(row['owner_names'], [])
+        self.assertTrue(plan_view.owner_matches(row, '照合要確認'))
 
 
 class ChangesTests(TestCase):

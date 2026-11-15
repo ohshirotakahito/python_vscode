@@ -8,6 +8,21 @@ from shared import catalog
 
 
 class InventoryTests(unittest.TestCase):
+    def test_initialize_current_database_while_another_connection_is_writing(self):
+        with catalog.connect(self.db) as writer:
+            writer.execute('BEGIN IMMEDIATE')
+            writer.execute("INSERT INTO sources(server,root,kind) VALUES('test','pending','analysis')")
+            # This used to fail at the unconditional PRAGMA user_version write.
+            catalog.initialize(self.db)
+            self.assertEqual(writer.execute('SELECT count(*) FROM sources').fetchone()[0], 1)
+
+    def test_initialize_still_repairs_missing_index(self):
+        with catalog.connect(self.db) as db:
+            db.execute('DROP INDEX files_groups')
+        catalog.initialize(self.db)
+        with catalog.connect(self.db, readonly=True) as db:
+            self.assertIsNotNone(db.execute("SELECT name FROM sqlite_master WHERE name='files_groups'").fetchone())
+
     def setUp(self):
         self.temp = TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

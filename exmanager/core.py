@@ -10,10 +10,74 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 
+from shared import ex_info_links
 from shared.folder_layout import create_sample_folders
 from shared.seq_records import HEADERS, SEQ_DB as DB, history, machines, rows  # noqa: F401  (app.py も core 経由で使う)
 
 BASE = Path(__file__).resolve().parent
+
+NO_PLAN = '計画なし'
+
+
+def plan_text(plan):
+    """コピー元一覧の「計画」列（AXN の Ex Info・G PSET で決めた送り先）。"""
+    return plan.text if plan else NO_PLAN
+
+
+def plan_groups(sources, plans, roots):
+    """計画どおりに送るときのセット: ({(root, 実験, サンプル, 区分): [コピー元, ...]}, [(コピー元名, 理由), ...])。
+
+    送り先が決まっていない・計画がない・解析ルート一覧にない共有へ向いている実験は入れずに理由を返す
+    （Ex Info には backup / archive の共有も保存場所として入っているため、転送先は解析ルート一覧に限る）。"""
+    known = {ex_info_links.path_key(r): r for r in roots}
+    groups, skipped = {}, []
+    for source in sources:
+        name = Path(source).name
+        plan = plans.get(name)
+        if plan is None:
+            skipped.append((name, NO_PLAN))
+        elif not plan.decided:
+            skipped.append((name, f'保存先未定（{plan.project} / {plan.sample}）'))
+        elif plan.kind not in ('Sample', 'Blank'):
+            skipped.append((name, f'区分が不明（{plan.kind!r}）'))
+        elif ex_info_links.path_key(plan.root) not in known:
+            skipped.append((name, f'解析ルート一覧にない共有: {plan.root}'))
+        else:
+            key = (known[ex_info_links.path_key(plan.root)], plan.experiment_folder, plan.sample_folder, plan.kind)
+            groups.setdefault(key, []).append(source)
+    return groups, skipped
+
+
+def plan_mismatches(sources, plans, root, experiment, sample, kind):
+    """手で選んだ送り先が計画と違うコピー元: [(コピー元名, 計画の送り先), ...]（計画がない・未定のものは含めない）。"""
+    out = []
+    for source in sources:
+        plan = plans.get(Path(source).name)
+        if plan is not None and plan.matches(root, experiment, sample, kind) is False:
+            out.append((Path(source).name, plan.text))
+    return out
+
+
+def plan_state(sources, plans, target, kind):
+    """登録表の「計画との照合」列: 計画どおり / 計画と違う / 保存先未定 / 計画なし（コピー元ごとに数える）。"""
+    target = Path(target)
+    counts = {}
+    for source in sources:
+        plan = plans.get(Path(source).name)
+        if plan is None:
+            state = NO_PLAN
+        else:
+            match = plan.matches(target.parent.parent, target.parent.name, target.name, kind)
+            state = '保存先未定' if match is None else '計画どおり' if match else '計画と違う'
+        counts[state] = counts.get(state, 0) + 1
+    if len(counts) == 1:
+        return next(iter(counts))
+    return '・'.join(f'{state} {n}' for state, n in counts.items())
+
+
+def missing_destinations(targets):
+    """まだサーバーにない送り先サンプルフォルダ（root\\実験\\サンプル）。"""
+    return [Path(t) for t in targets if not Path(t).is_dir()]
 
 
 def sampled_signature(path):
@@ -513,6 +577,16 @@ def record(plan, context, legacy, local):
     if plan.warnings:
         return False
     write_csv(local, HEADERS, records)
+    # Transfers.jsonl: the destination with its analysis server and the Ex Info keys (the 17 columns have neither)
+    try:
+        ex_info_links.append_transfer(ex_info_links.transfer_record(
+            context['machine'], plan.source.name, context['selection'], plan.target.parent.parent,
+            plan.target.parent.name, plan.target.name, context['kind'],
+            context.get('plans', {}).get(plan.source.name), uploader=context['uploader'],
+            pc_id=context.get('pc_id', ''), pc_name=context.get('pc_name', ''), manifest=ident),
+            context.get('transfers_path'))
+    except OSError as exc:
+        plan.ledger_error = f'転送の記録（Transfers.jsonl）を書けませんでした: {exc}'
     return True
 
 
@@ -553,6 +627,8 @@ def execute_batch(jobs, log=print, progress=None):
                 complete = record(p, spec['context'], spec['legacy'], spec['local'])
                 state = '完了' if complete else '警告あり'
                 detail = ' / '.join(p.warnings)
+                if getattr(p, 'ledger_error', ''):
+                    log(p.ledger_error)    # the copy and the 17-column history are done; only the new record is missing
             except Exception as exc:
                 state, detail, stopped = '失敗（以降停止）', str(exc), True
                 for item in p.items:

@@ -35,6 +35,18 @@ def connect(path=DEFAULT_DB, readonly=False):
 
 
 def initialize(path=DEFAULT_DB):
+    # Opening an up-to-date inventory must not compete with an active scan for
+    # the writer lock. Even PRAGMA user_version=2 writes when its value is already 2.
+    path = Path(path)
+    if path.exists():
+        with connect(path, readonly=True) as db:
+            required = {'sources', 'files', 'folders', 'updates', 'files_groups', 'updates_source'}
+            objects = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table','index')")}
+            columns = {row[1] for row in db.execute('PRAGMA table_info(sources)')}
+            if (required <= objects and {'volume_used', 'volume_total'} <= columns
+                    and db.execute('PRAGMA user_version').fetchone()[0] >= 2
+                    and db.execute('PRAGMA journal_mode').fetchone()[0].lower() == 'wal'):
+                return
     with connect(path) as db:
         db.execute('PRAGMA journal_mode=WAL')
         db.executescript('''

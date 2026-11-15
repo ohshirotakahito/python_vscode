@@ -3,6 +3,17 @@ import unittest
 from unittest.mock import patch
 from pathlib import Path
 import core
+from shared import ex_info_links
+
+_TRANSFERS = tempfile.TemporaryDirectory()
+
+
+def setUpModule():
+    # unittest discover でも、転送の記録が本番の共有フォルダ（D:\Qstatus）に書かれないようにする
+    patcher = patch.object(ex_info_links, 'TRANSFERS', Path(_TRANSFERS.name) / 'Transfers.jsonl')
+    patcher.start()
+    unittest.addModuleCleanup(patcher.stop)
+    unittest.addModuleCleanup(_TRANSFERS.cleanup)
 
 
 class CopyTest(unittest.TestCase):
@@ -214,6 +225,10 @@ class CopyTest(unittest.TestCase):
             self.assertEqual(len(core.history(legacy, local)), 2)
             for row in core.history(legacy, local):
                 self.assertEqual((row[1], row[5]), ('SS', 'SS'))
+            # the new record keeps the destination's share (root) as well, which the 17 columns lack
+            transfers = [t for t in ex_info_links.load_transfers() if t.source in {s.name for s in sources}]
+            self.assertEqual([(t.machine, t.root, t.experiment, t.sample, t.kind, t.planned) for t in transfers],
+                             [('AXN3', str(root), 'analysis', 'OXT', 'Sample', None)] * 2)
             with self.assertRaises(ValueError):
                 core.plan_batch([specs[0], specs[0]])
             # Existing equal-sized but different content is detected only on execution.

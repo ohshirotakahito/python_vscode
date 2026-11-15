@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # リポジトリ�
 from shared import catalog, ui_theme  # noqa: E402
 
 try:
-    from . import inventory_views, recent_progress, sq_workflow, rackstation_view, bnal_progress, anal_progress, plan_view
+    from . import inventory_views, recent_progress, sq_workflow, rackstation_view, bnal_progress, anal_progress, plan_view, ex_info_view
 except ImportError:
     import inventory_views
     import recent_progress
@@ -24,6 +24,7 @@ except ImportError:
     import bnal_progress
     import anal_progress
     import plan_view
+    import ex_info_view
 try:
     from .scan_lock import ScanLock
 except ImportError:
@@ -102,6 +103,7 @@ class App(tk.Tk):
         self.main_tabs.pack(fill='both', expand=True)
         # タブは作業の流れの順: ①気づく（計画・要対応）→ ②③実態を見る → ④進捗を確かめる → ⑤直す
         self.plan_panel = ttk.Frame(self.main_tabs)
+        self.ex_info_panel = ttk.Frame(self.main_tabs)
         self.sq_panel = ttk.Frame(self.main_tabs)
         self.analysis_panel = ttk.Frame(self.main_tabs)
         self.progress_tabs = ttk.Notebook(self.main_tabs)
@@ -111,6 +113,7 @@ class App(tk.Tk):
         self.progress_tabs.add(self.bnal_panel, text='Stage 2 · BNAL')
         # もとのファイル管理アプリ（コピー・サンプル名変更・名前変更・フォルダ作成）。処理中は DB の更新と同時に走らせない
         self.fileops = FileOpsPanel(self.main_tabs, owner=self)
+        self.main_tabs.add(self.ex_info_panel, text='Ex Info')
         self.main_tabs.add(self.plan_panel, text='① Plan & Issues')
         self.main_tabs.add(self.sq_panel, text='② Source · SQserver')
         self.main_tabs.add(self.analysis_panel, text='③ Analysis Servers')
@@ -242,7 +245,8 @@ class App(tk.Tk):
         rackstation_view.create_panel(self, self.analysis_panel)
         anal_progress.create_panel(self, self.anal_panel)
         bnal_progress.create_panel(self, self.bnal_panel)
-        plan_view.create_panel(self, self.plan_panel)
+        self.plan_reload = plan_view.create_panel(self, self.plan_panel)
+        ex_info_view.create_panel(self, self.ex_info_panel, on_saved=self.plan_reload)
         self.refresh()
 
     def open_progress(self, stage, keys):
