@@ -60,7 +60,7 @@ class VersionDialogTests(unittest.TestCase):
         tab.use_selection = Variable(True)
         with patch.object(tab_train, 'resolve_version', side_effect=FileNotFoundError('missing')) as resolve, \
                 patch.object(tab_train.messagebox, 'showerror'):
-            tab_train.TrainTab._run(tab)
+            tab_train.TrainTab._capture_job(tab)
             self.assertIn(resolve.call_args.args[1], {'KST1', 'KST2', 'KSN1', 'KSN2'})
 
     def test_group_source_evaluation_rejected_before_data_loading_when_too_small(self):
@@ -74,7 +74,7 @@ class VersionDialogTests(unittest.TestCase):
                                                     'sample_groups': tab.sample_groups})
         with patch.object(tab_train, 'resolve_version') as resolve, \
                 patch.object(tab_train.messagebox, 'showerror') as error:
-            tab_train.TrainTab._run(tab)
+            tab_train.TrainTab._capture_job(tab)
             resolve.assert_not_called()
             self.assertIn('3サンプル', error.call_args.args[1])
 
@@ -105,7 +105,7 @@ class VersionDialogTests(unittest.TestCase):
         tab.use_selection = Variable(True)
         with patch.object(tab_train, 'resolve_version', side_effect=FileNotFoundError('missing')) as resolve, \
                 patch.object(tab_train.messagebox, 'showerror') as error:
-            tab_train.TrainTab._run(tab)
+            tab_train.TrainTab._capture_job(tab)
             self.assertEqual(resolve.call_args.kwargs, {'experiment': 'A'})
             error.assert_called_once()
 

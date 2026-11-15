@@ -11,6 +11,7 @@ import core  # noqa: E402
 import pc_config  # noqa: E402
 import source_cache  # noqa: E402
 from csv_editor import CsvEditor  # noqa: E402
+from destination_preview import DestinationPreview  # noqa: E402
 from shared import ex_info_links, sample_plan, ui_theme  # noqa: E402
 
 # サンプル台帳（machinedb）の項目。転送するときに試料の種類と BNAL に回すかを決めておく
@@ -130,9 +131,11 @@ class App(tk.Tk):
                                          background=ui_theme.BORDER, borderwidth=0, opaqueresize=True)
         self.main_split.pack(fill='both', expand=True)
         upper = ttk.Frame(self.main_split)
+        registered = ttk.Frame(self.main_split)
         lower = ttk.Frame(self.main_split)
-        self.main_split.add(upper, minsize=280, stretch='always')
-        self.main_split.add(lower, minsize=200, stretch='never')
+        self.main_split.add(upper, minsize=350, stretch='always')
+        self.main_split.add(registered, minsize=130, stretch='always')
+        self.main_split.add(lower, minsize=300, stretch='always')
         pc_panel = ttk.Frame(upper, padding=(10, 5))
         pc_panel.pack(fill='x')
         self.pc_label = ttk.Label(pc_panel)
@@ -169,7 +172,7 @@ class App(tk.Tk):
         tree_frame.pack(fill='x', padx=10)
         tree_frame.rowconfigure(0, weight=1)
         tree_frame.columnconfigure(0, weight=1)
-        self.tree = ttk.Treeview(tree_frame, columns=('name','10khz','100khz','history','destinations','latest','plan'), show='headings', height=7, selectmode='extended')
+        self.tree = ttk.Treeview(tree_frame, columns=('name','10khz','100khz','history','destinations','latest','plan'), show='headings', height=4, selectmode='extended')
         # 計画: 計測PC（AXN）の Ex Info・G PSET で決めた送り先（machinedb\PLAN\MeasurementLinks.jsonl）
         self.tree.heading('plan', text='計画（Ex Info の送り先）')
         self.tree.column('plan', width=360)
@@ -267,15 +270,16 @@ class App(tk.Tk):
         ttk.Button(select, text='② 選択内容を転送セットに追加', style='Primary.TButton', command=self.add_set).grid(row=1, column=3, sticky='w', padx=(12, 4))
         ttk.Button(select, text='保存先実験・サンプルを追加', style='Conditional.TButton', command=self.add_destination).grid(row=1, column=4, sticky='w', padx=4)
         ttk.Button(select, text='計画どおりにセットへ追加', style='Primary.TButton', command=self.add_planned_sets).grid(row=1, column=5, sticky='w', padx=4)
-        ttk.Label(upper, text='3. 登録内容の確認').pack(anchor='w', padx=10, pady=(8, 0))
-        batch_frame = ttk.Frame(upper)
+        self.registration_summary = ttk.Label(registered, text='3. 登録した組み合わせ：0セット — コピー元を複数選択 → 保存先サンプルを選択 → ②で追加。サンプルごとに繰り返せます。')
+        self.registration_summary.pack(anchor='w', padx=10, pady=(4, 0))
+        batch_frame = ttk.Frame(registered)
         batch_frame.pack(fill='both', expand=True, padx=10)
         batch_frame.rowconfigure(0, weight=1)
         batch_frame.columnconfigure(0, weight=1)
-        self.batch_tree = ttk.Treeview(batch_frame, columns=('set','source','target','ex_plan','plan','name_check','source10','target10','source100','target100','duplicates','nonduplicates','person'), show='headings', height=7)
+        self.batch_tree = ttk.Treeview(batch_frame, columns=('set','folders','source','target','ex_plan','plan','name_check','source10','target10','source100','target100','duplicates','nonduplicates','person'), show='headings', height=4, selectmode='extended')
         # 名前の照合が「不一致」「判定不可」のセットは行を橙にする（一致しなくても正しい場合があるので目安）
         self.batch_tree.tag_configure('name_mismatch', background=ui_theme.row('warning', 0.22), foreground=ui_theme.TEXT)
-        for key, title, width in [('set','セット',55),('source','コピー元実験',250),('target','保存先・区分',300),('ex_plan','計画との照合',130),('plan','台帳（種類・BNAL）',150),('name_check','名前の照合',170),('source10','元10kHz',90),('target10','先10kHz',90),('source100','元100kHz',90),('target100','先100kHz',90),('duplicates','内容重複確認',160),('nonduplicates','重複なし（TDMS）',180),('person','アップロード担当者',160)]:
+        for key, title, width in [('set','セット',55),('folders','計測フォルダ数',100),('source','コピー元計測フォルダ（複数可）',330),('target','保存先サンプル（1か所）・区分',360),('ex_plan','計画との照合',130),('plan','台帳（種類・BNAL）',150),('name_check','名前の照合',170),('source10','元10kHz',90),('target10','先10kHz',90),('source100','元100kHz',90),('target100','先100kHz',90),('duplicates','内容重複確認',160),('nonduplicates','重複なし（TDMS）',180),('person','アップロード担当者',160)]:
             self.batch_tree.heading(key, text=title)
             self.batch_tree.column(key, width=width)
         self.batch_tree.grid(row=0, column=0, sticky='nsew')
@@ -283,10 +287,11 @@ class App(tk.Tk):
         actions = ttk.Frame(lower, padding=(10, 4))
         actions.pack(fill='x')
         ttk.Button(actions, text='選択セット削除', style='Conditional.TButton', command=self.remove_set).pack(side='left')
+        ttk.Button(actions, text='登録内容を編集…', style='Conditional.TButton', command=self.open_sets_window).pack(side='left', padx=4)
         ttk.Button(actions, text='簡易チェック', style='Conditional.TButton', command=lambda: self.check_set_duplicates(quick=True)).pack(side='left', padx=8)
         ttk.Button(actions, text='③ コピー予定作成', style='Primary.TButton', command=self.preview).pack(side='left', padx=4)
-        ttk.Button(actions, text='④ コピー予定表を確認', style='Primary.TButton', command=self.open_plan_window).pack(side='left', padx=4)
-        self.copy_button = ttk.Button(actions, text='⑤ コピー開始', style='Execute.TButton', command=self.copy)
+        ttk.Button(actions, text='④ 予定表を別窓で確認', style='Primary.TButton', command=self.open_plan_window).pack(side='left', padx=4)
+        self.copy_button = ttk.Button(actions, text='⑤ 全セットを一括コピー', style='Execute.TButton', command=self.copy)
         self.copy_button.pack(side='left')
         self.allow_name_mismatch = tk.BooleanVar(value=False)
         ttk.Checkbutton(lower, text='名前の不一致を確認したうえでコピーする',
@@ -295,12 +300,6 @@ class App(tk.Tk):
         self.copy_hint = ttk.Label(lower, text='', wraplength=1000)
         self.copy_hint.pack(anchor='w', padx=10, pady=(2, 4))
 
-        ttk.Label(lower, text='通常：① コピー元一覧を更新 → 実験を選択 → ② 保存先を選択してセットに追加 → ③ 予定作成 → ④ 予定表を確認 → ⑤ コピー開始', wraplength=1000).pack(anchor='w', padx=10)
-        legend = ttk.Frame(lower)
-        legend.pack(fill='x', padx=10)
-        for text, color in [('青：通常の手順', ui_theme.row('info', 0.22)), ('緑：実行', ui_theme.row('success', 0.22)),
-                            ('橙：必要に応じて操作', ui_theme.row('warning', 0.22)), ('灰：閲覧・編集・設定', '#1d2730')]:
-            tk.Label(legend, text=text, background=color, foreground=ui_theme.TEXT, padx=6).pack(side='left', padx=(0, 6))
         self.update_pc_display()
         progress_frame = ttk.Frame(lower, padding=(10, 0))
         progress_frame.pack(fill='x')
@@ -310,10 +309,12 @@ class App(tk.Tk):
         self.progress_bar.pack(fill='x')
         self.file_text = tk.StringVar()
         ttk.Entry(progress_frame, textvariable=self.file_text, state='readonly').pack(fill='x')
-        self.plan_label = ttk.Label(lower, text='コピー予定：未作成（詳細は「コピー予定表を開く」で確認）')
+        self.plan_label = ttk.Label(lower, text='全セットのファイル予定：③ コピー予定作成で、raw dataを含む全ファイルを下の表に表示します。')
         self.plan_label.pack(anchor='w', padx=10)
-        # Keep the row model unmounted; details are shown only in the popup.
-        plan_frame = ttk.Frame(lower)
+        self.details_tabs = ttk.Notebook(lower)
+        self.details_tabs.pack(fill='both', expand=True, padx=10, pady=(4, 5))
+        plan_frame = self.plan_frame = ttk.Frame(self.details_tabs)
+        self.details_tabs.add(plan_frame, text='全セット・全ファイルの予定／結果')
         plan_frame.rowconfigure(0, weight=1)
         plan_frame.columnconfigure(0, weight=1)
         self.plan_tree = ttk.Treeview(plan_frame, columns=('set','action','rate','source','destination'), show='headings', height=6)
@@ -324,8 +325,8 @@ class App(tk.Tk):
             self.plan_tree.tag_configure(tag, background=ui_theme.row(kind), foreground=ui_theme.TEXT)
         self.plan_tree.grid(row=0, column=0, sticky='nsew')
         self.add_scrollbars(plan_frame, self.plan_tree)
-        output_frame = ttk.Frame(lower)
-        output_frame.pack(fill='both', expand=True, padx=10, pady=(4, 5))
+        output_frame = ttk.Frame(self.details_tabs)
+        self.details_tabs.add(output_frame, text='処理ログ')
         output_frame.rowconfigure(0, weight=1)
         output_frame.columnconfigure(0, weight=1)
         self.output = tk.Text(output_frame, height=4, wrap='none')
@@ -621,9 +622,13 @@ class App(tk.Tk):
         ttk.Combobox(dialog, textvariable=experiment, values=self.boxes['experiment']['values'], width=40).grid(row=1, column=1, padx=12, pady=6)
         ttk.Label(dialog, text='サンプル名（カンマ区切り）').grid(row=2, column=0, padx=12, sticky='w')
         ttk.Entry(dialog, textvariable=samples, width=43).grid(row=2, column=1, padx=12, pady=6)
-        ttk.Label(dialog, text='10k/100kのSample・Blank、raw data、T、stocked等を作成します。\n既存フォルダはそのまま利用します。サンプル名は必須です。').grid(row=3, column=0, columnspan=2, padx=12, pady=8, sticky='w')
+        preview = DestinationPreview(dialog, root, experiment, samples)
+        preview.grid(row=3, column=0, columnspan=2, padx=12, pady=8, sticky='nsew')
+        dialog.columnconfigure(1, weight=1)
+        dialog.rowconfigure(3, weight=1)
+        ttk.Label(dialog, text='10k/100kのSample・Blank、raw data、T、stocked等を作成します。\n既存フォルダはそのまま利用します。サンプル名は必須です。').grid(row=4, column=0, columnspan=2, padx=12, pady=8, sticky='w')
         plan_frame = ttk.LabelFrame(dialog, text='サンプル台帳（作成したサンプルすべてに登録）', padding=8)
-        plan_frame.grid(row=4, column=0, columnspan=2, padx=12, sticky='ew')
+        plan_frame.grid(row=5, column=0, columnspan=2, padx=12, sticky='ew')
         new_plan = {}
         for n, (key, label, choices) in enumerate((('kind', '試料の種類', PLAN_KINDS), ('bnal', 'BNAL', PLAN_BNAL))):
             ttk.Label(plan_frame, text=label).grid(row=0, column=n * 2, padx=(0, 4), sticky='w')
@@ -636,6 +641,11 @@ class App(tk.Tk):
                 return
             ex = experiment.get().strip()
             names = list(dict.fromkeys(n.strip() for n in samples.get().split(',') if n.strip()))
+            overlap = [name for name in preview.names if name.casefold() in {n.casefold() for n in names}]
+            if preview.loaded_for == ex and overlap and not messagebox.askyesno(
+                    '既存サンプルの確認', '次のサンプルは既に存在します。\n' + '、'.join(overlap) +
+                    '\n\n既存フォルダを利用して続けますか？', parent=dialog):
+                return
             def done(result):
                 experiments, sample_names = result
                 self.vars['root'].set(root)
@@ -655,7 +665,7 @@ class App(tk.Tk):
                     dialog.destroy()
             self.run(lambda: core.create_destinations(root, ex, names), done)
 
-        ttk.Button(dialog, text='フォルダ作成', command=create).grid(row=5, column=0, padx=12, pady=12, sticky='w')
+        ttk.Button(dialog, text='フォルダ作成', command=create).grid(row=6, column=0, padx=12, pady=12, sticky='w')
 
     def read_plan(self):
         """The sample ledger, or {} with a log line when it cannot be read (never stops the transfer work)."""
@@ -1024,6 +1034,62 @@ class App(tk.Tk):
             window.destroy()
         self.plan_window = None
 
+    def open_sets_window(self):
+        if self.busy:
+            messagebox.showinfo('処理中', '処理が終わってから登録内容を編集してください。', parent=self)
+            return
+        self.close_plan_window()
+        window = tk.Toplevel(self)
+        window.title('登録した組み合わせの編集')
+        window.transient(self)
+        window.geometry(f'{min(1200, self.winfo_screenwidth() - 80)}x{min(560, self.winfo_screenheight() - 100)}')
+        window.grab_set()
+        window.columnconfigure(0, weight=1)
+        window.rowconfigure(2, weight=1)
+        ttk.Label(window, text='削除する組み合わせを選択してください（Ctrl / Shiftで複数選択）。ファイルは削除されません。').grid(
+            row=0, column=0, sticky='w', padx=12, pady=8)
+        status = ttk.Label(window)
+        status.grid(row=1, column=0, sticky='w', padx=12)
+        frame = ttk.Frame(window)
+        frame.grid(row=2, column=0, sticky='nsew', padx=12, pady=8)
+        frame.rowconfigure(0, weight=1)
+        frame.columnconfigure(0, weight=1)
+        tree = ttk.Treeview(frame, columns=('set', 'source', 'target', 'kind'), show='headings', selectmode='extended')
+        for key, title, width in [('set', 'セット', 60), ('source', 'コピー元実験', 380),
+                                  ('target', '保存先サンプル', 500), ('kind', '区分', 90)]:
+            tree.heading(key, text=title)
+            tree.column(key, width=width)
+        tree.grid(row=0, column=0, sticky='nsew')
+        self.add_scrollbars(frame, tree)
+
+        def render():
+            tree.delete(*tree.get_children())
+            for n, spec in enumerate(self.sets):
+                for i, source in enumerate(spec['sources']):
+                    tree.insert('', 'end', iid=f'{n}:{i}', values=(n + 1, source, spec['target'], spec['context']['kind']))
+            status.configure(text=f'{len(self.sets)}セット / {len(tree.get_children())}組み合わせ')
+
+        def remove():
+            if self.busy:
+                messagebox.showinfo('処理中', '集計が終わってから編集してください。', parent=window)
+                return
+            selected = tree.selection()
+            if not selected:
+                messagebox.showinfo('削除する組み合わせ', '一覧から削除する組み合わせを選択してください。', parent=window)
+                return
+            self.sets = core.remove_registered_sources(self.sets, [tuple(map(int, key.split(':'))) for key in selected])
+            self.refresh_sets()
+            render()
+            status.configure(text=status.cget('text') + '　変更しました。「③ コピー予定作成」で再作成してください。')
+
+        buttons = ttk.Frame(window)
+        buttons.grid(row=3, column=0, sticky='ew', padx=12, pady=(0, 12))
+        ttk.Button(buttons, text='選択した組み合わせを登録から削除', style='Conditional.TButton', command=remove).pack(side='left')
+        ttk.Button(buttons, text='すべて選択', command=lambda: tree.selection_set(tree.get_children())).pack(side='left', padx=8)
+        ttk.Button(buttons, text='閉じる', command=window.destroy).pack(side='right')
+        tree.bind('<Delete>', lambda event: remove())
+        render()
+
     def open_plan_window(self):
         rows = [self.plan_tree.item(iid) for iid in self.plan_tree.get_children()]
         if not rows:
@@ -1051,6 +1117,7 @@ class App(tk.Tk):
         count_label = ttk.Label(toolbar)
         count_label.pack(side='left', padx=12)
         ttk.Button(toolbar, text='閉じる', command=self.close_plan_window).pack(side='right')
+        ttk.Button(toolbar, text='登録内容を編集…', command=self.open_sets_window).pack(side='right', padx=8)
         frame = ttk.Frame(window)
         frame.grid(row=2, column=0, sticky='nsew', padx=10, pady=(0, 10))
         frame.rowconfigure(0, weight=1)
@@ -1090,10 +1157,12 @@ class App(tk.Tk):
         self.batch_tree.delete(*self.batch_tree.get_children())
         self.mark_set_rows()
         plan = self.read_plan()
+        self.registration_summary.configure(text=f'3. 登録した組み合わせ：{len(self.sets)}セット / '
+            f'{sum(len(spec["sources"]) for spec in self.sets)}計測フォルダ — 別のサンプルも②で追加できます。全セットを③で予定作成→⑤で一括コピー。')
         for n, spec in enumerate(self.sets):
             c = spec['context']
             check, mismatched = core.name_check(spec['sources'], Path(spec['target']).name)
-            self.batch_tree.insert('', 'end', iid=str(n), values=(n+1, ' / '.join(p.name for p in spec['sources']), f"{spec['target']} [{c['kind']}]",
+            self.batch_tree.insert('', 'end', iid=str(n), values=(n+1, len(spec['sources']), ' / '.join(p.name for p in spec['sources']), f"{spec['target']} [{c['kind']}]",
                                                                      core.plan_state(spec['sources'], c.get('plans', {}), spec['target'], c['kind']),
                                                                      plan_summary(plan.get(sample_plan.key(Path(spec['target']).parent.name, Path(spec['target']).name), {})),
                                                                      check, *('集計中',)*4, '未確認', '未確認', c['uploader']),
@@ -1145,6 +1214,9 @@ class App(tk.Tk):
     def remove_set(self):
         if self.busy:
             return
+        if not self.batch_tree.selection():
+            self.open_sets_window()
+            return
         for n in sorted((int(s) for s in self.batch_tree.selection()), reverse=True):
             del self.sets[n]
         self.refresh_sets()
@@ -1166,16 +1238,15 @@ class App(tk.Tk):
             set_counts = {n: [0, 0, 0] for n in range(1, len(specs) + 1)}
             for number, plan, _ in jobs:
                 for item in plan.items:
-                    if item.raw:
-                        continue
                     if item.status in ('内容重複スキップ', 'コピー済み'):
                         action, tag = '重複スキップ予定', 'skip'
                     elif item.status == '競合':
                         action, tag = '競合（コピー不可）', 'conflict'
                     else:
                         action, tag = 'コピー予定', 'new'
-                    self.plan_tree.insert('', 'end', values=(number, action, '10kHz' if item.source.parent.name in ('EXSV', 'T') else '100kHz', str(item.source), str(item.destination)), tags=(tag,))
-                    if item.source.suffix.lower() == '.tdms':
+                    kind = 'raw data' if item.raw else '10kHz' if item.source.parent.name in ('EXSV', 'T') else '100kHz'
+                    self.plan_tree.insert('', 'end', values=(number, action, kind, str(item.source), str(item.destination)), tags=(tag,))
+                    if not item.raw and item.source.suffix.lower() == '.tdms':
                         new_count += tag == 'new'
                         skip_count += tag == 'skip'
                         conflict_count += tag == 'conflict'
@@ -1185,7 +1256,8 @@ class App(tk.Tk):
             for number, (new, skipped, conflicts) in set_counts.items():
                 self.batch_tree.set(str(number - 1), 'duplicates', f'解析対象：重複 {skipped}件')
                 self.batch_tree.set(str(number - 1), 'nonduplicates', f'解析対象：{new}件' + (f'／競合 {conflicts}件' if conflicts else ''))
-            self.plan_label.configure(text=f'解析用TDMS：コピー予定 {new_count}件 ／ 重複スキップ予定 {skip_count}件 ／ 競合 {conflict_count}件（raw dataは別途保存）')
+            self.plan_label.configure(text=f'{len(specs)}セット / 全{sum(len(p.items) for _, p, _ in jobs)}ファイル（raw data含む）　'
+                f'解析用TDMS：コピー予定 {new_count}件 ／ 重複 {skip_count}件 ／ 競合 {conflict_count}件')
             lines = []
             for number, p, spec in jobs:
                 lines.append(f'セット {number}: {p.source} → {p.target} [{spec["context"]["kind"]}]')
@@ -1195,7 +1267,7 @@ class App(tk.Tk):
                 lines.extend(f'{i.status}: {i.source} → {i.destination}' for i in p.items)
                 lines.append(f'合計 {len(p.items)} / 新規 {sum(i.status=="新規" for i in p.items)} / 既存・未検証 {sum(i.status=="既存（内容未検証）" for i in p.items)} / 競合 {sum(i.status=="競合" for i in p.items)}')
             self.log('\n'.join(lines))
-            self.open_plan_window()
+            self.details_tabs.select(self.plan_frame)
             notices = list(dict.fromkeys(
                 warning for _, p, _ in jobs for warning in p.warnings
                 if warning.startswith(('退避ファイルあり', '解析進行中'))))
@@ -1239,7 +1311,7 @@ class App(tk.Tk):
             self.plan_label.configure(text=summary)
             self.log(summary)
             self.log('実験ごとの結果を確認してください。再実行する場合はコピー予定を再作成してください。')
-            self.open_plan_window()
+            self.details_tabs.select(self.plan_frame)
             self.clear_finished_sets(results)
         self.run(work, done)
 

@@ -5,8 +5,8 @@
 train_xgboost_traditional の run_analysis() を実行し、レポート・混同行列・重要度を表示する。
 """
 
-import importlib
 import threading
+import json
 import tkinter as tk
 from tkinter import messagebox, ttk
 
@@ -16,6 +16,7 @@ from common.fc_parameters import FC_PARAMETER_MODES
 from common.training_core import BALANCE_METHODS, DEFAULT_SETTINGS
 from tab_browser import RunResultView
 from widgets import CheckList, ProgressPanel, ScrollableFrame
+from training_queue import TrainingQueue, execute as execute_training_queue
 
 PIPELINES = {
     "rmc + XGBoost（tsfresh併用）": {
@@ -30,10 +31,6 @@ PIPELINES = {
 }
 
 
-class TrainingCancelled(Exception):
-    """進捗通知の区切りで学習を中止する。"""
-
-
 class TrainTab(ttk.Frame):
     def __init__(self, master, runner, on_runs_changed=None):
         super().__init__(master, padding=10)
@@ -45,6 +42,7 @@ class TrainTab(ttk.Frame):
         self.version_feature_set = None
         self.file_filter_rules = []
         self.sample_groups = {}
+        self.training_queue = TrainingQueue()
 
         paned = ttk.PanedWindow(self, orient="horizontal")
         paned.pack(fill="both", expand=True)
@@ -153,7 +151,33 @@ class TrainTab(ttk.Frame):
         self.file_filter_summary.pack(fill="x")
         self.run_hint = ttk.Label(actions, wraplength=400)
         self.run_hint.pack(anchor="w", pady=(0, 4))
-        self.run_button = ttk.Button(actions, text="⑤ 学習を実行", command=self._run)
+        queue_frame = ttk.LabelFrame(left, text='④ 学習セットの待機一覧（登録した順に自動実行）', padding=6)
+        queue_frame.pack(fill='x', pady=6)
+        ttk.Button(queue_frame, text='現在のサンプル・学習条件をセットに登録', command=self._enqueue).pack(fill='x')
+        queue_body = ttk.Frame(queue_frame)
+        queue_body.pack(fill='x', pady=4)
+        self.queue_tree = ttk.Treeview(queue_body, columns=('id', 'settings', 'state'), show='headings', height=5, selectmode='extended')
+        for key, text, width in [('id', 'セット', 50), ('settings', '実験・サンプル・条件', 310), ('state', '状態', 90)]:
+            self.queue_tree.heading(key, text=text)
+            self.queue_tree.column(key, width=width)
+        vertical = ttk.Scrollbar(queue_body, orient='vertical', command=self.queue_tree.yview)
+        vertical.pack(side='right', fill='y')
+        self.queue_tree.pack(side='left', fill='both', expand=True)
+        self.queue_tree.configure(yscrollcommand=vertical.set)
+        scroll = ttk.Scrollbar(queue_frame, orient='horizontal', command=self.queue_tree.xview)
+        scroll.pack(fill='x')
+        self.queue_tree.configure(xscrollcommand=scroll.set)
+        buttons = ttk.Frame(queue_frame)
+        buttons.pack(fill='x')
+        ttk.Button(buttons, text='選択セットを削除', command=self._remove_queued).pack(side='left')
+        ttk.Button(buttons, text='選択セットを再実行待ちにする', command=self._retry_queued).pack(side='left', padx=4)
+        ttk.Button(queue_frame, text='選択セットの登録条件を確認', command=self._show_queued).pack(fill='x', pady=(4, 0))
+        self.queue_summary = ttk.Label(queue_frame, text='0セット', wraplength=400)
+        self.queue_summary.pack(fill='x')
+        ttk.Label(queue_frame, text='登録後に設定を変えても登録済みの条件は変わりません。\n実行中も追加できます。中止した場合、未着手のセットは待機状態で残します。', wraplength=400).pack(fill='x')
+        self._queue_poll_id = self.after(200, self._refresh_queue)
+        self.bind('<Destroy>', self._queue_destroyed)
+        self.run_button = ttk.Button(actions, text="⑤ 待機セットを順番に学習（未登録なら現在の条件）", command=self._run)
         self.run_button.pack(fill="x", pady=4)
         self.cancel_button = ttk.Button(actions, text="学習を中止", command=self._cancel,
                                         state="disabled")
@@ -196,16 +220,16 @@ class TrainTab(ttk.Frame):
             self.group_preview.pack(fill='x', pady=2)
             count = sum(len(members) for members in self.sample_groups.values())
             self.execution_label.configure(text=f'実行予定：グループ分類を1回（{len(self.sample_groups)}群・{count}サンプル）')
-            self.run_hint.configure(text='上の実行予定に表示した全グループで1回学習します。\n'
-                                    '所属・評価方法を確認し、「学習を実行」を押してください。\n'
-                                    '②の組み合わせ追加は不要です。')
+            self.run_hint.configure(text='④で現在のグループ・条件を学習セットに登録できます。\n'
+                                    '⑤で待機セットを順番に実行します。\n'
+                                    '待機セットがなければ、現在の全グループで1回学習します。')
         else:
             self.group_preview.pack_forget()
             self.combos.pack(fill='x', pady=2)
             self.execution_label.configure(text='実行する組み合わせ（1行につき1回の学習）')
-            self.run_hint.configure(text='絞り込み条件の保存後、このボタンで学習を開始します。\n'
-                                    '組み合わせの登録があれば登録分を順番に実行します。\n'
-                                    '未登録なら、現在選択中のサンプルで1回実行します。')
+            self.run_hint.configure(text='④でサンプルの組み合わせと現在の条件を学習セットに登録します。\n'
+                                    '⑤で待機セットを順番に実行します。\n'
+                                    '待機セットがなければ、現在の条件で実行します。')
 
     def apply_review_selection(self, feature_set, samples, versions, rules):
         if hasattr(self, 'classification_mode'):
@@ -610,9 +634,7 @@ class TrainTab(ttk.Frame):
         self.cancel_button.configure(state="disabled", text="中止待ち…")
         self.progress.log("\n中止を要求しました。現在の計算の区切りまでお待ちください。\n")
 
-    def _run(self):
-        if self.runner.busy:
-            return
+    def _capture_job(self):
         combinations = [[s.strip() for s in line.split(",")] for line in self.combos.get(0, "end")]
         if getattr(self, 'classification_mode', None) is not None and self.classification_mode.get() == 'group':
             from common.training_core import normalize_groups
@@ -657,54 +679,80 @@ class TrainTab(ttk.Frame):
             return
         feature_versions = {s: v['run_id'] for s, v in selected_versions.items()}
         file_filter_rules = list(self.file_filter_rules)
-        for sample, version in selected_versions.items():
-            self.progress.log(f"\n{sample}: {version['run_id']} / 実験群 {version.get('ex')} / "
-                              f"条件 {version.get('condition_id', '不明')}\n")
+        return dict(combinations=combinations, pipeline=dict(pipeline), pipeline_name=self.pipeline.get(),
+                    experiment=self.experiment.get(), training_settings=training_settings,
+                    fc_mode=fc_mode, use_selection=use_selection,
+                    feature_versions=feature_versions, file_filter_rules=file_filter_rules)
+
+    def _enqueue(self):
+        settings = self._capture_job()
+        if settings is not None:
+            self.training_queue.add(settings)
+            self._render_queue()
+
+    def _remove_queued(self):
+        self.training_queue.remove({int(key) for key in self.queue_tree.selection()})
+        self._render_queue()
+
+    def _show_queued(self):
+        selected = {int(key) for key in self.queue_tree.selection()}
+        jobs = [job for job in self.training_queue.rows() if job['id'] in selected]
+        if not jobs:
+            messagebox.showinfo('学習セット', '条件を確認するセットを選択してください。')
+            return
+        dialog = tk.Toplevel(self)
+        dialog.title('登録済み学習セットの条件')
+        dialog.geometry('760x540')
+        from tkinter.scrolledtext import ScrolledText
+        text = ScrolledText(dialog, wrap='word')
+        text.pack(fill='both', expand=True, padx=8, pady=8)
+        text.insert('1.0', json.dumps(jobs, ensure_ascii=False, indent=2))
+        text.configure(state='disabled')
+        ttk.Button(dialog, text='閉じる', command=dialog.destroy).pack(pady=(0, 8))
+
+    def _retry_queued(self):
+        self.training_queue.retry({int(key) for key in self.queue_tree.selection()})
+        self._render_queue()
+
+    def _render_queue(self):
+        jobs = self.training_queue.rows()
+        live = {str(job['id']) for job in jobs}
+        for key in self.queue_tree.get_children():
+            if key not in live:
+                self.queue_tree.delete(key)
+        for job in jobs:
+            key, settings = str(job['id']), job['settings']
+            samples = ' / '.join(', '.join(group) for group in settings['combinations'])
+            text = f"{settings['experiment'] or '-'} | {samples} | {settings['pipeline_name']} | {settings['fc_mode']} | {settings['training_settings']}"
+            values = (job['id'], text, job['state'] + (' / ' + job['detail'] if job['detail'] else ''))
+            if self.queue_tree.exists(key):
+                self.queue_tree.item(key, values=values)
+            else:
+                self.queue_tree.insert('', 'end', iid=key, values=values)
+        counts = {state: sum(job['state'] == state for job in jobs) for state in ('待機', '実行中', '完了')}
+        self.queue_summary.configure(text=f"全{len(jobs)}セット / 待機{counts['待機']} / 実行中{counts['実行中']} / 完了{counts['完了']}")
+
+    def _refresh_queue(self):
+        self._render_queue()
+        self._queue_poll_id = self.after(200, self._refresh_queue)
+
+    def _queue_destroyed(self, event):
+        if event.widget is self:
+            self.after_cancel(self._queue_poll_id)
+
+    def _run(self):
+        if self.runner.busy:
+            return
+        if not any(job['state'] == '待機' for job in self.training_queue.rows()):
+            settings = self._capture_job()
+            if settings is None:
+                return
+            self.training_queue.add(settings)
         self._cancel_event.clear()
-
-        def task(progress):
-            module = importlib.import_module(pipeline["module"])
-            if pipeline["tsfresh"]:
-                from common.fc_parameters import fc_parameters_for
-
-                fc_parameters = fc_parameters_for(fc_mode)
-                # build_combined_dataset() などは common/data_pipeline.py 側のモジュール変数
-                # (dp.FC_PARAMETERS) を参照するため、そちらも合わせて上書きする必要がある。
-                module.FC_PARAMETERS = fc_parameters
-                module.dp.FC_PARAMETERS = fc_parameters
-                if hasattr(module, "FC_PARAMETERS_MODE"):
-                    module.FC_PARAMETERS_MODE = fc_mode
-                module.USE_TSFRESH_FEATURE_SELECTION = use_selection
-            from common import training_core
-            training_core.reset()
-            training_core.configure(**training_settings)
-
-            results, errors = [], []
-            n = len(combinations)
-            for idx, smns in enumerate(combinations):
-                def inner(current, total, message="", idx=idx, smns=smns):
-                    if self._cancel_event.is_set():
-                        raise TrainingCancelled()
-                    # 組み合わせ全体の中での進み具合に換算して表示する
-                    frac = (idx + min(current, total) / max(total, 1)) / n
-                    progress(int(frac * 1000), 1000,
-                             f"[{idx + 1}/{n}] {'-'.join(smns)}: {message}")
-
-                try:
-                    inner(0, 1, "開始")
-                    results.append((smns, module.run_analysis(smns, progress_callback=inner,
-                                                             feature_versions=feature_versions,
-                                                             file_filter_rules=file_filter_rules)))
-                except TrainingCancelled:
-                    return results, errors, True
-                except Exception as e:  # noqa: BLE001 - 1件失敗しても残りは続ける
-                    print(f"\n[ERROR] {smns}: {type(e).__name__}: {e}")
-                    errors.append((smns, e))
-            progress(1000, 1000, f"{len(results)}/{n} 件完了")
-            return results, errors, self._cancel_event.is_set()
-
-        if self.runner.run(task, self.progress, on_done=self._done):
-            self.cancel_button.configure(state="normal", text="学習を中止")
+        if self.runner.run(lambda progress: execute_training_queue(self.training_queue, progress, self._cancel_event),
+                           self.progress, on_done=self._done):
+            self.cancel_button.configure(state='normal', text='学習を中止')
+        self._render_queue()
 
     def _done(self, payload):
         results, errors, cancelled = payload

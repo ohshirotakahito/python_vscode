@@ -86,7 +86,7 @@ class Card(tk.Canvas):
         self.bar = round_rect(self, 1, 14, 6, h - 14, 3, fill=a, outline=a)
         round_rect(self, 22, 17, 74, 69, 14, fill=mix(CARD, a, 0.16), outline='')
         self.create_text(48, 43, text=app.icon, font=(ICON, 22), fill=a)
-        self.create_text(92, 27, text=f'{app.title}   v{version(app.app_id)}',
+        self.create_text(92, 27, text=f'{app.title}   version {version(app.app_id)}',
                          anchor='w', font=(UI_BOLD, 13), fill=TEXT)
         self.create_text(92, 45, text=app.description, anchor='nw', width=w - 116,
                          font=(UI, 10), fill=MUTED)
@@ -162,7 +162,7 @@ class Launcher(tk.Tk):
         header.create_text(98, 40, text='Quantum Workbench', anchor='w',
                            font=('Segoe UI Semibold', 20), fill=TEXT)
         role = '開発端末' if self.profile['role'] == 'developer' else 'ユーザー端末'
-        header.create_text(98, 76, text=f'v{version("workbench")}  ·  {role}  ·  カードをクリック、または数字キーで起動',
+        header.create_text(98, 76, text=f'version {version("workbench")}  ·  {role}  ·  カードをクリック、または数字キーで起動',
                            anchor='w', font=(UI, 10), fill='#a9c4b2')
         btn = round_rect(header, w - 268, 38, w - 132, 74, 18, fill='#3c6b4b', outline='#5d9a6f')
         txt = header.create_text(w - 200, 56, text='すべて起動  (A)', font=(UI_BOLD, 10), fill=TEXT)
@@ -219,9 +219,9 @@ class Launcher(tk.Tk):
         for app_id, app in load_releases()['apps'].items():
             if app_id not in visible:
                 continue
-            content.insert('end', f"{app['name']}  v{app['version']}\n")
+            content.insert('end', f"{app['name']}  version {app['version']}\n")
             for release in app['releases']:
-                content.insert('end', f"  {release['date']}  v{release['version']}\n")
+                content.insert('end', f"  {release['date']}  version {release['version']}\n")
                 for note in release['notes']:
                     content.insert('end', f'    ・{note}\n')
             content.insert('end', '\n')

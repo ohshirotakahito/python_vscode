@@ -186,6 +186,17 @@ def inspect_set_data(spec, check_duplicates=False, progress=None, quick=False):
     return tuple(counts), duplicates
 
 
+def remove_registered_sources(specs, selected):
+    """Remove (set index, source index) pairs from registration, without touching files."""
+    selected = set(selected)
+    kept = []
+    for n, spec in enumerate(specs):
+        sources = [source for i, source in enumerate(spec['sources']) if (n, i) not in selected]
+        if sources:
+            kept.append(dict(spec, sources=sources))
+    return kept
+
+
 def create_destinations(root, experiment, samples):
     """Use the shared standard folder layout for new destinations."""
     names = [experiment, *samples]

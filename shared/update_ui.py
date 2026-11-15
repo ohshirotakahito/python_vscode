@@ -49,7 +49,7 @@ def tk_controls(root, app_id):
         actions.pack(side='right', padx=14, pady=16)
         info = tk.Frame(panel, bg='#172027')
         info.pack(side='left', fill='x', expand=True, padx=18, pady=14)
-        tk.Label(info, text=f'ソフトウェアの更新   ·   v{running}',
+        tk.Label(info, text=f'ソフトウェアの更新   ·   version {running}',
                  bg='#172027', fg=TEXT,
                  font=(UI_BOLD, 10), anchor='w').pack(anchor='w')
         tk.Label(info, textvariable=status_text, bg='#172027', fg=MUTED,
@@ -143,7 +143,7 @@ def tk_controls(root, app_id):
                     if state.available is None:
                         status_text.set('配布先のバージョン情報は未公開です')
                     elif state.behind:
-                        status_text.set(f'最新版 ver {state.available} に更新できます')
+                        status_text.set(f'最新版 version {state.available} に更新できます')
                     elif state.restart_needed:
                         status_text.set('最新版は適用済みです。再起動してください')
                     else:

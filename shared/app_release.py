@@ -41,21 +41,25 @@ def version(app_id):
 
 
 def window_title(app_id, title):
-    return f'{title} · v{version(app_id)}'
+    return f'{title} · version {version(app_id)}'
 
 
 def configure_tk(root, app_id):
     """Call after assigning the application's normal title."""
     from shared.terminal_profile import require
     require(app_id)
+    from shared.app_icons import icon_path, set_taskbar_identity
+    set_taskbar_identity(app_id)
     root.title(window_title(app_id, root.title()))
     root.app_id = app_id
     from shared.update_ui import tk_controls
     tk_controls(root, app_id)
-    if ICON.exists():
+    app_icon = icon_path(app_id)
+    if app_icon.exists():
         import tkinter
         try:
-            root.iconbitmap(default=str(ICON))
+            root.iconbitmap(default=str(app_icon))
+            root.iconbitmap(str(app_icon))
         except tkinter.TclError:
             # Non-Windows Tk may not support ICO. Version display still works.
             pass

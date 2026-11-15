@@ -24,8 +24,8 @@ except ImportError:
 
 import numpy as np
 import pandas as pd
-from PyQt6.QtCore import QObject, QSettings, Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QColor, QFont
+from PyQt6.QtCore import QObject, QProcess, QSettings, Qt, QThread, pyqtSignal
+from PyQt6.QtGui import QColor, QFont, QIcon
 from PyQt6.QtWidgets import (
     QAbstractItemView, QApplication, QButtonGroup, QCheckBox, QComboBox, QCompleter, QDialog, QDoubleSpinBox,
     QFileDialog, QFormLayout, QFrame, QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel,
@@ -42,6 +42,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 from shared import qt_theme, t_stock, ui_theme  # noqa: E402
+from shared.app_icons import icon_path  # noqa: E402
 
 import first_step_io
 import second_step_io
@@ -1107,10 +1108,15 @@ class ServerAnalPage(QWidget):
         b_db, b_reload = QPushButton("参照…"), QPushButton("DB を再読込")
         b_db.clicked.connect(self.choose_db)
         b_reload.clicked.connect(self.reload)
+        b_reload.setToolTip("保存済みDBを読み直します。サーバー上の新規サンプルは調査しません。")
+        b_discover = QPushButton("サーバーを調べて一覧を更新…")
+        b_discover.setToolTip("サーバー上の新しい実験・サンプルも探し、DBへ保存して一覧を更新します。")
+        b_discover.clicked.connect(self.discover_samples)
         db_row.addWidget(QLabel("データベース"))
         db_row.addWidget(self.db, 1)
         db_row.addWidget(b_db)
         db_row.addWidget(b_reload)
+        db_row.addWidget(b_discover)
         lay.addLayout(db_row)
         self.db_info = QLabel("")
         self.db_info.setObjectName("subtitle")
@@ -1254,6 +1260,90 @@ class ServerAnalPage(QWidget):
         if path:
             self.db.setText(path)
             self.reload()
+
+    def discover_samples(self):
+        if self.run.thread is not None and self.run.thread.isRunning():
+            QMessageBox.information(self, "一覧の更新", "解析が終了してから一覧を更新してください。")
+            return
+        group = self.group.currentText()
+        scope = group if group not in ("", "すべて") else "すべての解析サーバー共有（新規サンプルを含む）"
+        if QMessageBox.question(self, "サーバーから一覧を更新",
+                f"対象: {scope}\n\nサーバーに接続し、新しい実験・サンプルとANAL進捗を調べてDBに保存します。\n"
+                "現在の検索・状態フィルターに隠れているサンプルも調査します。時間がかかる場合があります。\n実行しますか？") != QMessageBox.StandardButton.Yes:
+            return
+        import json
+
+        class ScanDialog(QDialog):
+            def reject(dialog):
+                if process.state() != QProcess.ProcessState.NotRunning:
+                    process.write(b"cancel\n")
+                    stop.setEnabled(False)
+                    status.setText("中止を要求しました。サーバーの応答を待っています…")
+                else:
+                    super().reject()
+
+        dialog = ScanDialog(self)
+        dialog.setWindowTitle("サーバーから一覧を更新")
+        dialog.resize(760, 360)
+        layout = QVBoxLayout(dialog)
+        status = QLabel("サーバー調査を開始しています…")
+        status.setWordWrap(True)
+        layout.addWidget(status)
+        bar = QProgressBar()
+        bar.setRange(0, 0)
+        layout.addWidget(bar)
+        log = QPlainTextEdit()
+        log.setReadOnly(True)
+        log.setMaximumBlockCount(1000)
+        layout.addWidget(log)
+        stop = QPushButton("中止")
+        stop.clicked.connect(dialog.reject)
+        layout.addWidget(stop)
+        process = QProcess(dialog)
+        process.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
+        pending = bytearray()
+        summary = []
+
+        def read_output():
+            pending.extend(bytes(process.readAllStandardOutput()))
+            while b"\n" in pending:
+                line, _, rest = pending.partition(b"\n")
+                pending[:] = rest
+                text = line.decode("utf-8", errors="replace").strip()
+                try:
+                    event = json.loads(text)
+                except ValueError:
+                    log.appendPlainText(text)
+                    continue
+                status.setText(event["message"])
+                if event["event"] in ("done", "error"):
+                    summary.append(event["message"])
+                    log.appendPlainText(event["message"])
+
+        def finished(*_):
+            read_output()
+            bar.setRange(0, 1)
+            bar.setValue(1)
+            if not summary:
+                status.setText("調査プロセスが終了しました。下のログを確認してください。")
+            stop.setText("閉じる")
+            stop.setEnabled(True)
+            self.db_changed.emit()
+
+        process.readyReadStandardOutput.connect(read_output)
+        process.finished.connect(finished)
+        def process_error(error):
+            if error == QProcess.ProcessError.FailedToStart:
+                summary.append("調査を起動できません: " + process.errorString())
+                status.setText(summary[-1])
+                log.appendPlainText(summary[-1])
+                finished()
+        process.errorOccurred.connect(process_error)
+        args = [str(REPO_ROOT / "database" / "refresh_inventory.py"), "--db", str(Path(self.db.text().strip()).resolve())]
+        if group not in ("", "すべて"):
+            args += ["--group", group]
+        process.start(sys.executable, args)
+        dialog.exec()
 
     def reload(self):
         path = self.db.text().strip()
@@ -3941,6 +4031,7 @@ class ViewerPage(QWidget):
         self.bl_curve = None
         row.addStretch()
         self.plot.sigYRangeChanged.connect(self.y_changed)
+        self.auto_y()
         return row
 
     def auto_y(self):
@@ -4252,6 +4343,7 @@ class ViewerPage(QWidget):
             self.plot.addItem(reg)
         self.draw_overview(ar)
         self.plot.setXRange(0, min(10, tt[-1] if len(tt) else 1), padding=0)
+        self.y_auto.setChecked(True)
         self.auto_y()
         self.seq_view.setHtml("<span style='color:#8b9a92'>赤い帯 = バースト、黄色の点 = 信号のピーク。"
                               "一覧のバースト・信号を選ぶと拡大します（右上で切り替え）。"
@@ -4347,6 +4439,7 @@ class ViewerPage(QWidget):
             self.fill_items(self.btab, self.B_COLS)
 
     def show_b(self, path, tab, raw):
+        self.y_auto.setChecked(True)
         self.mode = "B"
         self.list_kind.setVisible(False)
         self.overview.setVisible(False)
@@ -4495,7 +4588,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(window_title('analyzer', f"{APP_TITLE} — Total Analysis (Python)"))
         from shared.update_ui import qt_controls
         qt_controls(self, 'analyzer')
-        self.setWindowIcon(qt_theme.window_icon(APP_ICON, ACCENT))
+        self.setWindowIcon(QIcon(str(icon_path('analyzer'))))
         self.resize(1400, 880)
         root = QWidget()
         outer = QVBoxLayout(root)
@@ -4578,7 +4671,7 @@ def main():
     app = QApplication(sys.argv)
     qt_theme.apply(app, ACCENT)
     app.setStyleSheet(STYLE)
-    app.setWindowIcon(qt_theme.window_icon(APP_ICON, ACCENT))
+    app.setWindowIcon(QIcon(str(icon_path('analyzer'))))
     w = MainWindow()
     w.show()
     viewer_rows.warm_up()  # the result viewers read folders in worker processes

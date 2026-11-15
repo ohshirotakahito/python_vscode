@@ -11,6 +11,7 @@
 |---|---|---|
 | `ui_theme.py` | 共通ダークテーマ（色・フォント・`apply()`・`header()`）、ランチャーのアプリ別アクセント色 | 全アプリ・launcher |
 | `app_release.py` | `app_versions.json` の検証・バージョン取得、Tkアプリのタイトル表示とアイコン設定 | 全アプリ・launcher |
+| `app_icons.py` | ヘッダーと同じ記号・色のアプリ別ICOと、Windowsタスクバーのアプリ識別子 | 全アプリ・launcher |
 | `app_update.py`, `update_ui.py` | Git追跡先の更新確認、安全なfast-forward更新、Tk/Qtの更新・再起動操作 | 全アプリ・launcher |
 | `qt_theme.py`, `qt_icons/` | `ui_theme` の色・ヘッダー・アイコンを PyQt6 で再現したもの（`apply()`・`Header`・`window_icon()`） | Analyzer |
 | `server_browse.py` | 計測サーバー → 共有 → 実験 → サンプルを一覧から選ぶダイアログ | ML, Viewer |

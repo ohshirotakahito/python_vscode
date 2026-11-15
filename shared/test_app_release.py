@@ -4,7 +4,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, call
 
 from shared import app_release
 from tools.app_version import bump
@@ -50,11 +50,26 @@ class AppReleaseTests(unittest.TestCase):
     def test_direct_tk_startup_sets_version_and_icon(self):
         root = Mock()
         root.title.return_value = 'Viewer'
-        with patch('shared.update_ui.tk_controls') as controls, patch('shared.terminal_profile.require'):
+        with patch('shared.update_ui.tk_controls') as controls, patch('shared.terminal_profile.require'), patch('shared.app_icons.set_taskbar_identity') as identity:
             app_release.configure_tk(root, 'viewer')
             controls.assert_called_once_with(root, 'viewer')
-        root.title.assert_called_with('Viewer · v' + app_release.version('viewer'))
-        root.iconbitmap.assert_called_once_with(default=str(app_release.ICON))
+            identity.assert_called_once_with('viewer')
+        root.title.assert_called_with('Viewer · version ' + app_release.version('viewer'))
+        from shared.app_icons import icon_path
+        root.iconbitmap.assert_has_calls([call(default=str(icon_path('viewer'))), call(str(icon_path('viewer')))])
+
+    def test_every_app_has_its_own_valid_icon(self):
+        from shared.app_icons import SYMBOLS, icon_path
+        apps = set(app_release.load_releases()['apps']) - {'workbench'}
+        self.assertEqual(set(SYMBOLS), apps)
+        icons = []
+        for app_id in apps:
+            data = icon_path(app_id).read_bytes()
+            self.assertEqual(data[:4], b'\x00\x00\x01\x00')
+            self.assertGreaterEqual(int.from_bytes(data[4:6], 'little'), 7)
+            icons.append(data)
+        self.assertEqual(len(set(icons)), len(apps))
+        self.assertEqual(icon_path('workbench'), app_release.ICON)
 
     def test_blank_release_note_is_rejected_without_changes(self):
         data = app_release.load_releases()
