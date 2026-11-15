@@ -502,6 +502,12 @@ def execute(plan, log=print, progress=None):
         if dst.exists():
             if not dst.is_file():
                 raise ValueError(f'競合: {dst}')
+            if item.raw:
+                item.execution_status = '既存未検証スキップ'
+                log(f'既存未検証スキップ（raw data・上書きなし）: {dst}')
+                if progress:
+                    progress('コピー・検証', pos, len(plan.items), str(dst))
+                continue
             sha = signature(item.source, report('既存比較・コピー元', pos - 1, item.source))
             if item.sha256 and sha != item.sha256:
                 raise ValueError(f'プレビュー後にコピー元が変わりました: {item.source}')

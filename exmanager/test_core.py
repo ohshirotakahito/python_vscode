@@ -17,7 +17,7 @@ def setUpModule():
 
 
 class CopyTest(unittest.TestCase):
-    def test_existing_raw_is_verified_on_retry(self):
+    def test_existing_raw_is_preserved_without_verification_on_retry(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             src, dst = root / 'source', root / 'target'
@@ -28,12 +28,14 @@ class CopyTest(unittest.TestCase):
             destination.write_bytes(b'abc')
             item = core.Item(source, destination, '', '新規', True, None)
             plan = core.Plan([item], [], src, dst, {})
-            core.execute(plan, lambda s: None)
-            self.assertEqual(item.execution_status, '既存一致スキップ')
-            destination.write_bytes(b'xyz')
-            with self.assertRaisesRegex(ValueError, '競合'):
+            with patch.object(core, 'signature', side_effect=AssertionError('raw must not be hashed')):
                 core.execute(plan, lambda s: None)
-            self.assertEqual(destination.read_bytes(), b'xyz')
+                self.assertEqual(item.execution_status, '既存未検証スキップ')
+                destination.write_bytes(b'xyz')
+                core.execute(plan, lambda s: None)
+                self.assertEqual(item.execution_status, '既存未検証スキップ')
+                self.assertEqual(destination.read_bytes(), b'xyz')
+                self.assertEqual(item.sha256, '')
 
     def test_review_prioritizes_preserved_original_name(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -259,11 +261,16 @@ class CopyTest(unittest.TestCase):
                 self.assertEqual(p.items[0].sha256, '')
                 core.execute(p, lambda s: None)
                 saved = dst/'raw data'/'source'/'notes.txt'
+                self.assertEqual(saved.read_text(), 'raw only')
+                self.assertEqual(p.items[0].execution_status, 'コピー完了')
                 saved.write_text('different existing content')
                 p = core.plan(src, dst, 'OXT', 'Sample')
                 self.assertEqual(p.items[0].status, '既存（内容未検証）')
                 core.execute(p, lambda s: None)
                 self.assertEqual(saved.read_text(), 'different existing content')
+                self.assertEqual(p.items[0].execution_status, '既存未検証スキップ')
+                self.assertEqual(p.items[0].sha256, '')
+                self.assertFalse(list(saved.parent.glob('*.partial')))
 
     def test_source_change_and_missing_pair(self):
         with tempfile.TemporaryDirectory() as directory:

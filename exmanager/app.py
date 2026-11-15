@@ -288,6 +288,13 @@ class App(tk.Tk):
         ttk.Button(actions, text='④ コピー予定表を確認', style='Primary.TButton', command=self.open_plan_window).pack(side='left', padx=4)
         self.copy_button = ttk.Button(actions, text='⑤ コピー開始', style='Execute.TButton', command=self.copy)
         self.copy_button.pack(side='left')
+        self.allow_name_mismatch = tk.BooleanVar(value=False)
+        ttk.Checkbutton(lower, text='名前の不一致を確認したうえでコピーする',
+                        variable=self.allow_name_mismatch,
+                        command=self.update_copy_button).pack(anchor='w', padx=10, pady=(6, 0))
+        self.copy_hint = ttk.Label(lower, text='', wraplength=1000)
+        self.copy_hint.pack(anchor='w', padx=10, pady=(2, 4))
+
         ttk.Label(lower, text='通常：① コピー元一覧を更新 → 実験を選択 → ② 保存先を選択してセットに追加 → ③ 予定作成 → ④ 予定表を確認 → ⑤ コピー開始', wraplength=1000).pack(anchor='w', padx=10)
         legend = ttk.Frame(lower)
         legend.pack(fill='x', padx=10)
@@ -413,9 +420,23 @@ class App(tk.Tk):
         self.pc_label.configure(text=f"このPC：{self.pc['display_name']} ［{pc_config.ROLES[self.pc['role']]}］ ID: {self.pc['pc_id'][:8]} ／ 遠隔受付・常駐は未実装")
         self.update_copy_button()
 
+    def copy_block_reason(self):
+        if self.busy:
+            return '処理中です。完了するまでお待ちください。'
+        if self.pc['role'] != 'transfer':
+            return 'コピーするには「このPCの設定」で役割を「転送担当」に変更してください。'
+        if not self.current:
+            return '「③ コピー予定作成」でコピー予定を作成してください。'
+        mismatched = any(core.name_check(spec['sources'], Path(spec['target']).name)[1]
+                         for _, _, spec in self.current)
+        if mismatched and not self.allow_name_mismatch.get():
+            return '名前が不一致のセットがあります。保存先を確認し、上のチェックを入れるとコピーできます。'
+        return ''
+
     def update_copy_button(self):
-        ready = self.pc['role'] == 'transfer' and bool(self.current) and not self.busy
-        self.copy_button.configure(state='normal' if ready else 'disabled')
+        reason = self.copy_block_reason()
+        self.copy_button.configure(state='disabled' if reason else 'normal')
+        self.copy_hint.configure(text=reason or 'コピーできます。「④ コピー予定表を確認」で内容を確認してください。')
 
     def configure_pc(self):
         if self.busy:
@@ -1025,7 +1046,7 @@ class App(tk.Tk):
         ttk.Label(toolbar, text='表示：').pack(side='left')
         selected = tk.StringVar(value='すべて')
         choices = ttk.Combobox(toolbar, textvariable=selected, state='readonly',
-                               values=('すべて', 'コピー予定', '重複スキップ予定', '競合（コピー不可）', 'コピー完了', '既存一致スキップ', '停止箇所', '未処理'), width=24)
+                               values=('すべて', 'コピー予定', '重複スキップ予定', '競合（コピー不可）', 'コピー完了', '既存一致スキップ', '既存未検証スキップ', '停止箇所', '未処理'), width=24)
         choices.pack(side='left')
         count_label = ttk.Label(toolbar)
         count_label.pack(side='left', padx=12)
@@ -1057,6 +1078,7 @@ class App(tk.Tk):
         render()
 
     def refresh_sets(self):
+        self.allow_name_mismatch.set(False)
         self.close_plan_window()
         self.current = None
         self.plan_tree.delete(*self.plan_tree.get_children())
@@ -1130,6 +1152,7 @@ class App(tk.Tk):
     def preview(self):
         if self.busy or not self.sets:
             return
+        self.allow_name_mismatch.set(False)
         self.close_plan_window()
         self.current = None
         specs = list(self.sets)
@@ -1187,7 +1210,9 @@ class App(tk.Tk):
         if self.pc['role'] != 'transfer':
             messagebox.showinfo('操作・閲覧モード', 'このPCではコピーを実行できません。')
             return
-        if not self.current or self.busy:
+        reason = self.copy_block_reason()
+        if reason:
+            messagebox.showinfo('コピー開始の確認', reason, parent=self)
             return
         jobs = self.current
         for _, _, spec in jobs:
@@ -1207,10 +1232,10 @@ class App(tk.Tk):
                 for item in plan.items:
                     status = getattr(item, 'execution_status', '未処理')
                     counts[status] = counts.get(status, 0) + 1
-                    tag = 'new' if status == 'コピー完了' else 'skip' if status == '既存一致スキップ' else 'conflict' if status == '停止箇所' else 'pending'
+                    tag = 'new' if status == 'コピー完了' else 'skip' if status in ('既存一致スキップ', '既存未検証スキップ') else 'conflict' if status == '停止箇所' else 'pending'
                     kind = 'raw data' if item.raw else '10kHz' if item.source.parent.name in ('EXSV', 'T') else '100kHz'
                     self.plan_tree.insert('', 'end', values=(number, status, kind, str(item.source), str(item.destination)), tags=(tag,))
-            summary = '実行結果（全ファイル）：' + ' ／ '.join(f'{label} {counts.get(label, 0)}件' for label in ('コピー完了', '既存一致スキップ', '停止箇所', '未処理'))
+            summary = '実行結果（全ファイル）：' + ' ／ '.join(f'{label} {counts.get(label, 0)}件' for label in ('コピー完了', '既存一致スキップ', '既存未検証スキップ', '停止箇所', '未処理'))
             self.plan_label.configure(text=summary)
             self.log(summary)
             self.log('実験ごとの結果を確認してください。再実行する場合はコピー予定を再作成してください。')
