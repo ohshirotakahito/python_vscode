@@ -2,7 +2,7 @@
 """プロジェクト内のTkinterアプリを起動するランチャー。
 
 起動: launch_apps.bat をダブルクリック、または python launcher.py
-カードをクリック(または数字キー 1〜7)で各アプリを別プロセスとして起動する。
+カードをクリック(または数字キー 1〜8)で各アプリを別プロセスとして起動する。
 ランチャーを閉じても起動済みのアプリは終了しない。
 """
 
@@ -56,6 +56,8 @@ APPS = [
         r'app_tk\main.py', 'ML', '\uEBD2', ui_theme.ML),
     App('6', '\u914D\u5217\u30A2\u30BB\u30F3\u30D6\u30EA', 'BNAL \u306E\u4F4D\u7F6E\u3054\u3068\u306E\u5206\u5E03\u30FB\u30A2\u30BB\u30F3\u30D6\u30EA\u30FBq\u5024\u30FB\u4FEE\u98FE\u7387\u306E\u53EF\u8996\u5316',
         r'Plotting\app.py', '.', '\uE9D2', ui_theme.PLOTTING),
+    App('8', 'Scoring \u00B7 \u30B9\u30B3\u30A2', 'EXSV / AC / Gap Generation \u30B9\u30B3\u30A2\u306E\u4E00\u89A7\u30FB\u518D\u8A08\u7B97\u3068\u3001\u8A08\u753B \u2192 \u8A08\u6E2C \u2192 \u89E3\u6790\u306E\u3064\u306A\u304C\u308A',
+        r'scoring\app.py', '.', '\uE9D9', ui_theme.SCORING),
 ]
 
 

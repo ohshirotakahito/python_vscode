@@ -36,6 +36,7 @@ Python_VScode/
 ├── Viewer/                 # TDMS波形の可視化・ノイズ推定(python Viewer/view_tdms_signal_tk.py)
 ├── database/               # 各サーバーのファイル保存状況をSQLiteで管理・ファイル操作(コピー・リネーム・フォルダ作成)(python database/app.py)
 ├── exmanager/              # 実験データの転送・履歴管理(python exmanager/app.py)
+├── scoring/                # Scoring App: EXSV / AC / Gap Generation スコアの一覧・再計算（AXN の関数を共有）と、Experimental ID で計画→計測→解析をつなぐ台帳(python scoring/app.py)
 ├── shared/                 # アプリ間で共有する部品(テーマ・サーバー選択・DBの窓口など)
 ├── launcher.py             # アプリランチャー(launch_apps.bat から起動)
 └── conftest.py             # pytest 用: どこから実行しても shared/ を読めるようにする
@@ -147,7 +148,7 @@ python Viewer/view_tdms_signal_tk.py
 各フォルダに同名モジュール(`app.py` 等)があるため、フォルダごとに実行する。
 
 ```bash
-for d in shared ML/tests database exmanager Viewer Plotting Analyzer/python; do python -m pytest -q $d; done
+for d in shared ML/tests database exmanager Viewer Plotting Analyzer/python scoring; do python -m pytest -q $d; done
 ```
 
 ---

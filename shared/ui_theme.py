@@ -27,6 +27,7 @@ VIEWER = '#6aa8ff'
 DATABASE = '#c58af9'
 PLOTTING = '#f08c6c'
 ANALYZER = '#f27fb2'
+SCORING = '#7fd3f7'
 
 UI = 'Yu Gothic UI'
 UI_BOLD = 'Yu Gothic UI Semibold'
