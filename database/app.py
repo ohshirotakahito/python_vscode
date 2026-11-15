@@ -76,6 +76,8 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title('実験ファイル データベース')
+        from shared.app_release import configure_tk
+        configure_tk(self, 'database')
         self.geometry('1450x950')
         style = ui_theme.apply(self, ui_theme.DATABASE)
         style.configure('Treeview', rowheight=26)

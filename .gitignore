@@ -67,6 +67,7 @@ env/
 # ===== OS =====
 .DS_Store
 Thumbs.db
+*.lnk
 
 # ===== ログ =====
 *.log
@@ -79,3 +80,5 @@ filemanager/t_stock_logs/
 
 # Analyzer の実行ログ（解析の記録・自動着手の状態）。ほかのアプリの logs と同じく Git 管理外
 Analyzer/logs/
+# PC-local role and application selection (preserved across pulls)
+.workbench/

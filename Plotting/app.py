@@ -1396,6 +1396,8 @@ class App:
 def main():
     root = tk.Tk()
     root.title('配列アセンブリ')
+    from shared.app_release import configure_tk
+    configure_tk(root, 'plotting')
     root.geometry('1400x900')
     root.minsize(900, 600)
     ui_theme.apply(root, ACCENT)

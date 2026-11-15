@@ -10,6 +10,8 @@
 | ファイル | 内容 | 使うアプリ |
 |---|---|---|
 | `ui_theme.py` | 共通ダークテーマ（色・フォント・`apply()`・`header()`）、ランチャーのアプリ別アクセント色 | 全アプリ・launcher |
+| `app_release.py` | `app_versions.json` の検証・バージョン取得、Tkアプリのタイトル表示とアイコン設定 | 全アプリ・launcher |
+| `app_update.py`, `update_ui.py` | Git追跡先の更新確認、安全なfast-forward更新、Tk/Qtの更新・再起動操作 | 全アプリ・launcher |
 | `qt_theme.py`, `qt_icons/` | `ui_theme` の色・ヘッダー・アイコンを PyQt6 で再現したもの（`apply()`・`Header`・`window_icon()`） | Analyzer |
 | `server_browse.py` | 計測サーバー → 共有 → 実験 → サンプルを一覧から選ぶダイアログ | ML, Viewer |
 | `folder_layout.py` | 解析サーバー上の標準サンプルフォルダ構成 `create_sample_folders()` | exmanager, database |
@@ -28,9 +30,22 @@
 
 ## 取り決め（守ること）
 
+### バージョンと更新
+
+小幅修正はpatch（0.1.0→0.1.1）、中規模はminor（0.1.1→0.2.0）、大幅はmajor（0.2.0→1.0.0）。
+変更完了時に `python tools/app_version.py analyzer --bump patch --note "変更内容"` のように記録します。
+共通部品の変更では影響する各アプリの版を上げます。詳細はルートの `AGENTS.md` を参照してください。
+
+各アプリ上部の「更新チェック」はGitの追跡先をfetchし、起動中・手元・配布元の版を表示します。
+「更新する」はリポジトリ全体を確認済みのコミットへfast-forward更新します（アプリ単体の配布ではありません）。
+ローカル変更や分岐がある場合は更新を停止し、変更を上書きしません。更新後は実行中の各アプリで
+「更新チェック」→「再起動」を行います。再起動時は通常の終了処理を通します。作業は先に保存してください。
+Gitが利用可能で、ブランチに追跡先が設定され、配布元に `app_versions.json` を含む版が公開されている必要があります。
+起動中の版と手元の版だけが異なる場合も「再起動」が有効になります。
+
 1. **アプリから他のアプリを import しない。** 2つ以上のアプリで必要になった処理は `shared/` に移す。
    `shared/` からアプリのフォルダを import することもしない。
-2. **`shared/` は画面を持たない**（`ui_theme.py`・`server_browse.py` の汎用部品は例外）。
+2. **`shared/` は画面を持たない**（`ui_theme.py`・`server_browse.py`・`update_ui.py` の汎用部品は例外）。
    アプリ固有の画面・表示用の集計はアプリ側に置く。
 3. **関数の名前・引数・戻り値の意味を変えない。** 変えたいときは新しい関数を足し、
    使っているアプリ（上の表）をすべて移行してから古いものを消す。

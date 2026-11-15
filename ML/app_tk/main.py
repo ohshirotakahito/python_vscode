@@ -39,6 +39,8 @@ from theme import ACCENT, MUTED, apply_theme  # noqa: E402
 def main():
     root = tk.Tk()
     root.title("ML解析パネル")
+    from shared.app_release import configure_tk
+    configure_tk(root, 'ml')
     root.geometry("1400x880")
     root.minsize(1000, 640)
     try:

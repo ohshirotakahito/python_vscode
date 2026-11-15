@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parent
 from shared.ui_theme import (BG, BORDER, DANGER, DIM, HEADER_FROM, HEADER_TO, ICON, MONO, MUTED,  # noqa: E402
                              TEXT, UI, UI_BOLD, mix, round_rect)
 from shared import ui_theme  # noqa: E402
+from shared.app_release import configure_tk, load_releases, version  # noqa: E402
 
 CARD = '#172027'
 CARD_HOVER = '#1d2932'
@@ -34,6 +35,11 @@ class App:
     cwd: str     # ROOT からの相対パス
     icon: str
     accent: str
+
+    @property
+    def app_id(self):
+        return {'1': 'exmanager', '2': 'database', '3': 'analyzer', '4': 'viewer',
+                '5': 'ml', '6': 'plotting', '7': 'chipdb', '8': 'scoring'}[self.key]
 
     @property
     def display_path(self):
@@ -69,7 +75,7 @@ def python_for_gui():
 
 
 class Card(tk.Canvas):
-    HEIGHT = 86
+    HEIGHT = 112
 
     def __init__(self, master, app, on_launch, width):
         super().__init__(master, width=width, height=self.HEIGHT, bg=BG,
@@ -80,14 +86,16 @@ class Card(tk.Canvas):
         self.bar = round_rect(self, 1, 14, 6, h - 14, 3, fill=a, outline=a)
         round_rect(self, 22, 17, 74, 69, 14, fill=mix(CARD, a, 0.16), outline='')
         self.create_text(48, 43, text=app.icon, font=(ICON, 22), fill=a)
-        self.create_text(92, 27, text=app.title, anchor='w', font=(UI_BOLD, 14), fill=TEXT)
-        self.create_text(92, 50, text=app.description, anchor='w', font=(UI, 10), fill=MUTED)
-        self.create_text(92, 69, text=app.display_path, anchor='w', font=(MONO, 9), fill=DIM)
-        self.badge = round_rect(self, w - 172, 30, w - 74, 56, 12, fill=CARD, outline='')
-        self.dot = self.create_oval(w - 160, 39, w - 152, 47, fill=CARD, outline='')
-        self.badge_text = self.create_text(w - 146, 43, anchor='w', font=(UI, 9), fill=CARD)
-        self.key_text = self.create_text(w - 123, 43, text=app.key, font=(MONO, 11), fill=DIM)
-        self.arrow = self.create_text(w - 40, 43, text='\uE768', font=(ICON, 16), fill=DIM)
+        self.create_text(92, 27, text=f'{app.title}   v{version(app.app_id)}',
+                         anchor='w', font=(UI_BOLD, 13), fill=TEXT)
+        self.create_text(92, 45, text=app.description, anchor='nw', width=w - 116,
+                         font=(UI, 10), fill=MUTED)
+        self.create_text(92, 94, text=app.display_path, anchor='w', font=(MONO, 9), fill=DIM)
+        self.badge = round_rect(self, w - 152, 81, w - 54, 107, 12, fill=CARD, outline='')
+        self.dot = self.create_oval(w - 140, 90, w - 132, 98, fill=CARD, outline='')
+        self.badge_text = self.create_text(w - 126, 94, anchor='w', font=(UI, 9), fill=CARD)
+        self.key_text = self.create_text(w - 103, 94, text=app.key, font=(MONO, 11), fill=DIM)
+        self.arrow = self.create_text(w - 28, 94, text='\uE768', font=(ICON, 16), fill=DIM)
         self.bind('<Enter>', lambda e: self._hover(True))
         self.bind('<Leave>', lambda e: self._hover(False))
         self.bind('<ButtonRelease-1>', lambda e: self.on_launch(self.app))
@@ -120,19 +128,24 @@ class Card(tk.Canvas):
 
 
 class Launcher(tk.Tk):
-    WIDTH = 660
+    WIDTH = 1180
 
     def __init__(self):
         super().__init__()
+        from shared.terminal_profile import load, allowed
+        self.profile = load()
+        self.apps = [app for app in APPS if allowed(app.app_id, self.profile)]
         self.title('Quantum Workbench ランチャー')
+        configure_tk(self, 'workbench')
         self.configure(bg=BG)
         self.resizable(False, False)
+        self.WIDTH = min(self.WIDTH, self.winfo_screenwidth() - 64)
         self.python = python_for_gui()
         self.processes = {app.key: [] for app in APPS}
         self.pulse = False
         self._build()
         self._center()
-        for app in APPS:
+        for app in self.apps:
             self.bind(app.key, lambda e, a=app: self.launch(a))
         self.bind('a', lambda e: self.launch_all())
         self.bind('<Escape>', lambda e: self.destroy())
@@ -144,9 +157,12 @@ class Launcher(tk.Tk):
         header.pack()
         for x in range(w):
             header.create_line(x, 0, x, 112, fill=mix(HEADER_FROM, HEADER_TO, x / w))
-        header.create_text(32, 40, text='Quantum Workbench', anchor='w',
+        self.brand_image = tk.PhotoImage(file=str(ROOT / 'assets' / 'quantum-workbench-64.png'))
+        header.create_image(52, 48, image=self.brand_image)
+        header.create_text(98, 40, text='Quantum Workbench', anchor='w',
                            font=('Segoe UI Semibold', 20), fill=TEXT)
-        header.create_text(34, 76, text='アプリランチャー  ·  カードをクリック、または数字キーで起動',
+        role = '開発端末' if self.profile['role'] == 'developer' else 'ユーザー端末'
+        header.create_text(98, 76, text=f'v{version("workbench")}  ·  {role}  ·  カードをクリック、または数字キーで起動',
                            anchor='w', font=(UI, 10), fill='#a9c4b2')
         btn = round_rect(header, w - 268, 38, w - 132, 74, 18, fill='#3c6b4b', outline='#5d9a6f')
         txt = header.create_text(w - 200, 56, text='すべて起動  (A)', font=(UI_BOLD, 10), fill=TEXT)
@@ -161,15 +177,25 @@ class Launcher(tk.Tk):
         body = tk.Frame(self, bg=BG)
         body.pack(padx=24, pady=(20, 8))
         self.cards = {}
-        for app in APPS:
-            card = Card(body, app, self.launch, w - 48)
-            card.pack(pady=6)
+        if not self.apps:
+            tk.Label(body, text='利用アプリが未設定です。「端末設定」で設定方法を確認してください。',
+                     bg=BG, fg=TEXT, font=(UI, 11)).pack(pady=32)
+        for index, app in enumerate(self.apps):
+            card = Card(body, app, self.launch, (w - 64) // 2)
+            card.grid(row=index // 2, column=index % 2, padx=4, pady=6)
             self.cards[app.key] = card
 
         footer = tk.Frame(self, bg=BG)
         footer.pack(fill='x', padx=28, pady=(6, 18))
         self.status = tk.Label(footer, text='準備完了', bg=BG, fg=MUTED, font=(UI, 9), anchor='w')
         self.status.pack(side='left')
+        releases = tk.Label(footer, text='バージョン・更新履歴', bg=BG, fg='#4fc1b5',
+                            font=(UI, 9), cursor='hand2')
+        releases.pack(side='left', padx=20)
+        releases.bind('<ButtonRelease-1>', lambda _: self.show_releases())
+        profile = tk.Label(footer, text='端末設定', bg=BG, fg='#4fc1b5', font=(UI, 9), cursor='hand2')
+        profile.pack(side='left', padx=12)
+        profile.bind('<ButtonRelease-1>', lambda _: self.show_terminal())
         tk.Label(footer, text=Path(self.python).name + '  ·  Esc で閉じる', bg=BG, fg=DIM,
                  font=(UI, 9)).pack(side='right')
 
@@ -179,7 +205,31 @@ class Launcher(tk.Tk):
         y = (self.winfo_screenheight() - self.winfo_height()) // 3
         self.geometry(f'+{x}+{y}')
 
+    def show_releases(self):
+        from tkinter import scrolledtext
+        window = tk.Toplevel(self)
+        window.title('Quantum Workbench · バージョン・更新履歴')
+        window.geometry('720x520')
+        content = scrolledtext.ScrolledText(window, wrap='word', font=(UI, 10), padx=16, pady=16)
+        content.pack(fill='both', expand=True)
+        ui_theme.style_text(content)
+        visible = {app.app_id for app in self.apps} | {'workbench'}
+        for app_id, app in load_releases()['apps'].items():
+            if app_id not in visible:
+                continue
+            content.insert('end', f"{app['name']}  v{app['version']}\n")
+            for release in app['releases']:
+                content.insert('end', f"  {release['date']}  v{release['version']}\n")
+                for note in release['notes']:
+                    content.insert('end', f'    ・{note}\n')
+            content.insert('end', '\n')
+        content.configure(state='disabled')
+
     def launch(self, app):
+        from shared.terminal_profile import allowed
+        if not allowed(app.app_id):
+            messagebox.showwarning('起動できません', 'この端末では使用できないアプリです。', parent=self)
+            return
         if any(proc.poll() is None for proc, _ in self.processes[app.key]):
             self._set_status(f'{app.title} はすでに起動しています', app.accent)
             return
@@ -202,8 +252,19 @@ class Launcher(tk.Tk):
         self._refresh()
 
     def launch_all(self):
-        for i, app in enumerate(APPS):
+        for i, app in enumerate(self.apps):
             self.after(i * 300, lambda a=app: self.launch(a))
+
+    def show_terminal(self):
+        from shared.terminal_profile import PROFILE
+        names = '、'.join(app.title for app in self.apps) or '未設定'
+        messagebox.showinfo('端末設定',
+                            f"役割: {self.profile['role']}\n利用アプリ: {names}\n\n"
+                            f"設定ファイル: {PROFILE}\n\n"
+                            '管理者がリポジトリ直下で次を実行して設定します。\n'
+                            'python tools/terminal_setup.py --role user --apps exmanager\n'
+                            '開発端末: python tools/terminal_setup.py --role developer\n\n'
+                            '設定後はランチャーを再起動してください。', parent=self)
 
     def _set_status(self, text, color=MUTED):
         self.status.configure(text=text, fg=color)
@@ -244,6 +305,7 @@ def main():
     if os.name == 'nt':
         try:
             import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('QuantumWorkbench.Launcher')
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
         except (AttributeError, OSError):
             pass

@@ -112,6 +112,8 @@ class App(tk.Tk):
         super().__init__()
         self.configure_colors()
         self.title('実験データ整理 — Python版')
+        from shared.app_release import configure_tk
+        configure_tk(self, 'exmanager')
         self.geometry(f'{min(1180, self.winfo_screenwidth() - 80)}x{min(960, self.winfo_screenheight() - 100)}')
         self.events = queue.Queue()
         self.busy = False

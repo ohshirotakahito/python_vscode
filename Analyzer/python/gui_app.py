@@ -3652,6 +3652,8 @@ class ViewerPage(QWidget):
         self.overview.setMaximumHeight(120)
         self.overview.setMouseEnabled(x=False, y=False)
         self.overview.hideButtons()
+        self.overview.scene().sigMouseClicked.connect(self.overview_clicked)
+        self.overview.setToolTip("クリックした時刻へ移動します。青い帯はドラッグでも移動できます。")
         self.overview.setLabel("bottom", "全体 (s)")
         self.overview.getAxis("left").setWidth(self.plot.getAxis("left").width())
         self.view_band = pg.LinearRegionItem((0, 10), brush=pg.mkBrush(122, 162, 255, 50))
@@ -4253,7 +4255,7 @@ class ViewerPage(QWidget):
         self.auto_y()
         self.seq_view.setHtml("<span style='color:#8b9a92'>赤い帯 = バースト、黄色の点 = 信号のピーク。"
                               "一覧のバースト・信号を選ぶと拡大します（右上で切り替え）。"
-                              "上の全体図の青い帯をドラッグすると表示位置が動きます（緑 = バースト）。"
+                              "上の全体図をクリックするとその時刻へ移動します。青い帯のドラッグでも移動できます（緑 = バースト）。"
                               "白い階段線 = 区間ごとのベースライン（Region BL）。"
                               "軸の上でホイール・ドラッグしても拡大・縮小できます。</span>")
 
@@ -4303,6 +4305,22 @@ class ViewerPage(QWidget):
         ov.setXRange(0, n / self.fs, padding=0)
         ov.setYRange(y0, y1)
         ov.setVisible(True)
+
+    def overview_clicked(self, event):
+        """Center the detail view on the clicked time, keeping its zoom level."""
+        if event.button() != Qt.MouseButton.LeftButton or self.mode != "A":
+            return
+        vb = self.overview.getViewBox()
+        if not vb.sceneBoundingRect().contains(event.scenePos()):
+            return
+        raw = getattr(self, "raw", None)
+        if raw is None or not len(raw):
+            return
+        time = vb.mapSceneToView(event.scenePos()).x()
+        lo, hi = self.plot.viewRange()[0]
+        half = (hi - lo) / 2
+        self.x_set(time - half, time + half)
+        event.accept()
 
     def band_moved(self):
         lo, hi = self.view_band.getRegion()
@@ -4473,7 +4491,10 @@ class ViewerPage(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(f"{APP_TITLE} — Total Analysis (Python)")
+        from shared.app_release import window_title
+        self.setWindowTitle(window_title('analyzer', f"{APP_TITLE} — Total Analysis (Python)"))
+        from shared.update_ui import qt_controls
+        qt_controls(self, 'analyzer')
         self.setWindowIcon(qt_theme.window_icon(APP_ICON, ACCENT))
         self.resize(1400, 880)
         root = QWidget()

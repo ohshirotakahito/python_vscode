@@ -25,6 +25,8 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title('Chip Atlas · Quantum Workbench')
+        from shared.app_release import configure_tk
+        configure_tk(self, 'chipdb')
         self.geometry('1440x900')
         self.minsize(1050, 700)
         theme.apply(self, ACCENT)

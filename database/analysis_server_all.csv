@@ -1,0 +1,2030 @@
+﻿????,実験名,サンプル名,ファイル数（T直下）,T/stocked,ANAL解析数,ANAL進捗,ANAL/stocked（退避中）,BNAL@*フォルダ数,TDMS容量,最終取得 UTC,取得状態
+QDserver/backup,AB,AB1,75,?,75,100.0%,?,0,18.250 GB,2026-11-05T05:05:43+00:00,完了
+QTserver/backup,BR,BRA,137,?,137,100.0%,?,302,10.608 GB,2026-11-04T03:53:13+00:00,完了
+QDserver/analysis,BR,BRA,0,?,77,解析用コピー（Tなし）,?,302,3.002 GB,2026-11-04T03:55:00+00:00,完了
+QTserver/backup,BR,BRN,54,?,54,100.0%,?,302,4.237 GB,2026-11-04T03:53:14+00:00,完了
+QDserver/analysis,BR,BRN,0,?,34,解析用コピー（Tなし）,?,0,1.357 GB,2026-11-04T03:55:00+00:00,完了
+QTserver/backup,BR,BRP,80,?,80,100.0%,?,302,6.231 GB,2026-11-04T03:53:16+00:00,完了
+QDserver/analysis,BR,BRP,0,?,80,解析用コピー（Tなし）,?,0,3.155 GB,2026-11-04T03:55:00+00:00,完了
+QTserver/analysis,COVID19,BK111,0,?,142,解析用コピー（Tなし）,?,0,5.572 GB,2026-11-04T03:51:21+00:00,完了
+QTserver/backup,COVID19,BK111,142,?,142,100.0%,?,0,11.035 GB,2026-11-04T03:53:19+00:00,完了
+QTserver/analysis,COVID19,BK171,0,?,203,解析用コピー（Tなし）,?,0,7.932 GB,2026-11-04T03:51:21+00:00,完了
+QTserver/backup,COVID19,BK171,203,?,203,100.0%,?,0,15.707 GB,2026-11-04T03:53:19+00:00,完了
+QTserver/analysis,COVID19,HS231,0,?,40,解析用コピー（Tなし）,?,0,1.625 GB,2026-11-04T03:51:21+00:00,完了
+QTserver/backup,COVID19,HS231,40,?,40,100.0%,?,0,3.164 GB,2026-11-04T03:53:19+00:00,完了
+QTserver/analysis,COVID19,HS237,0,?,178,解析用コピー（Tなし）,?,0,6.983 GB,2026-11-04T03:51:21+00:00,完了
+QTserver/backup,COVID19,HS237,178,?,178,100.0%,?,0,13.831 GB,2026-11-04T03:53:20+00:00,完了
+QTserver/analysis,Chirality_MX,1D_R_L_NDQ,0,?,239,解析用コピー（Tなし）,?,0,9.311 GB,2026-11-04T03:51:14+00:00,完了
+QTserver/analysis,Chirality_MX,1G_L_W_D_TMN,0,?,140,解析用コピー（Tなし）,?,0,5.498 GB,2026-11-04T03:51:14+00:00,完了
+QTserver/analysis,Chirality_MX,1L_R_D_NDQ,0,?,82,解析用コピー（Tなし）,?,0,3.196 GB,2026-11-04T03:51:14+00:00,完了
+QTserver/analysis,Chirality_MX,2D_Y_L_SHF,0,?,279,解析用コピー（Tなし）,?,0,10.838 GB,2026-11-04T03:51:15+00:00,完了
+QTserver/analysis,Chirality_MX,2G_L_T_D_WMN,0,?,130,解析用コピー（Tなし）,?,0,5.149 GB,2026-11-04T03:51:15+00:00,完了
+QTserver/analysis,Chirality_MX,2L_Y_D_SHF,0,?,30,解析用コピー（Tなし）,?,0,1.178 GB,2026-11-04T03:51:15+00:00,完了
+QTserver/analysis,Chirality_MX,3D_F_L_LPV,0,?,217,解析用コピー（Tなし）,?,0,8.436 GB,2026-11-04T03:51:15+00:00,完了
+QTserver/analysis,Chirality_MX,3G_L_M_D_WTN,0,?,50,解析用コピー（Tなし）,?,0,2.005 GB,2026-11-04T03:51:15+00:00,完了
+QTserver/analysis,Chirality_MX,3L_F_D_LPY,0,?,20,解析用コピー（Tなし）,?,0,0.824 GB,2026-11-04T03:51:15+00:00,完了
+QTserver/analysis,Chirality_MX,4D_K_L_ALE,0,?,184,解析用コピー（Tなし）,?,0,7.153 GB,2026-11-04T03:51:15+00:00,完了
+QTserver/analysis,Chirality_MX,4G_L_N_D_WTM,0,?,44,解析用コピー（Tなし）,?,0,1.759 GB,2026-11-04T03:51:15+00:00,完了
+QTserver/analysis,Chirality_MX,4L_K_D_ALE,0,?,32,解析用コピー（Tなし）,?,0,1.256 GB,2026-11-04T03:51:15+00:00,完了
+QTserver/analysis,Chirality_N2,DAla,0,?,81,解析用コピー（Tなし）,?,0,3.157 GB,2026-11-04T03:51:15+00:00,完了
+QTserver/analysis,Chirality_N2,DArg,0,?,16,解析用コピー（Tなし）,?,0,0.639 GB,2026-11-04T03:51:15+00:00,完了
+QTserver/analysis,Chirality_N2,DAsn,0,?,12,解析用コピー（Tなし）,?,0,0.483 GB,2026-11-04T03:51:16+00:00,完了
+QTserver/analysis,Chirality_N2,DAsp,0,?,198,解析用コピー（Tなし）,?,0,7.666 GB,2026-11-04T03:51:16+00:00,完了
+QTserver/analysis,Chirality_N2,DCys,0,?,28,解析用コピー（Tなし）,?,0,1.104 GB,2026-11-04T03:51:16+00:00,完了
+QTserver/analysis,Chirality_N2,DGln,0,?,59,解析用コピー（Tなし）,?,0,2.345 GB,2026-11-04T03:51:16+00:00,完了
+QTserver/analysis,Chirality_N2,DGlu,0,?,49,解析用コピー（Tなし）,?,0,1.927 GB,2026-11-04T03:51:16+00:00,完了
+QTserver/analysis,Chirality_N2,DHis,0,?,10,解析用コピー（Tなし）,?,0,0.425 GB,2026-11-04T03:51:16+00:00,完了
+QTserver/analysis,Chirality_N2,DIle,0,?,84,解析用コピー（Tなし）,?,0,3.287 GB,2026-11-04T03:51:16+00:00,完了
+QTserver/analysis,Chirality_N2,DLeu,0,?,31,解析用コピー（Tなし）,?,0,1.218 GB,2026-11-04T03:51:16+00:00,完了
+QTserver/analysis,Chirality_N2,DLys,0,?,66,解析用コピー（Tなし）,?,0,2.593 GB,2026-11-04T03:51:16+00:00,完了
+QTserver/analysis,Chirality_N2,DMet,0,?,21,解析用コピー（Tなし）,?,0,0.894 GB,2026-11-04T03:51:16+00:00,完了
+QTserver/analysis,Chirality_N2,DPhe,0,?,22,解析用コピー（Tなし）,?,0,0.870 GB,2026-11-04T03:51:16+00:00,完了
+QTserver/analysis,Chirality_N2,DPro,0,?,42,解析用コピー（Tなし）,?,0,1.645 GB,2026-11-04T03:51:16+00:00,完了
+QTserver/analysis,Chirality_N2,DSer,0,?,16,解析用コピー（Tなし）,?,0,0.640 GB,2026-11-04T03:51:16+00:00,完了
+QTserver/analysis,Chirality_N2,DThr,0,?,68,解析用コピー（Tなし）,?,0,2.657 GB,2026-11-04T03:51:17+00:00,完了
+QTserver/analysis,Chirality_N2,DTrp,0,?,56,解析用コピー（Tなし）,?,0,2.243 GB,2026-11-04T03:51:17+00:00,完了
+QTserver/analysis,Chirality_N2,DTyr,0,?,17,解析用コピー（Tなし）,?,0,0.691 GB,2026-11-04T03:51:17+00:00,完了
+QTserver/analysis,Chirality_N2,DVal,0,?,29,解析用コピー（Tなし）,?,0,1.153 GB,2026-11-04T03:51:17+00:00,完了
+QTserver/analysis,Chirality_N2,Gly,0,?,125,解析用コピー（Tなし）,?,0,4.866 GB,2026-11-04T03:51:17+00:00,完了
+QTserver/analysis,Chirality_N2,LAla,0,?,25,解析用コピー（Tなし）,?,0,1.023 GB,2026-11-04T03:51:17+00:00,完了
+QTserver/analysis,Chirality_N2,LArg,0,?,20,解析用コピー（Tなし）,?,0,0.794 GB,2026-11-04T03:51:17+00:00,完了
+QTserver/analysis,Chirality_N2,LAsn,47,?,50,106.4%,?,0,3.802 GB,2026-11-05T05:05:49+00:00,完了
+QTserver/analysis,Chirality_N2,LAsp,0,?,107,解析用コピー（Tなし）,?,0,4.153 GB,2026-11-04T03:51:17+00:00,完了
+QTserver/analysis,Chirality_N2,LCys,0,?,12,解析用コピー（Tなし）,?,0,0.486 GB,2026-11-04T03:51:17+00:00,完了
+QTserver/analysis,Chirality_N2,LGln,0,?,140,解析用コピー（Tなし）,?,0,5.470 GB,2026-11-04T03:51:18+00:00,完了
+QTserver/analysis,Chirality_N2,LGlu,0,?,30,解析用コピー（Tなし）,?,0,1.190 GB,2026-11-04T03:51:18+00:00,完了
+QTserver/analysis,Chirality_N2,LHis,0,?,32,解析用コピー（Tなし）,?,0,1.271 GB,2026-11-04T03:51:18+00:00,完了
+QTserver/analysis,Chirality_N2,LIle,0,?,6,解析用コピー（Tなし）,?,0,0.269 GB,2026-11-04T03:51:18+00:00,完了
+QTserver/analysis,Chirality_N2,LLeu,36,?,40,111.1%,?,0,2.965 GB,2026-11-05T05:05:49+00:00,完了
+QTserver/analysis,Chirality_N2,LLys,0,?,115,解析用コピー（Tなし）,?,0,4.478 GB,2026-11-04T03:51:18+00:00,完了
+QTserver/analysis,Chirality_N2,LMet,0,?,42,解析用コピー（Tなし）,?,0,1.648 GB,2026-11-04T03:51:18+00:00,完了
+QTserver/analysis,Chirality_N2,LPhe,0,?,20,解析用コピー（Tなし）,?,0,0.795 GB,2026-11-04T03:51:18+00:00,完了
+QTserver/analysis,Chirality_N2,LPro,75,?,106,141.3%,?,0,6.925 GB,2026-11-05T05:05:49+00:00,完了
+QTserver/analysis,Chirality_N2,LSer,0,?,188,解析用コピー（Tなし）,?,0,7.313 GB,2026-11-04T03:51:18+00:00,完了
+QTserver/analysis,Chirality_N2,LThr,0,?,56,解析用コピー（Tなし）,?,0,2.191 GB,2026-11-04T03:51:18+00:00,完了
+QTserver/analysis,Chirality_N2,LTrp,0,?,186,解析用コピー（Tなし）,?,0,7.238 GB,2026-11-04T03:51:19+00:00,完了
+QTserver/analysis,Chirality_N2,LTyr,0,?,12,解析用コピー（Tなし）,?,0,0.482 GB,2026-11-04T03:51:19+00:00,完了
+QTserver/analysis,Chirality_N2,LVal,51,?,80,156.9%,?,0,5.112 GB,2026-11-05T05:05:49+00:00,完了
+QTserver/analysis,Chirality_N3,DH,0,?,127,解析用コピー（Tなし）,?,0,5.021 GB,2026-11-04T03:51:19+00:00,完了
+QTserver/analysis,Chirality_N3,LA,0,?,82,解析用コピー（Tなし）,?,0,3.268 GB,2026-11-04T03:51:19+00:00,完了
+QTserver/analysis,Chirality_N3,LH,0,?,152,解析用コピー（Tなし）,?,0,6.001 GB,2026-11-04T03:51:19+00:00,完了
+QTserver/analysis,Chirality_N3,LQ,0,?,218,解析用コピー（Tなし）,?,0,8.542 GB,2026-11-04T03:51:19+00:00,完了
+QTserver/analysis,Chirality_N3,LS,0,?,108,解析用コピー（Tなし）,?,0,4.291 GB,2026-11-04T03:51:19+00:00,完了
+QTserver/analysis,Chirality_N3,MM,0,?,112,解析用コピー（Tなし）,?,0,4.432 GB,2026-11-04T03:51:20+00:00,完了
+QTserver/analysis,Chirality_N3,MML1D5,0,?,277,解析用コピー（Tなし）,?,0,10.775 GB,2026-11-04T03:51:20+00:00,完了
+QTserver/analysis,Chirality_N3,MML2D4,0,?,137,解析用コピー（Tなし）,?,0,5.380 GB,2026-11-04T03:51:20+00:00,完了
+QTserver/analysis,Chirality_N3,MML3D3,0,?,55,解析用コピー（Tなし）,?,0,2.132 GB,2026-11-04T03:51:20+00:00,完了
+QTserver/analysis,Chirality_N3,MML4D2,0,?,83,解析用コピー（Tなし）,?,0,3.280 GB,2026-11-04T03:51:20+00:00,完了
+QTserver/analysis,Chirality_N3,MML5D1,0,?,34,解析用コピー（Tなし）,?,0,1.337 GB,2026-11-04T03:51:20+00:00,完了
+QTserver/analysis,Chirality_N4,RN,0,?,14,解析用コピー（Tなし）,?,0,0.549 GB,2026-11-04T03:51:20+00:00,完了
+QTserver/backup,Chirality_N4,RN,0,?,42,解析用コピー（Tなし）,?,0,1.696 GB,2026-11-04T03:53:17+00:00,完了
+QTserver/analysis,Chirality_N4,RP,0,?,12,解析用コピー（Tなし）,?,0,0.473 GB,2026-11-04T03:51:20+00:00,完了
+QTserver/backup,Chirality_N4,RP,34,?,34,100.0%,?,0,2.685 GB,2026-11-04T03:53:17+00:00,完了
+QTserver/analysis,Chirality_N4,SN,0,?,35,解析用コピー（Tなし）,?,0,1.382 GB,2026-11-04T03:51:20+00:00,完了
+QTserver/backup,Chirality_N4,SN,35,?,35,100.0%,?,0,2.729 GB,2026-11-04T03:53:18+00:00,完了
+QTserver/analysis,Chirality_N4,SP,0,?,62,解析用コピー（Tなし）,?,0,2.465 GB,2026-11-04T03:51:20+00:00,完了
+QTserver/analysis,Chirality_NL,LH-10,0,?,117,解析用コピー（Tなし）,?,0,4.643 GB,2026-11-04T03:51:20+00:00,完了
+QTserver/backup,Chirality_NL,LH-10,117,?,117,100.0%,?,0,9.145 GB,2026-11-04T03:53:18+00:00,完了
+QTserver/analysis,Chirality_NL,LH-11,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:51:21+00:00,完了
+QTserver/analysis,Chirality_NL,LH-12,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:51:21+00:00,完了
+QTserver/analysis,Chirality_NL,LH-3,0,?,60,解析用コピー（Tなし）,?,0,2.393 GB,2026-11-04T03:51:21+00:00,完了
+QTserver/backup,Chirality_NL,LH-3,60,?,60,100.0%,?,0,4.701 GB,2026-11-04T03:53:18+00:00,完了
+QTserver/analysis,Chirality_NL,LH-4,0,?,80,解析用コピー（Tなし）,?,0,3.207 GB,2026-11-04T03:51:21+00:00,完了
+QTserver/backup,Chirality_NL,LH-4,80,?,80,100.0%,?,0,6.285 GB,2026-11-04T03:53:18+00:00,完了
+QTserver/analysis,Chirality_NL,LH-5,0,?,96,解析用コピー（Tなし）,?,0,3.845 GB,2026-11-04T03:51:21+00:00,完了
+QTserver/backup,Chirality_NL,LH-5,96,?,96,100.0%,?,0,7.538 GB,2026-11-04T03:53:18+00:00,完了
+QTserver/analysis,Chirality_NL,LH-6,0,?,94,解析用コピー（Tなし）,?,0,3.760 GB,2026-11-04T03:51:21+00:00,完了
+QTserver/backup,Chirality_NL,LH-6,94,?,94,100.0%,?,0,7.376 GB,2026-11-04T03:53:18+00:00,完了
+QTserver/analysis,Chirality_NL,LH-7,0,?,44,解析用コピー（Tなし）,?,0,1.834 GB,2026-11-04T03:51:21+00:00,完了
+QTserver/backup,Chirality_NL,LH-7,44,?,44,100.0%,?,0,3.527 GB,2026-11-04T03:53:19+00:00,完了
+QTserver/analysis,Chirality_NL,LH-8,0,?,52,解析用コピー（Tなし）,?,0,2.153 GB,2026-11-04T03:51:21+00:00,完了
+QTserver/backup,Chirality_NL,LH-8,52,?,52,100.0%,?,0,4.154 GB,2026-11-04T03:53:19+00:00,完了
+QTserver/analysis,Chirality_NL,LH-9,0,?,126,解析用コピー（Tなし）,?,0,4.865 GB,2026-11-04T03:51:21+00:00,完了
+QTserver/backup,Chirality_NL,LH-9,126,?,126,100.0%,?,0,9.822 GB,2026-11-04T03:53:19+00:00,完了
+QTserver/analysis,Cris,HYD01,89,?,89,100.0%,?,0,6.995 GB,2026-11-04T03:51:22+00:00,完了
+QTserver/analysis,Cris,HYD02,65,?,65,100.0%,?,0,5.150 GB,2026-11-04T03:51:24+00:00,完了
+QTserver/analysis,Cris,HYD03,64,?,64,100.0%,?,0,5.076 GB,2026-11-04T03:51:25+00:00,完了
+QTserver/analysis,Cris,HYD04,194,?,194,100.0%,?,0,15.196 GB,2026-11-04T03:51:27+00:00,完了
+Rackstation/archive,Cris,HYD05,60,?,60,100.0%,?,0,4.777 GB,2026-11-04T03:50:18+00:00,完了
+QTserver/analysis,Cris,HYD05,0,?,60,解析用コピー（Tなし）,?,0,2.469 GB,2026-11-04T03:51:27+00:00,完了
+QTserver/analysis,Cris,HYD06,75,?,75,100.0%,?,0,5.939 GB,2026-11-04T03:51:28+00:00,完了
+QTserver/analysis,Cris,HYD07,67,?,67,100.0%,?,0,5.300 GB,2026-11-04T03:51:29+00:00,完了
+QTserver/analysis,Cris,HYD08,70,?,70,100.0%,?,0,5.514 GB,2026-11-04T03:51:30+00:00,完了
+QTserver/analysis,Cris,HYD09,73,?,73,100.0%,?,0,5.755 GB,2026-11-04T03:51:30+00:00,完了
+Rackstation/archive,Cris,UN1,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:50:18+00:00,完了
+Rackstation/archive,Cris,UN2,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:50:18+00:00,完了
+Rackstation/archive,Cris,UN3,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:50:19+00:00,完了
+Rackstation/archive,Cris,UN4,40,?,40,100.0%,?,0,3.203 GB,2026-11-04T03:50:19+00:00,完了
+Rackstation/archive,Cris,UN5,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:50:19+00:00,完了
+Rackstation/archive,Cris,UN6,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:50:19+00:00,完了
+Rackstation/archive,Cris,UN7,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:50:19+00:00,完了
+Rackstation/archive,Cris,UN8,75,?,75,100.0%,?,0,5.841 GB,2026-11-04T03:50:19+00:00,完了
+Rackstation/archive,Cris,UN9,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:50:19+00:00,完了
+QTserver/analysis,DNA_1mer_2016,dAMP,0,?,223,解析用コピー（Tなし）,?,0,5.571 GB,2026-11-04T03:51:30+00:00,完了
+QTserver/analysis,DNA_1mer_2016,dCMP,0,?,287,解析用コピー（Tなし）,?,0,7.220 GB,2026-11-04T03:51:30+00:00,完了
+QTserver/analysis,DNA_1mer_2016,dGMP,0,?,341,解析用コピー（Tなし）,?,0,8.466 GB,2026-11-04T03:51:31+00:00,完了
+QTserver/analysis,DNA_1mer_2016,dTMP,0,?,334,解析用コピー（Tなし）,?,0,8.368 GB,2026-11-04T03:51:31+00:00,完了
+QTserver/analysis,DNA_1mer_Crest,dAMP,0,?,275,解析用コピー（Tなし）,?,0,6.773 GB,2026-11-04T03:51:31+00:00,完了
+QTserver/analysis,DNA_1mer_Crest,dCMP,0,?,241,解析用コピー（Tなし）,?,0,6.412 GB,2026-11-04T03:51:31+00:00,完了
+QTserver/analysis,DNA_1mer_Crest,dGMP,0,?,223,解析用コピー（Tなし）,?,0,5.572 GB,2026-11-04T03:51:31+00:00,完了
+QTserver/analysis,DNA_1mer_Crest,dTMP,0,?,298,解析用コピー（Tなし）,?,0,7.353 GB,2026-11-04T03:51:31+00:00,完了
+QTserver/analysis,DNA_1mer_Tada,5mC,0,?,59,解析用コピー（Tなし）,?,0,2.335 GB,2026-11-04T03:51:31+00:00,完了
+QTserver/analysis,DNA_1mer_Tada,dAMP,0,?,153,解析用コピー（Tなし）,?,0,3.759 GB,2026-11-04T03:51:31+00:00,完了
+QTserver/analysis,DNA_1mer_Tada,dCMP,0,?,62,解析用コピー（Tなし）,?,0,1.537 GB,2026-11-04T03:51:31+00:00,完了
+QTserver/analysis,DNA_1mer_Tada,dGMP,0,?,126,解析用コピー（Tなし）,?,0,3.191 GB,2026-11-04T03:51:31+00:00,完了
+QTserver/analysis,DNA_1mer_Tada,dTMP,0,?,97,解析用コピー（Tなし）,?,0,2.430 GB,2026-11-04T03:51:32+00:00,完了
+QTserver/analysis,DNA_1mer_Tada,m6A,0,?,3,解析用コピー（Tなし）,?,0,0.117 GB,2026-11-04T03:51:32+00:00,完了
+Rackstation/archive,DNA_2mer,AA,240,?,240,100.0%,?,1,11.615 GB,2026-11-04T03:50:22+00:00,完了
+QTserver/analysis,DNA_2mer,AA,0,?,240,解析用コピー（Tなし）,?,0,5.844 GB,2026-11-04T03:51:32+00:00,完了
+Rackstation/archive,DNA_2mer,AC,368,?,368,100.0%,?,1,17.731 GB,2026-11-04T03:50:24+00:00,完了
+QTserver/analysis,DNA_2mer,AC,0,?,368,解析用コピー（Tなし）,?,0,8.903 GB,2026-11-04T03:51:32+00:00,完了
+Rackstation/archive,DNA_2mer,AG,148,?,148,100.0%,?,0,7.139 GB,2026-11-04T03:50:26+00:00,完了
+QTserver/analysis,DNA_2mer,AG,0,?,148,解析用コピー（Tなし）,?,0,3.590 GB,2026-11-04T03:51:32+00:00,完了
+Rackstation/archive,DNA_2mer,AT,136,?,136,100.0%,?,0,6.516 GB,2026-11-04T03:50:26+00:00,完了
+QTserver/analysis,DNA_2mer,AT,0,?,136,解析用コピー（Tなし）,?,0,3.277 GB,2026-11-04T03:51:32+00:00,完了
+Rackstation/archive,DNA_2mer,CA,445,?,445,100.0%,?,1,21.456 GB,2026-11-04T03:50:28+00:00,完了
+QTserver/analysis,DNA_2mer,CA,0,?,445,解析用コピー（Tなし）,?,0,10.770 GB,2026-11-04T03:51:32+00:00,完了
+Rackstation/archive,DNA_2mer,CC,424,?,424,100.0%,?,0,20.465 GB,2026-11-04T03:50:30+00:00,完了
+QTserver/analysis,DNA_2mer,CC,0,?,424,解析用コピー（Tなし）,?,0,10.269 GB,2026-11-04T03:51:33+00:00,完了
+Rackstation/archive,DNA_2mer,CG,513,?,513,100.0%,?,0,24.686 GB,2026-11-04T03:50:32+00:00,完了
+QTserver/analysis,DNA_2mer,CG,0,?,513,解析用コピー（Tなし）,?,0,12.385 GB,2026-11-04T03:51:33+00:00,完了
+Rackstation/archive,DNA_2mer,CT,142,?,142,100.0%,?,0,6.839 GB,2026-11-04T03:50:33+00:00,完了
+QTserver/analysis,DNA_2mer,CT,0,?,142,解析用コピー（Tなし）,?,0,3.444 GB,2026-11-04T03:51:33+00:00,完了
+Rackstation/archive,DNA_2mer,GA,126,?,126,100.0%,?,0,6.091 GB,2026-11-04T03:50:34+00:00,完了
+QTserver/analysis,DNA_2mer,GA,0,?,126,解析用コピー（Tなし）,?,0,3.067 GB,2026-11-04T03:51:33+00:00,完了
+Rackstation/archive,DNA_2mer,GC,161,?,161,100.0%,?,0,7.781 GB,2026-11-04T03:50:35+00:00,完了
+QTserver/analysis,DNA_2mer,GC,0,?,161,解析用コピー（Tなし）,?,0,3.909 GB,2026-11-04T03:51:33+00:00,完了
+Rackstation/archive,DNA_2mer,GG,138,?,138,100.0%,?,0,6.662 GB,2026-11-04T03:50:35+00:00,完了
+QTserver/analysis,DNA_2mer,GG,0,?,138,解析用コピー（Tなし）,?,0,3.352 GB,2026-11-04T03:51:33+00:00,完了
+Rackstation/archive,DNA_2mer,GT,326,?,326,100.0%,?,0,15.743 GB,2026-11-04T03:50:37+00:00,完了
+QTserver/analysis,DNA_2mer,GT,0,?,326,解析用コピー（Tなし）,?,0,7.905 GB,2026-11-04T03:51:33+00:00,完了
+Rackstation/archive,DNA_2mer,TA,238,?,238,100.0%,?,0,11.490 GB,2026-11-04T03:50:38+00:00,完了
+QTserver/analysis,DNA_2mer,TA,0,?,238,解析用コピー（Tなし）,?,0,5.776 GB,2026-11-04T03:51:33+00:00,完了
+Rackstation/archive,DNA_2mer,TC,340,?,340,100.0%,?,0,16.425 GB,2026-11-04T03:50:39+00:00,完了
+QTserver/analysis,DNA_2mer,TC,0,?,340,解析用コピー（Tなし）,?,0,8.249 GB,2026-11-04T03:51:33+00:00,完了
+Rackstation/archive,DNA_2mer,TG,99,?,99,100.0%,?,0,4.801 GB,2026-11-04T03:50:40+00:00,完了
+QTserver/analysis,DNA_2mer,TG,0,?,99,解析用コピー（Tなし）,?,0,2.421 GB,2026-11-04T03:51:33+00:00,完了
+Rackstation/archive,DNA_2mer,TT,159,?,159,100.0%,?,0,7.694 GB,2026-11-04T03:50:40+00:00,完了
+QTserver/analysis,DNA_2mer,TT,0,?,159,解析用コピー（Tなし）,?,0,3.871 GB,2026-11-04T03:51:33+00:00,完了
+QTserver/analysis,DNA_3mer,AAA,0,?,167,解析用コピー（Tなし）,?,0,4.062 GB,2026-11-04T03:51:33+00:00,完了
+QTserver/analysis,DNA_3mer,AAC,0,?,125,解析用コピー（Tなし）,?,0,3.069 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,AAG,0,?,224,解析用コピー（Tなし）,?,0,5.445 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,AAT,0,?,112,解析用コピー（Tなし）,?,0,2.734 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,ACA,0,?,126,解析用コピー（Tなし）,?,0,3.052 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,ACC,0,?,105,解析用コピー（Tなし）,?,0,2.578 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,ACG,0,?,212,解析用コピー（Tなし）,?,0,5.139 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,ACT,0,?,139,解析用コピー（Tなし）,?,0,3.373 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,AGA,0,?,132,解析用コピー（Tなし）,?,0,3.297 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,AGC,0,?,99,解析用コピー（Tなし）,?,0,2.424 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,AGG,0,?,107,解析用コピー（Tなし）,?,0,2.620 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,AGT,0,?,261,解析用コピー（Tなし）,?,0,6.347 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,ATA,0,?,84,解析用コピー（Tなし）,?,0,2.061 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,ATC,0,?,104,解析用コピー（Tなし）,?,0,2.583 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,ATG,0,?,146,解析用コピー（Tなし）,?,0,3.553 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,ATT,0,?,239,解析用コピー（Tなし）,?,0,5.779 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,CAA,0,?,202,解析用コピー（Tなし）,?,0,4.889 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,CAC,0,?,82,解析用コピー（Tなし）,?,0,2.023 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,CAG,0,?,120,解析用コピー（Tなし）,?,0,2.921 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,CAT,0,?,107,解析用コピー（Tなし）,?,0,2.595 GB,2026-11-04T03:51:34+00:00,完了
+QTserver/analysis,DNA_3mer,CCA,0,?,99,解析用コピー（Tなし）,?,0,2.420 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,CCC,0,?,84,解析用コピー（Tなし）,?,0,2.062 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,CCG,0,?,144,解析用コピー（Tなし）,?,0,3.517 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,CCT,0,?,83,解析用コピー（Tなし）,?,0,2.038 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,CGA,0,?,458,解析用コピー（Tなし）,?,0,11.084 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,CGC,0,?,84,解析用コピー（Tなし）,?,0,2.065 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,CGG,0,?,255,解析用コピー（Tなし）,?,0,6.157 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,CGT,0,?,90,解析用コピー（Tなし）,?,0,2.239 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,CTA,0,?,108,解析用コピー（Tなし）,?,0,2.606 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,CTC,0,?,78,解析用コピー（Tなし）,?,0,1.980 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,CTG,0,?,108,解析用コピー（Tなし）,?,0,2.640 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,CTT,0,?,104,解析用コピー（Tなし）,?,0,2.522 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,GAA,0,?,108,解析用コピー（Tなし）,?,0,2.734 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,GAC,0,?,144,解析用コピー（Tなし）,?,0,3.621 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,GAG,0,?,268,解析用コピー（Tなし）,?,0,6.507 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,GAT,0,?,111,解析用コピー（Tなし）,?,0,2.735 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,GCA,0,?,143,解析用コピー（Tなし）,?,0,3.523 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,GCC,0,?,121,解析用コピー（Tなし）,?,0,2.983 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,GCG,0,?,95,解析用コピー（Tなし）,?,0,2.312 GB,2026-11-04T03:51:35+00:00,完了
+QTserver/analysis,DNA_3mer,GCT,0,?,121,解析用コピー（Tなし）,?,0,3.056 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,GGA,0,?,120,解析用コピー（Tなし）,?,0,2.923 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,GGC,0,?,118,解析用コピー（Tなし）,?,0,2.900 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,GGG,0,?,242,解析用コピー（Tなし）,?,0,5.875 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,GGT,0,?,117,解析用コピー（Tなし）,?,0,2.892 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,GTA,0,?,135,解析用コピー（Tなし）,?,0,3.296 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,GTC,0,?,106,解析用コピー（Tなし）,?,0,2.625 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,GTG,0,?,108,解析用コピー（Tなし）,?,0,2.638 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,GTT,0,?,278,解析用コピー（Tなし）,?,0,6.748 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,TAA,0,?,114,解析用コピー（Tなし）,?,0,2.793 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,TAC,0,?,114,解析用コピー（Tなし）,?,0,2.811 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,TAG,0,?,120,解析用コピー（Tなし）,?,0,2.917 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,TAT,0,?,259,解析用コピー（Tなし）,?,0,6.274 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,TCA,0,?,109,解析用コピー（Tなし）,?,0,2.664 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,TCC,0,?,90,解析用コピー（Tなし）,?,0,2.193 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,TCG,0,?,108,解析用コピー（Tなし）,?,0,2.636 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,TCT,0,?,120,解析用コピー（Tなし）,?,0,2.927 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,TGA,0,?,124,解析用コピー（Tなし）,?,0,3.029 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,TGC,0,?,255,解析用コピー（Tなし）,?,0,6.190 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,TGG,0,?,98,解析用コピー（Tなし）,?,0,2.417 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,TGT,0,?,114,解析用コピー（Tなし）,?,0,2.769 GB,2026-11-04T03:51:36+00:00,完了
+QTserver/analysis,DNA_3mer,TTA,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:51:37+00:00,完了
+QTserver/analysis,DNA_3mer,TTC,0,?,104,解析用コピー（Tなし）,?,0,2.537 GB,2026-11-04T03:51:37+00:00,完了
+QTserver/analysis,DNA_3mer,TTG,0,?,134,解析用コピー（Tなし）,?,0,3.256 GB,2026-11-04T03:51:37+00:00,完了
+QTserver/analysis,DNA_3mer,TTT,0,?,137,解析用コピー（Tなし）,?,0,3.306 GB,2026-11-04T03:51:37+00:00,完了
+Rackstation/archive,Daicel,5013S04,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:50:19+00:00,完了
+Rackstation/archive,Daicel,6013x12T2,22,?,22,100.0%,?,0,1.397 GB,2026-11-04T03:50:19+00:00,完了
+Rackstation/archive,Daicel,6015S04,16,?,16,100.0%,?,0,1.305 GB,2026-11-04T03:50:20+00:00,完了
+Rackstation/archive,Daicel,8007F04,1,?,1,100.0%,?,0,0.086 GB,2026-11-04T03:50:20+00:00,完了
+Rackstation/archive,Daicel,Z50,24,?,24,100.0%,?,0,1.908 GB,2026-11-04T03:50:20+00:00,完了
+Rackstation/archive,Daicel,Z55,24,?,24,100.0%,?,0,1.953 GB,2026-11-04T03:50:20+00:00,完了
+Rackstation/archive,Daicel,Z84,18,?,18,100.0%,?,0,1.446 GB,2026-11-04T03:50:20+00:00,完了
+Rackstation/archive,Daicel,Z91,33,?,33,100.0%,?,0,2.612 GB,2026-11-04T03:50:21+00:00,完了
+Rackstation/analysis,Daicel2,01,50,?,50,100.0%,?,0,3.931 GB,2026-11-04T03:43:42+00:00,完了
+Rackstation/analysis,Daicel2,06,59,?,59,100.0%,?,0,4.655 GB,2026-11-04T03:43:44+00:00,完了
+Rackstation/analysis,Daicel2,09,16,?,16,100.0%,?,0,1.290 GB,2026-11-04T03:43:44+00:00,完了
+Rackstation/analysis,Daicel2,11,34,?,34,100.0%,?,0,2.691 GB,2026-11-04T03:43:45+00:00,完了
+Rackstation/analysis,Daicel2,BBB,52,?,52,100.0%,?,0,4.025 GB,2026-11-04T03:43:47+00:00,完了
+Rackstation/analysis,Daicel2,BBN,8,?,8,100.0%,?,0,0.632 GB,2026-11-04T03:43:48+00:00,完了
+Rackstation/analysis,Daicel2,BNB,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:43:48+00:00,完了
+Rackstation/analysis,Daicel2,BNN,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:43:48+00:00,完了
+Rackstation/analysis,Daicel2,NBB,40,?,40,100.0%,?,0,3.145 GB,2026-11-04T03:43:48+00:00,完了
+Rackstation/analysis,Daicel2,NBN,4,?,4,100.0%,?,0,0.328 GB,2026-11-04T03:43:49+00:00,完了
+Rackstation/analysis,Daicel2,NNB,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:43:49+00:00,完了
+Rackstation/analysis,Daicel2,NNN,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:43:49+00:00,完了
+Rackstation/analysis,Daicel3,BBBDO,291,?,291,100.0%,?,0,22.557 GB,2026-11-04T03:43:50+00:00,完了
+Rackstation/analysis,Daicel3,BBNDO,231,?,231,100.0%,?,0,17.913 GB,2026-11-04T03:43:51+00:00,完了
+Rackstation/analysis,Daicel3,BNBDO,121,?,121,100.0%,?,0,9.401 GB,2026-11-04T03:43:52+00:00,完了
+Rackstation/analysis,Daicel3,BNNDO,163,?,163,100.0%,?,0,12.778 GB,2026-11-04T03:43:53+00:00,完了
+Rackstation/analysis,Daicel3,NBBDO,216,?,216,100.0%,?,0,16.803 GB,2026-11-04T03:43:54+00:00,完了
+Rackstation/analysis,Daicel3,NBNDO,316,?,316,100.0%,?,0,24.482 GB,2026-11-04T03:43:55+00:00,完了
+Rackstation/analysis,Daicel3,NNBDO,201,?,201,100.0%,?,0,15.700 GB,2026-11-04T03:43:56+00:00,完了
+Rackstation/analysis,Daicel3,NNNDO,170,?,170,100.0%,?,0,13.326 GB,2026-11-04T03:44:00+00:00,完了
+Rackstation/analysis,Daicel_BN,BBB,79,?,79,100.0%,?,0,6.125 GB,2026-11-04T03:44:01+00:00,完了
+Rackstation/analysis,Daicel_BN,BN5050_11,53,?,53,100.0%,?,0,4.179 GB,2026-11-04T03:44:02+00:00,完了
+Rackstation/analysis,Daicel_BN,BN5060_48,47,?,47,100.0%,?,0,3.697 GB,2026-11-04T03:44:03+00:00,完了
+Rackstation/analysis,Daicel_BN,BN8020_11,105,?,105,100.0%,?,0,8.199 GB,2026-11-04T03:44:04+00:00,完了
+Rackstation/analysis,Daicel_BN,BTF_blank,4,?,4,100.0%,?,0,0.316 GB,2026-11-04T03:44:04+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA01,59,?,59,100.0%,?,0,2.867 GB,2026-11-04T03:44:06+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA02,78,?,78,100.0%,?,0,3.868 GB,2026-11-04T03:44:09+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA03,24,?,24,100.0%,?,0,1.136 GB,2026-11-04T03:44:09+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA04,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:09+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA05,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:09+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA06,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:09+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA07,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA08,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA09,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA10,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA11,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA12,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA13,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA14,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA15,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA16,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA17,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA18,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA19,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA20,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA21,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA22,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA23,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA24,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA25,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA26,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA27,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:10+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA28,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:11+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA29,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:11+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA30,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:11+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA31,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:11+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA32,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:11+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA33,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:11+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA34,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:11+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA35,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:11+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA36,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:11+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA37,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:11+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA38,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:11+00:00,完了
+Rackstation/analysis,Fujishima,HFSPAA39,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:44:11+00:00,完了
+Rackstation/analysis,Glycon,0p001uM,20,?,20,100.0%,?,0,1.545 GB,2026-11-04T03:44:11+00:00,完了
+Rackstation/analysis,Glycon,0p01uM,34,?,34,100.0%,?,0,2.659 GB,2026-11-04T03:44:12+00:00,完了
+Rackstation/analysis,Glycon,0p1uM,54,?,54,100.0%,?,0,4.204 GB,2026-11-04T03:44:12+00:00,完了
+Rackstation/analysis,Glycon,1uM,72,?,72,100.0%,?,0,5.598 GB,2026-11-04T03:44:13+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB01,0,?,332,解析用コピー（Tなし）,?,0,10.018 GB,2026-11-04T03:55:01+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB01,332,?,332,100.0%,?,15,19.845 GB,2026-11-04T03:57:12+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB02,0,?,161,解析用コピー（Tなし）,?,0,4.911 GB,2026-11-04T03:55:01+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB02,161,?,161,100.0%,?,15,9.633 GB,2026-11-04T03:57:14+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB03,0,?,212,解析用コピー（Tなし）,?,0,6.800 GB,2026-11-04T03:55:01+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB03,212,?,212,100.0%,?,15,13.482 GB,2026-11-04T03:57:15+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB04,0,?,192,解析用コピー（Tなし）,?,0,6.079 GB,2026-11-04T03:55:01+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB04,192,?,192,100.0%,?,15,11.994 GB,2026-11-04T03:57:16+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB05,0,?,217,解析用コピー（Tなし）,?,0,7.019 GB,2026-11-04T03:55:01+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB05,217,?,217,100.0%,?,15,13.897 GB,2026-11-04T03:57:17+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB06,0,?,215,解析用コピー（Tなし）,?,0,7.005 GB,2026-11-04T03:55:01+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB06,215,?,215,100.0%,?,15,13.808 GB,2026-11-04T03:57:18+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB07,0,?,231,解析用コピー（Tなし）,?,0,7.559 GB,2026-11-04T03:55:02+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB07,231,?,231,100.0%,?,15,14.978 GB,2026-11-04T03:57:19+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB08,0,?,102,解析用コピー（Tなし）,?,0,3.515 GB,2026-11-04T03:55:02+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB08,102,?,102,100.0%,?,15,6.921 GB,2026-11-04T03:57:20+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB09,0,?,108,解析用コピー（Tなし）,?,0,3.851 GB,2026-11-04T03:55:02+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB09,108,?,108,100.0%,?,15,7.599 GB,2026-11-04T03:57:20+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB10,0,?,153,解析用コピー（Tなし）,?,0,4.599 GB,2026-11-04T03:55:02+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB10,153,?,153,100.0%,?,15,9.017 GB,2026-11-04T03:57:21+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB11,0,?,130,解析用コピー（Tなし）,?,0,3.836 GB,2026-11-04T03:55:02+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB11,130,?,130,100.0%,?,15,7.541 GB,2026-11-04T03:57:22+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB12,0,?,121,解析用コピー（Tなし）,?,0,4.332 GB,2026-11-04T03:55:02+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB12,121,?,121,100.0%,?,15,8.541 GB,2026-11-04T03:57:23+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB13,0,?,85,解析用コピー（Tなし）,?,0,3.043 GB,2026-11-04T03:55:02+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB13,85,?,85,100.0%,?,15,5.952 GB,2026-11-04T03:57:23+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB14,0,?,151,解析用コピー（Tなし）,?,0,5.375 GB,2026-11-04T03:55:02+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB14,151,?,151,100.0%,?,15,10.589 GB,2026-11-04T03:57:24+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB15,0,?,102,解析用コピー（Tなし）,?,0,4.005 GB,2026-11-04T03:55:02+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB15,102,?,102,100.0%,?,0,7.925 GB,2026-11-04T03:57:25+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB16,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:55:02+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB16,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:57:25+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB17,0,?,172,解析用コピー（Tなし）,?,0,6.738 GB,2026-11-04T03:55:02+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB17,172,?,172,100.0%,?,0,13.355 GB,2026-11-04T03:57:25+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB18,0,?,132,解析用コピー（Tなし）,?,0,4.048 GB,2026-11-04T03:55:02+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB18,132,?,132,100.0%,?,15,7.901 GB,2026-11-04T03:57:26+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB19,0,?,96,解析用コピー（Tなし）,?,0,3.752 GB,2026-11-04T03:55:02+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB19,96,?,96,100.0%,?,0,7.442 GB,2026-11-04T03:57:27+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB20,0,?,191,解析用コピー（Tなし）,?,0,5.981 GB,2026-11-04T03:55:02+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB20,191,?,191,100.0%,?,15,11.845 GB,2026-11-04T03:57:27+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB21,0,?,240,解析用コピー（Tなし）,?,0,7.607 GB,2026-11-04T03:55:03+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB21,240,?,240,100.0%,?,15,15.063 GB,2026-11-04T03:57:29+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB22,0,?,197,解析用コピー（Tなし）,?,0,7.070 GB,2026-11-04T03:55:03+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB22,197,?,197,100.0%,?,15,13.990 GB,2026-11-04T03:57:30+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB23,0,?,239,解析用コピー（Tなし）,?,0,7.871 GB,2026-11-04T03:55:03+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB23,239,?,239,100.0%,?,15,15.596 GB,2026-11-04T03:57:31+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB24,0,?,122,解析用コピー（Tなし）,?,0,4.778 GB,2026-11-04T03:55:03+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB24,122,?,122,100.0%,?,0,9.472 GB,2026-11-04T03:57:31+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB25,0,?,36,解析用コピー（Tなし）,?,0,1.468 GB,2026-11-04T03:55:03+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB25,36,?,36,100.0%,?,0,2.853 GB,2026-11-04T03:57:32+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB26,0,?,212,解析用コピー（Tなし）,?,0,6.940 GB,2026-11-04T03:55:03+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB26,212,?,212,100.0%,?,15,13.742 GB,2026-11-04T03:57:33+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB27,0,?,135,解析用コピー（Tなし）,?,0,5.302 GB,2026-11-04T03:55:04+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB27,135,?,135,100.0%,?,0,10.474 GB,2026-11-04T03:57:33+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB28,0,?,410,解析用コピー（Tなし）,?,0,12.716 GB,2026-11-04T03:55:04+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB28,410,?,410,100.0%,?,15,25.235 GB,2026-11-04T03:57:35+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB29,0,?,140,解析用コピー（Tなし）,?,0,5.173 GB,2026-11-04T03:55:04+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB29,140,?,140,100.0%,?,15,10.214 GB,2026-11-04T03:57:35+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB30,0,?,63,解析用コピー（Tなし）,?,0,2.509 GB,2026-11-04T03:55:04+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB30,63,?,63,100.0%,?,0,4.933 GB,2026-11-04T03:57:36+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB31,0,?,196,解析用コピー（Tなし）,?,0,5.931 GB,2026-11-04T03:55:04+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB31,196,?,196,100.0%,?,15,11.744 GB,2026-11-04T03:57:37+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB32,0,?,279,解析用コピー（Tなし）,?,0,9.128 GB,2026-11-04T03:55:04+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB32,279,?,279,100.0%,?,15,18.166 GB,2026-11-04T03:57:38+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB33,0,?,199,解析用コピー（Tなし）,?,0,5.478 GB,2026-11-04T03:55:04+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB33,199,?,199,100.0%,?,15,10.844 GB,2026-11-04T03:57:39+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB34,0,?,18,解析用コピー（Tなし）,?,0,0.446 GB,2026-11-04T03:55:04+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB34,18,?,18,100.0%,?,15,0.880 GB,2026-11-04T03:57:39+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB35,0,?,525,解析用コピー（Tなし）,?,0,18.614 GB,2026-11-04T03:55:05+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB35,525,?,525,100.0%,?,15,37.048 GB,2026-11-04T03:57:41+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB36,0,?,153,解析用コピー（Tなし）,?,0,4.297 GB,2026-11-04T03:55:05+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB36,153,?,153,100.0%,?,15,8.484 GB,2026-11-04T03:57:42+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB37,0,?,26,解析用コピー（Tなし）,?,0,1.086 GB,2026-11-04T03:55:05+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB37,26,?,26,100.0%,?,0,2.086 GB,2026-11-04T03:57:42+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB38,0,?,59,解析用コピー（Tなし）,?,0,1.952 GB,2026-11-04T03:55:05+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB38,59,?,59,100.0%,?,15,3.797 GB,2026-11-04T03:57:43+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB39,0,?,115,解析用コピー（Tなし）,?,0,2.819 GB,2026-11-04T03:55:05+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB39,115,?,115,100.0%,?,15,5.588 GB,2026-11-04T03:57:43+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB40,0,?,199,解析用コピー（Tなし）,?,0,7.778 GB,2026-11-04T03:55:05+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB40,199,?,199,100.0%,?,0,15.434 GB,2026-11-04T03:57:44+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB41,0,?,278,解析用コピー（Tなし）,?,0,10.487 GB,2026-11-04T03:55:05+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB41,278,?,278,100.0%,?,15,20.823 GB,2026-11-04T03:57:46+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB42,0,?,380,解析用コピー（Tなし）,?,0,14.509 GB,2026-11-04T03:55:05+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB42,380,?,380,100.0%,?,15,28.864 GB,2026-11-04T03:57:47+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB43,0,?,346,解析用コピー（Tなし）,?,0,11.728 GB,2026-11-04T03:55:05+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB43,346,?,346,100.0%,?,15,23.311 GB,2026-11-04T03:57:48+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB44,0,?,25,解析用コピー（Tなし）,?,0,0.958 GB,2026-11-04T03:55:06+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB44,25,?,25,100.0%,?,0,1.905 GB,2026-11-04T03:57:48+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB45,0,?,494,解析用コピー（Tなし）,?,0,16.995 GB,2026-11-04T03:55:06+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB45,494,?,494,100.0%,?,15,33.826 GB,2026-11-04T03:57:51+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB46,0,?,129,解析用コピー（Tなし）,?,0,5.057 GB,2026-11-04T03:55:06+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB46,129,?,129,100.0%,?,0,10.021 GB,2026-11-04T03:57:52+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB47,0,?,111,解析用コピー（Tなし）,?,0,3.936 GB,2026-11-04T03:55:06+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB47,111,?,111,100.0%,?,15,7.760 GB,2026-11-04T03:57:52+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB48,0,?,345,解析用コピー（Tなし）,?,0,11.715 GB,2026-11-04T03:55:06+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB48,345,?,345,100.0%,?,15,23.260 GB,2026-11-04T03:57:54+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB49,0,?,60,解析用コピー（Tなし）,?,0,1.877 GB,2026-11-04T03:55:06+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB49,60,?,60,100.0%,?,0,3.696 GB,2026-11-04T03:57:54+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB50,0,?,105,解析用コピー（Tなし）,?,0,4.134 GB,2026-11-04T03:55:06+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB50,105,?,105,100.0%,?,0,8.174 GB,2026-11-04T03:57:54+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB51,0,?,111,解析用コピー（Tなし）,?,0,4.103 GB,2026-11-04T03:55:07+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB51,111,?,111,100.0%,?,15,8.086 GB,2026-11-04T03:57:55+00:00,完了
+QDserver/analysis,Gynecologic Cancer,BB52,0,?,160,解析用コピー（Tなし）,?,0,4.551 GB,2026-11-04T03:55:07+00:00,完了
+QDserver/backup,Gynecologic Cancer,BB52,160,?,160,100.0%,?,15,8.979 GB,2026-11-04T03:57:56+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT01,0,?,10,解析用コピー（Tなし）,?,0,0.433 GB,2026-11-04T03:55:07+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT01,10,?,10,100.0%,?,0,0.817 GB,2026-11-04T03:57:56+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT02,0,?,14,解析用コピー（Tなし）,?,0,0.638 GB,2026-11-04T03:55:07+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT02,14,?,14,100.0%,?,0,1.176 GB,2026-11-04T03:57:56+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT03,0,?,131,解析用コピー（Tなし）,?,0,5.106 GB,2026-11-04T03:55:07+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT03,131,?,131,100.0%,?,0,10.113 GB,2026-11-04T03:57:57+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT04,0,?,76,解析用コピー（Tなし）,?,0,3.023 GB,2026-11-04T03:55:07+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT04,76,?,76,100.0%,?,0,5.945 GB,2026-11-04T03:57:57+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT05,0,?,51,解析用コピー（Tなし）,?,0,2.057 GB,2026-11-04T03:55:07+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT05,51,?,51,100.0%,?,0,4.017 GB,2026-11-04T03:57:58+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT06,0,?,128,解析用コピー（Tなし）,?,0,5.001 GB,2026-11-04T03:55:07+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT06,128,?,128,100.0%,?,0,9.917 GB,2026-11-04T03:57:59+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT07,0,?,228,解析用コピー（Tなし）,?,0,8.887 GB,2026-11-04T03:55:07+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT07,228,?,228,100.0%,?,0,17.648 GB,2026-11-04T03:58:00+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT08,0,?,22,解析用コピー（Tなし）,?,0,0.892 GB,2026-11-04T03:55:07+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT08,22,?,22,100.0%,?,0,1.737 GB,2026-11-04T03:58:00+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT09,0,?,68,解析用コピー（Tなし）,?,0,2.700 GB,2026-11-04T03:55:07+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT09,68,?,68,100.0%,?,0,5.313 GB,2026-11-04T03:58:01+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT10,0,?,40,解析用コピー（Tなし）,?,0,1.640 GB,2026-11-04T03:55:07+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT10,40,?,40,100.0%,?,0,3.179 GB,2026-11-04T03:58:01+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT11,0,?,50,解析用コピー（Tなし）,?,0,2.054 GB,2026-11-04T03:55:07+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT11,50,?,50,100.0%,?,0,3.978 GB,2026-11-04T03:58:01+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT12,0,?,161,解析用コピー（Tなし）,?,0,6.296 GB,2026-11-04T03:55:07+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT12,161,?,161,100.0%,?,0,12.490 GB,2026-11-04T03:58:02+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT13,0,?,269,解析用コピー（Tなし）,?,0,10.427 GB,2026-11-04T03:55:07+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT13,269,?,269,100.0%,?,0,20.745 GB,2026-11-04T03:58:03+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT14,0,?,49,解析用コピー（Tなし）,?,0,1.978 GB,2026-11-04T03:55:08+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT14,62,?,62,100.0%,?,0,4.942 GB,2026-11-04T03:58:03+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT15,0,?,98,解析用コピー（Tなし）,?,0,3.860 GB,2026-11-04T03:55:08+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT15,98,?,98,100.0%,?,0,7.604 GB,2026-11-04T03:58:04+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT16,0,?,69,解析用コピー（Tなし）,?,0,2.769 GB,2026-11-04T03:55:08+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT16,69,?,69,100.0%,?,0,5.422 GB,2026-11-04T03:58:04+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT17,0,?,20,解析用コピー（Tなし）,?,0,0.842 GB,2026-11-04T03:55:08+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT17,20,?,20,100.0%,?,0,1.611 GB,2026-11-04T03:58:05+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT18,0,?,18,解析用コピー（Tなし）,?,0,0.817 GB,2026-11-04T03:55:08+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT18,18,?,18,100.0%,?,0,1.509 GB,2026-11-04T03:58:05+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT19,0,?,48,解析用コピー（Tなし）,?,0,1.917 GB,2026-11-04T03:55:08+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT19,48,?,48,100.0%,?,0,3.764 GB,2026-11-04T03:58:05+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT20,0,?,93,解析用コピー（Tなし）,?,0,3.661 GB,2026-11-04T03:55:08+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT20,93,?,93,100.0%,?,0,7.238 GB,2026-11-04T03:58:06+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT21,0,?,72,解析用コピー（Tなし）,?,0,2.869 GB,2026-11-04T03:55:08+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT21,72,?,72,100.0%,?,0,5.639 GB,2026-11-04T03:58:06+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT22,0,?,224,解析用コピー（Tなし）,?,0,8.733 GB,2026-11-04T03:55:08+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT22,224,?,224,100.0%,?,0,17.345 GB,2026-11-04T03:58:07+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT23,0,?,161,解析用コピー（Tなし）,?,0,6.289 GB,2026-11-04T03:55:08+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT23,161,?,161,100.0%,?,0,12.483 GB,2026-11-04T03:58:08+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT24,0,?,92,解析用コピー（Tなし）,?,0,3.637 GB,2026-11-04T03:55:08+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT24,92,?,92,100.0%,?,0,7.177 GB,2026-11-04T03:58:08+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT25,0,?,118,解析用コピー（Tなし）,?,0,4.642 GB,2026-11-04T03:55:08+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT25,118,?,118,100.0%,?,0,9.176 GB,2026-11-04T03:58:09+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT26,0,?,320,解析用コピー（Tなし）,?,0,12.408 GB,2026-11-04T03:55:09+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT26,320,?,320,100.0%,?,0,24.686 GB,2026-11-04T03:58:10+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT27,0,?,133,解析用コピー（Tなし）,?,0,5.193 GB,2026-11-04T03:55:09+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT27,133,?,133,100.0%,?,0,10.286 GB,2026-11-04T03:58:10+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT28,0,?,54,解析用コピー（Tなし）,?,0,2.164 GB,2026-11-04T03:55:09+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT28,54,?,54,100.0%,?,0,4.241 GB,2026-11-04T03:58:11+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT29,0,?,78,解析用コピー（Tなし）,?,0,3.096 GB,2026-11-04T03:55:09+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT29,78,?,78,100.0%,?,0,6.097 GB,2026-11-04T03:58:11+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT30,0,?,20,解析用コピー（Tなし）,?,0,0.842 GB,2026-11-04T03:55:09+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT30,20,?,20,100.0%,?,0,1.611 GB,2026-11-04T03:58:11+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT31,0,?,17,解析用コピー（Tなし）,?,0,0.751 GB,2026-11-04T03:55:09+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT31,17,?,17,100.0%,?,0,1.405 GB,2026-11-04T03:58:11+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT32,0,?,67,解析用コピー（Tなし）,?,0,2.650 GB,2026-11-04T03:55:09+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT32,67,?,67,100.0%,?,0,5.227 GB,2026-11-04T03:58:11+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT33,0,?,40,解析用コピー（Tなし）,?,0,1.631 GB,2026-11-04T03:55:09+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT33,40,?,40,100.0%,?,0,3.170 GB,2026-11-04T03:58:12+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT34,0,?,141,解析用コピー（Tなし）,?,0,5.543 GB,2026-11-04T03:55:09+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT34,141,?,141,100.0%,?,0,10.968 GB,2026-11-04T03:58:12+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT35,0,?,22,解析用コピー（Tなし）,?,0,0.911 GB,2026-11-04T03:55:09+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT36,0,?,286,解析用コピー（Tなし）,?,0,11.142 GB,2026-11-04T03:55:09+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT36,286,?,286,100.0%,?,0,22.146 GB,2026-11-04T03:58:13+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT37,0,?,235,解析用コピー（Tなし）,?,0,9.184 GB,2026-11-04T03:55:10+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT37,235,?,235,100.0%,?,0,18.225 GB,2026-11-04T03:58:14+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT38,0,?,180,解析用コピー（Tなし）,?,0,7.034 GB,2026-11-04T03:55:10+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT38,180,?,180,100.0%,?,0,13.959 GB,2026-11-04T03:58:15+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT39,0,?,375,解析用コピー（Tなし）,?,0,14.589 GB,2026-11-04T03:55:10+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT39,375,?,375,100.0%,?,0,29.016 GB,2026-11-04T03:58:16+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT40,0,?,243,解析用コピー（Tなし）,?,0,9.485 GB,2026-11-04T03:55:10+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT40,243,?,243,100.0%,?,0,18.834 GB,2026-11-04T03:58:16+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT41,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:55:10+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT42,0,?,155,解析用コピー（Tなし）,?,0,6.085 GB,2026-11-04T03:55:10+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT42,155,?,155,100.0%,?,0,12.048 GB,2026-11-04T03:58:17+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT43,0,?,268,解析用コピー（Tなし）,?,0,10.427 GB,2026-11-04T03:55:11+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT43,268,?,268,100.0%,?,0,20.755 GB,2026-11-04T03:58:18+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT44,0,?,138,解析用コピー（Tなし）,?,0,5.423 GB,2026-11-04T03:55:11+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT44,138,?,138,100.0%,?,0,10.732 GB,2026-11-04T03:58:18+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT45,0,?,208,解析用コピー（Tなし）,?,0,8.141 GB,2026-11-04T03:55:11+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT45,208,?,208,100.0%,?,0,16.134 GB,2026-11-04T03:58:19+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT46,0,?,36,解析用コピー（Tなし）,?,0,1.424 GB,2026-11-04T03:55:11+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT46,36,?,36,100.0%,?,0,2.776 GB,2026-11-04T03:58:19+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT47,0,?,49,解析用コピー（Tなし）,?,0,1.948 GB,2026-11-04T03:55:11+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT47,49,?,49,100.0%,?,0,3.833 GB,2026-11-04T03:58:20+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT48,0,?,121,解析用コピー（Tなし）,?,0,4.750 GB,2026-11-04T03:55:11+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT48,121,?,121,100.0%,?,0,9.405 GB,2026-11-04T03:58:20+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT49,0,?,335,解析用コピー（Tなし）,?,0,13.006 GB,2026-11-04T03:55:11+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT49,335,?,335,100.0%,?,0,25.894 GB,2026-11-04T03:58:21+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT50,0,?,282,解析用コピー（Tなし）,?,0,10.938 GB,2026-11-04T03:55:11+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT50,282,?,282,100.0%,?,0,21.787 GB,2026-11-04T03:58:22+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT51,0,?,159,解析用コピー（Tなし）,?,0,6.206 GB,2026-11-04T03:55:11+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT51,159,?,159,100.0%,?,0,12.323 GB,2026-11-04T03:58:22+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT52,0,?,286,解析用コピー（Tなし）,?,0,11.127 GB,2026-11-04T03:55:12+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT52,286,?,286,100.0%,?,0,22.130 GB,2026-11-04T03:58:23+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT53,0,?,152,解析用コピー（Tなし）,?,0,5.957 GB,2026-11-04T03:55:12+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT53,152,?,152,100.0%,?,0,11.805 GB,2026-11-04T03:58:23+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT54,0,?,56,解析用コピー（Tなし）,?,0,2.219 GB,2026-11-04T03:55:12+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT54,56,?,56,100.0%,?,0,4.355 GB,2026-11-04T03:58:24+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT55,0,?,320,解析用コピー（Tなし）,?,0,12.460 GB,2026-11-04T03:55:12+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT55,320,?,320,100.0%,?,0,24.772 GB,2026-11-04T03:58:24+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT56,0,?,83,解析用コピー（Tなし）,?,0,3.279 GB,2026-11-04T03:55:12+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT56,83,?,83,100.0%,?,0,6.472 GB,2026-11-04T03:58:25+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT57,0,?,410,解析用コピー（Tなし）,?,0,15.914 GB,2026-11-04T03:55:13+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT57,410,?,410,100.0%,?,0,31.688 GB,2026-11-04T03:58:26+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT58,0,?,267,解析用コピー（Tなし）,?,0,10.407 GB,2026-11-04T03:55:13+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT58,267,?,267,100.0%,?,0,20.679 GB,2026-11-04T03:58:27+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT59,0,?,235,解析用コピー（Tなし）,?,0,9.187 GB,2026-11-04T03:55:13+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT59,235,?,235,100.0%,?,0,18.228 GB,2026-11-04T03:58:28+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT60,0,?,370,解析用コピー（Tなし）,?,0,14.376 GB,2026-11-04T03:55:13+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT60,370,?,370,100.0%,?,0,28.611 GB,2026-11-04T03:58:29+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT61,0,?,54,解析用コピー（Tなし）,?,0,2.151 GB,2026-11-04T03:55:13+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT61,54,?,54,100.0%,?,0,4.228 GB,2026-11-04T03:58:29+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT62,0,?,141,解析用コピー（Tなし）,?,0,5.529 GB,2026-11-04T03:55:13+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT62,141,?,141,100.0%,?,0,10.953 GB,2026-11-04T03:58:29+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT63,0,?,265,解析用コピー（Tなし）,?,0,10.303 GB,2026-11-04T03:55:13+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT63,265,?,265,100.0%,?,0,20.464 GB,2026-11-04T03:58:30+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT64,0,?,290,解析用コピー（Tなし）,?,0,11.303 GB,2026-11-04T03:55:13+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT64,290,?,290,100.0%,?,0,22.410 GB,2026-11-04T03:58:31+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT65,0,?,92,解析用コピー（Tなし）,?,0,3.671 GB,2026-11-04T03:55:14+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT65,92,?,92,100.0%,?,0,7.210 GB,2026-11-04T03:58:32+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT66,0,?,130,解析用コピー（Tなし）,?,0,5.106 GB,2026-11-04T03:55:14+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT66,130,?,130,100.0%,?,0,10.107 GB,2026-11-04T03:58:32+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT67,0,?,131,解析用コピー（Tなし）,?,0,5.140 GB,2026-11-04T03:55:14+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT67,131,?,131,100.0%,?,0,10.180 GB,2026-11-04T03:58:32+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT68,0,?,105,解析用コピー（Tなし）,?,0,4.134 GB,2026-11-04T03:55:14+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT68,105,?,105,100.0%,?,0,8.174 GB,2026-11-04T03:58:33+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT69,0,?,91,解析用コピー（Tなし）,?,0,3.593 GB,2026-11-04T03:55:14+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT69,91,?,91,100.0%,?,0,7.094 GB,2026-11-04T03:58:33+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT70,0,?,52,解析用コピー（Tなし）,?,0,2.075 GB,2026-11-04T03:55:14+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT70,52,?,52,100.0%,?,0,4.075 GB,2026-11-04T03:58:34+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT71,0,?,64,解析用コピー（Tなし）,?,0,2.556 GB,2026-11-04T03:55:14+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT71,64,?,64,100.0%,?,0,5.018 GB,2026-11-04T03:58:34+00:00,完了
+QDserver/analysis,Gynecologic Cancer,GT72,0,?,40,解析用コピー（Tなし）,?,0,1.618 GB,2026-11-04T03:55:14+00:00,完了
+QDserver/backup,Gynecologic Cancer,GT72,40,?,40,100.0%,?,0,3.157 GB,2026-11-04T03:58:34+00:00,完了
+QDserver/analysis,Gynecologic Cancer,NU01,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:55:14+00:00,完了
+QDserver/analysis,Gynecologic Cancer,NU19,0,?,48,解析用コピー（Tなし）,?,0,1.917 GB,2026-11-04T03:55:14+00:00,完了
+QDserver/analysis,Gynecologic Cancer,NU23,0,?,161,解析用コピー（Tなし）,?,0,6.289 GB,2026-11-04T03:55:14+00:00,完了
+QDserver/analysis,Gynecologic Cancer,NU33,0,?,40,解析用コピー（Tなし）,?,0,1.631 GB,2026-11-04T03:55:14+00:00,完了
+QDserver/analysis,Gynecologic Cancer,NU53,0,?,152,解析用コピー（Tなし）,?,0,5.957 GB,2026-11-04T03:55:15+00:00,完了
+QDserver/analysis,Gynecologic Cancer,NU55,0,?,320,解析用コピー（Tなし）,?,0,12.460 GB,2026-11-04T03:55:15+00:00,完了
+QDserver/analysis,Gynecologic Cancer,NU59,0,?,235,解析用コピー（Tなし）,?,0,9.187 GB,2026-11-04T03:55:15+00:00,完了
+QDserver/analysis,Gynecologic Cancer,NU62,0,?,141,解析用コピー（Tなし）,?,0,5.529 GB,2026-11-04T03:55:15+00:00,完了
+QDserver/analysis,Gynecologic Cancer,NU66,0,?,130,解析用コピー（Tなし）,?,0,5.106 GB,2026-11-04T03:55:15+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PC47,0,?,49,解析用コピー（Tなし）,?,0,1.948 GB,2026-11-04T03:55:15+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PC48,0,?,121,解析用コピー（Tなし）,?,0,4.750 GB,2026-11-04T03:55:15+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PC49,0,?,335,解析用コピー（Tなし）,?,0,13.006 GB,2026-11-04T03:55:15+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PC51,0,?,157,解析用コピー（Tなし）,?,0,6.128 GB,2026-11-04T03:55:16+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PC52,0,?,286,解析用コピー（Tなし）,?,0,11.127 GB,2026-11-04T03:55:16+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PC54,0,?,56,解析用コピー（Tなし）,?,0,2.219 GB,2026-11-04T03:55:16+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PC69,0,?,91,解析用コピー（Tなし）,?,0,3.593 GB,2026-11-04T03:55:16+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PU05,0,?,51,解析用コピー（Tなし）,?,0,2.057 GB,2026-11-04T03:55:16+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PU06,0,?,120,解析用コピー（Tなし）,?,0,4.692 GB,2026-11-04T03:55:16+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PU13,0,?,269,解析用コピー（Tなし）,?,0,10.427 GB,2026-11-04T03:55:16+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PU15,0,?,97,解析用コピー（Tなし）,?,0,3.819 GB,2026-11-04T03:55:16+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PU22,0,?,223,解析用コピー（Tなし）,?,0,8.695 GB,2026-11-04T03:55:16+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PU26,0,?,320,解析用コピー（Tなし）,?,0,12.408 GB,2026-11-04T03:55:16+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PU29,0,?,78,解析用コピー（Tなし）,?,0,3.096 GB,2026-11-04T03:55:16+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PU31,0,?,17,解析用コピー（Tなし）,?,0,0.751 GB,2026-11-04T03:55:16+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PU37,0,?,235,解析用コピー（Tなし）,?,0,9.184 GB,2026-11-04T03:55:16+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PU39,0,?,375,解析用コピー（Tなし）,?,0,14.589 GB,2026-11-04T03:55:17+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PU43,0,?,268,解析用コピー（Tなし）,?,0,10.445 GB,2026-11-04T03:55:17+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PU57,0,?,410,解析用コピー（Tなし）,?,0,15.914 GB,2026-11-04T03:55:17+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PU60,0,?,370,解析用コピー（Tなし）,?,0,14.376 GB,2026-11-04T03:55:17+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PU63,0,?,265,解析用コピー（Tなし）,?,0,10.303 GB,2026-11-04T03:55:17+00:00,完了
+QDserver/analysis,Gynecologic Cancer,PU65,0,?,92,解析用コピー（Tなし）,?,0,3.671 GB,2026-11-04T03:55:17+00:00,完了
+QTserver/analysis,Hashimoto_mono,ATP,0,?,151,解析用コピー（Tなし）,?,0,5.881 GB,2026-11-04T03:51:37+00:00,完了
+QTserver/backup,Hashimoto_mono,ATP,261,?,261,100.0%,?,0,20.175 GB,2026-11-04T03:53:20+00:00,完了
+QTserver/analysis,Hashimoto_mono,CTP,0,?,34,解析用コピー（Tなし）,?,0,1.319 GB,2026-11-04T03:51:37+00:00,完了
+QTserver/backup,Hashimoto_mono,CTP,166,?,166,100.0%,?,0,12.842 GB,2026-11-04T03:53:22+00:00,完了
+QTserver/analysis,Hashimoto_mono,FUTP,0,?,129,解析用コピー（Tなし）,?,0,5.017 GB,2026-11-04T03:51:37+00:00,完了
+QTserver/backup,Hashimoto_mono,FUTP,129,?,129,100.0%,?,0,9.942 GB,2026-11-04T03:53:22+00:00,完了
+QTserver/analysis,Hashimoto_mono,GTP,0,?,77,解析用コピー（Tなし）,?,0,2.977 GB,2026-11-04T03:51:37+00:00,完了
+QTserver/backup,Hashimoto_mono,GTP,161,?,161,100.0%,?,0,12.452 GB,2026-11-04T03:53:23+00:00,完了
+QTserver/analysis,Hashimoto_mono,UTP,0,?,70,解析用コピー（Tなし）,?,0,2.780 GB,2026-11-04T03:51:37+00:00,完了
+QTserver/backup,Hashimoto_mono,UTP,70,?,70,100.0%,?,0,5.473 GB,2026-11-04T03:53:24+00:00,完了
+QTserver/analysis,Hashimoto_poly,P125F000,288,?,288,100.0%,?,2,22.258 GB,2026-11-04T03:51:38+00:00,完了
+QTserver/backup,Hashimoto_poly,P125F000,288,?,288,100.0%,?,0,22.258 GB,2026-11-04T03:53:25+00:00,完了
+QDserver/analysis,Hashimoto_poly,P125F000,0,?,220,解析用コピー（Tなし）,?,0,8.591 GB,2026-11-04T03:55:18+00:00,完了
+QTserver/analysis,Hashimoto_poly,P125F025,321,?,321,100.0%,?,72,24.907 GB,2026-11-04T03:51:45+00:00,完了
+QTserver/backup,Hashimoto_poly,P125F025,321,?,321,100.0%,?,0,24.800 GB,2026-11-04T03:53:25+00:00,完了
+QDserver/analysis,Hashimoto_poly,P125F025,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:55:18+00:00,完了
+QTserver/analysis,Hashimoto_poly,P125F050,134,?,134,100.0%,?,72,10.504 GB,2026-11-04T03:51:47+00:00,完了
+QTserver/backup,Hashimoto_poly,P125F050,134,?,134,100.0%,?,0,10.439 GB,2026-11-04T03:53:25+00:00,完了
+QDserver/analysis,Hashimoto_poly,P125F050,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:55:18+00:00,完了
+QTserver/analysis,Hashimoto_poly,P125F075,222,?,222,100.0%,?,72,17.220 GB,2026-11-04T03:51:50+00:00,完了
+QTserver/backup,Hashimoto_poly,P125F075,222,?,222,100.0%,?,0,17.147 GB,2026-11-04T03:53:26+00:00,完了
+QDserver/analysis,Hashimoto_poly,P125F075,0,?,222,解析用コピー（Tなし）,?,0,8.679 GB,2026-11-04T03:55:19+00:00,完了
+QTserver/analysis,Hashimoto_poly,P125F100,89,?,89,100.0%,?,2,7.011 GB,2026-11-04T03:51:51+00:00,完了
+QTserver/backup,Hashimoto_poly,P125F100,89,?,89,100.0%,?,0,7.012 GB,2026-11-05T05:05:49+00:00,完了
+QDserver/analysis,Hashimoto_poly,P125F100,0,?,66,解析用コピー（Tなし）,?,0,2.662 GB,2026-11-04T03:55:19+00:00,完了
+QTserver/backup,Hitachi,10T,60,?,60,100.0%,?,0,4.896 GB,2026-11-04T03:53:26+00:00,完了
+QTserver/backup,Hitachi,11T,244,?,244,100.0%,?,0,19.023 GB,2026-11-04T03:53:26+00:00,完了
+QTserver/backup,Hitachi,12T,118,?,118,100.0%,?,0,9.394 GB,2026-11-04T03:53:27+00:00,完了
+QTserver/backup,Hitachi,7C,100,?,100,100.0%,?,0,7.963 GB,2026-11-04T03:53:27+00:00,完了
+QTserver/backup,Hitachi,8C,296,?,296,100.0%,?,0,23.193 GB,2026-11-04T03:53:27+00:00,完了
+QTserver/backup,Hitachi,9C,100,?,100,100.0%,?,0,7.969 GB,2026-11-04T03:53:27+00:00,完了
+QTserver/backup,Hitachi,CE17Me,205,?,205,100.0%,?,1,16.271 GB,2026-11-04T03:53:28+00:00,完了
+QTserver/backup,Hitachi,KE16NoMe,375,?,375,100.0%,?,1,29.389 GB,2026-11-04T03:53:28+00:00,完了
+QTserver/backup,Hitachi,Me1Lysine,328,?,328,100.0%,?,0,25.991 GB,2026-11-04T03:53:29+00:00,完了
+QTserver/backup,Hitachi,Me2Lysine,160,?,160,100.0%,?,0,12.695 GB,2026-11-04T03:53:29+00:00,完了
+QTserver/backup,Hitachi,Me3Lysine,213,?,213,100.0%,?,0,16.833 GB,2026-11-04T03:53:30+00:00,完了
+QTserver/backup,Hitachi,Mettl21,144,?,144,100.0%,?,0,6.965 GB,2026-11-04T03:53:30+00:00,完了
+Rackstation/analysis,Hitachi_N,KO1,84,?,84,100.0%,?,3,6.578 GB,2026-11-04T03:44:13+00:00,完了
+Rackstation/analysis,Hitachi_N,KO2,56,?,56,100.0%,?,3,4.393 GB,2026-11-04T03:44:14+00:00,完了
+Rackstation/analysis,Hitachi_N,KO3,35,?,35,100.0%,?,3,2.797 GB,2026-11-04T03:44:14+00:00,完了
+Rackstation/analysis,Hitachi_N,W1,30,?,30,100.0%,?,3,2.413 GB,2026-11-04T03:44:15+00:00,完了
+Rackstation/analysis,Hitachi_N,W2,69,?,69,100.0%,?,3,5.425 GB,2026-11-04T03:44:30+00:00,完了
+Rackstation/analysis,Hitachi_N,W3,38,?,38,100.0%,?,3,3.066 GB,2026-11-04T03:44:33+00:00,完了
+Rackstation/archive,Ile,Ile_100nM,10,?,10,100.0%,?,0,0.850 GB,2026-11-04T03:50:41+00:00,完了
+Rackstation/archive,Ile,Ile_10nM,9,?,9,100.0%,?,0,0.766 GB,2026-11-04T03:50:41+00:00,完了
+Rackstation/archive,Ile,Ile_1nM,71,?,71,100.0%,?,0,5.582 GB,2026-11-04T03:50:42+00:00,完了
+Rackstation/archive,Ile,Ile_300nM,30,?,30,100.0%,?,0,2.412 GB,2026-11-04T03:50:42+00:00,完了
+Rackstation/archive,Ile,Ile_30nM,8,?,8,100.0%,?,0,0.703 GB,2026-11-04T03:50:43+00:00,完了
+Rackstation/archive,Ile,Ile_3nM,24,?,24,100.0%,?,0,1.930 GB,2026-11-04T03:50:43+00:00,完了
+QDserver/analysis,KATO,KTRNA01,0,?,175,解析用コピー（Tなし）,?,77,6.838 GB,2026-11-04T03:55:19+00:00,完了
+QDserver/backup,KATO,KTRNA01,176,?,176,100.0%,?,76,13.639 GB,2026-11-04T03:58:35+00:00,完了
+QDserver/analysis,KATO,KTRNA02,0,?,69,解析用コピー（Tなし）,?,76,2.715 GB,2026-11-04T03:55:20+00:00,完了
+QDserver/backup,KATO,KTRNA02,69,?,69,100.0%,?,76,5.341 GB,2026-11-04T03:58:36+00:00,完了
+QDserver/analysis,KATO,KTRNA03,0,?,13,解析用コピー（Tなし）,?,65,0.565 GB,2026-11-04T03:55:20+00:00,完了
+QDserver/backup,KATO,KTRNA03,13,?,13,100.0%,?,65,1.065 GB,2026-11-04T03:58:36+00:00,完了
+QDserver/analysis,KATO,KTRNA04,0,?,84,解析用コピー（Tなし）,?,76,3.329 GB,2026-11-04T03:55:20+00:00,完了
+QDserver/backup,KATO,KTRNA04,84,?,84,100.0%,?,76,6.557 GB,2026-11-04T03:58:37+00:00,完了
+QDserver/analysis,KATO,KTRNA05,0,?,84,解析用コピー（Tなし）,?,76,3.311 GB,2026-11-04T03:55:21+00:00,完了
+QDserver/backup,KATO,KTRNA05,84,?,84,100.0%,?,76,6.538 GB,2026-11-04T03:58:38+00:00,完了
+QDserver/analysis,KATO,KTRNA06,0,?,84,解析用コピー（Tなし）,?,76,3.343 GB,2026-11-04T03:55:21+00:00,完了
+QDserver/backup,KATO,KTRNA06,84,?,84,100.0%,?,76,6.568 GB,2026-11-04T03:58:38+00:00,完了
+QDserver/analysis,KATO,KTRNA07,0,?,46,解析用コピー（Tなし）,?,76,1.847 GB,2026-11-04T03:55:21+00:00,完了
+QDserver/backup,KATO,KTRNA07,46,?,46,100.0%,?,76,3.615 GB,2026-11-04T03:58:38+00:00,完了
+QDserver/analysis,KATO,KTRNA08,0,?,92,解析用コピー（Tなし）,?,76,3.638 GB,2026-11-04T03:55:22+00:00,完了
+QDserver/backup,KATO,KTRNA08,92,?,92,100.0%,?,76,7.175 GB,2026-11-04T03:58:39+00:00,完了
+QDserver/analysis,KATO,KTRNA09,0,?,115,解析用コピー（Tなし）,?,76,4.513 GB,2026-11-04T03:55:22+00:00,完了
+QDserver/backup,KATO,KTRNA09,119,?,119,100.0%,?,76,9.245 GB,2026-11-04T03:58:40+00:00,完了
+QDserver/analysis,KATO,KTRNA10,0,?,124,解析用コピー（Tなし）,?,76,4.867 GB,2026-11-04T03:55:22+00:00,完了
+QDserver/backup,KATO,KTRNA10,124,?,124,100.0%,?,76,9.634 GB,2026-11-04T03:58:41+00:00,完了
+QDserver/analysis,KATO,KTRNA11,0,?,78,解析用コピー（Tなし）,?,69,3.140 GB,2026-11-04T03:55:22+00:00,完了
+QDserver/backup,KATO,KTRNA11,78,?,78,100.0%,?,69,6.135 GB,2026-11-04T03:58:41+00:00,完了
+QDserver/analysis,KATO,KTRNA12,0,?,139,解析用コピー（Tなし）,?,69,5.436 GB,2026-11-04T03:55:23+00:00,完了
+QDserver/backup,KATO,KTRNA12,151,?,151,100.0%,?,69,11.706 GB,2026-11-04T03:58:42+00:00,完了
+QDserver/analysis,KATO,KTRNA13,0,?,139,解析用コピー（Tなし）,?,69,5.444 GB,2026-11-04T03:55:23+00:00,完了
+QDserver/backup,KATO,KTRNA13,140,?,140,100.0%,?,69,10.874 GB,2026-11-04T03:58:44+00:00,完了
+QDserver/analysis,KATO,KTRNA14,0,?,30,解析用コピー（Tなし）,?,69,1.163 GB,2026-11-04T03:55:24+00:00,完了
+QDserver/backup,KATO,KTRNA14,89,?,89,100.0%,?,69,6.935 GB,2026-11-05T05:05:45+00:00,完了
+QDserver/analysis,KATO,KTRNA15,0,?,78,解析用コピー（Tなし）,?,69,3.148 GB,2026-11-04T03:55:24+00:00,完了
+QDserver/backup,KATO,KTRNA15,78,?,78,100.0%,?,69,6.148 GB,2026-11-04T03:58:45+00:00,完了
+QDserver/analysis,KATO,KTRNA16,0,?,299,解析用コピー（Tなし）,?,69,11.686 GB,2026-11-04T03:55:24+00:00,完了
+QDserver/backup,KATO,KTRNA16,299,?,299,100.0%,?,69,23.176 GB,2026-11-04T03:58:47+00:00,完了
+QDserver/analysis,KATO,KTRNA17,0,?,167,解析用コピー（Tなし）,?,69,6.555 GB,2026-11-04T03:55:25+00:00,完了
+QDserver/backup,KATO,KTRNA17,167,?,167,100.0%,?,69,12.976 GB,2026-11-04T03:58:48+00:00,完了
+QDserver/analysis,KATO,KTRNA18,0,?,64,解析用コピー（Tなし）,?,58,2.539 GB,2026-11-04T03:55:25+00:00,完了
+QDserver/backup,KATO,KTRNA18,64,?,64,100.0%,?,58,4.998 GB,2026-11-04T03:58:48+00:00,完了
+QDserver/analysis,KATO,KTRNA19,0,?,88,解析用コピー（Tなし）,?,58,3.476 GB,2026-11-04T03:55:25+00:00,完了
+QDserver/backup,KATO,KTRNA19,88,?,88,100.0%,?,58,6.858 GB,2026-11-04T03:58:49+00:00,完了
+QDserver/analysis,KATO,KTRNA20,0,?,55,解析用コピー（Tなし）,?,58,2.211 GB,2026-11-04T03:55:26+00:00,完了
+QDserver/backup,KATO,KTRNA20,55,?,55,100.0%,?,58,4.323 GB,2026-11-04T03:58:49+00:00,完了
+Rackstation/archive,K_Conc,K2E-10,6,?,6,100.0%,?,0,0.473 GB,2026-11-04T03:50:53+00:00,完了
+Rackstation/archive,K_Conc,K4E-9,6,?,6,100.0%,?,0,0.469 GB,2026-11-04T03:50:53+00:00,完了
+Rackstation/archive,K_Conc,K6E-6,6,?,6,100.0%,?,0,0.482 GB,2026-11-04T03:50:53+00:00,完了
+Rackstation/archive,K_Conc,KBlank,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:50:53+00:00,完了
+Rackstation/analysis,Kiyotani,0237,44,?,44,100.0%,?,20,3.652 GB,2026-11-04T03:44:33+00:00,完了
+Rackstation/analysis,Kiyotani,0272,44,?,44,100.0%,?,18,3.501 GB,2026-11-04T03:44:34+00:00,完了
+QTserver/analysis,Kiyotani,0272,0,?,未作成,対象なし,?,18,0.000 GB,2026-11-04T03:51:51+00:00,完了
+Rackstation/analysis,Kiyotani,0380,30,?,30,100.0%,?,19,2.437 GB,2026-11-04T03:44:34+00:00,完了
+QTserver/analysis,Kiyotani,0380,0,?,未作成,対象なし,?,19,0.000 GB,2026-11-04T03:51:51+00:00,完了
+Rackstation/analysis,Kiyotani,116,56,?,56,100.0%,?,0,4.387 GB,2026-11-04T03:44:34+00:00,完了
+QTserver/analysis,Kiyotani,116,0,?,20,解析用コピー（Tなし）,?,27,0.796 GB,2026-11-04T03:51:52+00:00,完了
+Rackstation/analysis,Kiyotani,244,100,?,100,100.0%,?,0,7.798 GB,2026-11-04T03:44:37+00:00,完了
+Rackstation/analysis,Kiyotani,245,20,?,20,100.0%,?,0,1.609 GB,2026-11-04T03:44:37+00:00,完了
+Rackstation/analysis,Kiyotani,247,50,?,50,100.0%,?,0,3.993 GB,2026-11-04T03:44:38+00:00,完了
+Rackstation/analysis,Kiyotani,248,50,?,50,100.0%,?,0,3.946 GB,2026-11-04T03:44:40+00:00,完了
+QDserver/analysis,Kiyotani,IP1,0,?,430,解析用コピー（Tなし）,?,38,16.685 GB,2026-11-04T03:55:27+00:00,完了
+Rackstation/analysis,Kiyotani,IP12365875,82,?,82,100.0%,?,36,6.384 GB,2026-11-04T03:44:41+00:00,完了
+QDserver/analysis,Kiyotani,IP2,50,?,50,100.0%,?,0,3.962 GB,2026-11-05T05:05:43+00:00,完了
+Rackstation/analysis,Kiyotani,IPSKG1,156,?,156,100.0%,?,0,12.088 GB,2026-11-04T03:44:41+00:00,完了
+Rackstation/analysis,Kiyotani,ou001,32,?,32,100.0%,?,11,2.485 GB,2026-11-04T03:44:42+00:00,完了
+Rackstation/analysis,Kiyotani_EpPhos,0380,0,?,30,解析用コピー（Tなし）,?,10,1.283 GB,2026-11-04T03:44:42+00:00,完了
+Rackstation/analysis,Kiyotani_EpPhos,116,0,?,20,解析用コピー（Tなし）,?,12,0.796 GB,2026-11-04T03:44:42+00:00,完了
+Rackstation/analysis,Kiyotani_HCT116,Si1_2,78,?,78,100.0%,?,0,6.120 GB,2026-11-04T03:44:43+00:00,完了
+Rackstation/analysis,Kiyotani_HCT116,Si2,21,?,21,100.0%,?,0,1.694 GB,2026-11-04T03:44:44+00:00,完了
+Rackstation/analysis,Kiyotani_HCT116,Si3,46,?,46,100.0%,?,0,3.753 GB,2026-11-04T03:44:44+00:00,完了
+Rackstation/analysis,Kiyotani_HCT116,Si4,78,?,78,100.0%,?,0,6.134 GB,2026-11-04T03:44:45+00:00,完了
+Rackstation/analysis,Kiyotani_HCT116,Si5,42,?,42,100.0%,?,0,3.326 GB,2026-11-04T03:44:46+00:00,完了
+Rackstation/analysis,Kiyotani_HCT116,Si6,30,?,30,100.0%,?,0,2.390 GB,2026-11-04T03:44:46+00:00,完了
+Rackstation/analysis,Kiyotani_HCT116,Si7,22,?,22,100.0%,?,0,1.780 GB,2026-11-04T03:44:47+00:00,完了
+Rackstation/analysis,Kiyotani_HCT116,SiNC,30,?,30,100.0%,?,0,2.385 GB,2026-11-04T03:44:47+00:00,完了
+Rackstation/archive,Kiyotani_P,AGO2_H336Y,33,?,33,100.0%,?,0,2.628 GB,2026-11-04T03:50:43+00:00,完了
+Rackstation/archive,Kiyotani_P,AGO2_H336Y_WT,258,?,258,100.0%,?,0,20.058 GB,2026-11-04T03:50:45+00:00,完了
+Rackstation/archive,Kiyotani_P,CELR2_S2565T,25,?,25,100.0%,?,1,2.031 GB,2026-11-04T03:51:04+00:00,完了
+QTserver/analysis,Kiyotani_P,CELR2_S2565T,0,?,50,解析用コピー（Tなし）,?,0,2.138 GB,2026-11-04T03:51:52+00:00,完了
+QDserver/analysis,Kiyotani_P,CELR2_S2565T,0,?,50,解析用コピー（Tなし）,?,1,2.138 GB,2026-11-04T03:55:27+00:00,完了
+Rackstation/archive,Kiyotani_P,CELR2_S2565T_WT,272,?,272,100.0%,?,1,21.177 GB,2026-11-04T03:50:48+00:00,完了
+QTserver/analysis,Kiyotani_P,CELR2_S2565T_WT,0,?,272,解析用コピー（Tなし）,?,0,10.713 GB,2026-11-04T03:51:52+00:00,完了
+QDserver/analysis,Kiyotani_P,CELR2_S2565T_WT,0,?,272,解析用コピー（Tなし）,?,1,10.713 GB,2026-11-04T03:55:28+00:00,完了
+Rackstation/archive,Kiyotani_P,CHMP7_A324T,104,?,104,100.0%,?,0,8.065 GB,2026-11-04T03:50:48+00:00,完了
+Rackstation/archive,Kiyotani_P,CHMP7_A324T_WT,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:50:48+00:00,完了
+Rackstation/archive,Kiyotani_P,CNGA3_T291I,10,?,10,100.0%,?,0,0.857 GB,2026-11-04T03:50:48+00:00,完了
+Rackstation/archive,Kiyotani_P,CNGA3_T291I_WT,52,?,52,100.0%,?,0,4.081 GB,2026-11-04T03:50:49+00:00,完了
+Rackstation/archive,Kiyotani_P,CNOT7_R186Q,18,?,18,100.0%,?,1,1.442 GB,2026-11-04T03:50:49+00:00,完了
+QTserver/analysis,Kiyotani_P,CNOT7_R186Q,0,?,18,解析用コピー（Tなし）,?,1,0.778 GB,2026-11-04T03:51:52+00:00,完了
+Rackstation/archive,Kiyotani_P,CNOT7_R186Q_WT,80,?,80,100.0%,?,1,6.359 GB,2026-11-04T03:50:50+00:00,完了
+QTserver/analysis,Kiyotani_P,CNOT7_R186Q_WT,0,?,80,解析用コピー（Tなし）,?,0,3.281 GB,2026-11-04T03:51:52+00:00,完了
+Rackstation/archive,Kiyotani_P,CNTN5_V442A,24,?,24,100.0%,?,1,1.947 GB,2026-11-04T03:50:50+00:00,完了
+Rackstation/archive,Kiyotani_P,CNTN5_V442A_WT,77,?,77,100.0%,?,1,6.057 GB,2026-11-04T03:50:51+00:00,完了
+QTserver/analysis,Kiyotani_P,CNTN5_V442A_WT,0,?,77,解析用コピー（Tなし）,?,1,3.094 GB,2026-11-04T03:51:52+00:00,完了
+Rackstation/archive,Kiyotani_P,CSTF3_P565H,26,?,26,100.0%,?,0,2.059 GB,2026-11-04T03:50:51+00:00,完了
+Rackstation/archive,Kiyotani_P,CSTF3_P565H_WT,35,?,35,100.0%,?,0,2.764 GB,2026-11-04T03:50:51+00:00,完了
+Rackstation/archive,Kiyotani_P,FNBP4_K318E,58,?,58,100.0%,?,0,4.526 GB,2026-11-04T03:50:51+00:00,完了
+Rackstation/archive,Kiyotani_P,FNBP4_K318E_WT,10,?,10,100.0%,?,0,0.775 GB,2026-11-04T03:50:51+00:00,完了
+Rackstation/archive,Kiyotani_P,GAPDH_I69T,50,?,50,100.0%,?,0,3.903 GB,2026-11-04T03:50:51+00:00,完了
+Rackstation/archive,Kiyotani_P,GAPDH_I69T_WT,32,?,32,100.0%,?,0,2.543 GB,2026-11-04T03:50:51+00:00,完了
+Rackstation/archive,Kiyotani_P,IQGAP_S1070T,48,?,48,100.0%,?,0,3.755 GB,2026-11-04T03:50:51+00:00,完了
+Rackstation/archive,Kiyotani_P,IQGAP_S1070T_WT,39,?,39,100.0%,?,0,3.084 GB,2026-11-04T03:50:51+00:00,完了
+Rackstation/archive,Kiyotani_P,NAPA_A181V,58,?,58,100.0%,?,0,4.525 GB,2026-11-04T03:50:51+00:00,完了
+Rackstation/archive,Kiyotani_P,NAPA_A181V_WT,70,?,70,100.0%,?,0,5.454 GB,2026-11-04T03:50:52+00:00,完了
+Rackstation/archive,Kiyotani_P,NOTCH2_C41S,133,?,133,100.0%,?,0,10.324 GB,2026-11-04T03:50:52+00:00,完了
+Rackstation/archive,Kiyotani_P,NOTCH2_C41S_WT,108,?,108,100.0%,?,0,8.388 GB,2026-11-04T03:50:52+00:00,完了
+Rackstation/archive,Kiyotani_P,NR1D1_G39D,66,?,66,100.0%,?,0,5.150 GB,2026-11-04T03:50:52+00:00,完了
+Rackstation/archive,Kiyotani_P,NR1D1_G39D_WT,109,?,109,100.0%,?,0,8.478 GB,2026-11-04T03:50:52+00:00,完了
+Rackstation/archive,Kiyotani_P,PDP1_N379D,29,?,29,100.0%,?,0,2.303 GB,2026-11-04T03:50:52+00:00,完了
+Rackstation/archive,Kiyotani_P,PDP1_N379D_WT,182,?,182,100.0%,?,0,14.155 GB,2026-11-04T03:50:52+00:00,完了
+Rackstation/archive,Kiyotani_P,RBBP78_N17D,40,?,40,100.0%,?,0,3.140 GB,2026-11-04T03:50:52+00:00,完了
+Rackstation/archive,Kiyotani_P,RBBP78_N17D_WT,100,?,100,100.0%,?,0,7.769 GB,2026-11-04T03:50:52+00:00,完了
+Rackstation/archive,Kiyotani_P,UQCRB_N88K,64,?,64,100.0%,?,0,4.995 GB,2026-11-04T03:50:52+00:00,完了
+Rackstation/archive,Kiyotani_P,UQCRB_N88K_WT,220,?,220,100.0%,?,0,17.098 GB,2026-11-04T03:50:53+00:00,完了
+QDserver/analysis,Kiyotani_X,IP1,0,?,430,解析用コピー（Tなし）,?,1417,16.685 GB,2026-11-04T03:55:31+00:00,完了
+QTserver/backup,Konno,AOMe,202,?,202,100.0%,?,0,13.961 GB,2026-11-04T03:53:31+00:00,完了
+QTserver/backup,Konno,COMe,111,?,111,100.0%,?,0,6.206 GB,2026-11-04T03:53:31+00:00,完了
+QTserver/backup,Konno,GOMe,184,?,184,100.0%,?,0,10.959 GB,2026-11-04T03:53:31+00:00,完了
+QTserver/backup,Konno,K1Aspc1,280,?,280,100.0%,?,0,21.481 GB,2026-11-04T03:53:32+00:00,完了
+QDserver/analysis,Konno,K1Aspc1,0,?,183,解析用コピー（Tなし）,?,0,7.137 GB,2026-11-04T03:55:32+00:00,完了
+QTserver/backup,Konno,K2Bxpc3,68,?,68,100.0%,?,0,5.327 GB,2026-11-04T03:53:32+00:00,完了
+QDserver/analysis,Konno,K2Bxpc3,0,?,68,解析用コピー（Tなし）,?,0,2.711 GB,2026-11-04T03:55:32+00:00,完了
+QTserver/backup,Konno,K3Miapaca2,159,?,159,100.0%,?,0,12.313 GB,2026-11-04T03:53:32+00:00,完了
+QDserver/analysis,Konno,K3Miapaca2,0,?,69,解析用コピー（Tなし）,?,0,2.694 GB,2026-11-04T03:55:32+00:00,完了
+QTserver/backup,Konno,K4Panc1,127,?,127,100.0%,?,0,9.798 GB,2026-11-04T03:53:33+00:00,完了
+QDserver/analysis,Konno,K4Panc1,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:55:32+00:00,完了
+QTserver/backup,Konno,MixedAAOMe,229,?,229,100.0%,?,0,11.078 GB,2026-11-04T03:53:33+00:00,完了
+QDserver/analysis,Konno,MixedAAOMe,0,?,229,解析用コピー（Tなし）,?,0,5.566 GB,2026-11-04T03:55:36+00:00,完了
+QTserver/backup,Konno,UOMe,222,?,222,100.0%,?,0,15.037 GB,2026-11-04T03:53:35+00:00,完了
+QDserver/analysis,Konno,miR21,407,?,407,100.0%,?,1,19.659 GB,2026-11-04T03:55:35+00:00,完了
+QTserver/backup,Konno,miR21OMe,167,?,167,100.0%,?,1,9.910 GB,2026-11-04T03:53:33+00:00,完了
+QDserver/analysis,Konno,miR21OMe,0,?,52,解析用コピー（Tなし）,?,0,2.055 GB,2026-11-04T03:55:35+00:00,完了
+QTserver/backup,Konno,rAMP,313,?,313,100.0%,?,0,24.181 GB,2026-11-04T03:53:34+00:00,完了
+QTserver/backup,Konno,rCMP,126,?,126,100.0%,?,0,9.863 GB,2026-11-04T03:53:34+00:00,完了
+QTserver/backup,Konno,rGMP,182,?,182,100.0%,?,0,14.119 GB,2026-11-04T03:53:35+00:00,完了
+QTserver/backup,Konno,rUMP,169,?,169,100.0%,?,0,13.140 GB,2026-11-04T03:53:35+00:00,完了
+QDserver/analysis,Konno2,ASPC1,0,?,197,解析用コピー（Tなし）,?,0,7.679 GB,2026-11-04T03:55:36+00:00,完了
+QDserver/backup,Konno2,ASPC1,197,?,197,100.0%,?,0,15.222 GB,2026-11-04T03:58:50+00:00,完了
+QDserver/analysis,Konno2,BXPC3,0,?,319,解析用コピー（Tなし）,?,0,12.396 GB,2026-11-04T03:55:36+00:00,完了
+QDserver/backup,Konno2,BXPC3,319,?,319,100.0%,?,0,24.669 GB,2026-11-04T03:58:51+00:00,完了
+QDserver/analysis,Konno2,HCT116,0,?,438,解析用コピー（Tなし）,?,0,16.887 GB,2026-11-04T03:55:36+00:00,完了
+QDserver/backup,Konno2,HCT116,598,?,598,100.0%,?,0,45.801 GB,2026-11-04T03:58:52+00:00,完了
+QDserver/analysis,Konno2,MIAPAC,0,?,423,解析用コピー（Tなし）,?,0,16.401 GB,2026-11-04T03:55:36+00:00,完了
+QDserver/backup,Konno2,MIAPAC,423,?,423,100.0%,?,0,32.638 GB,2026-11-04T03:58:53+00:00,完了
+QDserver/analysis,Konno2,PANC1,0,?,81,解析用コピー（Tなし）,?,0,3.372 GB,2026-11-04T03:55:36+00:00,完了
+QDserver/backup,Konno2,PANC1,81,?,81,100.0%,?,0,6.488 GB,2026-11-04T03:58:54+00:00,完了
+QDserver/analysis,Konno_OMe,AOMe,0,?,202,解析用コピー（Tなし）,?,0,7.053 GB,2026-11-04T03:55:37+00:00,完了
+QDserver/analysis,Konno_OMe,COMe,0,?,123,解析用コピー（Tなし）,?,0,3.432 GB,2026-11-04T03:55:37+00:00,完了
+QDserver/analysis,Konno_OMe,GOMe,0,?,184,解析用コピー（Tなし）,?,0,5.522 GB,2026-11-04T03:55:37+00:00,完了
+QDserver/analysis,Konno_OMe,UOMe,0,?,234,解析用コピー（Tなし）,?,0,7.857 GB,2026-11-04T03:55:38+00:00,完了
+QDserver/analysis,Konno_OMe,rAMP,0,?,313,解析用コピー（Tなし）,?,0,12.176 GB,2026-11-04T03:55:37+00:00,完了
+QDserver/analysis,Konno_OMe,rCMP,0,?,126,解析用コピー（Tなし）,?,0,5.016 GB,2026-11-04T03:55:37+00:00,完了
+QDserver/analysis,Konno_OMe,rGMP,0,?,182,解析用コピー（Tなし）,?,0,7.117 GB,2026-11-04T03:55:37+00:00,完了
+QDserver/analysis,Konno_OMe,rUMP,0,?,169,解析用コピー（Tなし）,?,0,6.638 GB,2026-11-04T03:55:38+00:00,完了
+QTserver/analysis,Kumamoto,KSN1,0,?,122,解析用コピー（Tなし）,?,4,4.877 GB,2026-11-04T03:51:52+00:00,完了
+QTserver/backup,Kumamoto,KSN1,122,?,122,100.0%,?,185,9.568 GB,2026-11-04T03:53:37+00:00,完了
+QDserver/analysis,Kumamoto,KSN1,0,?,122,解析用コピー（Tなし）,?,4,4.877 GB,2026-11-04T03:55:39+00:00,完了
+QTserver/analysis,Kumamoto,KSN2,0,?,138,解析用コピー（Tなし）,?,4,5.436 GB,2026-11-04T03:51:53+00:00,完了
+QTserver/backup,Kumamoto,KSN2,138,?,138,100.0%,?,185,10.742 GB,2026-11-04T03:53:38+00:00,完了
+QTserver/analysis,Kumamoto,KSN3,0,?,106,解析用コピー（Tなし）,?,4,4.173 GB,2026-11-04T03:51:53+00:00,完了
+QTserver/backup,Kumamoto,KSN3,106,?,106,100.0%,?,185,8.249 GB,2026-11-04T03:53:39+00:00,完了
+QTserver/analysis,Kumamoto,KSN4,0,?,178,解析用コピー（Tなし）,?,4,6.940 GB,2026-11-04T03:51:53+00:00,完了
+QTserver/backup,Kumamoto,KSN4,304,?,304,100.0%,?,185,23.497 GB,2026-11-04T03:53:40+00:00,完了
+QDserver/analysis,Kumamoto,KSN4,0,?,178,解析用コピー（Tなし）,?,4,6.940 GB,2026-11-04T03:55:39+00:00,完了
+QTserver/analysis,Kumamoto,KSN5,0,?,62,解析用コピー（Tなし）,?,165,2.445 GB,2026-11-04T03:51:54+00:00,完了
+QTserver/backup,Kumamoto,KSN5,62,?,62,100.0%,?,57,4.827 GB,2026-11-04T03:53:40+00:00,完了
+QDserver/analysis,Kumamoto,KSN5,0,?,62,解析用コピー（Tなし）,?,4,2.445 GB,2026-11-04T03:55:40+00:00,完了
+QTserver/analysis,Kumamoto,KST1,0,?,98,解析用コピー（Tなし）,?,4,3.856 GB,2026-11-04T03:51:54+00:00,完了
+QTserver/backup,Kumamoto,KST1,98,?,98,100.0%,?,185,7.623 GB,2026-11-04T03:53:41+00:00,完了
+QTserver/analysis,Kumamoto,KST2,0,?,150,解析用コピー（Tなし）,?,4,5.937 GB,2026-11-04T03:51:54+00:00,完了
+QTserver/backup,Kumamoto,KST2,150,?,150,100.0%,?,185,11.700 GB,2026-11-04T03:53:42+00:00,完了
+QTserver/analysis,Kumamoto,KST3,0,?,216,解析用コピー（Tなし）,?,4,8.431 GB,2026-11-04T03:51:54+00:00,完了
+QTserver/backup,Kumamoto,KST3,216,?,216,100.0%,?,185,16.735 GB,2026-11-04T03:53:43+00:00,完了
+Rackstation/analysis,Kumamoto,KST4,0,?,119,解析用コピー（Tなし）,?,4,4.670 GB,2026-11-04T03:44:48+00:00,完了
+QTserver/analysis,Kumamoto,KST4,0,?,119,解析用コピー（Tなし）,?,4,4.670 GB,2026-11-04T03:51:55+00:00,完了
+QTserver/backup,Kumamoto,KST4,119,?,119,100.0%,?,185,9.246 GB,2026-11-04T03:53:44+00:00,完了
+Rackstation/analysis,Kumamoto,KST5,0,?,62,解析用コピー（Tなし）,?,4,2.472 GB,2026-11-04T03:44:48+00:00,完了
+QTserver/analysis,Kumamoto,KST5,0,?,62,解析用コピー（Tなし）,?,165,2.472 GB,2026-11-04T03:51:56+00:00,完了
+QTserver/backup,Kumamoto,KST5,102,?,102,100.0%,?,40,7.953 GB,2026-11-04T03:53:44+00:00,完了
+QTserver/analysis,Kumamoto_N,CA01,0,?,56,解析用コピー（Tなし）,?,189,2.236 GB,2026-11-04T03:51:56+00:00,完了
+QTserver/backup,Kumamoto_N,CA01,56,?,56,100.0%,?,185,4.390 GB,2026-11-04T03:53:45+00:00,完了
+QTserver/analysis,Kumamoto_N,CA02,0,?,153,解析用コピー（Tなし）,?,189,6.002 GB,2026-11-04T03:51:58+00:00,完了
+QTserver/backup,Kumamoto_N,CA02,153,?,153,100.0%,?,186,11.888 GB,2026-11-04T03:53:45+00:00,完了
+QTserver/analysis,Kumamoto_N,CA03,0,?,113,解析用コピー（Tなし）,?,189,4.471 GB,2026-11-04T03:51:59+00:00,完了
+QTserver/backup,Kumamoto_N,CA03,113,?,113,100.0%,?,185,8.819 GB,2026-11-04T03:53:46+00:00,完了
+QTserver/analysis,Kumamoto_N,CA04,0,?,56,解析用コピー（Tなし）,?,189,2.297 GB,2026-11-04T03:52:00+00:00,完了
+QTserver/backup,Kumamoto_N,CA04,56,?,56,100.0%,?,185,4.452 GB,2026-11-04T03:53:47+00:00,完了
+QTserver/analysis,Kumamoto_N,CA05,0,?,7,解析用コピー（Tなし）,?,189,0.319 GB,2026-11-04T03:52:00+00:00,完了
+QTserver/backup,Kumamoto_N,CA05,7,?,7,100.0%,?,185,0.589 GB,2026-11-04T03:53:47+00:00,完了
+QTserver/analysis,Kumamoto_N,CA06,0,?,74,解析用コピー（Tなし）,?,189,2.934 GB,2026-11-04T03:52:00+00:00,完了
+QTserver/backup,Kumamoto_N,CA06,74,?,74,100.0%,?,185,5.781 GB,2026-11-04T03:53:48+00:00,完了
+QTserver/analysis,Kumamoto_N,CA07,0,?,116,解析用コピー（Tなし）,?,189,4.552 GB,2026-11-04T03:52:01+00:00,完了
+QTserver/backup,Kumamoto_N,CA07,116,?,116,100.0%,?,185,9.041 GB,2026-11-04T03:53:49+00:00,完了
+QTserver/analysis,Kumamoto_N,CA08,0,?,68,解析用コピー（Tなし）,?,189,2.729 GB,2026-11-04T03:52:01+00:00,完了
+QTserver/backup,Kumamoto_N,CA08,68,?,68,100.0%,?,185,5.345 GB,2026-11-04T03:53:50+00:00,完了
+QTserver/analysis,Kumamoto_N,CA09,0,?,152,解析用コピー（Tなし）,?,189,5.950 GB,2026-11-04T03:52:02+00:00,完了
+QTserver/backup,Kumamoto_N,CA09,152,?,152,100.0%,?,185,11.798 GB,2026-11-04T03:53:51+00:00,完了
+QTserver/analysis,Kumamoto_N,CA10,0,?,76,解析用コピー（Tなし）,?,189,3.014 GB,2026-11-04T03:52:02+00:00,完了
+QTserver/backup,Kumamoto_N,CA10,76,?,76,100.0%,?,185,5.938 GB,2026-11-04T03:53:51+00:00,完了
+QTserver/analysis,Kumamoto_N,CT01,0,?,24,解析用コピー（Tなし）,?,189,0.944 GB,2026-11-04T03:52:03+00:00,完了
+QTserver/backup,Kumamoto_N,CT01,56,?,56,100.0%,?,185,4.316 GB,2026-11-04T03:53:52+00:00,完了
+QTserver/analysis,Kumamoto_N,CT02,0,?,38,解析用コピー（Tなし）,?,189,1.491 GB,2026-11-04T03:52:04+00:00,完了
+QTserver/backup,Kumamoto_N,CT02,38,?,38,100.0%,?,185,2.916 GB,2026-11-04T03:53:53+00:00,完了
+QTserver/analysis,Kumamoto_N,CT03,0,?,30,解析用コピー（Tなし）,?,189,1.276 GB,2026-11-04T03:52:04+00:00,完了
+QTserver/backup,Kumamoto_N,CT03,30,?,30,100.0%,?,185,2.430 GB,2026-11-04T03:53:53+00:00,完了
+QTserver/analysis,Kumamoto_N,CT04,0,?,85,解析用コピー（Tなし）,?,189,3.360 GB,2026-11-04T03:52:05+00:00,完了
+QTserver/backup,Kumamoto_N,CT04,85,?,85,100.0%,?,185,6.630 GB,2026-11-04T03:53:54+00:00,完了
+QTserver/analysis,Kumamoto_N,CT05,0,?,54,解析用コピー（Tなし）,?,189,2.151 GB,2026-11-04T03:52:05+00:00,完了
+QTserver/backup,Kumamoto_N,CT05,54,?,54,100.0%,?,185,4.228 GB,2026-11-04T03:53:54+00:00,完了
+QTserver/analysis,Kumamoto_N,CT06,0,?,24,解析用コピー（Tなし）,?,189,1.028 GB,2026-11-04T03:52:05+00:00,完了
+QTserver/backup,Kumamoto_N,CT06,24,?,24,100.0%,?,185,1.952 GB,2026-11-04T03:53:55+00:00,完了
+QTserver/analysis,Kumamoto_N,CT07,0,?,134,解析用コピー（Tなし）,?,189,5.298 GB,2026-11-04T03:52:06+00:00,完了
+QTserver/backup,Kumamoto_N,CT07,134,?,134,100.0%,?,185,10.453 GB,2026-11-04T03:53:56+00:00,完了
+QTserver/analysis,Kumamoto_N,CT08,0,?,113,解析用コピー（Tなし）,?,189,4.437 GB,2026-11-04T03:52:06+00:00,完了
+QTserver/backup,Kumamoto_N,CT08,113,?,113,100.0%,?,185,8.785 GB,2026-11-04T03:53:57+00:00,完了
+QTserver/analysis,Kumamoto_N,CT09,0,?,82,解析用コピー（Tなし）,?,189,3.168 GB,2026-11-04T03:52:07+00:00,完了
+QTserver/backup,Kumamoto_N,CT09,82,?,82,100.0%,?,185,6.254 GB,2026-11-04T03:53:57+00:00,完了
+QTserver/analysis,Kumamoto_N,CT10,0,?,194,解析用コピー（Tなし）,?,189,7.566 GB,2026-11-04T03:52:08+00:00,完了
+QTserver/backup,Kumamoto_N,CT10,239,?,239,100.0%,?,185,18.519 GB,2026-11-04T03:53:58+00:00,完了
+QTserver/analysis,Kumamoto_N,CT11,0,?,124,解析用コピー（Tなし）,?,189,4.886 GB,2026-11-04T03:52:09+00:00,完了
+QTserver/backup,Kumamoto_N,CT11,200,?,200,100.0%,?,185,15.534 GB,2026-11-04T03:54:00+00:00,完了
+QTserver/analysis,Kumamoto_N,CT12,0,?,120,解析用コピー（Tなし）,?,189,4.718 GB,2026-11-04T03:52:10+00:00,完了
+QTserver/backup,Kumamoto_N,CT12,120,?,120,100.0%,?,185,9.334 GB,2026-11-04T03:54:02+00:00,完了
+QTserver/analysis,Kumamoto_N,CT13,0,?,44,解析用コピー（Tなし）,?,73,1.748 GB,2026-11-04T03:52:10+00:00,完了
+QTserver/backup,Kumamoto_N,CT13,44,?,44,100.0%,?,69,3.441 GB,2026-11-04T03:54:02+00:00,完了
+QTserver/analysis,Kumamoto_N,CT14,0,?,24,解析用コピー（Tなし）,?,73,0.988 GB,2026-11-04T03:52:11+00:00,完了
+QTserver/backup,Kumamoto_N,CT14,24,?,24,100.0%,?,69,1.912 GB,2026-11-04T03:54:02+00:00,完了
+QTserver/analysis,Kumamoto_N,CT15,0,?,70,解析用コピー（Tなし）,?,73,2.789 GB,2026-11-04T03:52:12+00:00,完了
+QTserver/backup,Kumamoto_N,CT15,70,?,70,100.0%,?,69,5.482 GB,2026-11-04T03:54:03+00:00,完了
+QTserver/analysis,Kumamoto_N,CT16,0,?,62,解析用コピー（Tなし）,?,73,2.471 GB,2026-11-04T03:52:12+00:00,完了
+QTserver/backup,Kumamoto_N,CT16,62,?,62,100.0%,?,69,4.856 GB,2026-11-04T03:54:04+00:00,完了
+QTserver/analysis,Kumamoto_N,CT17,0,?,158,解析用コピー（Tなし）,?,73,6.180 GB,2026-11-04T03:52:13+00:00,完了
+QTserver/backup,Kumamoto_N,CT17,158,?,158,100.0%,?,69,12.259 GB,2026-11-04T03:54:05+00:00,完了
+QTserver/analysis,Kumamoto_N,CT18,0,?,98,解析用コピー（Tなし）,?,189,3.838 GB,2026-11-04T03:52:14+00:00,完了
+QTserver/backup,Kumamoto_N,CT18,98,?,98,100.0%,?,185,7.576 GB,2026-11-04T03:54:05+00:00,完了
+QTserver/analysis,Kumamoto_N,CT19,0,?,86,解析用コピー（Tなし）,?,73,3.394 GB,2026-11-04T03:52:14+00:00,完了
+QTserver/backup,Kumamoto_N,CT19,86,?,86,100.0%,?,69,6.703 GB,2026-11-04T03:54:06+00:00,完了
+QTserver/analysis,Kumamoto_N,CT20,0,?,57,解析用コピー（Tなし）,?,73,2.280 GB,2026-11-04T03:52:15+00:00,完了
+QTserver/backup,Kumamoto_N,CT20,57,?,57,100.0%,?,69,4.473 GB,2026-11-04T03:54:07+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC01,225,?,225,100.0%,?,24,17.395 GB,2026-11-04T03:44:51+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC01,0,?,225,解析用コピー（Tなし）,?,24,8.776 GB,2026-11-04T03:52:15+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC01,225,?,225,100.0%,?,0,17.395 GB,2026-11-04T03:54:08+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC01,0,?,225,解析用コピー（Tなし）,?,0,8.776 GB,2026-11-04T03:55:40+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC02,112,?,112,100.0%,?,20,8.754 GB,2026-11-04T03:44:53+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC02,0,?,112,解析用コピー（Tなし）,?,4,4.445 GB,2026-11-04T03:52:15+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC02,112,?,112,100.0%,?,0,8.754 GB,2026-11-04T03:54:08+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC02,0,?,112,解析用コピー（Tなし）,?,0,4.445 GB,2026-11-04T03:55:41+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC03,70,?,70,100.0%,?,20,5.500 GB,2026-11-04T03:44:54+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC03,0,?,70,解析用コピー（Tなし）,?,4,2.807 GB,2026-11-04T03:52:16+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC03,70,?,70,100.0%,?,0,5.500 GB,2026-11-04T03:54:08+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC03,0,?,70,解析用コピー（Tなし）,?,0,2.807 GB,2026-11-04T03:55:41+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC04,140,?,140,100.0%,?,20,10.921 GB,2026-11-04T03:44:57+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC04,0,?,140,解析用コピー（Tなし）,?,4,5.535 GB,2026-11-04T03:52:16+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC04,140,?,140,100.0%,?,0,10.921 GB,2026-11-04T03:54:09+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC04,0,?,140,解析用コピー（Tなし）,?,0,5.535 GB,2026-11-04T03:55:41+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC05,97,?,97,100.0%,?,20,7.608 GB,2026-11-04T03:44:59+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC05,0,?,97,解析用コピー（Tなし）,?,4,3.876 GB,2026-11-04T03:52:17+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC05,97,?,97,100.0%,?,0,7.608 GB,2026-11-04T03:54:09+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC05,0,?,97,解析用コピー（Tなし）,?,0,3.876 GB,2026-11-04T03:55:41+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC06,119,?,119,100.0%,?,20,9.223 GB,2026-11-04T03:45:01+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC06,0,?,119,解析用コピー（Tなし）,?,4,4.672 GB,2026-11-04T03:52:17+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC06,82,?,82,100.0%,?,0,6.405 GB,2026-11-04T03:54:09+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC06,0,?,119,解析用コピー（Tなし）,?,0,4.672 GB,2026-11-04T03:55:41+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC07,126,?,126,100.0%,?,20,9.828 GB,2026-11-04T03:45:04+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC07,0,?,126,解析用コピー（Tなし）,?,4,4.980 GB,2026-11-04T03:52:17+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC07,126,?,126,100.0%,?,0,9.828 GB,2026-11-04T03:54:09+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC07,0,?,126,解析用コピー（Tなし）,?,0,4.980 GB,2026-11-04T03:55:41+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC08,54,?,54,100.0%,?,20,4.232 GB,2026-11-04T03:45:06+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC08,0,?,95,解析用コピー（Tなし）,?,4,3.794 GB,2026-11-04T03:52:18+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC08,95,?,95,100.0%,?,0,7.449 GB,2026-11-04T03:54:09+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC08,0,?,54,解析用コピー（Tなし）,?,0,2.154 GB,2026-11-04T03:55:41+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC09,23,?,23,100.0%,?,20,1.796 GB,2026-11-04T03:45:06+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC09,0,?,47,解析用コピー（Tなし）,?,4,1.924 GB,2026-11-04T03:52:18+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC09,47,?,47,100.0%,?,0,3.732 GB,2026-11-04T03:54:10+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC09,0,?,23,解析用コピー（Tなし）,?,0,0.911 GB,2026-11-04T03:55:41+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC10,113,?,113,100.0%,?,20,8.788 GB,2026-11-04T03:45:09+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC10,0,?,137,解析用コピー（Tなし）,?,4,5.408 GB,2026-11-04T03:52:19+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC10,137,?,137,100.0%,?,0,10.679 GB,2026-11-04T03:54:10+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC10,0,?,113,解析用コピー（Tなし）,?,0,4.441 GB,2026-11-04T03:55:41+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC11,86,?,86,100.0%,?,24,6.672 GB,2026-11-04T03:45:11+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC11,0,?,130,解析用コピー（Tなし）,?,4,5.144 GB,2026-11-04T03:52:19+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC11,130,?,130,100.0%,?,0,10.145 GB,2026-11-04T03:54:10+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC11,0,?,86,解析用コピー（Tなし）,?,0,3.363 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC12,18,?,18,100.0%,?,24,1.402 GB,2026-11-04T03:45:11+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC12,0,?,38,解析用コピー（Tなし）,?,4,1.567 GB,2026-11-04T03:52:19+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC12,38,?,38,100.0%,?,0,3.029 GB,2026-11-04T03:54:10+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC12,0,?,18,解析用コピー（Tなし）,?,0,0.709 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC13,12,?,12,100.0%,?,24,0.956 GB,2026-11-04T03:45:12+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC13,0,?,44,解析用コピー（Tなし）,?,4,1.829 GB,2026-11-04T03:52:19+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC13,44,?,44,100.0%,?,0,3.522 GB,2026-11-04T03:54:10+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC13,0,?,12,解析用コピー（Tなし）,?,0,0.494 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC14,16,?,16,100.0%,?,24,1.245 GB,2026-11-04T03:45:12+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC14,0,?,46,解析用コピー（Tなし）,?,4,1.882 GB,2026-11-04T03:52:19+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC14,46,?,46,100.0%,?,0,3.651 GB,2026-11-04T03:54:10+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC14,0,?,16,解析用コピー（Tなし）,?,0,0.630 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC15,60,?,60,100.0%,?,24,4.648 GB,2026-11-04T03:45:14+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC15,0,?,90,解析用コピー（Tなし）,?,4,3.577 GB,2026-11-04T03:52:19+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC15,90,?,90,100.0%,?,0,7.039 GB,2026-11-04T03:54:10+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC15,0,?,60,解析用コピー（Tなし）,?,0,2.340 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC16,52,?,52,100.0%,?,24,4.072 GB,2026-11-04T03:45:15+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC16,0,?,70,解析用コピー（Tなし）,?,4,2.817 GB,2026-11-04T03:52:19+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC16,70,?,70,100.0%,?,0,5.510 GB,2026-11-04T03:54:10+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC16,0,?,52,解析用コピー（Tなし）,?,0,2.071 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC17,48,?,48,100.0%,?,24,3.659 GB,2026-11-04T03:45:16+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC17,0,?,70,解析用コピー（Tなし）,?,4,2.768 GB,2026-11-04T03:52:20+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC17,70,?,70,100.0%,?,0,5.414 GB,2026-11-04T03:54:11+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC17,0,?,48,解析用コピー（Tなし）,?,0,1.860 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC18,44,?,44,100.0%,?,24,3.433 GB,2026-11-04T03:45:17+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC18,0,?,69,解析用コピー（Tなし）,?,4,2.744 GB,2026-11-04T03:52:20+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC18,69,?,69,100.0%,?,0,5.398 GB,2026-11-04T03:54:11+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC18,0,?,44,解析用コピー（Tなし）,?,0,1.740 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC19,45,?,45,100.0%,?,24,3.489 GB,2026-11-04T03:45:18+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC19,0,?,141,解析用コピー（Tなし）,?,4,5.493 GB,2026-11-04T03:52:20+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC19,141,?,141,100.0%,?,0,10.897 GB,2026-11-04T03:54:11+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC19,0,?,45,解析用コピー（Tなし）,?,0,1.758 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC20,47,?,47,100.0%,?,24,3.625 GB,2026-11-04T03:45:19+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC20,0,?,219,解析用コピー（Tなし）,?,24,8.574 GB,2026-11-04T03:52:20+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC20,219,?,219,100.0%,?,0,17.000 GB,2026-11-04T03:54:11+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC20,0,?,47,解析用コピー（Tなし）,?,0,1.817 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC21,58,?,58,100.0%,?,24,4.575 GB,2026-11-04T03:45:20+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC21,0,?,58,解析用コピー（Tなし）,?,24,2.344 GB,2026-11-04T03:52:20+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC21,58,?,58,100.0%,?,0,4.575 GB,2026-11-04T03:54:11+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC21,0,?,58,解析用コピー（Tなし）,?,0,2.344 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC22,97,?,97,100.0%,?,24,7.592 GB,2026-11-04T03:45:22+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC22,0,?,97,解析用コピー（Tなし）,?,24,3.864 GB,2026-11-04T03:52:20+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC22,97,?,97,100.0%,?,0,7.592 GB,2026-11-04T03:54:11+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC22,0,?,97,解析用コピー（Tなし）,?,0,3.864 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC23,87,?,87,100.0%,?,24,6.823 GB,2026-11-04T03:45:24+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC23,0,?,87,解析用コピー（Tなし）,?,24,3.476 GB,2026-11-04T03:52:20+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC23,87,?,87,100.0%,?,0,6.823 GB,2026-11-04T03:54:12+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC23,0,?,87,解析用コピー（Tなし）,?,0,3.476 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC24,103,?,103,100.0%,?,24,8.023 GB,2026-11-04T03:45:26+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC24,0,?,103,解析用コピー（Tなし）,?,24,4.081 GB,2026-11-04T03:52:21+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC24,103,?,103,100.0%,?,0,8.023 GB,2026-11-04T03:54:12+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC24,0,?,103,解析用コピー（Tなし）,?,0,4.081 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC25,57,?,57,100.0%,?,24,4.514 GB,2026-11-04T03:45:27+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC25,0,?,57,解析用コピー（Tなし）,?,24,2.321 GB,2026-11-04T03:52:21+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC25,57,?,57,100.0%,?,0,4.514 GB,2026-11-04T03:54:12+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC25,0,?,57,解析用コピー（Tなし）,?,0,2.321 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC26,26,?,26,100.0%,?,24,2.006 GB,2026-11-04T03:45:28+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC26,0,?,108,解析用コピー（Tなし）,?,24,4.254 GB,2026-11-04T03:52:21+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC26,108,?,108,100.0%,?,0,8.409 GB,2026-11-04T03:54:12+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC26,0,?,26,解析用コピー（Tなし）,?,0,1.006 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC27,41,?,41,100.0%,?,24,3.202 GB,2026-11-04T03:45:28+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC27,0,?,113,解析用コピー（Tなし）,?,24,4.485 GB,2026-11-04T03:52:21+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC27,113,?,113,100.0%,?,0,8.832 GB,2026-11-04T03:54:12+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC27,0,?,41,解析用コピー（Tなし）,?,0,1.624 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC28,56,?,56,100.0%,?,24,4.370 GB,2026-11-04T03:45:30+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC28,0,?,153,解析用コピー（Tなし）,?,24,6.043 GB,2026-11-04T03:52:21+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC28,153,?,153,100.0%,?,0,11.930 GB,2026-11-04T03:54:12+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC28,0,?,56,解析用コピー（Tなし）,?,0,2.215 GB,2026-11-04T03:55:42+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC29,291,?,291,100.0%,?,24,22.579 GB,2026-11-04T03:45:33+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC29,0,?,331,解析用コピー（Tなし）,?,24,12.958 GB,2026-11-04T03:52:21+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC29,331,?,331,100.0%,?,0,25.692 GB,2026-11-04T03:54:13+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC29,0,?,291,解析用コピー（Tなし）,?,0,11.384 GB,2026-11-04T03:55:43+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC30,217,?,217,100.0%,?,4,16.847 GB,2026-11-04T03:45:37+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC30,0,?,281,解析用コピー（Tなし）,?,4,11.001 GB,2026-11-04T03:52:22+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC30,281,?,281,100.0%,?,0,21.812 GB,2026-11-04T03:54:13+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC30,0,?,217,解析用コピー（Tなし）,?,20,8.499 GB,2026-11-04T03:55:44+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC31,193,?,193,100.0%,?,4,14.864 GB,2026-11-04T03:45:39+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC31,0,?,260,解析用コピー（Tなし）,?,4,10.065 GB,2026-11-04T03:52:22+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC31,260,?,260,100.0%,?,0,19.983 GB,2026-11-04T03:54:14+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC31,0,?,193,解析用コピー（Tなし）,?,20,7.468 GB,2026-11-04T03:55:47+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC32,355,?,355,100.0%,?,4,27.360 GB,2026-11-04T03:45:43+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC32,0,?,483,解析用コピー（Tなし）,?,4,18.713 GB,2026-11-04T03:52:22+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC32,483,?,483,100.0%,?,0,37.248 GB,2026-11-04T03:54:14+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC32,0,?,355,解析用コピー（Tなし）,?,20,13.736 GB,2026-11-04T03:55:51+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC33,219,?,219,100.0%,?,4,16.925 GB,2026-11-04T03:45:46+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC33,0,?,365,解析用コピー（Tなし）,?,4,14.180 GB,2026-11-04T03:52:22+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC33,365,?,365,100.0%,?,0,28.223 GB,2026-11-04T03:54:15+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC33,0,?,219,解析用コピー（Tなし）,?,20,8.500 GB,2026-11-04T03:55:53+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC34,132,?,132,100.0%,?,4,10.144 GB,2026-11-04T03:45:47+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC34,0,?,183,解析用コピー（Tなし）,?,4,7.119 GB,2026-11-04T03:52:23+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC34,183,?,183,100.0%,?,0,14.123 GB,2026-11-04T03:54:15+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC34,0,?,132,解析用コピー（Tなし）,?,20,5.102 GB,2026-11-04T03:55:53+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC35,141,?,141,100.0%,?,4,10.862 GB,2026-11-04T03:45:49+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC35,0,?,256,解析用コピー（Tなし）,?,4,9.985 GB,2026-11-04T03:52:23+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC35,256,?,256,100.0%,?,0,19.798 GB,2026-11-04T03:54:15+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC35,0,?,141,解析用コピー（Tなし）,?,20,5.473 GB,2026-11-04T03:55:55+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC36,12,?,12,100.0%,?,4,0.963 GB,2026-11-04T03:45:49+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC36,0,?,86,解析用コピー（Tなし）,?,4,3.543 GB,2026-11-04T03:52:23+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC36,86,?,86,100.0%,?,0,6.851 GB,2026-11-04T03:54:15+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC36,0,?,12,解析用コピー（Tなし）,?,20,0.501 GB,2026-11-04T03:55:55+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC37,49,?,49,100.0%,?,4,3.838 GB,2026-11-04T03:45:51+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC37,0,?,89,解析用コピー（Tなし）,?,4,3.534 GB,2026-11-04T03:52:23+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC37,89,?,89,100.0%,?,0,6.958 GB,2026-11-04T03:54:15+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC37,0,?,49,解析用コピー（Tなし）,?,20,1.952 GB,2026-11-04T03:55:56+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC38,82,?,82,100.0%,?,4,6.330 GB,2026-11-04T03:45:51+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC38,0,?,127,解析用コピー（Tなし）,?,4,4.982 GB,2026-11-04T03:52:23+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC38,127,?,127,100.0%,?,0,9.841 GB,2026-11-04T03:54:15+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC38,0,?,82,解析用コピー（Tなし）,?,20,3.202 GB,2026-11-04T03:55:57+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC39,111,?,111,100.0%,?,4,8.607 GB,2026-11-04T03:45:53+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC39,0,?,153,解析用コピー（Tなし）,?,4,5.989 GB,2026-11-04T03:52:23+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC39,153,?,153,100.0%,?,0,11.859 GB,2026-11-04T03:54:16+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC39,0,?,111,解析用コピー（Tなし）,?,20,4.336 GB,2026-11-04T03:55:57+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC40,55,?,55,100.0%,?,4,4.259 GB,2026-11-04T03:45:53+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC40,0,?,85,解析用コピー（Tなし）,?,4,3.363 GB,2026-11-04T03:52:23+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC40,85,?,85,100.0%,?,0,6.633 GB,2026-11-04T03:54:16+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC40,0,?,55,解析用コピー（Tなし）,?,20,2.143 GB,2026-11-04T03:55:57+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC41,97,?,97,100.0%,?,4,7.474 GB,2026-11-04T03:45:55+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC41,0,?,108,解析用コピー（Tなし）,?,4,4.230 GB,2026-11-04T03:52:23+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC41,108,?,108,100.0%,?,0,8.340 GB,2026-11-04T03:54:16+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC41,0,?,97,解析用コピー（Tなし）,?,20,3.787 GB,2026-11-04T03:55:58+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC42,130,?,130,100.0%,?,4,10.092 GB,2026-11-04T03:45:57+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC42,0,?,148,解析用コピー（Tなし）,?,4,5.820 GB,2026-11-04T03:52:24+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC42,148,?,148,100.0%,?,0,11.505 GB,2026-11-04T03:54:16+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC42,0,?,130,解析用コピー（Tなし）,?,20,5.100 GB,2026-11-04T03:55:58+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC43,156,?,156,100.0%,?,4,12.125 GB,2026-11-04T03:45:58+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC43,0,?,155,解析用コピー（Tなし）,?,4,6.084 GB,2026-11-04T03:52:24+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC43,156,?,156,100.0%,?,0,12.125 GB,2026-11-04T03:54:16+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC43,0,?,155,解析用コピー（Tなし）,?,20,6.084 GB,2026-11-04T03:56:00+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC44,125,?,125,100.0%,?,4,9.728 GB,2026-11-04T03:45:59+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC44,0,?,125,解析用コピー（Tなし）,?,4,4.919 GB,2026-11-04T03:52:24+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC44,125,?,125,100.0%,?,0,9.671 GB,2026-11-04T03:54:16+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC44,0,?,125,解析用コピー（Tなし）,?,20,4.919 GB,2026-11-04T03:56:01+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC45,26,?,26,100.0%,?,4,2.008 GB,2026-11-04T03:46:00+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC45,0,?,26,解析用コピー（Tなし）,?,4,1.007 GB,2026-11-04T03:52:24+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC45,214,?,214,100.0%,?,0,16.497 GB,2026-11-04T03:54:17+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC45,0,?,26,解析用コピー（Tなし）,?,20,1.007 GB,2026-11-04T03:56:02+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC46,115,?,115,100.0%,?,24,8.950 GB,2026-11-04T03:46:02+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC46,0,?,115,解析用コピー（Tなし）,?,24,4.526 GB,2026-11-04T03:52:24+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC46,115,?,115,100.0%,?,0,8.900 GB,2026-11-04T03:54:17+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC46,0,?,115,解析用コピー（Tなし）,?,20,4.526 GB,2026-11-04T03:56:03+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC47,86,?,86,100.0%,?,24,6.728 GB,2026-11-04T03:46:04+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC47,0,?,86,解析用コピー（Tなし）,?,24,3.419 GB,2026-11-04T03:52:24+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC47,86,?,86,100.0%,?,0,6.669 GB,2026-11-04T03:54:17+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC47,0,?,86,解析用コピー（Tなし）,?,20,3.419 GB,2026-11-04T03:56:04+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC48,122,?,122,100.0%,?,4,9.486 GB,2026-11-04T03:46:05+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC48,0,?,122,解析用コピー（Tなし）,?,4,4.793 GB,2026-11-04T03:52:24+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC48,162,?,162,100.0%,?,0,12.521 GB,2026-11-04T03:54:17+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC48,0,?,122,解析用コピー（Tなし）,?,20,4.793 GB,2026-11-04T03:56:05+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC49,74,?,74,100.0%,?,4,5.774 GB,2026-11-04T03:46:07+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC49,0,?,74,解析用コピー（Tなし）,?,4,2.955 GB,2026-11-04T03:52:25+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC49,36,?,36,100.0%,?,0,2.761 GB,2026-11-04T03:54:17+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC49,0,?,74,解析用コピー（Tなし）,?,0,2.955 GB,2026-11-04T03:56:05+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC50,159,?,159,100.0%,?,24,12.251 GB,2026-11-04T03:46:13+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC50,0,?,159,解析用コピー（Tなし）,?,4,6.183 GB,2026-11-04T03:52:25+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC50,113,?,113,100.0%,?,0,8.690 GB,2026-11-04T03:54:17+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC50,0,?,159,解析用コピー（Tなし）,?,0,6.183 GB,2026-11-04T03:56:05+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC51,201,?,201,100.0%,?,20,15.605 GB,2026-11-04T03:46:18+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC51,0,?,201,解析用コピー（Tなし）,?,4,7.872 GB,2026-11-04T03:52:25+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC51,201,?,201,100.0%,?,0,15.525 GB,2026-11-04T03:54:17+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC51,0,?,201,解析用コピー（Tなし）,?,0,7.872 GB,2026-11-04T03:56:05+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC52,73,?,73,100.0%,?,20,5.711 GB,2026-11-04T03:46:20+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC52,0,?,73,解析用コピー（Tなし）,?,4,2.903 GB,2026-11-04T03:52:25+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC52,73,?,73,100.0%,?,0,5.670 GB,2026-11-04T03:54:17+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC52,0,?,73,解析用コピー（Tなし）,?,0,2.903 GB,2026-11-04T03:56:05+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC53,90,?,90,100.0%,?,20,7.045 GB,2026-11-04T03:46:23+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC53,0,?,90,解析用コピー（Tなし）,?,4,3.583 GB,2026-11-04T03:52:25+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC53,90,?,90,100.0%,?,0,6.993 GB,2026-11-04T03:54:17+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC53,0,?,90,解析用コピー（Tなし）,?,0,3.583 GB,2026-11-04T03:56:05+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC54,50,?,50,100.0%,?,20,3.964 GB,2026-11-04T03:46:24+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC54,0,?,50,解析用コピー（Tなし）,?,4,2.040 GB,2026-11-04T03:52:25+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC54,50,?,50,100.0%,?,0,3.903 GB,2026-11-04T03:54:17+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC54,0,?,50,解析用コピー（Tなし）,?,0,2.040 GB,2026-11-04T03:56:05+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC55,101,?,101,100.0%,?,20,7.888 GB,2026-11-04T03:46:26+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC55,0,?,101,解析用コピー（Tなし）,?,4,4.003 GB,2026-11-04T03:52:26+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC55,139,?,139,100.0%,?,0,10.763 GB,2026-11-04T03:54:17+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC55,0,?,101,解析用コピー（Tなし）,?,0,4.003 GB,2026-11-04T03:56:05+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC56,100,?,100,100.0%,?,0,7.807 GB,2026-11-04T03:46:28+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC56,0,?,100,解析用コピー（Tなし）,?,4,3.960 GB,2026-11-04T03:52:26+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC56,100,?,100,100.0%,?,0,7.745 GB,2026-11-04T03:54:18+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC56,0,?,100,解析用コピー（Tなし）,?,0,3.960 GB,2026-11-04T03:56:05+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC57,115,?,115,100.0%,?,0,8.912 GB,2026-11-04T03:46:29+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC57,0,?,115,解析用コピー（Tなし）,?,4,4.510 GB,2026-11-04T03:52:26+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC57,115,?,115,100.0%,?,0,8.854 GB,2026-11-04T03:54:18+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC57,0,?,115,解析用コピー（Tなし）,?,0,4.510 GB,2026-11-04T03:56:06+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC58,15,?,15,100.0%,?,0,1.170 GB,2026-11-04T03:46:29+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC58,0,?,15,解析用コピー（Tなし）,?,4,0.593 GB,2026-11-04T03:52:26+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC58,45,?,45,100.0%,?,0,3.505 GB,2026-11-04T03:54:18+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC58,0,?,15,解析用コピー（Tなし）,?,0,0.593 GB,2026-11-04T03:56:06+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC59,20,?,20,100.0%,?,0,1.552 GB,2026-11-04T03:46:29+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC59,0,?,20,解析用コピー（Tなし）,?,4,0.783 GB,2026-11-04T03:52:26+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC59,42,?,42,100.0%,?,0,3.296 GB,2026-11-04T03:54:18+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC59,0,?,20,解析用コピー（Tなし）,?,0,0.783 GB,2026-11-04T03:56:06+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC60,82,?,82,100.0%,?,0,6.355 GB,2026-11-04T03:46:30+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC60,0,?,82,解析用コピー（Tなし）,?,24,3.200 GB,2026-11-04T03:52:27+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC60,156,?,156,100.0%,?,0,12.057 GB,2026-11-04T03:54:18+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC60,0,?,82,解析用コピー（Tなし）,?,0,3.200 GB,2026-11-04T03:56:06+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC61,76,?,76,100.0%,?,0,5.885 GB,2026-11-04T03:46:30+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC61,0,?,76,解析用コピー（Tなし）,?,24,2.961 GB,2026-11-04T03:52:27+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC61,62,?,62,100.0%,?,0,4.828 GB,2026-11-04T03:54:18+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC61,0,?,76,解析用コピー（Tなし）,?,0,2.961 GB,2026-11-04T03:56:06+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC62,63,?,63,100.0%,?,0,4.861 GB,2026-11-04T03:46:31+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC62,0,?,63,解析用コピー（Tなし）,?,24,2.453 GB,2026-11-04T03:52:28+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC62,169,?,169,100.0%,?,0,13.041 GB,2026-11-04T03:54:18+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC62,0,?,63,解析用コピー（Tなし）,?,0,2.453 GB,2026-11-04T03:56:06+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC63,141,?,141,100.0%,?,0,10.910 GB,2026-11-04T03:46:32+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC63,0,?,141,解析用コピー（Tなし）,?,24,5.493 GB,2026-11-04T03:52:28+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC63,221,?,221,100.0%,?,0,17.018 GB,2026-11-04T03:54:18+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC63,0,?,141,解析用コピー（Tなし）,?,0,5.493 GB,2026-11-04T03:56:06+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC64,48,?,48,100.0%,?,0,3.724 GB,2026-11-04T03:46:33+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC64,0,?,48,解析用コピー（Tなし）,?,24,1.877 GB,2026-11-04T03:52:29+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC64,68,?,68,100.0%,?,0,5.285 GB,2026-11-04T03:54:18+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC64,0,?,48,解析用コピー（Tなし）,?,0,1.877 GB,2026-11-04T03:56:06+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC65,47,?,47,100.0%,?,0,3.691 GB,2026-11-04T03:46:33+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC65,0,?,47,解析用コピー（Tなし）,?,24,1.883 GB,2026-11-04T03:52:29+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC65,65,?,65,100.0%,?,0,5.050 GB,2026-11-04T03:54:18+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC65,0,?,47,解析用コピー（Tなし）,?,0,1.883 GB,2026-11-04T03:56:06+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC66,40,?,40,100.0%,?,0,3.113 GB,2026-11-04T03:46:33+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC66,0,?,40,解析用コピー（Tなし）,?,24,1.574 GB,2026-11-04T03:52:29+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC66,56,?,56,100.0%,?,0,4.358 GB,2026-11-04T03:54:18+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC66,0,?,40,解析用コピー（Tなし）,?,0,1.574 GB,2026-11-04T03:56:06+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC67,53,?,53,100.0%,?,0,4.127 GB,2026-11-04T03:46:34+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC67,0,?,53,解析用コピー（Tなし）,?,24,2.088 GB,2026-11-04T03:52:29+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC67,83,?,83,100.0%,?,0,6.442 GB,2026-11-04T03:54:19+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC67,0,?,53,解析用コピー（Tなし）,?,0,2.088 GB,2026-11-04T03:56:06+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC68,60,?,60,100.0%,?,0,4.643 GB,2026-11-04T03:46:34+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC68,0,?,60,解析用コピー（Tなし）,?,24,2.335 GB,2026-11-04T03:52:30+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC68,47,?,47,100.0%,?,0,3.655 GB,2026-11-04T03:54:19+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC68,0,?,60,解析用コピー（Tなし）,?,0,2.335 GB,2026-11-04T03:56:06+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC69,157,?,157,100.0%,?,0,12.183 GB,2026-11-04T03:46:35+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC69,0,?,157,解析用コピー（Tなし）,?,24,6.152 GB,2026-11-04T03:52:30+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC69,121,?,121,100.0%,?,0,9.335 GB,2026-11-04T03:54:19+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC69,0,?,157,解析用コピー（Tなし）,?,0,6.152 GB,2026-11-04T03:56:07+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC70,266,?,266,100.0%,?,0,20.580 GB,2026-11-04T03:46:37+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC70,0,?,266,解析用コピー（Tなし）,?,4,10.365 GB,2026-11-04T03:52:31+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC70,266,?,266,100.0%,?,0,20.504 GB,2026-11-04T03:54:19+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC70,0,?,266,解析用コピー（Tなし）,?,24,10.365 GB,2026-11-04T03:56:08+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC71,124,?,124,100.0%,?,0,9.633 GB,2026-11-04T03:46:38+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC71,0,?,124,解析用コピー（Tなし）,?,24,4.863 GB,2026-11-04T03:52:31+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC71,124,?,124,100.0%,?,0,9.589 GB,2026-11-04T03:54:19+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC71,0,?,124,解析用コピー（Tなし）,?,24,4.863 GB,2026-11-04T03:56:08+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC72,90,?,90,100.0%,?,0,7.021 GB,2026-11-04T03:46:39+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC72,0,?,90,解析用コピー（Tなし）,?,24,3.558 GB,2026-11-04T03:52:31+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC72,90,?,90,100.0%,?,0,6.975 GB,2026-11-04T03:54:19+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC72,0,?,90,解析用コピー（Tなし）,?,24,3.558 GB,2026-11-04T03:56:09+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC73,68,?,68,100.0%,?,0,5.349 GB,2026-11-04T03:46:41+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC73,0,?,68,解析用コピー（Tなし）,?,24,2.733 GB,2026-11-04T03:52:31+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC73,68,?,68,100.0%,?,0,5.301 GB,2026-11-04T03:54:19+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC73,0,?,68,解析用コピー（Tなし）,?,24,2.733 GB,2026-11-04T03:56:10+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC74,50,?,50,100.0%,?,0,3.923 GB,2026-11-04T03:46:41+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC74,0,?,50,解析用コピー（Tなし）,?,4,1.999 GB,2026-11-04T03:52:31+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC74,50,?,50,100.0%,?,0,3.893 GB,2026-11-04T03:54:19+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC74,0,?,50,解析用コピー（Tなし）,?,4,1.999 GB,2026-11-04T03:56:10+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC75,42,?,42,100.0%,?,0,3.316 GB,2026-11-04T03:46:42+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC75,0,?,42,解析用コピー（Tなし）,?,4,1.700 GB,2026-11-04T03:52:31+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC75,42,?,42,100.0%,?,0,3.284 GB,2026-11-04T03:54:19+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC75,0,?,42,解析用コピー（Tなし）,?,1,1.700 GB,2026-11-04T03:56:10+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC76,126,?,126,100.0%,?,0,9.800 GB,2026-11-04T03:46:43+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC76,0,?,126,解析用コピー（Tなし）,?,4,4.952 GB,2026-11-04T03:52:32+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC76,47,?,47,100.0%,?,0,3.638 GB,2026-11-04T03:54:19+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC76,0,?,126,解析用コピー（Tなし）,?,0,4.952 GB,2026-11-04T03:56:10+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC77,151,?,151,100.0%,?,0,11.675 GB,2026-11-04T03:46:45+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC77,0,?,151,解析用コピー（Tなし）,?,4,5.901 GB,2026-11-04T03:52:32+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC77,172,?,172,100.0%,?,0,13.245 GB,2026-11-04T03:54:19+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC77,0,?,151,解析用コピー（Tなし）,?,0,5.901 GB,2026-11-04T03:56:10+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC78,116,?,116,100.0%,?,0,9.014 GB,2026-11-04T03:46:46+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC78,0,?,116,解析用コピー（Tなし）,?,4,4.551 GB,2026-11-04T03:52:32+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC78,116,?,116,100.0%,?,0,8.976 GB,2026-11-04T03:54:20+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC78,0,?,116,解析用コピー（Tなし）,?,0,4.551 GB,2026-11-04T03:56:10+00:00,完了
+Rackstation/analysis,Kumamoto_N2,KUHCC79,582,?,582,100.0%,?,0,45.107 GB,2026-11-04T03:46:50+00:00,完了
+QTserver/analysis,Kumamoto_N2,KUHCC79,0,?,157,解析用コピー（Tなし）,?,4,6.182 GB,2026-11-04T03:52:32+00:00,完了
+QTserver/backup,Kumamoto_N2,KUHCC79,138,?,138,100.0%,?,0,10.679 GB,2026-11-04T03:54:20+00:00,完了
+QDserver/analysis,Kumamoto_N2,KUHCC79,0,?,157,解析用コピー（Tなし）,?,0,6.182 GB,2026-11-04T03:56:10+00:00,完了
+QTserver/analysis,Kumamoto_NHCV,KUHCC01,0,?,225,解析用コピー（Tなし）,?,20,8.776 GB,2026-11-04T03:52:33+00:00,完了
+QTserver/analysis,Kumamoto_NHCV,KUHCC05,0,?,97,解析用コピー（Tなし）,?,0,3.876 GB,2026-11-04T03:52:33+00:00,完了
+QTserver/analysis,Kumamoto_NHCV,KUHCC07,0,?,126,解析用コピー（Tなし）,?,0,4.980 GB,2026-11-04T03:52:33+00:00,完了
+QTserver/analysis,Kumamoto_NHCV,KUHCC14,0,?,46,解析用コピー（Tなし）,?,0,1.882 GB,2026-11-04T03:52:33+00:00,完了
+QTserver/analysis,Kumamoto_NHCV,KUHCC15,0,?,90,解析用コピー（Tなし）,?,0,3.577 GB,2026-11-04T03:52:33+00:00,完了
+QTserver/analysis,Kumamoto_NHCV,KUHCC18,0,?,69,解析用コピー（Tなし）,?,0,2.744 GB,2026-11-04T03:52:33+00:00,完了
+QTserver/analysis,Kumamoto_NHCV,KUHCC19,0,?,141,解析用コピー（Tなし）,?,0,5.493 GB,2026-11-04T03:52:34+00:00,完了
+QTserver/analysis,Kumamoto_NHCV,KUHCC22,0,?,97,解析用コピー（Tなし）,?,0,3.864 GB,2026-11-04T03:52:34+00:00,完了
+QTserver/analysis,Kumamoto_NSVR,KUHCC12,0,?,38,解析用コピー（Tなし）,?,20,1.567 GB,2026-11-04T03:52:34+00:00,完了
+QTserver/analysis,Kumamoto_NSVR,KUHCC21,0,?,58,解析用コピー（Tなし）,?,20,2.344 GB,2026-11-04T03:52:34+00:00,完了
+QTserver/analysis,Kumamoto_NSVR,KUHCC24,0,?,103,解析用コピー（Tなし）,?,20,4.081 GB,2026-11-04T03:52:34+00:00,完了
+QTserver/analysis,Kumamoto_NSVR,KUHCC26,0,?,108,解析用コピー（Tなし）,?,0,4.254 GB,2026-11-04T03:52:34+00:00,完了
+Rackstation/archive,Leu,Leu_100nM,54,?,54,100.0%,?,0,4.236 GB,2026-11-04T03:50:54+00:00,完了
+Rackstation/archive,Leu,Leu_10nM,40,?,40,100.0%,?,0,3.186 GB,2026-11-04T03:50:54+00:00,完了
+Rackstation/archive,Leu,Leu_1nM,54,?,54,100.0%,?,0,4.294 GB,2026-11-04T03:50:55+00:00,完了
+Rackstation/archive,Leu,Leu_300nM,45,?,45,100.0%,?,0,3.522 GB,2026-11-04T03:50:56+00:00,完了
+Rackstation/archive,Leu,Leu_30nM,30,?,30,100.0%,?,0,2.399 GB,2026-11-04T03:50:56+00:00,完了
+Rackstation/archive,Leu,Leu_3nM,30,?,30,100.0%,?,0,2.389 GB,2026-11-04T03:50:57+00:00,完了
+QDserver/analysis,Lipid,DLPC,0,?,36,解析用コピー（Tなし）,?,0,1.487 GB,2026-11-04T03:56:10+00:00,完了
+QDserver/backup,Lipid,DLPC,36,?,36,100.0%,?,0,2.872 GB,2026-11-04T03:58:54+00:00,完了
+QDserver/analysis,Lipid,DOPC,0,?,74,解析用コピー（Tなし）,?,0,3.006 GB,2026-11-04T03:56:11+00:00,完了
+QDserver/backup,Lipid,DOPC,74,?,74,100.0%,?,0,5.860 GB,2026-11-04T03:58:55+00:00,完了
+QDserver/analysis,Lipid,DPPC,0,?,60,解析用コピー（Tなし）,?,0,2.514 GB,2026-11-04T03:56:11+00:00,完了
+QDserver/backup,Lipid,DPPC,60,?,60,100.0%,?,0,4.829 GB,2026-11-04T03:58:55+00:00,完了
+QDserver/analysis,Lipid,DSPC,0,?,66,解析用コピー（Tなし）,?,0,2.764 GB,2026-11-04T03:56:11+00:00,完了
+QDserver/backup,Lipid,DSPC,90,?,90,100.0%,?,0,7.288 GB,2026-11-04T03:58:56+00:00,完了
+QDserver/analysis,Lipid,DSPC3DOPC1,0,?,10,解析用コピー（Tなし）,?,0,0.398 GB,2026-11-04T03:56:11+00:00,完了
+QDserver/backup,Lipid,DSPC3DOPC1,10,?,10,100.0%,?,0,0.765 GB,2026-11-04T03:58:56+00:00,完了
+QDserver/analysis,Lipid,DSPE,0,?,50,解析用コピー（Tなし）,?,0,2.150 GB,2026-11-04T03:56:11+00:00,完了
+QDserver/backup,Lipid,DSPE,78,?,78,100.0%,?,0,6.354 GB,2026-11-04T03:58:56+00:00,完了
+QDserver/analysis,Lipid,LIN,0,?,217,解析用コピー（Tなし）,?,0,5.281 GB,2026-11-04T03:56:11+00:00,完了
+QDserver/backup,Lipid,LIN,222,?,222,100.0%,?,0,10.746 GB,2026-11-04T03:58:57+00:00,完了
+QDserver/analysis,Lipid,OLE,0,?,164,解析用コピー（Tなし）,?,0,3.982 GB,2026-11-04T03:56:11+00:00,完了
+QDserver/backup,Lipid,OLE,169,?,169,100.0%,?,0,8.172 GB,2026-11-04T03:58:57+00:00,完了
+QDserver/analysis,Lipid,S1O2,0,?,156,解析用コピー（Tなし）,?,0,3.803 GB,2026-11-04T03:56:11+00:00,完了
+QDserver/backup,Lipid,S1O2,156,?,156,100.0%,?,0,7.558 GB,2026-11-04T03:58:58+00:00,完了
+QDserver/analysis,Lipid,S1O4,0,?,276,解析用コピー（Tなし）,?,0,6.701 GB,2026-11-04T03:56:11+00:00,完了
+QDserver/backup,Lipid,S1O4,276,?,276,100.0%,?,0,13.345 GB,2026-11-04T03:58:58+00:00,完了
+QDserver/analysis,Lipid,S2O1,0,?,168,解析用コピー（Tなし）,?,0,4.092 GB,2026-11-04T03:56:11+00:00,完了
+QDserver/backup,Lipid,S2O1,168,?,168,100.0%,?,0,8.136 GB,2026-11-04T03:58:59+00:00,完了
+QDserver/analysis,Lipid,S4O1,0,?,263,解析用コピー（Tなし）,?,0,6.396 GB,2026-11-04T03:56:11+00:00,完了
+QDserver/backup,Lipid,S4O1,263,?,263,100.0%,?,0,12.722 GB,2026-11-04T03:58:59+00:00,完了
+QDserver/analysis,Lipid,STE,0,?,154,解析用コピー（Tなし）,?,0,3.743 GB,2026-11-04T03:56:12+00:00,完了
+QDserver/backup,Lipid,STE,160,?,160,100.0%,?,0,7.740 GB,2026-11-04T03:59:00+00:00,完了
+QDserver/backup,MicroRNA,let7aW22,184,?,184,100.0%,?,1,34.135 GB,2026-11-04T03:59:01+00:00,完了
+QDserver/backup,MicroRNA,let7cW22,497,?,497,100.0%,?,0,103.409 GB,2026-11-04T03:59:04+00:00,完了
+Rackstation/analysis,Mitsuzawa,1_0,23,?,23,100.0%,?,0,1.839 GB,2026-11-04T03:46:50+00:00,完了
+Rackstation/analysis,Mitsuzawa,1_1,80,?,80,100.0%,?,0,6.250 GB,2026-11-04T03:46:52+00:00,完了
+Rackstation/analysis,Mitsuzawa,1_5_100,20,?,20,100.0%,?,0,1.609 GB,2026-11-04T03:46:53+00:00,完了
+Rackstation/analysis,Mitsuzawa,2_0,104,?,104,100.0%,?,0,8.286 GB,2026-11-04T03:46:55+00:00,完了
+Rackstation/analysis,Mitsuzawa,2_1,108,?,108,100.0%,?,0,8.455 GB,2026-11-04T03:46:56+00:00,完了
+Rackstation/analysis,Mitsuzawa,2_5_100,48,?,48,100.0%,?,0,3.808 GB,2026-11-04T03:46:57+00:00,完了
+Rackstation/analysis,Mitsuzawa,3_0,24,?,24,100.0%,?,0,1.927 GB,2026-11-04T03:46:58+00:00,完了
+Rackstation/analysis,Mitsuzawa,3_1,24,?,24,100.0%,?,0,1.906 GB,2026-11-04T03:46:58+00:00,完了
+Rackstation/analysis,Mitsuzawa,3_5_100,97,?,97,100.0%,?,0,7.669 GB,2026-11-04T03:46:59+00:00,完了
+Rackstation/analysis,Mitsuzawa,4_0,208,?,208,100.0%,?,0,16.245 GB,2026-11-04T03:47:00+00:00,完了
+Rackstation/analysis,Mitsuzawa,4_1,16,?,16,100.0%,?,0,1.305 GB,2026-11-04T03:47:00+00:00,完了
+Rackstation/analysis,Mitsuzawa,4_5_100,88,?,88,100.0%,?,1,6.863 GB,2026-11-04T03:47:01+00:00,完了
+Rackstation/analysis,Morita_Mono,Gal,39,?,39,100.0%,?,0,3.084 GB,2026-11-04T03:47:01+00:00,完了
+Rackstation/analysis,Morita_Mono,Man,63,?,63,100.0%,?,0,4.950 GB,2026-11-04T03:47:02+00:00,完了
+Rackstation/analysis,Morita_Mono,Rha,66,?,66,100.0%,?,0,5.165 GB,2026-11-04T03:47:03+00:00,完了
+Rackstation/analysis,Morita_Mono,glucose,0,?,5,解析用コピー（Tなし）,?,0,0.124 GB,2026-11-04T03:47:02+00:00,完了
+Rackstation/analysis,Morita_Others,glucose,48,?,48,100.0%,?,0,2.383 GB,2026-11-04T03:47:03+00:00,完了
+Rackstation/analysis,Morita_Ox_New,DGl,78,?,78,100.0%,?,0,6.088 GB,2026-11-04T03:47:04+00:00,完了
+Rackstation/analysis,Morita_Ox_New,GDL,29,?,29,100.0%,?,0,2.297 GB,2026-11-04T03:47:05+00:00,完了
+Rackstation/analysis,Morita_Ox_New,GlcA,160,?,160,100.0%,?,0,12.466 GB,2026-11-04T03:47:07+00:00,完了
+Rackstation/analysis,Morita_Ox_New,Glu,120,?,120,100.0%,?,0,9.286 GB,2026-11-04T03:47:07+00:00,完了
+Rackstation/analysis,Morita_Ox_New,GluGlcA_11,70,?,70,100.0%,?,0,5.476 GB,2026-11-04T03:47:08+00:00,完了
+Rackstation/analysis,Morita_Ox_New,GluGlcA_13,140,?,140,100.0%,?,0,10.843 GB,2026-11-04T03:47:10+00:00,完了
+Rackstation/analysis,Morita_Ox_New,GluGlcA_31,80,?,80,100.0%,?,0,6.224 GB,2026-11-04T03:47:11+00:00,完了
+Rackstation/analysis,Morita_Ox_Old,GlcA,70,?,70,100.0%,?,0,5.453 GB,2026-11-04T03:47:12+00:00,完了
+Rackstation/analysis,Morita_Ox_Old,Glu,122,?,122,100.0%,?,0,9.528 GB,2026-11-04T03:47:13+00:00,完了
+Rackstation/analysis,Morita_Ox_Old,GluDGl_11,24,?,24,100.0%,?,0,1.920 GB,2026-11-04T03:47:13+00:00,完了
+Rackstation/analysis,Morita_Ox_Old,GluDGl_13,10,?,10,100.0%,?,0,0.790 GB,2026-11-04T03:47:14+00:00,完了
+Rackstation/analysis,Morita_Ox_Old,GluDGl_31,24,?,24,100.0%,?,0,1.931 GB,2026-11-04T03:47:14+00:00,完了
+Rackstation/analysis,Morita_Ox_Old,GluGlcA_11,60,?,60,100.0%,?,0,4.654 GB,2026-11-04T03:47:15+00:00,完了
+Rackstation/analysis,Morita_test,Glu,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:47:15+00:00,完了
+Rackstation/analysis,Morita_test,seedstest,2,?,2,100.0%,?,0,0.154 GB,2026-11-04T03:47:15+00:00,完了
+QDserver/backup,Numata_CHR,c100,60,?,60,100.0%,?,0,4.758 GB,2026-11-04T03:59:05+00:00,完了
+QDserver/backup,Numata_CHR,c1008,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:05+00:00,完了
+QDserver/backup,Numata_CHR,c1009,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:05+00:00,完了
+QDserver/backup,Numata_CHR,c1016,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:05+00:00,完了
+QDserver/backup,Numata_CHR,c1028,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:05+00:00,完了
+QDserver/backup,Numata_CHR,c1043,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:05+00:00,完了
+QDserver/backup,Numata_CHR,c1048,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:05+00:00,完了
+QDserver/backup,Numata_CHR,c1050,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:06+00:00,完了
+QDserver/backup,Numata_CHR,c106,124,?,124,100.0%,?,0,9.669 GB,2026-11-04T03:59:06+00:00,完了
+QDserver/backup,Numata_CHR,c1063,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:06+00:00,完了
+QDserver/backup,Numata_CHR,c1068,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:06+00:00,完了
+QDserver/backup,Numata_CHR,c1090,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:06+00:00,完了
+QDserver/backup,Numata_CHR,c1091,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:06+00:00,完了
+QDserver/backup,Numata_CHR,c1092,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:06+00:00,完了
+QDserver/backup,Numata_CHR,c1096,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:06+00:00,完了
+QDserver/backup,Numata_CHR,c110,88,?,88,100.0%,?,0,6.823 GB,2026-11-04T03:59:06+00:00,完了
+QDserver/backup,Numata_CHR,c1104,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:06+00:00,完了
+QDserver/backup,Numata_CHR,c1115,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:06+00:00,完了
+QDserver/backup,Numata_CHR,c1117,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:06+00:00,完了
+QDserver/backup,Numata_CHR,c1130,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:06+00:00,完了
+QDserver/backup,Numata_CHR,c1135,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:06+00:00,完了
+QDserver/backup,Numata_CHR,c114,113,?,113,100.0%,?,0,8.757 GB,2026-11-04T03:59:06+00:00,完了
+QDserver/backup,Numata_CHR,c1155,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c12,36,?,36,100.0%,?,0,2.867 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1208,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1212,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1217,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1218,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1233,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1234,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1243,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1257,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1261,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1264,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1267,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1271,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1273,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1278,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1285,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1315,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1318,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1326,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1337,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1338,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1349,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1361,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:07+00:00,完了
+QDserver/backup,Numata_CHR,c1370,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1372,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1374,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1392,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1410,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1411,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1423,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1429,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1440,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1443,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1451,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1457,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1461,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1463,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1464,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1470,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1481,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1486,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1498,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1537,86,?,86,100.0%,?,0,6.685 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1548,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1552,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:08+00:00,完了
+QDserver/backup,Numata_CHR,c1603,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c1674,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c1687,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c1702,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c1756,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c1759,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c204,106,?,106,100.0%,?,0,8.217 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c2178,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c2181,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c2198,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c2246,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c2315,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c2325,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c2327,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c2329,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c234,156,?,156,100.0%,?,0,12.105 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c2358,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c2373,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c2412,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c2420,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c2444,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:09+00:00,完了
+QDserver/backup,Numata_CHR,c274,178,?,178,100.0%,?,0,13.759 GB,2026-11-04T03:59:10+00:00,完了
+QDserver/backup,Numata_CHR,c283,75,?,75,100.0%,?,0,5.878 GB,2026-11-04T03:59:10+00:00,完了
+QDserver/backup,Numata_CHR,c403,120,?,120,100.0%,?,0,9.329 GB,2026-11-04T03:59:10+00:00,完了
+QDserver/backup,Numata_CHR,c444,109,?,109,100.0%,?,0,8.449 GB,2026-11-04T03:59:10+00:00,完了
+QDserver/backup,Numata_CHR,c466,186,?,186,100.0%,?,0,14.401 GB,2026-11-04T03:59:11+00:00,完了
+QDserver/backup,Numata_CHR,c481,161,?,161,100.0%,?,0,11.057 GB,2026-11-04T03:59:11+00:00,完了
+QDserver/backup,Numata_CHR,c502,294,?,294,100.0%,?,0,22.739 GB,2026-11-04T03:59:11+00:00,完了
+QDserver/backup,Numata_CHR,c95,116,?,116,100.0%,?,0,8.989 GB,2026-11-04T03:59:11+00:00,完了
+QDserver/backup,Numata_CHR,c963,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:11+00:00,完了
+QDserver/backup,Numata_CHR,c965,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:11+00:00,完了
+QDserver/backup,Numata_CHR,c968,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:12+00:00,完了
+QDserver/backup,Numata_CHR,c971,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:12+00:00,完了
+QDserver/backup,Numata_CHR,c972,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:12+00:00,完了
+QDserver/backup,Numata_CHR,c977,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:12+00:00,完了
+QDserver/backup,Numata_CHR,c978,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:12+00:00,完了
+QDserver/backup,Numata_CHR,c979,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:12+00:00,完了
+QDserver/backup,Numata_CHR,c983,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:12+00:00,完了
+QDserver/backup,Numata_CHR,c990,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:12+00:00,完了
+QDserver/backup,Numata_CHR,c992,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:12+00:00,完了
+QDserver/backup,Numata_CHR,c993,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:12+00:00,完了
+QDserver/backup,Numata_CHR,c998,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:12+00:00,完了
+QDserver/backup,Numata_CHR,pt1056,192,?,192,100.0%,?,0,14.828 GB,2026-11-04T03:59:12+00:00,完了
+QDserver/backup,Numata_CHR,pt1069,54,?,54,100.0%,?,0,4.111 GB,2026-11-04T03:59:12+00:00,完了
+QDserver/backup,Numata_CHR,pt1169_1,170,?,170,100.0%,?,0,13.087 GB,2026-11-04T03:59:13+00:00,完了
+QDserver/backup,Numata_CHR,pt1169_2,60,?,60,100.0%,?,0,4.700 GB,2026-11-04T03:59:13+00:00,完了
+QDserver/backup,Numata_CHR,pt1383,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:13+00:00,完了
+QDserver/backup,Numata_CHR,pt1384,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:13+00:00,完了
+QDserver/backup,Numata_CHR,pt1396,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:13+00:00,完了
+QDserver/backup,Numata_CHR,pt1416,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:13+00:00,完了
+QDserver/backup,Numata_CHR,pt1430,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:13+00:00,完了
+QDserver/backup,Numata_CHR,pt1433,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:13+00:00,完了
+QDserver/backup,Numata_CHR,pt1440,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:13+00:00,完了
+QDserver/backup,Numata_CHR,pt1441,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:13+00:00,完了
+QDserver/backup,Numata_CHR,pt1446,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:13+00:00,完了
+QDserver/backup,Numata_CHR,pt1949,40,?,40,100.0%,?,0,3.144 GB,2026-11-04T03:59:13+00:00,完了
+QDserver/backup,Numata_CHR,pt2051,98,?,98,100.0%,?,0,7.602 GB,2026-11-04T03:59:13+00:00,完了
+QDserver/backup,Numata_CHR,pt2217,152,?,152,100.0%,?,0,11.743 GB,2026-11-04T03:59:14+00:00,完了
+QDserver/backup,Numata_CHR,pt2221,63,?,63,100.0%,?,0,4.785 GB,2026-11-04T03:59:14+00:00,完了
+QDserver/backup,Numata_CHR,pt2225,132,?,132,100.0%,?,0,10.185 GB,2026-11-04T03:59:14+00:00,完了
+QDserver/backup,Numata_CHR,pt333,184,?,184,100.0%,?,0,14.280 GB,2026-11-04T03:59:14+00:00,完了
+QDserver/backup,Numata_CHR,pt375,356,?,356,100.0%,?,0,27.511 GB,2026-11-04T03:59:15+00:00,完了
+QDserver/backup,Numata_CHR,pt399,110,?,110,100.0%,?,0,8.504 GB,2026-11-04T03:59:15+00:00,完了
+QDserver/backup,Numata_CHR,pt444,98,?,98,100.0%,?,0,7.589 GB,2026-11-04T03:59:16+00:00,完了
+QDserver/backup,Numata_CHR,pt483_1,104,?,104,100.0%,?,0,8.087 GB,2026-11-04T03:59:16+00:00,完了
+QDserver/backup,Numata_CHR,pt483_2,112,?,112,100.0%,?,0,8.686 GB,2026-11-04T03:59:16+00:00,完了
+QDserver/backup,Numata_CHR,pt561,232,?,232,100.0%,?,0,17.952 GB,2026-11-04T03:59:16+00:00,完了
+QDserver/backup,Numata_CHR,pt603,304,?,304,100.0%,?,0,23.494 GB,2026-11-04T03:59:17+00:00,完了
+QDserver/backup,Numata_CHR,pt612,435,?,435,100.0%,?,0,33.506 GB,2026-11-04T03:59:17+00:00,完了
+QDserver/backup,Numata_CHR,pt644_1,55,?,55,100.0%,?,0,4.303 GB,2026-11-04T03:59:18+00:00,完了
+QDserver/backup,Numata_CHR,pt644_2,105,?,105,100.0%,?,0,8.143 GB,2026-11-04T03:59:18+00:00,完了
+QDserver/backup,Numata_CHR,pt674,211,?,211,100.0%,?,0,16.306 GB,2026-11-04T03:59:18+00:00,完了
+QDserver/backup,Numata_CHR,pt723,97,?,97,100.0%,?,0,7.521 GB,2026-11-04T03:59:18+00:00,完了
+QDserver/backup,Numata_CHR,pt726_1,108,?,108,100.0%,?,0,8.376 GB,2026-11-04T03:59:19+00:00,完了
+QDserver/backup,Numata_CHR,pt726_2,94,?,94,100.0%,?,0,7.238 GB,2026-11-04T03:59:19+00:00,完了
+QDserver/backup,Numata_CHR,pt952,30,?,30,100.0%,?,0,2.323 GB,2026-11-04T03:59:19+00:00,完了
+QDserver/backup,Numata_MF,c1990,209,?,209,100.0%,?,0,16.043 GB,2026-11-04T03:59:20+00:00,完了
+QDserver/backup,Numata_MF,c2022,80,?,80,100.0%,?,0,6.201 GB,2026-11-04T03:59:20+00:00,完了
+QDserver/backup,Numata_MF,c2058,213,?,213,100.0%,?,0,16.447 GB,2026-11-04T03:59:20+00:00,完了
+QDserver/backup,Numata_MF,c2079,114,?,114,100.0%,?,0,8.809 GB,2026-11-04T03:59:21+00:00,完了
+QDserver/backup,Numata_MF,c2136,240,?,240,100.0%,?,0,18.531 GB,2026-11-04T03:59:21+00:00,完了
+QDserver/backup,Numata_MF,c2137,143,?,143,100.0%,?,0,11.074 GB,2026-11-04T03:59:21+00:00,完了
+QDserver/backup,Numata_MF,c2139,74,?,74,100.0%,?,0,5.738 GB,2026-11-04T03:59:21+00:00,完了
+QDserver/backup,Numata_MF,c2250,44,?,44,100.0%,?,0,3.425 GB,2026-11-04T03:59:22+00:00,完了
+QDserver/backup,Numata_MF,c626,52,?,52,100.0%,?,0,4.038 GB,2026-11-04T03:59:22+00:00,完了
+QDserver/backup,Numata_MF,c666,30,?,30,100.0%,?,0,2.360 GB,2026-11-04T03:59:22+00:00,完了
+QDserver/backup,Numata_MF,c669,121,?,121,100.0%,?,0,9.356 GB,2026-11-04T03:59:22+00:00,完了
+QDserver/backup,Numata_MF,c693,154,?,154,100.0%,?,0,11.927 GB,2026-11-04T03:59:22+00:00,完了
+QDserver/backup,Numata_MF,c708,162,?,162,100.0%,?,0,12.523 GB,2026-11-04T03:59:23+00:00,完了
+QDserver/backup,Numata_MF,c719,92,?,92,100.0%,?,0,7.125 GB,2026-11-04T03:59:23+00:00,完了
+QDserver/backup,Numata_MF,c783,131,?,131,100.0%,?,0,10.208 GB,2026-11-04T03:59:23+00:00,完了
+QDserver/backup,Numata_MF,c812,164,?,164,100.0%,?,0,12.669 GB,2026-11-04T03:59:23+00:00,完了
+QDserver/backup,Numata_MF,c817,125,?,125,100.0%,?,0,9.665 GB,2026-11-04T03:59:24+00:00,完了
+QDserver/backup,Numata_MF,pt1056,128,?,128,100.0%,?,0,9.914 GB,2026-11-04T03:59:24+00:00,完了
+QDserver/backup,Numata_MF,pt1069,106,?,106,100.0%,?,0,8.206 GB,2026-11-04T03:59:24+00:00,完了
+QDserver/backup,Numata_MF,pt1169,70,?,70,100.0%,?,0,5.438 GB,2026-11-04T03:59:24+00:00,完了
+QDserver/backup,Numata_MF,pt1949,103,?,103,100.0%,?,0,7.996 GB,2026-11-04T03:59:24+00:00,完了
+QDserver/backup,Numata_MF,pt2001,176,?,176,100.0%,?,0,13.596 GB,2026-11-04T03:59:24+00:00,完了
+QDserver/backup,Numata_MF,pt2024,102,?,102,100.0%,?,0,7.899 GB,2026-11-04T03:59:25+00:00,完了
+QDserver/backup,Numata_MF,pt2051,206,?,206,100.0%,?,0,15.908 GB,2026-11-04T03:59:25+00:00,完了
+QDserver/backup,Numata_MF,pt2217,57,?,57,100.0%,?,0,4.427 GB,2026-11-04T03:59:25+00:00,完了
+QDserver/backup,Numata_MF,pt2225,172,?,172,100.0%,?,0,13.224 GB,2026-11-04T03:59:25+00:00,完了
+QDserver/backup,Numata_MF,pt444,154,?,154,100.0%,?,0,11.887 GB,2026-11-04T03:59:26+00:00,完了
+QDserver/backup,Numata_MF,pt483,56,?,56,100.0%,?,0,4.348 GB,2026-11-04T03:59:26+00:00,完了
+QDserver/backup,Numata_MF,pt536,16,?,16,100.0%,?,0,1.275 GB,2026-11-04T03:59:26+00:00,完了
+QDserver/backup,Numata_MF,pt603,76,?,76,100.0%,?,0,5.890 GB,2026-11-04T03:59:26+00:00,完了
+QDserver/backup,Numata_MF,pt633,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:26+00:00,完了
+QDserver/backup,Numata_MF,pt644,48,?,48,100.0%,?,0,3.737 GB,2026-11-04T03:59:26+00:00,完了
+QDserver/backup,Numata_MF,pt726,48,?,48,100.0%,?,0,3.735 GB,2026-11-04T03:59:26+00:00,完了
+QDserver/backup,Numata_MF,pt952,58,?,58,100.0%,?,0,4.504 GB,2026-11-04T03:59:26+00:00,完了
+QDserver/backup,Numata_N,Pt1056,189,?,189,100.0%,?,42,9.098 GB,2026-11-04T03:59:35+00:00,完了
+QDserver/backup,Numata_N,Pt1169,339,?,339,100.0%,?,42,24.179 GB,2026-11-04T03:59:37+00:00,完了
+QDserver/backup,Numata_N,Pt1949,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:37+00:00,完了
+QDserver/backup,Numata_N,Pt2051,136,?,136,100.0%,?,42,6.549 GB,2026-11-04T03:59:38+00:00,完了
+QDserver/backup,Numata_N,Pt2217,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:38+00:00,完了
+QDserver/backup,Numata_N,Pt2221,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:38+00:00,完了
+QDserver/backup,Numata_N,Pt2225,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:38+00:00,完了
+QDserver/backup,Numata_N,Pt333,0,?,未作成,対象なし,?,0,0.000 GB,2026-11-04T03:59:38+00:00,完了
+QDserver/backup,Numata_N,Pt375,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:38+00:00,完了
+QDserver/backup,Numata_N,Pt399,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:38+00:00,完了
+QDserver/backup,Numata_N,Pt483,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:38+00:00,完了
+QDserver/backup,Numata_N,Pt561,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:38+00:00,完了
+QDserver/backup,Numata_N,Pt603,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:38+00:00,完了
+QDserver/backup,Numata_N,Pt612,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:38+00:00,完了
+QDserver/backup,Numata_N,Pt644,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:38+00:00,完了
+QDserver/backup,Numata_N,Pt674,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:38+00:00,完了
+QDserver/backup,Numata_N,Pt723,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:38+00:00,完了
+QDserver/backup,Numata_N,Pt726,37,?,37,100.0%,?,0,2.859 GB,2026-11-04T03:59:39+00:00,完了
+QDserver/backup,Numata_N,c100,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:27+00:00,完了
+QDserver/backup,Numata_N,c106,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:27+00:00,完了
+QDserver/backup,Numata_N,c110,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:27+00:00,完了
+QDserver/backup,Numata_N,c114,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:27+00:00,完了
+QDserver/backup,Numata_N,c12,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:27+00:00,完了
+QDserver/backup,Numata_N,c204,195,?,195,100.0%,?,42,15.055 GB,2026-11-04T03:59:28+00:00,完了
+QDserver/backup,Numata_N,c234,159,?,159,100.0%,?,42,12.339 GB,2026-11-04T03:59:29+00:00,完了
+QDserver/backup,Numata_N,c283,260,?,260,100.0%,?,42,20.145 GB,2026-11-04T03:59:31+00:00,完了
+QDserver/backup,Numata_N,c444,157,?,157,100.0%,?,41,12.034 GB,2026-11-04T03:59:32+00:00,完了
+QDserver/backup,Numata_N,c502,387,?,387,100.0%,?,42,29.913 GB,2026-11-04T03:59:34+00:00,完了
+QDserver/backup,Numata_N,c95,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:59:34+00:00,完了
+Rackstation/analysis,Numata_N2,N01SN5457,38,?,38,100.0%,?,0,2.921 GB,2026-11-04T03:47:16+00:00,完了
+Rackstation/analysis,Numata_N2,N02SN2461,46,?,46,100.0%,?,0,3.600 GB,2026-11-04T03:47:17+00:00,完了
+Rackstation/analysis,Numata_N2,N03SN9857,20,?,20,100.0%,?,0,1.677 GB,2026-11-04T03:47:17+00:00,完了
+Rackstation/analysis,Numata_N2,N04SN9283,52,?,52,100.0%,?,0,4.057 GB,2026-11-04T03:47:18+00:00,完了
+Rackstation/analysis,Oka_1,DBlk,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:47:18+00:00,完了
+Rackstation/analysis,Oka_1,DMPC,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:47:18+00:00,完了
+Rackstation/analysis,Oka_1,DOPC,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:47:18+00:00,完了
+Rackstation/analysis,Oka_1,DPPC,12,?,12,100.0%,?,0,0.968 GB,2026-11-04T03:47:18+00:00,完了
+Rackstation/analysis,Oka_2,1DOPC,30,?,30,100.0%,?,0,2.403 GB,2026-11-04T03:47:19+00:00,完了
+Rackstation/analysis,Oka_2,2DMPC,12,?,12,100.0%,?,0,1.058 GB,2026-11-04T03:47:19+00:00,完了
+Rackstation/analysis,Oka_2,3DOPCDMPC,40,?,40,100.0%,?,0,3.141 GB,2026-11-04T03:47:19+00:00,完了
+Rackstation/analysis,Oka_2,4Blank,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:47:19+00:00,完了
+Rackstation/analysis,Oka_2,DBlk,60,?,60,100.0%,?,0,4.794 GB,2026-11-04T03:47:19+00:00,完了
+Rackstation/analysis,Oka_2,DMPC,60,?,60,100.0%,?,0,4.820 GB,2026-11-04T03:47:21+00:00,完了
+Rackstation/analysis,Oka_2,DOPC,52,?,52,100.0%,?,0,4.101 GB,2026-11-04T03:47:24+00:00,完了
+Rackstation/analysis,Oka_2,DPPC,109,?,109,100.0%,?,0,8.511 GB,2026-11-04T03:47:26+00:00,完了
+QTserver/backup,P53_F_OM,FK,57,?,57,100.0%,?,1,8.482 GB,2026-11-04T03:54:22+00:00,完了
+QTserver/backup,P53_F_OM,NFK,156,?,156,100.0%,?,1,26.706 GB,2026-11-04T03:54:22+00:00,完了
+QTserver/backup,P53_F_OM,OM1-01,30,?,30,100.0%,?,64,2.891 GB,2026-11-04T03:54:22+00:00,完了
+QTserver/backup,P53_F_OM,OM1-02,90,?,90,100.0%,?,64,5.644 GB,2026-11-04T03:54:23+00:00,完了
+QTserver/backup,P53_F_OM,OM1-03,42,?,42,100.0%,?,64,4.100 GB,2026-11-04T03:54:23+00:00,完了
+QTserver/backup,P53_F_OM,OM1-04,21,?,21,100.0%,?,0,2.076 GB,2026-11-04T03:54:24+00:00,完了
+QTserver/backup,P53_F_OM,OM1-05,21,?,21,100.0%,?,64,2.075 GB,2026-11-04T03:54:24+00:00,完了
+QTserver/backup,P53_F_OM,OM1-06,90,?,90,100.0%,?,64,5.595 GB,2026-11-04T03:54:25+00:00,完了
+QTserver/backup,P53_F_OM,OM1-07,48,?,48,100.0%,?,68,2.337 GB,2026-11-04T03:54:25+00:00,完了
+QTserver/backup,P53_F_OM,OM1-08,121,?,121,100.0%,?,67,5.967 GB,2026-11-04T03:54:26+00:00,完了
+QTserver/backup,P53_F_OM,OM1-09,112,?,112,100.0%,?,67,5.532 GB,2026-11-04T03:54:27+00:00,完了
+QTserver/backup,P53_F_OM,OM1-10,79,?,79,100.0%,?,64,3.021 GB,2026-11-04T03:54:27+00:00,完了
+QTserver/backup,P53_F_OM,OM1-11,84,?,84,100.0%,?,64,4.083 GB,2026-11-04T03:54:28+00:00,完了
+QTserver/backup,P53_F_OM,OM1-12,49,?,49,100.0%,?,64,2.328 GB,2026-11-04T03:54:28+00:00,完了
+QTserver/backup,P53_F_OM,OM1-13,48,?,48,100.0%,?,64,2.336 GB,2026-11-04T03:54:28+00:00,完了
+QTserver/backup,P53_F_OM,OM1-14,83,?,83,100.0%,?,64,4.033 GB,2026-11-04T03:54:29+00:00,完了
+QTserver/backup,P53_F_OM,OM1-15,76,?,76,100.0%,?,64,3.639 GB,2026-11-04T03:54:29+00:00,完了
+QTserver/backup,P53_F_OM,OM1-16,34,?,34,100.0%,?,64,1.621 GB,2026-11-04T03:54:30+00:00,完了
+QTserver/backup,P53_F_OM,OM1-17,84,?,84,100.0%,?,64,4.097 GB,2026-11-04T03:54:30+00:00,完了
+QTserver/backup,P53_F_OM,OM1-18,117,?,117,100.0%,?,64,5.679 GB,2026-11-04T03:54:31+00:00,完了
+QTserver/backup,P53_F_OM,OM2-01,36,?,36,100.0%,?,3,1.772 GB,2026-11-04T03:54:31+00:00,完了
+QTserver/backup,P53_F_OM,OM2-02,45,?,45,100.0%,?,3,2.183 GB,2026-11-04T03:54:32+00:00,完了
+QTserver/backup,P53_F_OM,OM2-03,89,?,89,100.0%,?,3,4.335 GB,2026-11-04T03:54:32+00:00,完了
+QTserver/backup,P53_F_OM,OM2-04,114,?,114,100.0%,?,64,5.539 GB,2026-11-04T03:54:33+00:00,完了
+QTserver/backup,P53_F_OM,OM2-05,42,?,42,100.0%,?,64,2.036 GB,2026-11-04T03:54:33+00:00,完了
+QTserver/backup,P53_F_OM,OM2-06,66,?,66,100.0%,?,64,3.207 GB,2026-11-04T03:54:33+00:00,完了
+QTserver/backup,P53_F_OM,OM2-07,44,?,44,100.0%,?,67,2.140 GB,2026-11-04T03:54:34+00:00,完了
+QTserver/backup,P53_F_OM,OM2-08,90,?,90,100.0%,?,67,4.418 GB,2026-11-04T03:54:34+00:00,完了
+QTserver/backup,P53_F_OM,OM2-09,90,?,90,100.0%,?,67,4.381 GB,2026-11-04T03:54:35+00:00,完了
+QTserver/backup,P53_F_OM,OM2-10,96,?,96,100.0%,?,64,4.607 GB,2026-11-04T03:54:36+00:00,完了
+QTserver/backup,P53_F_OM,OM2-11,48,?,48,100.0%,?,64,2.322 GB,2026-11-04T03:54:36+00:00,完了
+QTserver/backup,P53_F_OM,OM2-12,103,?,103,100.0%,?,64,6.108 GB,2026-11-04T03:54:36+00:00,完了
+QTserver/backup,P53_F_OM,OM2-13,50,?,50,100.0%,?,64,2.324 GB,2026-11-04T03:54:37+00:00,完了
+QTserver/backup,P53_F_OM,OM2-14,59,?,59,100.0%,?,64,2.822 GB,2026-11-04T03:54:37+00:00,完了
+QTserver/backup,P53_F_OM,OM2-15,132,?,132,100.0%,?,64,6.430 GB,2026-11-04T03:54:38+00:00,完了
+QTserver/backup,P53_F_OM,OM2-16,48,?,48,100.0%,?,64,2.331 GB,2026-11-04T03:54:38+00:00,完了
+QTserver/backup,P53_F_OM,OM2-17,96,?,96,100.0%,?,64,4.683 GB,2026-11-04T03:54:39+00:00,完了
+QTserver/backup,P53_F_OM,OM2-18,48,?,48,100.0%,?,64,2.325 GB,2026-11-04T03:54:39+00:00,完了
+QTserver/backup,P53_F_OM,OM3-01,124,?,124,100.0%,?,3,6.041 GB,2026-11-04T03:54:40+00:00,完了
+QTserver/backup,P53_F_OM,OM3-02,120,?,120,100.0%,?,3,5.853 GB,2026-11-04T03:54:40+00:00,完了
+QTserver/backup,P53_F_OM,OM3-03,134,?,134,100.0%,?,3,6.515 GB,2026-11-04T03:54:41+00:00,完了
+QTserver/backup,P53_F_OM,OM3-04,91,?,91,100.0%,?,64,4.317 GB,2026-11-04T03:54:41+00:00,完了
+QTserver/backup,P53_F_OM,OM3-05,42,?,42,100.0%,?,64,1.964 GB,2026-11-04T03:54:42+00:00,完了
+QTserver/backup,P53_F_OM,OM3-06,48,?,48,100.0%,?,64,2.324 GB,2026-11-04T03:54:42+00:00,完了
+QTserver/backup,P53_F_OM,OM3-07,50,?,50,100.0%,?,67,2.478 GB,2026-11-04T03:54:42+00:00,完了
+QTserver/backup,P53_F_OM,OM3-08,48,?,48,100.0%,?,67,2.352 GB,2026-11-04T03:54:43+00:00,完了
+QTserver/backup,P53_F_OM,OM3-09,49,?,49,100.0%,?,67,2.386 GB,2026-11-04T03:54:43+00:00,完了
+QTserver/backup,P53_F_OM,OM3-10,163,?,163,100.0%,?,64,7.952 GB,2026-11-04T03:54:44+00:00,完了
+QTserver/backup,P53_F_OM,OM3-11,48,?,48,100.0%,?,64,2.338 GB,2026-11-04T03:54:44+00:00,完了
+QTserver/backup,P53_F_OM,OM3-12,73,?,73,100.0%,?,64,3.565 GB,2026-11-04T03:54:44+00:00,完了
+QTserver/backup,P53_F_OM,OM3-13,87,?,87,100.0%,?,64,4.162 GB,2026-11-04T03:54:45+00:00,完了
+QTserver/backup,P53_F_OM,OM3-14,49,?,49,100.0%,?,64,2.334 GB,2026-11-04T03:54:45+00:00,完了
+QTserver/backup,P53_F_OM,OM3-15,48,?,48,100.0%,?,64,2.343 GB,2026-11-04T03:54:45+00:00,完了
+QTserver/backup,P53_F_OM,OM3-16,97,?,97,100.0%,?,64,4.414 GB,2026-11-04T03:54:46+00:00,完了
+QTserver/backup,P53_F_OM,OM3-17,49,?,49,100.0%,?,64,2.419 GB,2026-11-04T03:54:46+00:00,完了
+QTserver/backup,P53_F_OM,OM3-18,48,?,48,100.0%,?,64,2.352 GB,2026-11-04T03:54:47+00:00,完了
+QTserver/backup,P53_F_OM,OM4-01,111,?,111,100.0%,?,5,6.683 GB,2026-11-04T03:54:47+00:00,完了
+QTserver/backup,P53_F_OM,OM4-02,88,?,88,100.0%,?,69,5.554 GB,2026-11-04T03:54:47+00:00,完了
+QTserver/backup,P53_F_OM,OM4-03,22,?,22,100.0%,?,69,2.138 GB,2026-11-04T03:54:48+00:00,完了
+QTserver/backup,P53_F_OM,OM4-04,25,?,25,100.0%,?,64,2.381 GB,2026-11-04T03:54:48+00:00,完了
+QTserver/backup,P53_F_OM,OM4-05,49,?,49,100.0%,?,64,2.328 GB,2026-11-04T03:54:48+00:00,完了
+QTserver/backup,P53_F_OM,OM4-06,121,?,121,100.0%,?,64,5.837 GB,2026-11-04T03:54:49+00:00,完了
+QTserver/backup,P53_F_OM,OM4-07,60,?,60,100.0%,?,67,2.915 GB,2026-11-04T03:54:49+00:00,完了
+QTserver/backup,P53_F_OM,OM4-08,48,?,48,100.0%,?,67,2.348 GB,2026-11-04T03:54:49+00:00,完了
+QTserver/backup,P53_F_OM,OM4-09,48,?,48,100.0%,?,67,2.354 GB,2026-11-04T03:54:50+00:00,完了
+QTserver/backup,P53_F_OM,OM4-10,17,?,17,100.0%,?,64,0.830 GB,2026-11-04T03:54:50+00:00,完了
+QTserver/backup,P53_F_OM,OM4-11,60,?,60,100.0%,?,64,2.920 GB,2026-11-04T03:54:50+00:00,完了
+QTserver/backup,P53_F_OM,OM4-12,48,?,48,100.0%,?,64,2.338 GB,2026-11-04T03:54:51+00:00,完了
+QTserver/backup,P53_F_OM,OM4-13,44,?,44,100.0%,?,64,2.004 GB,2026-11-04T03:54:51+00:00,完了
+QTserver/backup,P53_F_OM,OM4-14,46,?,46,100.0%,?,64,2.232 GB,2026-11-04T03:54:51+00:00,完了
+QTserver/backup,P53_F_OM,OM4-15,78,?,78,100.0%,?,64,3.760 GB,2026-11-04T03:54:52+00:00,完了
+QTserver/backup,P53_F_OM,OM4-16,56,?,56,100.0%,?,64,2.763 GB,2026-11-04T03:54:52+00:00,完了
+QTserver/backup,P53_F_OM,OM4-17,48,?,48,100.0%,?,64,2.352 GB,2026-11-04T03:54:53+00:00,完了
+QTserver/backup,P53_F_OM,OM4-18,48,?,48,100.0%,?,64,2.341 GB,2026-11-04T03:54:53+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBB011,0,?,96,解析用コピー（Tなし）,?,0,2.389 GB,2026-11-04T03:52:37+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBB011,96,?,96,100.0%,?,68,4.700 GB,2026-11-04T03:56:12+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBB015,0,?,96,解析用コピー（Tなし）,?,0,2.501 GB,2026-11-04T03:52:37+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBB015,96,?,96,100.0%,?,68,4.812 GB,2026-11-04T03:56:13+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBB016,0,?,96,解析用コピー（Tなし）,?,0,2.462 GB,2026-11-04T03:52:38+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBB016,96,?,96,100.0%,?,68,4.773 GB,2026-11-04T03:56:18+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBB033,0,?,96,解析用コピー（Tなし）,?,0,2.432 GB,2026-11-04T03:52:38+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBB033,96,?,96,100.0%,?,68,4.743 GB,2026-11-04T03:56:22+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBB053,0,?,96,解析用コピー（Tなし）,?,0,2.391 GB,2026-11-04T03:52:38+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBB053,96,?,96,100.0%,?,68,4.702 GB,2026-11-04T03:56:26+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBB054,0,?,96,解析用コピー（Tなし）,?,0,2.362 GB,2026-11-04T03:52:38+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBB054,96,?,96,100.0%,?,68,4.672 GB,2026-11-04T03:56:28+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBB065,0,?,96,解析用コピー（Tなし）,?,0,2.447 GB,2026-11-04T03:52:38+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBB065,96,?,96,100.0%,?,68,4.758 GB,2026-11-04T03:56:31+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBB069,0,?,96,解析用コピー（Tなし）,?,0,2.407 GB,2026-11-04T03:52:38+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBB069,96,?,96,100.0%,?,68,4.718 GB,2026-11-04T03:56:35+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBB076,0,?,96,解析用コピー（Tなし）,?,0,2.329 GB,2026-11-04T03:52:38+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBB076,96,?,96,100.0%,?,68,4.639 GB,2026-11-04T03:56:37+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBB081,0,?,96,解析用コピー（Tなし）,?,0,2.378 GB,2026-11-04T03:52:38+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBB081,96,?,96,100.0%,?,68,4.689 GB,2026-11-04T03:56:39+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBB085,0,?,97,解析用コピー（Tなし）,?,0,2.436 GB,2026-11-04T03:52:38+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBB085,97,?,97,100.0%,?,68,4.770 GB,2026-11-04T03:56:43+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBB087,0,?,96,解析用コピー（Tなし）,?,0,2.359 GB,2026-11-04T03:52:38+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBB087,96,?,96,100.0%,?,0,4.670 GB,2026-11-04T03:56:44+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBB090,0,?,96,解析用コピー（Tなし）,?,0,2.472 GB,2026-11-04T03:52:38+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBB090,96,?,96,100.0%,?,0,4.783 GB,2026-11-04T03:56:46+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBB095,0,?,96,解析用コピー（Tなし）,?,0,2.432 GB,2026-11-04T03:52:38+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBB095,96,?,96,100.0%,?,0,4.743 GB,2026-11-04T03:56:48+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBB101,0,?,96,解析用コピー（Tなし）,?,0,2.377 GB,2026-11-04T03:52:38+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBB101,96,?,96,100.0%,?,0,4.688 GB,2026-11-04T03:56:49+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBB102,0,?,96,解析用コピー（Tなし）,?,0,2.340 GB,2026-11-04T03:52:38+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBB102,96,?,96,100.0%,?,0,4.651 GB,2026-11-04T03:56:50+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBN04,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:52:38+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBN04,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:56:50+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBN06,0,?,96,解析用コピー（Tなし）,?,68,2.363 GB,2026-11-04T03:52:39+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBN06,96,?,96,100.0%,?,0,4.674 GB,2026-11-04T03:56:50+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBN08,0,?,96,解析用コピー（Tなし）,?,68,2.357 GB,2026-11-04T03:52:40+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBN08,96,?,96,100.0%,?,0,4.667 GB,2026-11-04T03:56:51+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBN10,0,?,96,解析用コピー（Tなし）,?,68,2.456 GB,2026-11-04T03:52:41+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBN10,96,?,96,100.0%,?,0,4.766 GB,2026-11-04T03:56:52+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBN15,0,?,96,解析用コピー（Tなし）,?,68,2.327 GB,2026-11-04T03:52:43+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBN15,96,?,96,100.0%,?,0,4.637 GB,2026-11-04T03:56:53+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBN17,0,?,96,解析用コピー（Tなし）,?,68,2.358 GB,2026-11-04T03:52:44+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBN17,96,?,96,100.0%,?,0,4.668 GB,2026-11-04T03:56:54+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBNA,0,?,96,解析用コピー（Tなし）,?,68,2.476 GB,2026-11-04T03:52:45+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBNA,96,?,96,100.0%,?,0,4.786 GB,2026-11-04T03:56:55+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBNH,0,?,96,解析用コピー（Tなし）,?,68,2.369 GB,2026-11-04T03:52:47+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBNH,96,?,96,100.0%,?,0,4.680 GB,2026-11-04T03:56:56+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBNJ,0,?,96,解析用コピー（Tなし）,?,68,2.399 GB,2026-11-04T03:52:48+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBNJ,96,?,96,100.0%,?,0,4.710 GB,2026-11-04T03:56:57+00:00,完了
+QTserver/analysis,Pan_Cancer_N,LBNM,0,?,96,解析用コピー（Tなし）,?,68,2.356 GB,2026-11-04T03:52:50+00:00,完了
+QDserver/analysis,Pan_Cancer_N,LBNM,96,?,96,100.0%,?,0,4.667 GB,2026-11-04T03:56:58+00:00,完了
+Rackstation/analysis,Pan_Cancer_N2,117A,0,?,138,解析用コピー（Tなし）,?,68,5.394 GB,2026-11-04T03:47:26+00:00,完了
+QDserver/backup,Pan_Cancer_N2,117A,251,?,251,100.0%,?,25,19.431 GB,2026-11-05T05:05:47+00:00,完了
+Rackstation/analysis,Pan_Cancer_N2,117B,0,?,44,解析用コピー（Tなし）,?,68,1.736 GB,2026-11-04T03:47:26+00:00,完了
+QDserver/backup,Pan_Cancer_N2,117B,51,?,51,100.0%,?,25,3.974 GB,2026-11-04T03:59:39+00:00,完了
+Rackstation/analysis,Pan_Cancer_N2,263A,0,?,244,解析用コピー（Tなし）,?,68,9.485 GB,2026-11-04T03:47:27+00:00,完了
+QDserver/backup,Pan_Cancer_N2,263A,278,?,278,100.0%,?,25,21.509 GB,2026-11-04T03:59:41+00:00,完了
+Rackstation/analysis,Pan_Cancer_N2,263B,0,?,149,解析用コピー（Tなし）,?,68,5.827 GB,2026-11-04T03:47:27+00:00,完了
+QDserver/backup,Pan_Cancer_N2,263B,211,?,211,100.0%,?,25,16.360 GB,2026-11-04T03:59:42+00:00,完了
+Rackstation/analysis,Pan_Cancer_N2,2A,0,?,178,解析用コピー（Tなし）,?,68,6.955 GB,2026-11-04T03:47:28+00:00,完了
+QDserver/backup,Pan_Cancer_N2,2A,190,?,190,100.0%,?,25,14.737 GB,2026-11-04T03:59:42+00:00,完了
+Rackstation/analysis,Pan_Cancer_N2,2B,0,?,146,解析用コピー（Tなし）,?,68,5.727 GB,2026-11-04T03:47:28+00:00,完了
+QDserver/backup,Pan_Cancer_N2,2B,146,?,146,100.0%,?,25,11.344 GB,2026-11-04T03:59:43+00:00,完了
+Rackstation/analysis,Pan_Cancer_N2,47A,0,?,256,解析用コピー（Tなし）,?,68,9.970 GB,2026-11-04T03:47:29+00:00,完了
+QDserver/backup,Pan_Cancer_N2,47A,231,?,231,100.0%,?,25,17.866 GB,2026-11-04T03:59:44+00:00,完了
+Rackstation/analysis,Pan_Cancer_N2,47B,0,?,304,解析用コピー（Tなし）,?,68,11.889 GB,2026-11-04T03:47:29+00:00,完了
+QDserver/backup,Pan_Cancer_N2,47B,156,?,156,100.0%,?,25,12.110 GB,2026-11-04T03:59:45+00:00,完了
+Rackstation/analysis,Pan_Cancer_N2,53A,0,?,92,解析用コピー（Tなし）,?,68,3.621 GB,2026-11-04T03:47:29+00:00,完了
+QDserver/backup,Pan_Cancer_N2,53A,97,?,97,100.0%,?,25,7.555 GB,2026-11-04T03:59:46+00:00,完了
+Rackstation/analysis,Pan_Cancer_N2,53B,0,?,134,解析用コピー（Tなし）,?,68,5.171 GB,2026-11-04T03:47:30+00:00,完了
+QTserver/analysis,Pan_Cancer_N2,53B,0,?,未作成,対象なし,?,68,0.000 GB,2026-11-04T03:52:50+00:00,完了
+QDserver/backup,Pan_Cancer_N2,53B,269,?,269,100.0%,?,25,20.545 GB,2026-11-04T03:59:47+00:00,完了
+Rackstation/analysis,Pan_Cancer_N2,92A,0,?,148,解析用コピー（Tなし）,?,68,5.787 GB,2026-11-04T03:47:30+00:00,完了
+QDserver/backup,Pan_Cancer_N2,92A,195,?,195,100.0%,?,25,15.123 GB,2026-11-04T03:59:48+00:00,完了
+Rackstation/analysis,Pan_Cancer_N2,92B,0,?,117,解析用コピー（Tなし）,?,68,4.568 GB,2026-11-04T03:47:30+00:00,完了
+QDserver/backup,Pan_Cancer_N2,92B,190,?,190,100.0%,?,24,14.719 GB,2026-11-04T03:59:48+00:00,完了
+QDserver/backup,Pan_Cancer_N2_2023,117A,0,?,138,解析用コピー（Tなし）,?,25,5.394 GB,2026-11-04T03:59:49+00:00,完了
+QDserver/backup,Pan_Cancer_N2_2023,117B,44,?,44,100.0%,?,25,3.429 GB,2026-11-04T03:59:49+00:00,完了
+QDserver/backup,Pan_Cancer_N2_2023,263A,1,?,244,24400.0%,?,25,9.485 GB,2026-11-05T05:05:49+00:00,完了
+QDserver/backup,Pan_Cancer_N2_2023,263B,0,?,149,解析用コピー（Tなし）,?,25,5.827 GB,2026-11-04T03:59:49+00:00,完了
+QDserver/backup,Pan_Cancer_N2_2023,2A,0,?,178,解析用コピー（Tなし）,?,25,6.955 GB,2026-11-04T03:59:50+00:00,完了
+QDserver/backup,Pan_Cancer_N2_2023,2B,0,?,146,解析用コピー（Tなし）,?,25,5.727 GB,2026-11-04T03:59:50+00:00,完了
+QDserver/backup,Pan_Cancer_N2_2023,47A,0,?,256,解析用コピー（Tなし）,?,25,9.970 GB,2026-11-04T03:59:50+00:00,完了
+QDserver/backup,Pan_Cancer_N2_2023,47B,0,?,304,解析用コピー（Tなし）,?,25,11.889 GB,2026-11-04T03:59:50+00:00,完了
+QDserver/backup,Pan_Cancer_N2_2023,53A,0,?,92,解析用コピー（Tなし）,?,25,3.621 GB,2026-11-04T03:59:51+00:00,完了
+QDserver/backup,Pan_Cancer_N2_2023,53B,0,?,136,解析用コピー（Tなし）,?,25,5.248 GB,2026-11-04T03:59:51+00:00,完了
+QDserver/backup,Pan_Cancer_N2_2023,92A,0,?,148,解析用コピー（Tなし）,?,25,5.787 GB,2026-11-04T03:59:51+00:00,完了
+QDserver/backup,Pan_Cancer_N2_2023,92B,0,?,151,解析用コピー（Tなし）,?,24,6.010 GB,2026-11-04T03:59:51+00:00,完了
+QDserver/analysis,Phi174,Phi174,0,?,793,解析用コピー（Tなし）,?,90,30.944 GB,2026-11-04T03:57:00+00:00,完了
+QDserver/backup,Protein,Camp,18,?,18,100.0%,?,0,2.311 GB,2026-11-04T03:59:51+00:00,完了
+QDserver/backup,Protein,FLamp,5,?,5,100.0%,?,0,0.653 GB,2026-11-04T03:59:51+00:00,完了
+QDserver/backup,Protein,FLnoamp,5,?,5,100.0%,?,0,0.761 GB,2026-11-04T03:59:52+00:00,完了
+QDserver/backup,Protein,LC2amp,19,?,19,100.0%,?,0,4.416 GB,2026-11-04T03:59:52+00:00,完了
+QDserver/backup,Protein,LCamp,5,?,5,100.0%,?,0,0.653 GB,2026-11-04T03:59:52+00:00,完了
+QDserver/backup,Protein,LCatp,19,?,19,100.0%,?,0,4.605 GB,2026-11-04T03:59:52+00:00,完了
+QDserver/backup,Protein,LCnoamp,5,?,5,100.0%,?,0,0.761 GB,2026-11-04T03:59:52+00:00,完了
+QDserver/analysis,RNA,rAMP,0,?,313,解析用コピー（Tなし）,?,0,12.176 GB,2026-11-04T03:57:01+00:00,完了
+QDserver/analysis,RNA,rCMP,0,?,126,解析用コピー（Tなし）,?,0,5.016 GB,2026-11-04T03:57:01+00:00,完了
+QDserver/analysis,RNA,rGMP,0,?,182,解析用コピー（Tなし）,?,0,7.117 GB,2026-11-04T03:57:01+00:00,完了
+QDserver/analysis,RNA,rUMP,0,?,169,解析用コピー（Tなし）,?,0,6.638 GB,2026-11-04T03:57:01+00:00,完了
+Rackstation/archive,Ryu,300_3_LDOPA,50,?,50,100.0%,?,0,2.466 GB,2026-11-04T03:50:58+00:00,完了
+Rackstation/archive,Ryu,400_3_DA,40,?,40,100.0%,?,0,1.978 GB,2026-11-04T03:50:58+00:00,完了
+Rackstation/archive,Ryu,400_3_LDOPA,26,?,26,100.0%,?,0,1.307 GB,2026-11-04T03:50:58+00:00,完了
+Rackstation/archive,Ryu,400_7_LDOPA,40,?,40,100.0%,?,0,2.007 GB,2026-11-04T03:50:59+00:00,完了
+Rackstation/archive,Ryu,500_3_DA,40,?,40,100.0%,?,0,2.023 GB,2026-11-04T03:50:59+00:00,完了
+Rackstation/archive,Ryu,500_3_LDOPA,30,?,30,100.0%,?,0,1.505 GB,2026-11-04T03:50:59+00:00,完了
+Rackstation/archive,Ryu,500_7_LDOPA,50,?,50,100.0%,?,0,2.508 GB,2026-11-04T03:51:00+00:00,完了
+Rackstation/analysis,S49,Ile,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:47:31+00:00,完了
+Rackstation/analysis,S49,LFucose,52,?,52,100.0%,?,0,4.102 GB,2026-11-04T03:47:31+00:00,完了
+Rackstation/analysis,S49,Lue,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:47:31+00:00,完了
+Rackstation/analysis,S49,glucose,48,?,48,100.0%,?,0,2.383 GB,2026-11-04T03:47:31+00:00,完了
+QTserver/backup,SEEDS,AOMe,0,?,193,解析用コピー（Tなし）,?,0,6.829 GB,2026-11-04T03:54:53+00:00,完了
+QTserver/backup,SEEDS,rCMP,0,?,2,解析用コピー（Tなし）,?,0,0.064 GB,2026-11-04T03:54:53+00:00,完了
+QTserver/backup,SEEDS,rUMP,0,?,2,解析用コピー（Tなし）,?,0,0.049 GB,2026-11-04T03:54:53+00:00,完了
+Rackstation/analysis,SGMO,ILe,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:48:44+00:00,完了
+Rackstation/analysis,SGMO,Ile_610,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:48:44+00:00,完了
+Rackstation/analysis,SGMO,Ile_611,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:48:44+00:00,完了
+Rackstation/analysis,SGMO,Leu,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:48:44+00:00,完了
+Rackstation/analysis,SGMO,Leu_610,10,?,10,100.0%,?,0,0.787 GB,2026-11-04T03:48:44+00:00,完了
+Rackstation/analysis,SGMO,Leu_611,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:48:44+00:00,完了
+Rackstation/analysis,SGMO,MilliQ,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:48:44+00:00,完了
+Rackstation/analysis,SGMO,MilliQ_610,10,?,10,100.0%,?,0,0.796 GB,2026-11-04T03:48:44+00:00,完了
+Rackstation/analysis,SGMO,MilliQ_611,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:48:45+00:00,完了
+Rackstation/analysis,Sakano_00,AVP,120,?,120,100.0%,?,1,9.269 GB,2026-11-04T03:47:32+00:00,完了
+Rackstation/analysis,Sakano_00,OXT,60,?,60,100.0%,?,1,4.702 GB,2026-11-04T03:47:32+00:00,完了
+Rackstation/analysis,Sakano_01,Adenine,105,?,105,100.0%,?,1,8.158 GB,2026-11-04T03:47:34+00:00,完了
+Rackstation/analysis,Sakano_01,GO6MeG1-1,91,?,91,100.0%,?,0,7.117 GB,2026-11-04T03:47:34+00:00,完了
+Rackstation/analysis,Sakano_01,GO6MeG1-3,350,?,350,100.0%,?,0,27.048 GB,2026-11-04T03:47:38+00:00,完了
+Rackstation/analysis,Sakano_01,GO6MeG10-1,60,?,60,100.0%,?,0,4.686 GB,2026-11-04T03:47:39+00:00,完了
+Rackstation/analysis,Sakano_01,GO6MeG100-1,68,?,68,100.0%,?,0,5.300 GB,2026-11-04T03:47:40+00:00,完了
+Rackstation/analysis,Sakano_01,GO6MeG1000-1,149,?,149,100.0%,?,0,11.560 GB,2026-11-04T03:47:41+00:00,完了
+Rackstation/analysis,Sakano_01,GO6MeG3-1,183,?,183,100.0%,?,0,14.274 GB,2026-11-04T03:47:42+00:00,完了
+Rackstation/analysis,Sakano_01,Guanine,278,?,278,100.0%,?,0,21.936 GB,2026-11-04T03:47:46+00:00,完了
+Rackstation/analysis,Sakano_01,OMeG,165,?,165,100.0%,?,0,12.823 GB,2026-11-04T03:47:48+00:00,完了
+Rackstation/analysis,Sakano_01,OMeGNaOH,138,?,138,100.0%,?,0,10.647 GB,2026-11-04T03:47:48+00:00,完了
+Rackstation/analysis,Sakano_01,OxoG,51,?,51,100.0%,?,0,3.934 GB,2026-11-04T03:47:49+00:00,完了
+Rackstation/analysis,Sakano_02,oxytocin,180,?,180,100.0%,?,1,13.996 GB,2026-11-04T03:47:50+00:00,完了
+Rackstation/analysis,Sakano_02,vasopressin,180,?,180,100.0%,?,1,13.939 GB,2026-11-04T03:47:52+00:00,完了
+Rackstation/analysis,Sato_pep,AspPhe,138,?,138,100.0%,?,0,10.819 GB,2026-11-04T03:47:53+00:00,完了
+Rackstation/analysis,Sato_pep,GlnPhe,168,?,168,100.0%,?,0,13.093 GB,2026-11-04T03:47:54+00:00,完了
+Rackstation/analysis,Sato_pep,GlnVal,46,?,46,100.0%,?,0,3.595 GB,2026-11-04T03:47:55+00:00,完了
+Rackstation/analysis,Sato_pep,PheAsp,136,?,136,100.0%,?,0,10.635 GB,2026-11-04T03:47:57+00:00,完了
+Rackstation/analysis,Sato_pep,PheGlu,42,?,42,100.0%,?,0,3.294 GB,2026-11-05T05:05:49+00:00,完了
+Rackstation/analysis,Sato_pep,SerVal,37,?,37,100.0%,?,0,2.924 GB,2026-11-04T03:47:58+00:00,完了
+Rackstation/analysis,Sato_pep,ValGln,26,?,26,100.0%,?,0,2.066 GB,2026-11-04T03:47:58+00:00,完了
+Rackstation/analysis,Sato_pep,ValSer,370,?,370,100.0%,?,0,28.706 GB,2026-11-04T03:48:00+00:00,完了
+QTserver/analysis,Seeds2022_Yamane,AOMe,0,?,202,解析用コピー（Tなし）,?,0,7.053 GB,2026-11-04T03:52:50+00:00,完了
+QTserver/analysis,Seeds2022_Yamane,COMe,0,?,111,解析用コピー（Tなし）,?,0,3.130 GB,2026-11-04T03:52:50+00:00,完了
+QTserver/analysis,Seeds2022_Yamane,GOMe,0,?,184,解析用コピー（Tなし）,?,0,5.522 GB,2026-11-04T03:52:50+00:00,完了
+QTserver/analysis,Seeds2022_Yamane,UOMe,0,?,222,解析用コピー（Tなし）,?,0,7.555 GB,2026-11-04T03:52:51+00:00,完了
+QTserver/analysis,Seeds2022_Yamane,rAMP,0,?,313,解析用コピー（Tなし）,?,0,12.176 GB,2026-11-04T03:52:50+00:00,完了
+QTserver/analysis,Seeds2022_Yamane,rCMP,0,?,126,解析用コピー（Tなし）,?,0,5.016 GB,2026-11-04T03:52:50+00:00,完了
+QTserver/analysis,Seeds2022_Yamane,rGMP,0,?,182,解析用コピー（Tなし）,?,0,7.117 GB,2026-11-04T03:52:51+00:00,完了
+QTserver/analysis,Seeds2022_Yamane,rUMP,0,?,169,解析用コピー（Tなし）,?,0,6.638 GB,2026-11-04T03:52:51+00:00,完了
+QTserver/backup,Seeds2023,5hmC,139,?,139,100.0%,?,0,10.769 GB,2026-11-04T03:54:54+00:00,完了
+QTserver/backup,Seeds2023,FUTP,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:54:55+00:00,完了
+QTserver/backup,Seeds2023,I,192,?,192,100.0%,?,0,9.373 GB,2026-11-04T03:54:55+00:00,完了
+QTserver/backup,Seeds2023,Lys,12,?,12,100.0%,?,0,0.579 GB,2026-11-04T03:54:55+00:00,完了
+QTserver/backup,Seeds2023,OxG,110,?,110,100.0%,?,0,8.189 GB,2026-11-04T03:54:55+00:00,完了
+QTserver/backup,Seeds2023,ac4C,12,?,12,100.0%,?,0,0.594 GB,2026-11-04T03:54:54+00:00,完了
+QTserver/backup,Seeds2023,acLys,90,?,90,100.0%,?,0,7.049 GB,2026-11-04T03:54:54+00:00,完了
+QTserver/backup,Seeds2023,cGMP,12,?,12,100.0%,?,0,0.582 GB,2026-11-04T03:54:55+00:00,完了
+QTserver/analysis,Seeds2023_Fukuda,AMP,0,?,115,解析用コピー（Tなし）,?,0,4.496 GB,2026-11-04T03:52:51+00:00,完了
+QTserver/analysis,Seeds2023_Fukuda,GMP,0,?,223,解析用コピー（Tなし）,?,0,5.572 GB,2026-11-04T03:52:52+00:00,完了
+QTserver/analysis,Seeds2023_Fukuda,cAMP,0,?,69,解析用コピー（Tなし）,?,0,2.738 GB,2026-11-04T03:52:51+00:00,完了
+QTserver/analysis,Seeds2023_Fukuda,cGMP,12,?,12,100.0%,?,0,0.586 GB,2026-11-04T03:52:51+00:00,完了
+QTserver/analysis,Seeds2023_Hamazaki,Gly,0,?,125,解析用コピー（Tなし）,?,0,4.866 GB,2026-11-04T03:52:52+00:00,完了
+QTserver/analysis,Seeds2023_Hamazaki,Lys,0,?,115,解析用コピー（Tなし）,?,0,4.478 GB,2026-11-04T03:52:52+00:00,完了
+QTserver/analysis,Seeds2023_Hamazaki,M1Lys,0,?,328,解析用コピー（Tなし）,?,0,13.387 GB,2026-11-04T03:52:52+00:00,完了
+QTserver/analysis,Seeds2023_Hamazaki,M2Lys,0,?,160,解析用コピー（Tなし）,?,0,6.550 GB,2026-11-04T03:52:52+00:00,完了
+QTserver/analysis,Seeds2023_Hamazaki,M3Lys,0,?,196,解析用コピー（Tなし）,?,0,7.909 GB,2026-11-04T03:52:53+00:00,完了
+QTserver/analysis,Seeds2023_Kokubu,A,0,?,275,解析用コピー（Tなし）,?,0,6.773 GB,2026-11-04T03:52:53+00:00,完了
+QTserver/analysis,Seeds2023_Kokubu,C,0,?,241,解析用コピー（Tなし）,?,0,6.412 GB,2026-11-04T03:52:53+00:00,完了
+QTserver/analysis,Seeds2023_Kokubu,G,0,?,223,解析用コピー（Tなし）,?,0,5.572 GB,2026-11-04T03:52:53+00:00,完了
+QTserver/analysis,Seeds2023_Kokubu,T,0,?,298,解析用コピー（Tなし）,?,0,7.353 GB,2026-11-04T03:52:55+00:00,完了
+QTserver/analysis,Seeds2023_Kokubu,oxG,110,?,110,100.0%,?,0,8.245 GB,2026-11-04T03:52:55+00:00,完了
+QTserver/analysis,Seeds2023_Nakamura_B,5hmC,60,?,60,100.0%,?,0,4.690 GB,2026-11-04T03:52:57+00:00,完了
+QTserver/analysis,Seeds2023_Nakamura_B,5mC,64,?,64,100.0%,?,0,4.990 GB,2026-11-04T03:52:57+00:00,完了
+QTserver/analysis,Seeds2023_Nakamura_B,A,0,?,275,解析用コピー（Tなし）,?,0,6.773 GB,2026-11-04T03:52:57+00:00,完了
+QTserver/analysis,Seeds2023_Nakamura_B,C,0,?,241,解析用コピー（Tなし）,?,0,6.412 GB,2026-11-04T03:52:58+00:00,完了
+QTserver/analysis,Seeds2023_Nakamura_B,G,0,?,223,解析用コピー（Tなし）,?,0,5.572 GB,2026-11-04T03:52:58+00:00,完了
+QTserver/analysis,Seeds2023_Nakamura_B,T,0,?,298,解析用コピー（Tなし）,?,0,7.353 GB,2026-11-04T03:52:59+00:00,完了
+QTserver/analysis,Seeds2023_Nakamura_B,m6A,202,?,202,100.0%,?,0,15.486 GB,2026-11-04T03:52:59+00:00,完了
+QTserver/analysis,Seeds2023_Nakamura_R,5hmC,60,?,60,100.0%,?,0,4.690 GB,2026-11-04T03:52:59+00:00,完了
+QTserver/analysis,Seeds2023_Nakamura_R,5mC,64,?,64,100.0%,?,0,4.990 GB,2026-11-04T03:52:59+00:00,完了
+QTserver/analysis,Seeds2023_Nakamura_R,A,0,?,275,解析用コピー（Tなし）,?,0,6.773 GB,2026-11-04T03:52:59+00:00,完了
+QTserver/analysis,Seeds2023_Nakamura_R,C,0,?,241,解析用コピー（Tなし）,?,0,6.412 GB,2026-11-04T03:53:00+00:00,完了
+QTserver/analysis,Seeds2023_Nakamura_R,G,0,?,223,解析用コピー（Tなし）,?,0,5.572 GB,2026-11-04T03:53:00+00:00,完了
+QTserver/analysis,Seeds2023_Nakamura_R,T,0,?,298,解析用コピー（Tなし）,?,0,7.353 GB,2026-11-04T03:53:00+00:00,完了
+QTserver/analysis,Seeds2023_Nakamura_R,ac4C,12,?,12,100.0%,?,0,0.601 GB,2026-11-04T03:53:00+00:00,完了
+QTserver/analysis,Seeds2023_Notsu,Gly,0,?,125,解析用コピー（Tなし）,?,0,4.866 GB,2026-11-04T03:53:01+00:00,完了
+QTserver/analysis,Seeds2023_Notsu,Lys,0,?,115,解析用コピー（Tなし）,?,0,4.478 GB,2026-11-04T03:53:01+00:00,完了
+QTserver/analysis,Seeds2023_Notsu,M1Lys,0,?,328,解析用コピー（Tなし）,?,0,13.387 GB,2026-11-04T03:53:02+00:00,完了
+QTserver/analysis,Seeds2023_Notsu,acLys,90,?,90,100.0%,?,0,7.049 GB,2026-11-04T03:53:01+00:00,完了
+QTserver/analysis,Seeds2023_Okada,ATP,0,?,261,解析用コピー（Tなし）,?,0,10.147 GB,2026-11-04T03:53:02+00:00,完了
+QTserver/analysis,Seeds2023_Okada,CTP,0,?,166,解析用コピー（Tなし）,?,0,6.462 GB,2026-11-04T03:53:02+00:00,完了
+QTserver/analysis,Seeds2023_Okada,FUTP,0,?,116,解析用コピー（Tなし）,?,0,4.489 GB,2026-11-04T03:53:02+00:00,完了
+QTserver/analysis,Seeds2023_Okada,GTP,0,?,161,解析用コピー（Tなし）,?,0,6.258 GB,2026-11-04T03:53:02+00:00,完了
+QTserver/analysis,Seeds2023_Okada,UTP,0,?,70,解析用コピー（Tなし）,?,0,2.780 GB,2026-11-04T03:53:02+00:00,完了
+Rackstation/archive,Seeds2024,AC,10,?,10,100.0%,?,0,0.785 GB,2026-11-04T03:51:00+00:00,完了
+Rackstation/archive,Seeds2024,CA,10,?,10,100.0%,?,0,0.794 GB,2026-11-04T03:51:01+00:00,完了
+Rackstation/analysis,Seeds2025_Katahira,DIP,50,?,50,100.0%,?,0,3.954 GB,2026-11-04T03:48:01+00:00,完了
+Rackstation/analysis,Seeds2025_Katahira,IPP,279,?,279,100.0%,?,0,21.632 GB,2026-11-04T03:48:04+00:00,完了
+Rackstation/analysis,Seeds2025_Katahira,Ile,38,?,38,100.0%,?,0,3.017 GB,2026-11-04T03:48:01+00:00,完了
+Rackstation/analysis,Seeds2025_Katahira,Pro,64,?,64,100.0%,?,0,5.128 GB,2026-11-04T03:48:04+00:00,完了
+Rackstation/analysis,Seeds2025_Katahira,VPP,100,?,100,100.0%,?,0,7.849 GB,2026-11-04T03:48:06+00:00,完了
+Rackstation/analysis,Seeds2025_Katahira,Val,112,?,112,100.0%,?,0,8.864 GB,2026-11-04T03:48:05+00:00,完了
+Rackstation/analysis,Seeds2025_Maruyama,Gal,41,?,41,100.0%,?,0,3.215 GB,2026-11-04T03:48:07+00:00,完了
+Rackstation/analysis,Seeds2025_Maruyama,LA,60,?,60,100.0%,?,0,4.667 GB,2026-11-04T03:48:08+00:00,完了
+Rackstation/analysis,Seeds2025_Maruyama,LBA,35,?,35,100.0%,?,0,2.742 GB,2026-11-04T03:48:09+00:00,完了
+Rackstation/analysis,Seeds2025_Maruyama,glucose,48,?,48,100.0%,?,0,2.383 GB,2026-11-04T03:48:08+00:00,完了
+Rackstation/analysis,Seeds2025_Shibata,GPH,33,?,33,100.0%,?,0,2.614 GB,2026-11-04T03:48:10+00:00,完了
+Rackstation/analysis,Seeds2025_Shibata,Gly,74,?,74,100.0%,?,0,5.784 GB,2026-11-04T03:48:10+00:00,完了
+Rackstation/analysis,Seeds2025_Shibata,Hyp,54,?,54,100.0%,?,0,4.223 GB,2026-11-04T03:48:11+00:00,完了
+Rackstation/analysis,Seeds2025_Shibata,Pro,64,?,64,100.0%,?,0,5.128 GB,2026-11-04T03:48:13+00:00,完了
+Rackstation/analysis,Seeds2025_Tada,GTG,158,?,158,100.0%,?,0,12.217 GB,2026-11-04T03:48:14+00:00,完了
+Rackstation/analysis,Seeds2025_Tada,Gly,74,?,74,100.0%,?,0,5.784 GB,2026-11-04T03:48:13+00:00,完了
+Rackstation/analysis,Seeds2025_Tada,LTL,70,?,70,100.0%,?,0,5.499 GB,2026-11-04T03:48:15+00:00,完了
+Rackstation/analysis,Seeds2025_Tada,Lys,84,?,84,100.0%,?,0,6.595 GB,2026-11-04T03:48:16+00:00,完了
+Rackstation/analysis,Seeds2025_Tada,Tyr,142,?,142,100.0%,?,0,11.068 GB,2026-11-04T03:48:19+00:00,完了
+Rackstation/analysis,Seeds2025_Yasuda,GTRH,66,?,66,100.0%,?,0,5.154 GB,2026-11-04T03:48:21+00:00,完了
+Rackstation/analysis,Seeds2025_Yasuda,Glu,70,?,70,100.0%,?,0,5.491 GB,2026-11-04T03:48:20+00:00,完了
+Rackstation/analysis,Seeds2025_Yasuda,His,104,?,104,100.0%,?,0,8.113 GB,2026-11-04T03:48:23+00:00,完了
+Rackstation/analysis,Seeds2025_Yasuda,Pro,64,?,64,100.0%,?,0,5.128 GB,2026-11-04T03:48:23+00:00,完了
+Rackstation/analysis,Seeds2025_Yasuda,Pyr,40,?,40,100.0%,?,0,3.139 GB,2026-11-04T03:48:24+00:00,完了
+Rackstation/analysis,Seeds2025_Yasuda,TRH,83,?,83,100.0%,?,0,4.048 GB,2026-11-04T03:48:26+00:00,完了
+Rackstation/analysis,Seeds2025_Yasuda,TRHF,46,?,46,100.0%,?,0,3.576 GB,2026-11-04T03:48:26+00:00,完了
+Rackstation/archive,Seeds_Kagawa,AC,368,?,368,100.0%,?,0,17.731 GB,2026-11-04T03:51:04+00:00,完了
+Rackstation/archive,Seeds_Kagawa,CA,445,?,445,100.0%,?,0,21.456 GB,2026-11-04T03:51:06+00:00,完了
+Rackstation/archive,Seeds_Kaneko,Pls1p10,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:51:07+00:00,完了
+Rackstation/archive,Seeds_Kaneko,Pls1p100,30,?,30,100.0%,?,0,2.372 GB,2026-11-04T03:51:07+00:00,完了
+Rackstation/archive,Seeds_Kaneko,PlsGMP0p1u,12,?,12,100.0%,?,0,0.941 GB,2026-11-04T03:51:07+00:00,完了
+Rackstation/archive,Seeds_Kaneko,PlsGMP10u,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:51:07+00:00,完了
+Rackstation/archive,Seeds_Kaneko,PlsGMP1u,12,?,12,100.0%,?,0,0.930 GB,2026-11-04T03:51:07+00:00,完了
+Rackstation/archive,Seeds_Kaneko,Ser1p10,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:51:07+00:00,完了
+Rackstation/archive,Seeds_Kaneko,Ser1p100,8,?,8,100.0%,?,0,0.419 GB,2026-11-04T03:51:07+00:00,完了
+Rackstation/archive,Seeds_Kaneko,SerGMP0p1u,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:51:07+00:00,完了
+Rackstation/archive,Seeds_Kaneko,SerGMP10u,32,?,32,100.0%,?,0,2.517 GB,2026-11-04T03:51:07+00:00,完了
+Rackstation/archive,Seeds_Kaneko,SerGMP1u,21,?,21,100.0%,?,0,1.646 GB,2026-11-04T03:51:07+00:00,完了
+Rackstation/archive,Seeds_Kaneko,Serlet7a,29,?,29,100.0%,?,0,2.249 GB,2026-11-04T03:51:08+00:00,完了
+Rackstation/archive,Seeds_Kaneko,let7a,34,?,34,100.0%,?,0,2.663 GB,2026-11-04T03:51:06+00:00,完了
+Rackstation/archive,Seeds_Kaneko,let7aW22,184,?,184,100.0%,?,0,34.135 GB,2026-11-04T03:51:07+00:00,完了
+Rackstation/archive,Seeds_Kaneko,rGMP,22,?,22,100.0%,?,0,1.725 GB,2026-11-04T03:51:07+00:00,完了
+Rackstation/archive,Seeds_Kondo,Adenosine,26,?,26,100.0%,?,0,2.022 GB,2026-11-04T03:51:08+00:00,完了
+Rackstation/archive,Seeds_Kondo,Inosine,28,?,28,100.0%,?,0,2.186 GB,2026-11-04T03:51:08+00:00,完了
+Rackstation/archive,Seeds_Kondo,m1A,42,?,42,100.0%,?,0,3.360 GB,2026-11-04T03:51:09+00:00,完了
+Rackstation/archive,Seeds_Kondo,m6A,20,?,20,100.0%,?,0,1.562 GB,2026-11-04T03:51:09+00:00,完了
+Rackstation/archive,Seeds_Nishihata,Ser,84,?,84,100.0%,?,0,6.570 GB,2026-11-04T03:51:12+00:00,完了
+Rackstation/archive,Seeds_Nishihata,Thr,52,?,52,100.0%,?,0,4.078 GB,2026-11-04T03:51:12+00:00,完了
+Rackstation/archive,Seeds_Nishihata,Tyr,52,?,52,100.0%,?,0,4.160 GB,2026-11-04T03:51:13+00:00,完了
+Rackstation/archive,Seeds_Nishihata,pSer,46,?,46,100.0%,?,0,3.603 GB,2026-11-04T03:51:10+00:00,完了
+Rackstation/archive,Seeds_Nishihata,pThr,44,?,44,100.0%,?,0,3.422 GB,2026-11-04T03:51:10+00:00,完了
+Rackstation/archive,Seeds_Nishihata,pTyr,41,?,41,100.0%,?,0,3.240 GB,2026-11-04T03:51:11+00:00,完了
+Rackstation/archive,Seeds_Sugimura,S,21,?,21,100.0%,?,0,1.664 GB,2026-11-04T03:51:13+00:00,完了
+Rackstation/archive,Seeds_Sugimura,U,14,?,14,100.0%,?,0,0.876 GB,2026-11-04T03:51:14+00:00,完了
+Rackstation/archive,Seeds_Sugimura,m1S,14,?,14,100.0%,?,0,1.145 GB,2026-11-04T03:51:13+00:00,完了
+Rackstation/analysis,Sekiya_L,Ile,2,?,2,100.0%,?,0,0.161 GB,2026-11-04T03:48:27+00:00,完了
+Rackstation/analysis,Sekiya_L,Leu,2,?,2,100.0%,?,0,0.164 GB,2026-11-04T03:48:27+00:00,完了
+Rackstation/analysis,Seya,23_50P,38,?,38,100.0%,?,0,2.996 GB,2026-11-04T03:48:28+00:00,完了
+Rackstation/analysis,Seya,26_50Ca,147,?,147,100.0%,?,0,11.434 GB,2026-11-04T03:48:30+00:00,完了
+Rackstation/analysis,Seya,G6DA_0mM,20,?,20,100.0%,?,0,1.611 GB,2026-11-04T03:48:30+00:00,完了
+Rackstation/analysis,Seya,G6DA_25mM,9,?,9,100.0%,?,0,0.746 GB,2026-11-04T03:48:30+00:00,完了
+Rackstation/analysis,Seya,G6DA_50mM,85,?,85,100.0%,?,0,6.627 GB,2026-11-04T03:48:31+00:00,完了
+Rackstation/analysis,Seya,K2AK7A_0mM,25,?,25,100.0%,?,0,2.022 GB,2026-11-04T03:48:32+00:00,完了
+Rackstation/analysis,Seya,K2AK7A_25mM,60,?,60,100.0%,?,0,4.854 GB,2026-11-04T03:48:34+00:00,完了
+Rackstation/analysis,Seya,K2AK7A_50mM,50,?,50,100.0%,?,0,3.977 GB,2026-11-04T03:48:34+00:00,完了
+Rackstation/analysis,Seya,Main_0mM,70,?,70,100.0%,?,0,5.545 GB,2026-11-04T03:48:36+00:00,完了
+Rackstation/analysis,Seya,Main_25mM,70,?,70,100.0%,?,0,5.520 GB,2026-11-04T03:48:38+00:00,完了
+Rackstation/analysis,Seya,Main_50mM,70,?,70,100.0%,?,0,5.648 GB,2026-11-04T03:48:39+00:00,完了
+Rackstation/analysis,Seya,Shuffle_0mM,140,?,140,100.0%,?,0,11.047 GB,2026-11-04T03:48:42+00:00,完了
+Rackstation/analysis,Seya,Shuffle_25mM,120,?,120,100.0%,?,0,9.338 GB,2026-11-04T03:48:43+00:00,完了
+Rackstation/analysis,Seya,Shuffle_50mM,40,?,40,100.0%,?,0,3.141 GB,2026-11-04T03:48:44+00:00,完了
+Rackstation/analysis,Shanli_thy,Phe,20,?,20,100.0%,?,0,1.555 GB,2026-11-04T03:48:45+00:00,完了
+Rackstation/analysis,Shanli_thy,PheDI,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:48:45+00:00,完了
+Rackstation/analysis,Shanli_thy,PheI,21,?,21,100.0%,?,0,1.660 GB,2026-11-04T03:48:45+00:00,完了
+Rackstation/analysis,Shanli_thy,T2,93,?,93,100.0%,?,0,7.247 GB,2026-11-04T03:51:04+00:00,完了
+Rackstation/analysis,Shanli_thy,T3,53,?,53,100.0%,?,0,4.142 GB,2026-11-04T03:51:04+00:00,完了
+Rackstation/analysis,Shanli_thy,T4,29,?,29,100.0%,?,0,2.304 GB,2026-11-04T03:51:04+00:00,完了
+Rackstation/analysis,Shanli_thy,Tyr,68,?,68,100.0%,?,0,5.324 GB,2026-11-05T05:05:49+00:00,完了
+Rackstation/analysis,Shanli_thy,TyrDI,42,?,42,100.0%,?,0,3.303 GB,2026-11-04T03:51:04+00:00,完了
+Rackstation/analysis,Shanli_thy,TyrI,34,?,34,100.0%,?,0,2.685 GB,2026-11-04T03:48:46+00:00,完了
+QDserver/backup,Smoking,MARU,40,?,40,100.0%,?,0,3.114 GB,2026-11-04T03:59:53+00:00,完了
+QDserver/backup,Smoking,MARUY,94,?,94,100.0%,?,0,7.256 GB,2026-11-04T03:59:53+00:00,完了
+QDserver/backup,Smoking,MEB,46,?,46,100.0%,?,0,3.640 GB,2026-11-04T03:59:53+00:00,完了
+QDserver/backup,Smoking,MEBY,20,?,20,100.0%,?,0,1.547 GB,2026-11-04T03:59:53+00:00,完了
+QDserver/backup,Smoking,Nicotine,91,?,91,100.0%,?,0,6.779 GB,2026-11-04T03:59:54+00:00,完了
+QDserver/backup,Smoking,SEVEN,16,?,16,100.0%,?,0,1.282 GB,2026-11-04T03:59:54+00:00,完了
+QDserver/backup,Smoking,SEVENY,134,?,134,100.0%,?,0,10.340 GB,2026-11-04T03:59:54+00:00,完了
+QDserver/backup,Smoking,Toluene,61,?,61,100.0%,?,0,4.764 GB,2026-11-04T03:59:55+00:00,完了
+Rackstation/analysis,Sugar,Cellobiose,80,?,80,100.0%,?,0,6.267 GB,2026-11-04T03:48:48+00:00,完了
+Rackstation/analysis,Sugar,Chitobiose,33,?,33,100.0%,?,0,2.660 GB,2026-11-04T03:48:48+00:00,完了
+Rackstation/analysis,Sugar,DFucose,73,?,73,100.0%,?,0,5.690 GB,2026-11-04T03:48:50+00:00,完了
+Rackstation/analysis,Sugar,Gal,9,?,9,100.0%,?,0,0.705 GB,2026-11-04T03:48:50+00:00,完了
+Rackstation/analysis,Sugar,Isomaltose,49,?,49,100.0%,?,0,2.411 GB,2026-11-04T03:48:52+00:00,完了
+Rackstation/analysis,Sugar,LFucose,52,?,52,100.0%,?,0,4.102 GB,2026-11-04T03:48:53+00:00,完了
+Rackstation/analysis,Sugar,Man,34,?,34,100.0%,?,0,2.638 GB,2026-11-04T03:48:53+00:00,完了
+Rackstation/analysis,Sugar,Rha,20,?,20,100.0%,?,0,1.564 GB,2026-11-04T03:48:54+00:00,完了
+Rackstation/analysis,Sugar,Xycose,71,?,71,100.0%,?,0,3.505 GB,2026-11-04T03:48:56+00:00,完了
+Rackstation/analysis,Sugar,glucose,48,?,48,100.0%,?,0,2.383 GB,2026-11-04T03:48:51+00:00,完了
+Rackstation/analysis,Suzuki_20260708,246,29,?,29,100.0%,?,0,2.337 GB,2026-11-04T03:48:56+00:00,完了
+Rackstation/analysis,Suzuki_20260708,26-I,36,?,36,100.0%,?,0,2.856 GB,2026-11-04T03:48:57+00:00,完了
+Rackstation/analysis,Suzuki_20260708,3-I,42,?,42,100.0%,?,0,3.304 GB,2026-11-04T03:48:58+00:00,完了
+Rackstation/analysis,Suzuki_20260708,4-I,42,?,42,100.0%,?,0,3.303 GB,2026-11-04T03:48:59+00:00,完了
+Rackstation/analysis,Suzuki_20260708,Arg_pH12,86,?,86,100.0%,?,0,6.664 GB,2026-11-04T03:48:59+00:00,完了
+Rackstation/analysis,Suzuki_20260708,Kme1_pH12,20,?,20,100.0%,?,0,1.613 GB,2026-11-04T03:48:59+00:00,完了
+Rackstation/analysis,Suzuki_20260708,Lys_pH12,23,?,23,100.0%,?,0,1.835 GB,2026-11-04T03:49:00+00:00,完了
+Rackstation/analysis,Suzuki_20260708,N_Ng,22,?,22,100.0%,?,0,1.801 GB,2026-11-04T03:49:00+00:00,完了
+Rackstation/analysis,Suzuki_20260708,TriMeLys_pH12,46,?,46,100.0%,?,0,3.602 GB,2026-11-04T03:49:00+00:00,完了
+Rackstation/analysis,Suzuki_I,246I,29,?,29,100.0%,?,0,2.337 GB,2026-11-04T03:49:01+00:00,完了
+Rackstation/analysis,Suzuki_I,26I,36,?,36,100.0%,?,0,2.856 GB,2026-11-04T03:49:01+00:00,完了
+Rackstation/analysis,Suzuki_I,2I,30,?,30,100.0%,?,0,2.364 GB,2026-11-04T03:49:02+00:00,完了
+Rackstation/analysis,Suzuki_I,3I,24,?,24,100.0%,?,0,1.876 GB,2026-11-04T03:49:02+00:00,完了
+Rackstation/analysis,Suzuki_I,4I,48,?,48,100.0%,?,0,3.770 GB,2026-11-04T03:49:03+00:00,完了
+Rackstation/analysis,Suzuki_I,P,20,?,20,100.0%,?,0,1.555 GB,2026-11-04T03:49:04+00:00,完了
+Rackstation/analysis,Suzuki_Lys,Lys,84,?,84,100.0%,?,0,6.595 GB,2026-11-04T03:49:04+00:00,完了
+Rackstation/analysis,Suzuki_Lys,M1Lys,208,?,208,100.0%,?,0,16.640 GB,2026-11-04T03:51:04+00:00,完了
+Rackstation/analysis,Suzuki_Lys,M2Lys,150,?,150,100.0%,?,0,11.923 GB,2026-11-04T03:49:06+00:00,完了
+Rackstation/analysis,Suzuki_Lys,M3Lys,213,?,213,100.0%,?,0,16.832 GB,2026-11-04T03:49:07+00:00,完了
+Rackstation/analysis,Suzuki_MLys,Lys,84,?,84,100.0%,?,0,6.595 GB,2026-11-04T03:49:08+00:00,完了
+Rackstation/analysis,Suzuki_MLys,M1Lys,28,?,28,100.0%,?,0,2.162 GB,2026-11-04T03:49:08+00:00,完了
+Rackstation/analysis,Suzuki_MLys,M2Lys,20,?,20,100.0%,?,0,1.545 GB,2026-11-04T03:49:09+00:00,完了
+Rackstation/analysis,Suzuki_MLys,M3Lys,60,?,60,100.0%,?,0,4.624 GB,2026-11-04T03:49:09+00:00,完了
+Rackstation/analysis,Suzuki_MLys7s,Lys,84,?,84,100.0%,?,0,6.527 GB,2026-11-04T03:49:10+00:00,完了
+Rackstation/analysis,Suzuki_MLys7s,M1Lys,28,?,28,100.0%,?,0,2.156 GB,2026-11-04T03:49:10+00:00,完了
+Rackstation/analysis,Suzuki_MLys7s,M2Lys,20,?,20,100.0%,?,0,1.539 GB,2026-11-04T03:49:10+00:00,完了
+Rackstation/analysis,Suzuki_MLys7s,M3Lys,60,?,60,100.0%,?,0,4.617 GB,2026-11-04T03:49:10+00:00,完了
+Rackstation/analysis,Suzuki_Mlys5s,Lys,84,?,84,100.0%,?,0,6.563 GB,2026-11-04T03:49:10+00:00,完了
+Rackstation/analysis,Suzuki_Mlys5s,M1Lys,28,?,28,100.0%,?,0,2.156 GB,2026-11-04T03:49:10+00:00,完了
+Rackstation/analysis,Suzuki_Mlys5s,M2Lys,20,?,20,100.0%,?,0,1.539 GB,2026-11-04T03:49:10+00:00,完了
+Rackstation/analysis,Suzuki_Mlys5s,M3Lys,60,?,60,100.0%,?,0,4.617 GB,2026-11-04T03:49:10+00:00,完了
+Rackstation/analysis,Suzuki_Phe,Phe,20,?,20,100.0%,?,0,1.555 GB,2026-11-04T03:49:11+00:00,完了
+Rackstation/analysis,Suzuki_Phe,PheDI,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:49:11+00:00,完了
+Rackstation/analysis,Suzuki_Phe,PheI,21,?,21,100.0%,?,0,1.660 GB,2026-11-04T03:49:11+00:00,完了
+Rackstation/analysis,Suzuki_keto,2Ac,20,?,20,100.0%,?,0,1.573 GB,2026-11-04T03:49:04+00:00,完了
+Rackstation/analysis,Suzuki_keto,2Py,46,?,46,100.0%,?,0,3.580 GB,2026-11-04T03:49:04+00:00,完了
+QTserver/analysis,TIT,LAB,234,?,234,100.0%,?,0,16.496 GB,2026-11-04T03:53:06+00:00,完了
+QTserver/backup,TIT,LAB,234,?,234,100.0%,?,0,16.403 GB,2026-11-04T03:54:59+00:00,完了
+QTserver/analysis,TIT,LET,266,?,266,100.0%,?,0,20.566 GB,2026-11-04T03:53:09+00:00,完了
+QTserver/backup,TIT,LET,266,?,266,100.0%,?,0,20.526 GB,2026-11-04T03:54:59+00:00,完了
+QTserver/analysis,TIT,LNL,90,?,90,100.0%,?,0,7.026 GB,2026-11-04T03:53:10+00:00,完了
+QTserver/backup,TIT,LNL,90,?,90,100.0%,?,0,6.977 GB,2026-11-04T03:54:59+00:00,完了
+QTserver/analysis,TIT,LNV,120,?,120,100.0%,?,0,9.362 GB,2026-11-04T03:53:12+00:00,完了
+QTserver/backup,TIT,LNV,120,?,120,100.0%,?,0,9.297 GB,2026-11-04T03:54:59+00:00,完了
+QDserver/backup,TYData,D-Proline,36,?,36,100.0%,?,0,1.742 GB,2026-11-04T03:59:56+00:00,完了
+QDserver/backup,TYData,D-tryptophan,40,?,30,75.0%,?,0,2.295 GB,2026-11-05T05:05:49+00:00,完了
+QDserver/backup,TYData,L-Proline,36,?,36,100.0%,?,0,1.746 GB,2026-11-04T03:59:57+00:00,完了
+QDserver/backup,TYData,L-tryptophan,19,?,19,100.0%,?,0,1.118 GB,2026-11-04T03:59:57+00:00,完了
+QDserver/backup,TYData,LTrp3DTrp1,15,?,15,100.0%,?,0,0.867 GB,2026-11-05T05:05:49+00:00,完了
+QDserver/backup,TYData,LTryp1DTrp3,27,?,27,100.0%,?,0,1.388 GB,2026-11-05T05:05:49+00:00,完了
+QTserver/backup,Tada_Lab,5mC,64,?,64,100.0%,?,0,4.990 GB,2026-11-04T03:54:55+00:00,完了
+QTserver/backup,Tada_Lab,dAMP,153,?,153,100.0%,?,0,7.416 GB,2026-11-04T03:54:56+00:00,完了
+QTserver/backup,Tada_Lab,dCMP,62,?,62,100.0%,?,0,3.028 GB,2026-11-04T03:54:56+00:00,完了
+QTserver/backup,Tada_Lab,dGMP,126,?,126,100.0%,?,0,6.220 GB,2026-11-04T03:54:58+00:00,完了
+QTserver/backup,Tada_Lab,dTMP,97,?,97,100.0%,?,0,4.762 GB,2026-11-04T03:54:58+00:00,完了
+QTserver/backup,Tada_Lab,m6A,202,?,202,100.0%,?,0,15.468 GB,2026-11-04T03:54:59+00:00,完了
+Rackstation/analysis,Takahagi_2'3'RNA,C18,40,?,40,100.0%,?,0,3.155 GB,2026-11-04T03:49:12+00:00,完了
+Rackstation/analysis,Takahagi_2'3'RNA,Lin M1,66,?,66,100.0%,?,0,5.184 GB,2026-11-04T03:49:13+00:00,完了
+Rackstation/analysis,Takahagi_2'3'RNA,M1,64,?,64,100.0%,?,0,5.047 GB,2026-11-04T03:49:14+00:00,完了
+Rackstation/analysis,Takahagi_2'3'RNA,M1 np,54,?,54,100.0%,?,0,4.240 GB,2026-11-04T03:49:15+00:00,完了
+Rackstation/analysis,Takahagi_LTNA,ALTNA,70,?,70,100.0%,?,0,3.513 GB,2026-11-04T03:49:17+00:00,完了
+Rackstation/analysis,Takahagi_LTNA,CLTNA,77,?,77,100.0%,?,0,3.795 GB,2026-11-04T03:49:18+00:00,完了
+Rackstation/analysis,Takahagi_LTNA,GLTNA,89,?,89,100.0%,?,0,4.650 GB,2026-11-04T03:49:18+00:00,完了
+Rackstation/analysis,Takahagi_LTNA,OligoLTNA,129,?,129,100.0%,?,1,6.318 GB,2026-11-04T03:49:19+00:00,完了
+Rackstation/analysis,Takahagi_LTNA,TLTNA,77,?,77,100.0%,?,0,3.729 GB,2026-11-04T03:49:19+00:00,完了
+Rackstation/analysis,Takahagi_LTNA,Xeno17oligo,26,?,26,100.0%,?,2,1.964 GB,2026-11-04T03:49:20+00:00,完了
+Rackstation/analysis,Takahagi_LTNAn,ALTNA,6,?,6,100.0%,?,0,0.522 GB,2026-11-04T03:49:20+00:00,完了
+Rackstation/analysis,Takahagi_LTNAn,CLTNA,16,?,16,100.0%,?,0,1.386 GB,2026-11-04T03:49:20+00:00,完了
+Rackstation/analysis,Takahagi_LTNAn,GLTNA,26,?,26,100.0%,?,0,2.080 GB,2026-11-04T03:49:20+00:00,完了
+Rackstation/analysis,Takahagi_LTNAn,TLTNA,14,?,14,100.0%,?,0,1.223 GB,2026-11-04T03:49:20+00:00,完了
+Rackstation/analysis,Takahagi_LTNAn,TLTNAr,31,?,31,100.0%,?,0,2.453 GB,2026-11-04T03:49:21+00:00,完了
+Rackstation/analysis,Takahagi_LaTNA,L-aTNA-A,6,?,6,100.0%,?,0,0.522 GB,2026-11-04T03:49:15+00:00,完了
+Rackstation/analysis,Takahagi_LaTNA,L-aTNA-C,16,?,16,100.0%,?,0,1.386 GB,2026-11-04T03:49:16+00:00,完了
+Rackstation/analysis,Takahagi_LaTNA,L-aTNA-G,26,?,26,100.0%,?,0,2.080 GB,2026-11-04T03:49:16+00:00,完了
+Rackstation/analysis,Takahagi_LaTNA,L-aTNA-T,14,?,14,100.0%,?,0,1.223 GB,2026-11-04T03:49:17+00:00,完了
+Rackstation/analysis,Takahagi_PLoop,LPLBO3,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:49:21+00:00,完了
+Rackstation/analysis,Takahagi_PLoop,LPLBO3PO3,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:49:21+00:00,完了
+Rackstation/analysis,Takahagi_PLoop,LPLBO3PO3CaCl2,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:49:21+00:00,完了
+Rackstation/analysis,Takahagi_PLoop,NPLBO3,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:49:21+00:00,完了
+Rackstation/analysis,Takahagi_PLoop,NPLBO3PO3,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:49:21+00:00,完了
+Rackstation/analysis,Takahagi_PLoop,PLBO3PO4p1,91,?,91,100.0%,?,1,4.397 GB,2026-11-04T03:49:25+00:00,完了
+Rackstation/analysis,Takahagi_PLoop,PLBO3PO4p2,97,?,97,100.0%,?,1,4.763 GB,2026-11-04T03:49:27+00:00,完了
+Rackstation/analysis,Takahagi_PLoop,PLBO3PO4p3,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:49:28+00:00,完了
+Rackstation/analysis,Takahagi_PLoop,PLBO3p1,123,?,123,100.0%,?,1,5.998 GB,2026-11-04T03:49:23+00:00,完了
+Rackstation/analysis,Takahagi_PLoop,PLBO3p2,23,?,23,100.0%,?,1,1.115 GB,2026-11-04T03:49:24+00:00,完了
+Rackstation/analysis,Takahagi_PLoop,PLBO3p2ATP,49,?,49,100.0%,?,0,2.370 GB,2026-11-04T03:49:24+00:00,完了
+Rackstation/analysis,Takahagi_PLoop,PLBO3p2GTP,42,?,42,100.0%,?,0,2.025 GB,2026-11-04T03:49:24+00:00,完了
+Rackstation/analysis,Takahagi_PLoop,PLBO3p3,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:49:24+00:00,完了
+Rackstation/analysis,Takahagi_PLoop,PLNBO3,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:49:28+00:00,完了
+Rackstation/analysis,Takahagi_PLoop,PLNBO3PO3,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:49:28+00:00,完了
+Rackstation/analysis,Takahagi_PLoop,PPLBO3,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:49:28+00:00,完了
+Rackstation/analysis,Takahagi_PLoop,PPLBO3PO3,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:49:28+00:00,完了
+Rackstation/analysis,Takahagi_RNApeptide,13fixed,82,?,82,100.0%,?,0,4.003 GB,2026-11-04T03:49:28+00:00,完了
+Rackstation/analysis,Takahagi_RNApeptide,puroFluo,29,?,29,100.0%,?,0,1.422 GB,2026-11-04T03:49:28+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA01FAA1095,79,?,79,100.0%,?,0,4.457 GB,2026-11-04T03:49:29+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA02FAA1195,78,?,78,100.0%,?,0,3.868 GB,2026-11-04T03:49:29+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA03FAA1215,49,?,49,100.0%,?,0,3.158 GB,2026-11-04T03:49:29+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA04FAA1346,22,?,22,100.0%,?,0,1.734 GB,2026-11-04T03:49:30+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA05FAA1368,52,?,52,100.0%,?,0,4.080 GB,2026-11-04T03:49:30+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA06FAA1413,67,?,67,100.0%,?,0,5.200 GB,2026-11-04T03:49:31+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA07FAA1415,60,?,60,100.0%,?,0,4.703 GB,2026-11-04T03:49:31+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA08FAA1437,26,?,26,100.0%,?,0,2.064 GB,2026-11-04T03:49:31+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA09FAA1698,20,?,20,100.0%,?,0,1.605 GB,2026-11-04T03:49:31+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA10FAA4010,20,?,20,100.0%,?,0,1.589 GB,2026-11-04T03:49:31+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA11FAA4205,26,?,26,100.0%,?,0,2.089 GB,2026-11-04T03:49:32+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA12FAA4751,42,?,42,100.0%,?,0,3.344 GB,2026-11-04T03:49:32+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA13FAA4760,40,?,40,100.0%,?,0,3.172 GB,2026-11-04T03:49:32+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA14FAA7030,28,?,28,100.0%,?,0,2.261 GB,2026-11-04T03:49:32+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA15LAla,180,?,180,100.0%,?,0,14.003 GB,2026-11-04T03:49:34+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA16LArg,210,?,210,100.0%,?,0,16.298 GB,2026-11-04T03:49:35+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA17LAsn,90,?,90,100.0%,?,0,7.051 GB,2026-11-04T03:49:36+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA18LAsp,70,?,70,100.0%,?,0,5.495 GB,2026-11-04T03:49:37+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA19LCys,134,?,134,100.0%,?,0,10.629 GB,2026-11-04T03:49:39+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA20LGln,210,?,210,100.0%,?,0,16.292 GB,2026-11-04T03:49:41+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA21LGlu,70,?,70,100.0%,?,0,5.491 GB,2026-11-04T03:49:42+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA22Gly,56,?,56,100.0%,?,0,4.420 GB,2026-11-04T03:49:43+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA23LHis,208,?,208,100.0%,?,0,16.225 GB,2026-11-04T03:49:46+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA24LIso,38,?,38,100.0%,?,0,3.017 GB,2026-11-04T03:49:46+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA25LLeu,120,?,120,100.0%,?,0,9.402 GB,2026-11-04T03:49:51+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA26LLys,168,?,168,100.0%,?,0,13.189 GB,2026-11-04T03:49:57+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA27LMet,70,?,70,100.0%,?,0,5.487 GB,2026-11-04T03:49:59+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA28LPhe,70,?,70,100.0%,?,0,5.486 GB,2026-11-04T03:50:00+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA29LPro,64,?,64,100.0%,?,0,5.128 GB,2026-11-04T03:50:02+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA30LSer,90,?,90,100.0%,?,0,7.021 GB,2026-11-04T03:50:02+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA31LThr,140,?,140,100.0%,?,0,10.902 GB,2026-11-04T03:50:04+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA32LTrp,158,?,158,100.0%,?,0,12.288 GB,2026-11-04T03:50:06+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA33LTyr,142,?,142,100.0%,?,0,11.068 GB,2026-11-04T03:50:07+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AA34LVal,82,?,82,100.0%,?,0,6.524 GB,2026-11-04T03:50:08+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AAS1FAA2690,160,?,160,100.0%,?,0,12.532 GB,2026-11-04T03:50:11+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,AAS2FAA5600,513,?,513,100.0%,?,0,39.662 GB,2026-11-04T03:50:16+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,KF4,21,?,21,100.0%,?,1,1.645 GB,2026-11-04T03:50:16+00:00,完了
+Rackstation/analysis,Takahagi_Zenoamino,KF5,29,?,29,100.0%,?,1,2.211 GB,2026-11-04T03:50:16+00:00,完了
+QDserver/analysis,Train,A,0,?,275,解析用コピー（Tなし）,?,0,6.773 GB,2026-11-04T03:57:02+00:00,完了
+QDserver/analysis,Train,Inosine,0,?,80,解析用コピー（Tなし）,?,0,3.116 GB,2026-11-04T03:57:02+00:00,完了
+QDserver/analysis,Train,m6A,0,?,200,解析用コピー（Tなし）,?,0,7.720 GB,2026-11-04T03:57:02+00:00,完了
+Rackstation/archive,Tsujikawa,GAOSK0278,28,?,28,100.0%,?,0,2.233 GB,2026-11-04T03:51:14+00:00,完了
+Rackstation/archive,Tsujikawa,GAOSK0279,58,?,58,100.0%,?,0,4.533 GB,2026-11-04T03:51:14+00:00,完了
+Rackstation/analysis,Yamazaki,o161,16,?,16,100.0%,?,0,1.291 GB,2026-11-05T05:05:50+00:00,完了
+Rackstation/analysis,Yamazaki,o161o162,56,?,56,100.0%,?,0,4.368 GB,2026-11-04T03:50:17+00:00,完了
+Rackstation/analysis,Yamazaki,o162,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:50:17+00:00,完了
+Rackstation/analysis,Yamazaki,o163,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:50:17+00:00,完了
+Rackstation/analysis,Yamazaki,o163o162,48,?,48,100.0%,?,0,3.779 GB,2026-11-04T03:50:17+00:00,完了
+Rackstation/analysis,Yamazaki,o164,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:50:17+00:00,完了
+Rackstation/analysis,Yamazaki,o164o162,100,?,100,100.0%,?,0,7.775 GB,2026-11-04T03:50:17+00:00,完了
+QDserver/backup,conc,C03,46,?,46,100.0%,?,0,9.486 GB,2026-11-04T03:57:04+00:00,完了
+QDserver/backup,conc,C04,53,?,53,100.0%,?,0,11.404 GB,2026-11-04T03:57:05+00:00,完了
+QDserver/backup,conc,C05,58,?,58,100.0%,?,0,11.770 GB,2026-11-04T03:57:05+00:00,完了
+QDserver/backup,conc,C06,48,?,48,100.0%,?,0,11.739 GB,2026-11-04T03:57:06+00:00,完了
+QDserver/backup,conc,C07,44,?,44,100.0%,?,0,11.027 GB,2026-11-04T03:57:06+00:00,完了
+QDserver/backup,conc,C08,42,?,42,100.0%,?,0,10.962 GB,2026-11-04T03:57:07+00:00,完了
+QDserver/backup,conc,C09,45,?,45,100.0%,?,0,11.233 GB,2026-11-04T03:57:07+00:00,完了
+QDserver/backup,conc,C10,41,?,41,100.0%,?,0,10.360 GB,2026-11-04T03:57:08+00:00,完了
+QDserver/backup,conc,C11,45,?,45,100.0%,?,0,10.140 GB,2026-11-04T03:57:09+00:00,完了
+QDserver/backup,conc,C12,51,?,51,100.0%,?,0,11.929 GB,2026-11-04T03:57:09+00:00,完了
+QTserver/analysis,oligopeptide,AENK,0,?,92,解析用コピー（Tなし）,?,2,3.717 GB,2026-11-04T03:52:35+00:00,完了
+QTserver/backup,oligopeptide,AENK,92,?,92,100.0%,?,0,7.256 GB,2026-11-04T03:54:20+00:00,完了
+QTserver/analysis,oligopeptide,ANP,0,?,163,解析用コピー（Tなし）,?,2,6.399 GB,2026-11-04T03:52:35+00:00,完了
+QTserver/backup,oligopeptide,ANP,163,?,163,100.0%,?,0,12.670 GB,2026-11-04T03:54:20+00:00,完了
+QTserver/analysis,oligopeptide,END,0,?,130,解析用コピー（Tなし）,?,1,5.155 GB,2026-11-04T03:52:36+00:00,完了
+QTserver/backup,oligopeptide,END,130,?,130,100.0%,?,0,10.119 GB,2026-11-04T03:54:21+00:00,完了
+QTserver/analysis,oligopeptide,LENK,0,?,121,解析用コピー（Tなし）,?,3,4.812 GB,2026-11-04T03:52:36+00:00,完了
+QTserver/backup,oligopeptide,LENK,121,?,121,100.0%,?,0,9.467 GB,2026-11-04T03:54:21+00:00,完了
+QTserver/analysis,oligopeptide,VHH,0,?,276,解析用コピー（Tなし）,?,50,10.709 GB,2026-11-04T03:52:37+00:00,完了
+QTserver/backup,oligopeptide,VHH,276,?,276,100.0%,?,0,21.239 GB,2026-11-04T03:54:21+00:00,完了
+Rackstation/archive,seeds2025,AspPhe,18,?,18,100.0%,?,0,1.411 GB,2026-11-04T03:51:01+00:00,完了
+Rackstation/archive,seeds2025,AspPheN,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:51:01+00:00,完了
+Rackstation/archive,seeds2025,PheAsp,70,?,70,100.0%,?,0,5.438 GB,2026-11-04T03:51:01+00:00,完了
+Rackstation/archive,seeds2025,PheAspN,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:51:01+00:00,完了
+Rackstation/analysis,seeds2026,Lys,84,?,84,100.0%,?,0,6.595 GB,2026-11-04T03:48:27+00:00,完了
+Rackstation/analysis,seeds2026,M1Lys,208,?,208,104.3%,9,0,16.640 GB,2026-11-05T05:05:50+00:00,完了
+Rackstation/analysis,seeds2026,MLys,0,?,0,対象なし,?,0,0.000 GB,2026-11-04T03:48:27+00:00,完了

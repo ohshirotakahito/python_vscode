@@ -155,6 +155,39 @@ for d in shared ML/tests database exmanager Viewer Plotting Analyzer/python scor
 
 ## 🌿 ブランチ運用
 
+### アプリごとのバージョン管理
+
+Quantum Workbench本体と、ランチャー内の8アプリは、それぞれ独立した
+`major.minor.patch` のバージョン番号を持つ。管理開始版は全アプリ `0.1.0`。
+番号・リリース日・変更内容の正本は [`app_versions.json`](app_versions.json)。
+ランチャーのカードと各アプリのタイトルバーにバージョンを表示し、
+ランチャー下部の「バージョン・更新履歴」から全アプリの履歴を確認できる。
+直接スクリプトを起動した場合も同じ番号を表示する。
+
+```powershell
+python tools/app_version.py
+python tools/app_version.py viewer --bump patch --note "選択範囲の保持を修正"
+```
+
+不具合修正は `patch`、機能追加は `minor`、互換性を壊す変更は `major` を更新する。
+更新対象のアプリだけを上げ、ソース変更と `app_versions.json` を同じコミットに含める。
+共通部品の動作変更は、影響する各アプリの番号と履歴も更新する。
+Gitでリリースを残す場合は `viewer-v0.1.0` のようにアプリIDを付けたタグを使い、
+GitHub Releaseにも対象アプリの変更内容と確認結果を記載する。
+この番号はアプリのリリース番号であり、DB・解析結果・設定ファイルの形式番号とは別に管理する。
+実験データや既存設定の形式は、この仕組みの導入では変更しない。
+
+アプリID: `workbench`, `chipdb`, `exmanager`, `database`, `analyzer`, `viewer`, `ml`, `plotting`, `scoring`。
+
+専用アイコンを設定した起動ショートカットは、次のコマンドでリポジトリ直下に作成できる。
+作成された `Quantum Workbench.lnk` は任意の場所へ移動できる（リポジトリ本体を移したら再作成）。
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/create_workbench_shortcut.ps1
+```
+
+### Gitでの運用
+
 - `main` : 常に動作する状態を維持する
 - 作業は `feature/xxx` ブランチを切って行い、Pull Requestで`main`にマージする
 - 例: `feature/add-chronos-extraction`, `fix/xgboost-mix-bug`
@@ -176,3 +209,8 @@ for d in shared ML/tests database exmanager Viewer Plotting Analyzer/python scor
 
 - [ ] `requirements.txt`(または conda の `environment.yml`)の作成
 - [ ] データ配布方法の決定(共有ドライブ / クラウド等)
+# 開発端末・ユーザー端末
+
+端末ごとの利用アプリ指定とGitHub更新の運用手順は
+[Quantum Workbenchの端末設定](docs/workbench_terminals.md)を参照してください。
+このPCは開発端末として全アプリを利用でき、ユーザー端末は指定したアプリだけを表示・起動します。

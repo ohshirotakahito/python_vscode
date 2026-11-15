@@ -1213,6 +1213,8 @@ class SavedFilesPanel(ttk.Frame):
 def main():
     root = tk.Tk()
     root.title("TDMS 波形ビューア")
+    from shared.app_release import configure_tk
+    configure_tk(root, 'viewer')
     root.geometry("1400x900")
     root.minsize(900, 650)
     style = ui_theme.apply(root, ui_theme.VIEWER)

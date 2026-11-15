@@ -168,6 +168,8 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title('Scoring · スコア')
+        from shared.app_release import configure_tk
+        configure_tk(self, 'scoring')
         self.geometry('1480x900')
         self.minsize(1100, 700)
         ui_theme.apply(self, ACCENT)
