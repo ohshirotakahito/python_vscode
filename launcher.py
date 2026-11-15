@@ -175,15 +175,17 @@ class Launcher(tk.Tk):
         ui_theme.close_button(header, w - 24, 56, self.destroy)
 
         body = tk.Frame(self, bg=BG)
-        body.pack(padx=24, pady=(20, 8))
+        body.pack(padx=24, pady=(20, 8), fill='x')
         self.cards = {}
         if not self.apps:
             tk.Label(body, text='利用アプリが未設定です。「端末設定」で設定方法を確認してください。',
                      bg=BG, fg=TEXT, font=(UI, 11)).pack(pady=32)
         for index, app in enumerate(self.apps):
-            card = Card(body, app, self.launch, (w - 64) // 2)
+            card = Card(body, app, self.launch, w - 56 if len(self.apps) == 1 else (w - 64) // 2)
             card.grid(row=index // 2, column=index % 2, padx=4, pady=6)
             self.cards[app.key] = card
+
+        self.build_update_panel(self)
 
         footer = tk.Frame(self, bg=BG)
         footer.pack(fill='x', padx=28, pady=(6, 18))
