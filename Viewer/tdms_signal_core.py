@@ -688,7 +688,7 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         # Never force a synchronous draw from inside a widget callback.
         self.fig.canvas.draw_idle()
 
-    def on_window_size_submit(self, text):
+    def on_window_size_submit(self, text, *, preserve_selection=False):
         """Apply a positive display-window length entered in seconds."""
         try:
             window_sec = float(text)
@@ -720,7 +720,8 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         self.chunk_idx = min(current_start // self.chunk_size, self.num_chunks - 1)
         if self._view_start_override is not None:
             self._view_start_override = min(current_start, max(0, self.n - 1))
-        self.on_clear(None)
+        if not preserve_selection:
+            self.on_clear(None)
         self._reset_x_axis_user()
         # Candidate windows are scored at the current view length.
         self._compute_overview()
