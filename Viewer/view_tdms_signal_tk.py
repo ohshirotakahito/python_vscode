@@ -591,6 +591,7 @@ class FrontPanel(ttk.Frame):
             created_figures.append(figure)
             canvas = FigureCanvasTkAgg(figure, master=frame)
             toolbar = NavigationToolbar2Tk(canvas, frame, pack_toolbar=False)
+            canvas._viewer_toolbar = toolbar
             toolbar.pack(side="bottom", fill="x")
             canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
             return canvas
@@ -648,6 +649,28 @@ class FrontPanel(ttk.Frame):
             def on_clear(self, event):
                 super().on_clear(event)
                 summary.set("波形上をドラッグして保存範囲を選択できます。")
+
+            def adjust_vertical_view(self, scale=1.0, shift=0.0):
+                low, high = self.ax.get_ylim()
+                span = high - low
+                center = (low + high) / 2 + span * shift
+                self._ylim_user = [center - span * scale / 2,
+                                   center + span * scale / 2]
+                self.draw()
+
+            def adjust_horizontal_view(self, scale=1.0, shift=0.0):
+                from tdms_signal_core import MAX_VIEW_SEC
+                if self.n < 2:
+                    return
+                low, high = self.ax.get_xlim()
+                span = high - low
+                size = min(self.n, max(2, int(round(
+                    min(span * scale, MAX_VIEW_SEC) / self.dt))))
+                center = (low + high) / 2 + span * shift
+                start = max(0, min(self.n - size,
+                                   int(round(center / self.dt - size / 2))))
+                self._view_start_override = start
+                self.on_window_size_submit(str(size * self.dt), preserve_selection=True)
 
             def draw(self):
                 super().draw()
@@ -907,6 +930,49 @@ class FrontPanel(ttk.Frame):
                 ttk.Checkbutton(visibility, text=label, variable=variable,
                                 command=lambda key=key: browser.on_check(key)).pack(anchor="w", pady=2)
             browser.make_style_controls(header, browser.draw)
+            view_controls = ttk.Frame(header)
+            view_controls.pack(fill="x", pady=(0, 6))
+            toolbar = browser.fig.canvas._viewer_toolbar
+            drag_mode = tk.BooleanVar(value=False)
+            pan_started = False
+
+            def update_drag_mode():
+                # Use Matplotlib's pan tool so the cursor and toolbar stay in
+                # sync, and the selector cannot also start a save selection.
+                if bool(toolbar.mode) != drag_mode.get() or (
+                        drag_mode.get() and toolbar.mode != "pan/zoom"):
+                    toolbar.pan()
+                browser.span.set_active(not drag_mode.get())
+                summary.set("波形をドラッグすると上下左右に移動します。" if drag_mode.get()
+                            else "波形上をドラッグして保存範囲を選択できます。")
+
+            def start_drag(event):
+                nonlocal pan_started
+                pan_started = (event.button == 1 and event.inaxes is browser.ax
+                               and toolbar.mode == "pan/zoom")
+
+            def finish_drag(event):
+                nonlocal pan_started
+                if pan_started and event.button == 1 and toolbar.mode == "pan/zoom":
+                    # Load the newly visible time range after the pan tool
+                    # releases its canvas lock; retain the vertical limits.
+                    browser.fig.canvas.get_tk_widget().after_idle(
+                        browser.adjust_horizontal_view)
+                pan_started = False
+
+            browser.fig.canvas.mpl_connect("button_press_event", start_drag)
+            browser.fig.canvas.mpl_connect("button_release_event", finish_drag)
+            ttk.Checkbutton(view_controls, text="つかんで移動", variable=drag_mode,
+                            command=update_drag_mode).pack(side="left", padx=(2, 10))
+            for label, callback in [
+                ("縦に拡大", lambda: browser.adjust_vertical_view(scale=0.8)),
+                ("縦に縮小", lambda: browser.adjust_vertical_view(scale=1.25)),
+                ("横に拡大", lambda: browser.adjust_horizontal_view(scale=0.8)),
+                ("横に縮小", lambda: browser.adjust_horizontal_view(scale=1.25)),
+                ("自動スケール", lambda: browser.on_auto_axes(None)),
+            ]:
+                ttk.Button(view_controls, text=label, command=callback,
+                           width=10 if len(label) > 1 else 3).pack(side="left", padx=2)
             selection_group = group("保存する範囲")
             start_var = tk.StringVar(value="0")
             duration_var = tk.StringVar(value="1")
