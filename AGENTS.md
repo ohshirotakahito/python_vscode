@@ -10,5 +10,5 @@ Shared changes must increment every affected application, including `workbench`
 when its behavior changes. Keep unrelated apps' versions unchanged.
 Run `python -m unittest shared.test_app_release shared.test_app_update` after release/update changes.
 Terminal selection is PC-local in ignored `.workbench/terminal.json`; never commit or distribute it.
-New PCs default to the user role with only `exmanager` enabled, as requested by the user. This development PC is explicitly configured locally.
+New PCs default to the user role with `exmanager` and `viewer` enabled, as requested by the user. Legacy standard exmanager-only profiles also enable viewer; preserve custom selections. This development PC is explicitly configured locally.
 After terminal or deployment changes also run `shared.test_terminal_profile` and `shared.test_update_checkout`.

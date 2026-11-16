@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from shared.terminal_profile import PROFILE, load, save
+from shared.terminal_profile import PROFILE, DEFAULT_USER_APPS, load, save
 from shared.app_release import load_releases
 
 
@@ -16,7 +16,7 @@ def main():
     args = parser.parse_args()
     if args.apps is not None and args.role is None:
         parser.error('--apps requires --role')
-    apps = args.apps if args.apps is not None else (['exmanager'] if args.role == 'user' else [])
+    apps = args.apps if args.apps is not None else (list(DEFAULT_USER_APPS) if args.role == 'user' else [])
     data = save(args.role, apps) if args.role else load()
     print(str(PROFILE))
     print(json.dumps(data, indent=2))

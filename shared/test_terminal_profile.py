@@ -8,13 +8,31 @@ from shared import terminal_profile as profile
 
 
 class TerminalTests(unittest.TestCase):
-    def test_new_terminal_defaults_to_exmanager_only(self):
+    def test_new_terminal_defaults_to_exmanager_and_viewer(self):
         with tempfile.TemporaryDirectory() as directory:
             data = profile.load(Path(directory) / 'terminal.json')
         self.assertTrue(profile.allowed('workbench', data))
         self.assertTrue(profile.allowed('exmanager', data))
-        self.assertEqual(data['apps'], ['exmanager'])
+        self.assertTrue(profile.allowed('viewer', data))
+        self.assertEqual(data['apps'], ['exmanager', 'viewer'])
         self.assertFalse(profile.allowed('analyzer', data))
+
+    def test_legacy_standard_user_profile_adds_viewer_without_rewriting_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'terminal.json'
+            path.write_text(json.dumps({'role': 'user', 'apps': ['exmanager']}), encoding='utf-8')
+            before = path.read_bytes()
+            self.assertEqual(profile.load(path)['apps'], ['exmanager', 'viewer'])
+            self.assertEqual(path.read_bytes(), before)
+
+    def test_custom_and_explicit_selections_are_preserved(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'terminal.json'
+            for apps in ([], ['analyzer'], ['viewer']):
+                path.write_text(json.dumps({'role': 'user', 'apps': apps}), encoding='utf-8')
+                self.assertEqual(profile.load(path)['apps'], apps)
+            profile.save('user', ['exmanager'], path)
+            self.assertEqual(profile.load(path)['apps'], ['exmanager'])
 
     def test_user_selection_and_developer_role(self):
         with tempfile.TemporaryDirectory() as directory:

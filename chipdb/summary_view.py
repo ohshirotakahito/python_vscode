@@ -11,6 +11,17 @@ from shared import ui_theme as theme
 from chipdb.summary import COLUMNS, HISTOGRAMS, summarize, histogram, shares
 
 ACCENT = '#dfb86b'
+COMPARISON_COLUMNS = ('ChipID', 'CSV内ChipID', 'ID確認', *COLUMNS[1:])
+
+
+def comparison_record(record):
+    """Use the selected file's identity, while retaining its declared chip ID."""
+    record = dict(record)
+    declared = record.get('CSV内ChipID', record['ChipID'])
+    record['ChipID'] = Path(record['_path']).stem
+    record['CSV内ChipID'] = declared
+    record['ID確認'] = '一致' if declared == record['ChipID'] else '不一致（要確認）'
+    return record
 RULES = 'AXN準拠: Info1の有効範囲 CAL (0,200) / FC (0,3) / MA・TA (0,100)。STDは標本標準偏差。回数は除外前。'
 
 
@@ -55,7 +66,7 @@ class SummaryView(ttk.Frame):
 
 
 class AllView(ttk.Frame):
-    def __init__(self, parent, open_chip, select_chip=None):
+    def __init__(self, parent, open_chip, select_chip=None, refresh_sources=None):
         super().__init__(parent, padding=12)
         self.open_chip = open_chip
         self.select_chip = select_chip
@@ -69,7 +80,7 @@ class AllView(ttk.Frame):
         self.reverse = False
         bar = ttk.Frame(self)
         bar.pack(fill='x')
-        self.load_button = ttk.Button(bar, text='全チップを集計 / 更新', style='Accent.TButton', command=self.load)
+        self.load_button = ttk.Button(bar, text='一覧・履歴・集計を更新', style='Accent.TButton', command=refresh_sources or self.load)
         self.load_button.pack(side='left')
         ttk.Button(bar, text='表示一覧をCSV出力', command=self.export).pack(side='right')
         self.search = tk.StringVar()
@@ -86,8 +97,10 @@ class AllView(ttk.Frame):
         tabs.add(listing, text='全チップ一覧')
         tabs.add(charts, text='分布・装置・担当者')
         tabs.add(errors, text='読み込みエラー')
-        self.view = table(listing, COLUMNS)
-        for col in COLUMNS:
+        self.view = table(listing, COMPARISON_COLUMNS)
+        self.view.heading('ChipID', text='チップID（ファイル名）')
+        self.view.tag_configure('identity_mismatch', background=theme.row('warning', 0.22), foreground=theme.TEXT)
+        for col in COMPARISON_COLUMNS:
             self.view.heading(col, command=lambda key=col: self.sort(key))
         self.view.bind('<Double-1>', self.open_selected)
         self.view.bind('<<TreeviewSelect>>', self.selection_changed)
@@ -109,6 +122,7 @@ class AllView(ttk.Frame):
         self.after(100, self.poll)
 
     def reset(self, paths):
+        self.stale = False
         self.version += 1
         self.paths = list(paths)
         self.records, self.errors = [], []
@@ -119,8 +133,14 @@ class AllView(ttk.Frame):
         self.refresh()
 
     def load(self):
+        self.stale = False
         self.version += 1
         version, paths = self.version, list(self.paths)
+        if not paths:
+            self.load_button.configure(state='normal')
+            self.state.configure(text='履歴CSVは0件です。測定前のチップは「チップ台帳」で確認できます。')
+            self.refresh()
+            return
         self.load_button.configure(state='disabled')
         self.progress.configure(maximum=max(len(paths), 1), value=0)
         self.state.configure(text=f'全チップを読み込み中 · 0 / {len(paths)}')
@@ -164,15 +184,23 @@ class AllView(ttk.Frame):
         self.after(100, self.poll)
 
     def refresh(self):
+        self.records = [comparison_record(record) for record in self.records]
         query = self.search.get().casefold()
-        self.filtered = [r for r in self.records if not query or any(query in r[c].casefold() for c in COLUMNS)]
+        self.filtered = [r for r in self.records if not query or any(query in r[c].casefold() for c in COMPARISON_COLUMNS)]
         self.view.delete(*self.view.get_children())
         for record in self.filtered:
-            self.view.insert('', 'end', iid=record['_path'], values=[record[c] for c in COLUMNS])
+            self.view.insert('', 'end', iid=record['_path'], values=[record[c] for c in COMPARISON_COLUMNS],
+                             tags=('identity_mismatch',) if record['ID確認'] != '一致' else ())
         self.sync_selection(self.selected_path)
         if self.records or self.errors:
-            self.state.configure(text=f'集計成功 {len(self.records)} / エラー {len(self.errors)} / 表示 {len(self.filtered)} チップ · {datetime.now():%H:%M:%S} · 個別編集後は集計を更新してください')
+            mismatched = sum(r['ID確認'] != '一致' for r in self.records)
+            suffix = ' · 履歴編集後の古い集計です。「一覧・履歴・集計を更新」を押してください。' if getattr(self, 'stale', False) else ''
+            self.state.configure(text=f'集計成功 {len(self.records)} / エラー {len(self.errors)} / ID不一致 {mismatched} / 表示 {len(self.filtered)} チップ · {datetime.now():%H:%M:%S}' + suffix)
         self.draw()
+
+    def mark_stale(self):
+        self.stale = True
+        self.refresh()
 
     def sort(self, column):
         def key(record):
@@ -258,7 +286,7 @@ class AllView(ttk.Frame):
                 raise ValueError('共有元CSVと別の保存先を指定してください。')
             with open(name, 'w', encoding='utf-8-sig', newline='') as stream:
                 writer = csv.writer(stream)
-                writer.writerow(COLUMNS)
-                writer.writerows([r[c] for c in COLUMNS] for r in self.filtered)
+                writer.writerow(COMPARISON_COLUMNS)
+                writer.writerows([r[c] for c in COMPARISON_COLUMNS] for r in self.filtered)
         except (OSError, ValueError) as exc:
             messagebox.showerror('書き出し', str(exc), parent=self)

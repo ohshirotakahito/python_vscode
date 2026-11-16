@@ -264,7 +264,7 @@ class Launcher(tk.Tk):
                             f"役割: {self.profile['role']}\n利用アプリ: {names}\n\n"
                             f"設定ファイル: {PROFILE}\n\n"
                             '管理者がリポジトリ直下で次を実行して設定します。\n'
-                            'python tools/terminal_setup.py --role user --apps exmanager\n'
+                            'python tools/terminal_setup.py --role user --apps exmanager viewer\n'
                             '開発端末: python tools/terminal_setup.py --role developer\n\n'
                             '設定後はランチャーを再起動してください。', parent=self)
 

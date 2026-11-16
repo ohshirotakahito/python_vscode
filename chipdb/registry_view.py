@@ -1,5 +1,6 @@
 """Check-in and metadata editing against the AXN shared chip master."""
 import tkinter as tk
+from pathlib import Path
 from tkinter import ttk, messagebox
 
 from chipdb.registry import Store, FIELDS, STATES, find, normalize_code
@@ -18,11 +19,21 @@ class RegistryView(ttk.Frame):
         bar.pack(fill='x', pady=(0, 10))
         ttk.Button(bar, text='＋ チップをチェックイン', style='Accent.TButton', command=lambda: self.edit(new=True)).pack(side='left')
         ttk.Button(bar, text='選択チップの管理情報を編集', command=self.edit).pack(side='left', padx=8)
+        ttk.Button(bar, text='選択チップの概要を開く', command=self.open_selected).pack(side='left')
+        search = ttk.Frame(self)
+        search.pack(fill='x', pady=(0, 8))
+        ttk.Label(search, text='検索（ID・使用者・状態・保管場所・使用日）').pack(side='left')
+        ttk.Entry(search, textvariable=app.query, width=40).pack(side='left', fill='x', expand=True, padx=8)
+        ttk.Button(search, text='検索をクリア', command=lambda: app.query.set('')).pack(side='left')
+        ttk.Label(self, text='使用日：2026-11 / 2026-11-13 / 2026-10〜2026-11', style='Muted.TLabel').pack(anchor='w')
+        self.search_state = ttk.Label(self, style='Muted.TLabel')
+        self.search_state.pack(anchor='w', pady=(0, 8))
         self.state = ttk.Label(self, style='Muted.TLabel')
         self.state.pack(anchor='w', pady=(0, 8))
         self.view = table(self, ('チップID', '状態', '保管場所', '使用者', '作製日', '使用開始日', '履歴'))
-        self.view.bind('<Double-1>', lambda e: self.edit())
-        ttk.Label(self, text='チェックインは測定前のチップ登録です。左の検索欄で台帳も絞り込めます。\n測定履歴は「操作履歴・編集」で行を選び「選択行を編集」。管理情報はAXNと同じ共有台帳に保存します。', style='Muted.TLabel', wraplength=800).pack(anchor='w', pady=12)
+        self.view.bind('<<TreeviewSelect>>', self.selection_changed)
+        self.view.bind('<Double-1>', self.open_selected)
+        ttk.Label(self, text='測定前を含む全チップの入口です。クリックで対象を選択、ダブルクリックで概要を開きます。\n管理情報は上の編集ボタン、測定履歴は「操作履歴・編集」で編集します。', style='Muted.TLabel', wraplength=1000).pack(anchor='w', pady=12)
 
     def reload(self, db):
         self.store = Store(db)
@@ -42,12 +53,33 @@ class RegistryView(ttk.Frame):
         for path in paths:
             chip = chips.get(path.stem.casefold(), dict(code=path.stem))
             self.rows.append(chip)
-            self.view.insert('', 'end', iid=str(len(self.rows)-1), values=(chip['code'], chip.get('state', '未登録'),
+            self.view.insert('', 'end', iid=str(path), values=(path.stem, chip.get('state', '未登録'),
                 chip.get('location', ''), chip.get('user', chip.get('owner', '')), chip.get('fabricated_on', ''),
                 chip.get('use_started_on', ''), 'あり' if path in self.app.history_paths else '測定前・履歴なし'))
+        self.sync_selection(self.app.selected_path)
+
+    def selection_changed(self, event=None):
+        selected = self.view.selection()
+        if selected and Path(selected[0]) != self.app.selected_path:
+            self.app.select_path(Path(selected[0]))
+
+    def open_selected(self, event=None):
+        selected = self.view.selection()
+        if selected:
+            self.app.open_chip(Path(selected[0]))
+
+    def sync_selection(self, path):
+        key = str(path) if path is not None else ''
+        selected = self.view.selection()
+        if key and self.view.exists(key):
+            if selected != (key,):
+                self.view.selection_set(key)
+            self.view.see(key)
+        elif selected:
+            self.view.selection_remove(*selected)
 
     def edit_current(self):
-        code = self.app.document.path.stem if self.app.document else None
+        code = self.app.selected_path.stem if self.app.selected_path else None
         self.edit(code=code)
 
     def edit(self, new=False, code=None):
@@ -59,7 +91,7 @@ class RegistryView(ttk.Frame):
             if not selected:
                 messagebox.showinfo('チップ台帳', '台帳から編集するチップを選択してください。', parent=self)
                 return
-            code = self.rows[int(selected[0])]['code']
+            code = Path(selected[0]).stem
         try:
             chip = find(self.data, code) if code else None
         except ValueError as exc:

@@ -45,36 +45,23 @@ class App(tk.Tk):
         bar = ttk.Frame(self, padding=(20, 12))
         bar.pack(fill='x')
         ttk.Button(bar, text='共有フォルダを選択', command=self.choose).pack(side='left')
-        ttk.Button(bar, text='再読み込み', command=self.scan).pack(side='left', padx=8)
+        ttk.Button(bar, text='一覧・履歴・集計を更新', command=self.scan).pack(side='left', padx=8)
         ttk.Button(bar, text='＋ チェックイン', command=lambda: self.registry_view.edit(new=True)).pack(side='left', padx=4)
+        from chipdb.cleanup_view import open_cleanup
+        ttk.Button(bar, text='重複・IDを整理…', command=lambda: open_cleanup(self)).pack(side='left', padx=4)
         self.location = ttk.Label(bar, foreground=theme.MUTED)
         self.location.pack(side='left', padx=12)
         self.summary = ttk.Label(self, text='', font=(theme.UI_BOLD, 13), padding=(24, 12))
         self.summary.pack(fill='x')
-        # Wide summary tables must scroll instead of collapsing the chip library.
-        split = tk.PanedWindow(self, orient='horizontal', sashwidth=6,
-                               bg=theme.BORDER, borderwidth=0, sashrelief='flat')
-        split.pack(fill='both', expand=True, padx=20, pady=(0, 12))
-        left = ttk.Frame(split, padding=12)
-        split.add(left, minsize=260, width=280, stretch='never')
-        ttk.Label(left, text='CHIP LIBRARY', foreground=ACCENT, font=(theme.MONO, 11)).pack(anchor='w', pady=(0, 12))
         self.query = tk.StringVar()
-        ttk.Entry(left, textvariable=self.query).pack(fill='x')
-        ttk.Label(left, text='名前 / 使用日（例: 2026-11）\n期間: 2026-10〜2026-11', style='Muted.TLabel').pack(anchor='w', pady=6)
-        self.search_state = ttk.Label(left, text='', style='Muted.TLabel', wraplength=260)
-        self.search_state.pack(anchor='w', pady=(0, 6))
-        self.query.trace_add('write', lambda *_: self.filter())
-        self.library = ttk.Treeview(left, columns=('chip',), show='headings', selectmode='browse', height=18)
-        self.library.heading('chip', text='チップ ID')
-        self.library.column('chip', width=210)
-        self.library.pack(fill='both', expand=True)
-        self.library.bind('<<TreeviewSelect>>', self.select)
-        right = ttk.Frame(split, padding=(16, 8))
-        split.add(right, minsize=640, stretch='always')
+        right = ttk.Frame(self, padding=(24, 8))
+        right.pack(fill='both', expand=True)
         self.title_label = ttk.Label(right, text='チップを選択', font=(theme.UI_BOLD, 24))
         self.title_label.pack(anchor='w')
         self.metrics = ttk.Label(right, text='共有フォルダを接続すると、AXNの履歴を表示します。', foreground=theme.MUTED)
         self.metrics.pack(anchor='w', pady=(6, 18))
+        navigation = ttk.Frame(right)
+        navigation.pack(fill='x', pady=(0, 8))
         tabs = ttk.Notebook(right)
         self.tabs = tabs
         tabs.pack(fill='both', expand=True)
@@ -83,10 +70,19 @@ class App(tk.Tk):
         history, analysis = ttk.Frame(tabs, padding=12), ttk.Frame(tabs, padding=12)
         tabs.add(history, text='操作履歴・編集')
         tabs.add(analysis, text='解析・トレンド')
-        self.all_view = AllView(tabs, self.open_chip, self.select_path)
+        self.history_tab, self.analysis_tab = history, analysis
+        self.all_view = AllView(tabs, self.open_chip, self.select_path, refresh_sources=self.scan)
         tabs.add(self.all_view, text='全チップ比較')
         self.registry_view = RegistryView(tabs, self)
         tabs.add(self.registry_view, text='チップ台帳・チェックイン')
+        tabs.insert(0, self.registry_view)
+        tabs.insert(1, self.all_view)
+        tabs.select(self.registry_view)
+        self.search_state = self.registry_view.search_state
+        self.query.trace_add('write', lambda *_: self.filter())
+        for label, target in [('台帳一覧へ', self.registry_view), ('全チップ比較へ', self.all_view),
+                              ('選択チップの概要', self.overview), ('操作履歴・編集', history), ('解析・トレンド', analysis)]:
+            ttk.Button(navigation, text=label, command=lambda target=target: tabs.select(target)).pack(side='left', padx=(0, 6))
         tools = ttk.Frame(history)
         tools.pack(fill='x', pady=(0, 10))
         ttk.Label(tools, text='行をダブルクリックして編集', style='Muted.TLabel').pack(side='left')
@@ -134,6 +130,7 @@ class App(tk.Tk):
             self.scan()
 
     def scan(self):
+        previous = self.selected_path
         folder = db_folder(self.root_path)
         self.location.configure(text=str(folder))
         self.document = None
@@ -160,22 +157,26 @@ class App(tk.Tk):
         self.start_index()
         self.filter()
         self.all_view.reset(sorted(self.history_paths))
+        self.all_view.load()
+        if previous in self.paths:
+            self.select_path(previous)
         self.plot()
 
     def filter(self):
-        self.library.delete(*self.library.get_children())
         try:
             span = date_query(self.query.get())
         except ValueError as exc:
             self.search_state.configure(text=str(exc))
             self.registry_view.refresh([])
             return
-        shown = 0
         visible_paths = []
-        for i, path in enumerate(self.paths):
-            if matches(path.stem, self.date_index.get(path, ()), self.query.get(), span):
-                self.library.insert('', 'end', iid=str(i), values=(path.stem,))
-                shown += 1
+        chips = {c['code'].casefold(): c for c in self.registry_view.data['chips']}
+        for path in self.paths:
+            chip = chips.get(path.stem.casefold(), {})
+            text = ' '.join(str(chip.get(key, '未登録' if key == 'state' else ''))
+                            for key in ('code', 'state', 'location', 'user', 'owner', 'origin', 'description'))
+            metadata_match = span is None and self.query.get().strip().casefold() in text.casefold()
+            if matches(path.stem, self.date_index.get(path, ()), self.query.get(), span) or metadata_match:
                 visible_paths.append(path)
         self.registry_view.refresh(visible_paths)
         self.sync_chip_selection()
@@ -184,7 +185,7 @@ class App(tk.Tk):
             detail = ' · 履歴の実験日で検索'
             if self.date_errors:
                 detail += f'（{self.date_errors}件は読込不可）'
-        self.search_state.configure(text=f'{shown} / {len(self.paths)} チップ{detail}')
+        self.search_state.configure(text=f'{len(visible_paths)} / {len(self.paths)} チップ{detail}')
 
     def start_index(self):
         self.index_version += 1
@@ -219,13 +220,6 @@ class App(tk.Tk):
             pass
         self.after(100, self.poll_index)
 
-    def select(self, event=None):
-        selection = self.library.selection()
-        if not selection:
-            return
-        path = self.paths[int(selection[0])]
-        self.select_path(path)
-
     def select_path(self, path):
         path = Path(path)
         if self.selected_path == path:
@@ -235,15 +229,11 @@ class App(tk.Tk):
             self.document = None
             self.table.delete(*self.table.get_children())
             self.overview.clear()
+            self.overview.view.insert('', 'end', values=('チップID', path.stem))
+            self.overview.view.insert('', 'end', values=('測定履歴', 'なし（測定前）'))
             self.title_label.configure(text=path.stem)
             self.metrics.configure(text='チェックイン済み · 測定前（履歴なし） · チップ台帳で管理情報を編集できます')
             self.plot()
-            for i, chip in enumerate(self.registry_view.rows):
-                if chip['code'] == path.stem:
-                    self.registry_view.view.selection_set(str(i))
-                    self.registry_view.view.see(str(i))
-                    break
-            self.tabs.select(self.registry_view)
             self.selected_path = path
             self.sync_chip_selection()
             return
@@ -259,15 +249,7 @@ class App(tk.Tk):
         self.sync_chip_selection()
 
     def sync_chip_selection(self):
-        target = next((str(i) for i, path in enumerate(self.paths)
-                       if path == self.selected_path and self.library.exists(str(i))), None)
-        selected = self.library.selection()
-        if target is not None:
-            if selected != (target,):
-                self.library.selection_set(target)
-            self.library.see(target)
-        elif selected:
-            self.library.selection_remove(*selected)
+        self.registry_view.sync_selection(self.selected_path)
         self.all_view.sync_selection(self.selected_path)
 
     def render(self):
@@ -278,6 +260,10 @@ class App(tk.Tk):
         count = len({r[4] for r in experiments})
         gap = doc.rows[0][6] if doc.rows and len(doc.rows[0]) > 6 else '—'
         self.metrics.configure(text=f'{count} 実験    /    {len(experiments)} 操作記録    /    GAP {gap}    /    CP932 · AXN CSV')
+        declared_id = doc.rows[0][0] if doc.rows and doc.rows[0] else ''
+        if declared_id != doc.path.stem:
+            self.metrics.configure(text=self.metrics.cget('text') +
+                f'    /    注意: CSV内IDは {declared_id or "空欄"}（ファイル名と不一致）')
         self.table.delete(*self.table.get_children())
         width = max((len(r) for r in doc.rows), default=7)
         self.table.configure(columns=tuple(str(i) for i in range(width)))
@@ -300,7 +286,7 @@ class App(tk.Tk):
 
     def open_chip(self, path):
         self.select_path(path)
-        if self.selected_path == Path(path) and self.document is not None:
+        if self.selected_path == Path(path):
             self.tabs.select(self.overview)
 
     def plot(self, event=None):
@@ -371,6 +357,7 @@ class App(tk.Tk):
             dialog.destroy()
             self.start_index()
             self.render()
+            self.all_view.mark_stale()
             self.status.configure(text=f'保存完了 · バックアップ: {backup}')
 
         ttk.Label(dialog, text='AXNの共有CSVに保存します。変更前のファイルは自動バックアップされます。', style='Muted.TLabel').grid(row=len(row), columnspan=2, padx=15, pady=12)

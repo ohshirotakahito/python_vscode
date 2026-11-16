@@ -22,12 +22,14 @@ GitとPython、および使用する各アプリの依存パッケージをイ�
 ```powershell
 git clone https://github.com/ohshirotakahito/python_vscode.git
 cd python_vscode
-python tools/terminal_setup.py --role user --apps exmanager
+python tools/terminal_setup.py --role user --apps exmanager viewer
 python launcher.py
 ```
 
-上の例では実験データ整理だけが利用可能です。設定時に管理者が端末ごとにアプリを選びます。
-未設定の端末もユーザー端末扱いで、実験データ整理だけを利用できます。`--role user` だけを指定した場合も同じです。
+上の例では実験データ整理とTDMSビューアが利用可能です。設定時に管理者が端末ごとにアプリを選びます。
+未設定の端末もユーザー端末扱いで、この2アプリを利用できます。`--role user` だけを指定した場合も同じです。
+旧標準設定（実験データ整理のみ）のユーザー端末も、更新後のランチャーを再起動するとTDMSビューアが表示されます。
+個別にカスタマイズされた設定は保持します。表示されない場合は上の設定コマンドを実行してください。
 明示的にアプリを空にするには `--role user --apps` と指定します。設定内容はランチャーの「端末設定」で確認できます。
 設定変更後はランチャーを再起動してください。
 
