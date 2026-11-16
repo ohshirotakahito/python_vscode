@@ -33,7 +33,7 @@ class TrainedModelsTest(unittest.TestCase):
                 np.testing.assert_array_equal(probs.argmax(axis=1), result['y_pred'])
                 self.assertEqual(model.class_names, ['S0', 'S1', 'S2'])
             listed = trained_models.list_models('rmc')
-            self.assertEqual({m['algorithm'] for m in listed}, {'xgboost', 'lightgbm'})
+            self.assertEqual({m['algorithm'] for m in listed}, set(training_core.ALGORITHMS))
             self.assertEqual(trained_models.list_models('rmb'), [])
 
     def test_same_combination_is_grouped_and_differences_are_marked(self):

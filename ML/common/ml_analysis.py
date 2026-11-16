@@ -140,7 +140,7 @@ def get_gain_importances(model, feature_names):
     )
 
 
-def plot_feature_importance(model, labels, top_n=30, sort=True, save_dir=None):
+def plot_feature_importance(model, labels, top_n=30, sort=True, save_dir=None, importance_label='Importance gain'):
     """model: 生の xgb.Booster、BoosterClassifierWrapper、または
     sklearn API のモデル（XGBClassifier/LGBMClassifier等）のいずれでもよい。
     save_dirを指定するとそのフォルダにPNGを保存する（未指定ならカレントディレクトリ）。"""
@@ -163,7 +163,7 @@ def plot_feature_importance(model, labels, top_n=30, sort=True, save_dir=None):
     plt.bar(range(len(importances)), importances)
     plt.xticks(range(len(importances)), labels, rotation=90)
     plt.xlabel("Feature")
-    plt.ylabel("Importance gain")
+    plt.ylabel(importance_label)
     plt.title("Feature Importances (Top {})".format(len(importances)))
     plt.tight_layout()
     save_path = (Path(save_dir) / 'feature_importance.png') if save_dir else Path('feature_importance.png')
@@ -618,11 +618,14 @@ def plot_dim_reduction(dnf, features, group_col='sample', method='pca',
         groups_plot = groups.values
 
     if method == 'pca':
-        reducer = PCA(n_components=2, random_state=random_state)
-        emb = reducer.fit_transform(X_plot)
+        dimensions = min(2, X_plot.shape[1])
+        reducer = PCA(n_components=dimensions, random_state=random_state)
+        reduced = reducer.fit_transform(X_plot)
+        emb = np.zeros((len(reduced), 2))
+        emb[:, :dimensions] = reduced
         var_ratio = reducer.explained_variance_ratio_
         xlabel = f"PC1 ({var_ratio[0]*100:.1f}%)"
-        ylabel = f"PC2 ({var_ratio[1]*100:.1f}%)"
+        ylabel = f"PC2 ({var_ratio[1]*100:.1f}%)" if dimensions > 1 else 'Unused dimension (single feature)'
         title = "PCA of features"
     elif method == 'umap':
         try:
@@ -1117,6 +1120,9 @@ def compare_feature_sets(dnf, meta_feature_cols, tsfresh_feature_cols, train_fn,
         (tsfresh_name, list(tsfresh_feature_cols)),
         (combined_name, list(meta_feature_cols) + list(tsfresh_feature_cols)),
     ])
+    feature_sets = OrderedDict((name, cols) for name, cols in feature_sets.items() if cols)
+    if not feature_sets:
+        raise ValueError('学習に使える特徴量がありません。特徴量の選択・自動選択設定を確認してください。')
 
     results = {}
     rows = []

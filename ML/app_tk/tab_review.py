@@ -215,28 +215,43 @@ class ReviewTab(InspectionVersions, ttk.Frame):
                                  for name in self._sample_names}
         self._experiments = sorted({v['ex'] for versions in self._source_versions.values()
                                     for v in versions if v.get('ex')})
-        self.experiment_combo.configure(values=['すべて（旧形式を含む）', *self._experiments])
+        self.experiment_combo.configure(values=['すべて（旧形式を含む）', *self._experiments,
+                                                '実験フォルダをまたいで比較'])
         experiment = self.experiment.get()
-        self.experiment_combo.current(self._experiments.index(experiment) + 1
+        self.experiment_combo.current(len(self._experiments) + 1 if getattr(self, 'cross_experiment', False)
+                                      else self._experiments.index(experiment) + 1
                                       if experiment in self._experiments else 0)
         self._filter_samples()
 
     def _filter_samples(self, _event=None):
         index = self.experiment_combo.current()
-        experiment = self._experiments[index - 1] if index > 0 else ''
+        cross = index == len(self._experiments) + 1
+        self.cross_experiment = cross
+        experiment = self._experiments[index - 1] if 0 < index <= len(self._experiments) else ''
         self.experiment.set(experiment)
         names = [name for name in self._sample_names if not experiment or any(
             v.get('ex') == experiment for v in self._source_versions[name])]
+        self.sample_sources = {}
+        if cross:
+            for name in self._sample_names:
+                for source in sorted({v['ex'] for v in self._source_versions[name] if v.get('ex')}):
+                    label = f'{source} / {name}'
+                    self.sample_sources[label] = (name, source)
+            names = sorted(self.sample_sources)
         if experiment:
             self.feature_versions = {name: run_id for name, run_id in self.feature_versions.items()
                                      if any(v['run_id'] == run_id and v.get('ex') == experiment
                                             for v in self._source_versions.get(name, []))}
+        self.feature_versions = {name: run for name, run in self.feature_versions.items() if name in names}
         self.version_summary.configure(text=f'版を指定: {len(self.feature_versions)} サンプル / '
                                        'その他は選択した出どころの最新完了版')
         self.samples.set_items(names)
         self.source_hint.configure(text=(
             f'{len(names)} サンプル：選択した実験の最新完了版を使用（版の個別指定も可）'
             if experiment else 'すべての出どころを表示。旧形式は出どころ不明です。'))
+
+        if cross:
+            self.source_hint.configure(text='実験フォルダ / サンプルを複数選択。各実験の最新完了版を比較します（版の個別指定も可）。')
 
     def _samples_selected(self, samples):
         self.sample_selection.configure(text=f'選択中：{len(samples)} サンプル\n' + '、'.join(samples))
@@ -249,12 +264,16 @@ class ReviewTab(InspectionVersions, ttk.Frame):
         feature_set = self.feature_set.get()
         versions = dict(self.feature_versions)
         experiment = self.experiment.get()
+        sources = dict(self.sample_sources)
 
         def task(progress):
-            selected = {sample: resolve_version(feature_set, sample, versions.get(sample),
-                                                experiment=experiment or None)
-                        for sample in samples}
-            events = load_events(feature_set, samples, progress, feature_versions=selected)
+            selected = {}
+            for sample in samples:
+                source_sample, source_experiment = sources.get(sample, (sample, experiment))
+                selected[sample] = resolve_version(feature_set, source_sample, versions.get(sample),
+                                                   experiment=source_experiment or None)
+            events = load_events(feature_set, samples, progress, feature_versions=selected,
+                                 sample_sources=sources)
             return events, file_statistics(events), (feature_set, list(samples), versions,
                     {sample: version['run_id'] for sample, version in selected.items()}, experiment)
 
@@ -286,6 +305,9 @@ class ReviewTab(InspectionVersions, ttk.Frame):
             messagebox.showerror('入力エラー', '先に統計を読み込んで精査してください。')
             return
         feature_set, samples, requested, resolved, experiment = self.loaded_selection
+        if any(s in self.sample_sources for s in samples):
+            messagebox.showinfo('実験フォルダをまたぐ比較', 'この選択はヒストグラム・統計比較用です。学習には実験フォルダを選び直してください。')
+            return
         current_versions = {s: self.feature_versions.get(s) for s in samples}
         loaded_versions = {s: requested.get(s) for s in samples}
         if (self.feature_set.get() != feature_set or

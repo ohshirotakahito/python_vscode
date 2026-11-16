@@ -11,13 +11,16 @@ KEYS = ['sample', 'sample_name', 'ex_id', 'run_id']
 STATS = ['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max']
 
 
-def load_events(feature_set, samples, progress, feature_versions=None):
+def load_events(feature_set, samples, progress, feature_versions=None, sample_sources=None):
+    """Load display groups, optionally mapping each to its original sample and experiment."""
     frames = []
     for i, sample in enumerate(samples):
+        source_sample, experiment = (sample_sources or {}).get(sample, (sample, ''))
         selected = (feature_versions or {}).get(sample)
-        version = selected if isinstance(selected, dict) else resolve_version(feature_set, sample, selected)
+        version = selected if isinstance(selected, dict) else resolve_version(
+            feature_set, source_sample, selected, experiment=experiment or None)
         directory = Path(version['directory'])
-        stem = f'{sample}_10k_Sample_ANAL'
+        stem = f'{source_sample}_10k_Sample_ANAL'
         if feature_set == 'rmb':
             array = np.load(directory / f'{stem}_rmb.npy', allow_pickle=True)
             if array.size == 0:

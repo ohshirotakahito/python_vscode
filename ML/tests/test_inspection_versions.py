@@ -22,6 +22,30 @@ class Variable:
 
 
 class InspectionTests(unittest.TestCase):
+    def test_cross_experiment_picker_uses_original_sample_and_pins_source(self):
+        record = dict(sample='Lys', feature_set='rmc', run_id='exp-a-run',
+                      ex='exp-a', directory='results', extracted_at='2026-10-01', conditions={})
+        tab = SimpleNamespace(feature_set=Variable('rmc'), experiment=Variable(),
+            samples=SimpleNamespace(get_selected=lambda: ['exp-a / Lys']),
+            sample_sources={'exp-a / Lys': ('Lys', 'exp-a')},
+            feature_versions={}, version_summary=Mock(), winfo_toplevel=Mock())
+        buttons = {}
+        def button(*args, **kwargs):
+            buttons[kwargs['text']] = kwargs['command']
+            return Mock()
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(picker.tk, 'StringVar', Variable))
+            for name in ('Toplevel', 'Text'):
+                stack.enter_context(patch.object(picker.tk, name))
+            for name in ('Frame', 'Label', 'Combobox', 'Entry'):
+                stack.enter_context(patch.object(picker.ttk, name))
+            stack.enter_context(patch.object(picker.ttk, 'Button', side_effect=button))
+            versions = stack.enter_context(patch.object(picker, 'list_versions', return_value=[record]))
+            picker.InspectionVersions._choose_versions(tab)
+            versions.assert_called_once_with('rmc', 'Lys', experiment='exp-a', condition_id=None)
+            buttons['保存して閉じる']()
+            self.assertEqual(tab.feature_versions, {'exp-a / Lys': 'exp-a-run'})
+
     def test_picker_saves_selected_old_version(self):
         record = dict(sample='Lys', feature_set='rmc', run_id='old',
                       directory='old-results', extracted_at='2026-10-01', conditions={})

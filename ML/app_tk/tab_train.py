@@ -25,6 +25,9 @@ PIPELINES = {
     "rmc + LightGBM（tsfresh併用）": {
         "feature_set": "rmc", "module": "train_lightgbm_tsfresh", "tsfresh": True,
     },
+    "rmc + RandomForest（tsfresh併用）": {
+        "feature_set": "rmc", "module": "train_randomforest_tsfresh", "tsfresh": True,
+    },
     "rmb + XGBoost（波形12点特徴量のみ）": {
         "feature_set": "rmb", "module": "train_xgboost_traditional", "tsfresh": False,
     },
@@ -43,6 +46,7 @@ class TrainTab(ttk.Frame):
         self.file_filter_rules = []
         self.sample_groups = {}
         self.training_queue = TrainingQueue()
+        self.manual_features = {}
 
         paned = ttk.PanedWindow(self, orient="horizontal")
         paned.pack(fill="both", expand=True)
@@ -124,6 +128,15 @@ class TrainTab(ttk.Frame):
         self.use_selection = tk.BooleanVar(value=True)
         ttk.Checkbutton(self.tsfresh_frame, text="tsfresh特徴量選択を使う（学習用データのみで選択）",
                         variable=self.use_selection).pack(anchor="w")
+
+        feature_frame = ttk.LabelFrame(left, text="学習に使う特徴量", padding=6)
+        feature_frame.pack(fill="x", pady=6)
+        ttk.Button(feature_frame, text="特徴量を選択 / 除外（検索・一括選択）",
+                   command=self._choose_training_features).pack(fill="x")
+        self.feature_selection_summary = ttk.Label(feature_frame, text="全特徴量を候補に使用", wraplength=400)
+        self.feature_selection_summary.pack(fill="x", pady=3)
+        ttk.Button(feature_frame, text="全特徴量を候補に戻す", command=self._reset_training_features).pack(fill="x")
+        self.fc_mode.trace_add('write', lambda *_: self._update_feature_summary())
 
         # 全パイプライン共通の学習設定（common/training_core.py）
         training_frame = self.training_frame = ttk.LabelFrame(left, text="学習設定（全パイプライン共通）", padding=6)
@@ -476,6 +489,7 @@ class TrainTab(ttk.Frame):
         refresh()
 
     def _pipeline_changed(self):
+        self._update_feature_summary()
         self.refresh_samples()
         pipeline = PIPELINES[self.pipeline.get()]
         if pipeline["tsfresh"]:
@@ -495,7 +509,33 @@ class TrainTab(ttk.Frame):
         return {"balance": balance, "tune": bool(self.tune.get()), "n_trials": n_trials,
                 "classification_mode": self.classification_mode.get(),
                 "sample_groups": {k: list(v) for k, v in self.sample_groups.items()},
-                "split_mode": self.split_mode.get()}
+                "split_mode": self.split_mode.get(),
+                "selected_features": self._selected_training_features()}
+
+    def _feature_selection_key(self):
+        pipeline = PIPELINES[self.pipeline.get()]
+        return pipeline['feature_set'], self.fc_mode.get() if pipeline['tsfresh'] else ''
+
+    def _selected_training_features(self):
+        selected = self.manual_features.get(self._feature_selection_key())
+        return list(selected) if selected is not None else None
+
+    def _update_feature_summary(self):
+        selected = self._selected_training_features()
+        self.feature_selection_summary.configure(text=('全特徴量を候補に使用' if selected is None else
+            f'使用候補: {len(selected)} 特徴量\n' + '、'.join(selected[:6]) + ('…' if len(selected) > 6 else '')))
+
+    def _choose_training_features(self):
+        from training_features import choose_training_features
+        key = self._feature_selection_key()
+        def save(selected):
+            self.manual_features[key] = selected
+            self._update_feature_summary()
+        choose_training_features(self, key[0], key[1] or 'minimal', self._selected_training_features(), save)
+
+    def _reset_training_features(self):
+        self.manual_features.pop(self._feature_selection_key(), None)
+        self._update_feature_summary()
 
     def _choose_groups(self):
         import json

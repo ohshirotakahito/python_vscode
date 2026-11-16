@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import json
 import re
 import numpy as np
 import pandas as pd
@@ -34,19 +35,11 @@ def list_tdms_files(folder: str, recursive: bool = False):
 
 
 def tdms_read_channel(tdms_file_path, target_group="Data", target_channel="Ch1"):
-    tdms_file = TdmsFile.read(tdms_file_path)
-
-    group = next((grp for grp in tdms_file.groups() if grp.name == target_group), None)
-    if group is None:
-        raise ValueError(f"Group '{target_group}' not found in: {tdms_file_path}")
-
-    channel = next((ch for ch in group.channels() if ch.name == target_channel), None)
-    if channel is None:
-        raise ValueError(
-            f"Channel '{target_channel}' not found in Group '{target_group}' in: {tdms_file_path}"
-        )
-
-    return np.asarray(channel.data)
+    with TdmsFile.open(tdms_file_path) as tdms_file:
+        try:
+            return np.asarray(tdms_file[target_group][target_channel][:])
+        except KeyError:
+            raise ValueError(f"'{target_group}/{target_channel}' not found in: {tdms_file_path}") from None
 
 
 def make_safe_filename(name: str) -> str:
@@ -217,7 +210,13 @@ class TdmsMultiFolderBrowser:
         save_subfolder_per_aa=True,
         min_width_ms=0.2,
         figure_factory=None,
+        file_paths=None,
+        preloaded_data=None,
+        output_label=None,
     ):
+        self.output_label = output_label
+        self.file_paths = file_paths
+        self.preloaded_data = preloaded_data or {}
         if not anal_folders:
             raise RuntimeError("ANALフォルダが1つも見つかりませんでした。")
 
@@ -380,7 +379,9 @@ class TdmsMultiFolderBrowser:
 
     def current_aa_id(self):
         # 保存フォルダ名は「解析日時_サンプル名」だけにする（例: 20260818_143012_DOPC）
-        if self.anal_folder_samples is not None:
+        if self.output_label:
+            sample = self.output_label
+        elif self.anal_folder_samples is not None:
             sample = self.anal_folder_samples[self.folder_idx]
         else:
             anal = Path(self.current_anal_folder())
@@ -423,7 +424,8 @@ class TdmsMultiFolderBrowser:
         self.folder_idx = idx % len(self.anal_folders)
         anal = self.current_anal_folder()
 
-        tdms_files = list_tdms_files(anal, recursive=self.recursive_tdms)
+        tdms_files = (list_tdms_files(anal, recursive=self.recursive_tdms) if self.file_paths is None else
+                      [p for p in self.file_paths if Path(p).parent == Path(anal)])
 
         #シグナル数(count_data)が分かる場合は、多い順に並べ替える
         if self.anal_folder_samples is not None:
@@ -464,7 +466,7 @@ class TdmsMultiFolderBrowser:
         print(tdms_path)
 
         try:
-            self.data = tdms_read_channel(
+            self.data = self.preloaded_data.pop(tdms_path) if tdms_path in self.preloaded_data else tdms_read_channel(
                 tdms_path,
                 self.target_group,
                 self.target_channel
@@ -715,6 +717,15 @@ class TdmsMultiFolderBrowser:
 
         np.savetxt(csv_path, arr, delimiter=",", header="time_s,value", comments="")
         np.save(npy_path, clip_y)
+        metadata = dict(source_path=str(self.current_tdms_path()), group=self.target_group,
+                        channel=self.target_channel, sampling_hz=1 / self.dt,
+                        start_index=i0, end_index_exclusive=i1,
+                        viewer_detection_enabled=getattr(self, 'detection_enabled', True),
+                        source_label=getattr(self, 'source_label', ''),
+                        viewer_detection_settings={key: getattr(self, key, None) for key in (
+                            'noise_method', 'baseline_window', 'baseline_percentile', 'sg_window',
+                            'sg_poly', 'threshold_k1', 'threshold_k2', 'min_width_ms')})
+        Path(csv_path).with_suffix('.json').write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding='utf-8')
 
         print(f"[SAVED] {csv_path}")
         print(f"[SAVED] {npy_path}")

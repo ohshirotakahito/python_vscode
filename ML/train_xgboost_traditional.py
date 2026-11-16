@@ -175,14 +175,15 @@ def dfdata(smns, data_root=None):
     return dnf.reset_index(drop=True)
 
 
-def learn_dataset(dnf, feature_set_name='既存15特徴量', split=None):
+def learn_dataset(dnf, feature_set_name='既存15特徴量', split=None, feature_columns=None):
     """イベント単位の分割・CV・（任意）ハイパーパラメータ探索で学習する（common/training_core.py）。
 
     tsfresh版と同じ分割・クラスの偏りへの対処・探索方法を使う。
     """
     from common import training_core
     split = split or training_core.make_split(dnf)
-    return training_core.train_classifier(dnf, data, 'xgboost', split, feature_set_name=feature_set_name)
+    return training_core.train_classifier(dnf, data if feature_columns is None else feature_columns,
+                                          'xgboost', split, feature_set_name=feature_set_name)
 
 
 def mapping(data, bst):
@@ -213,9 +214,12 @@ def run_analysis(smns, progress_callback=None):
 
     _report(1, "学習中（CV + テスト用イベントで評価）...")
     from common import training_core
+    from common.training_features import select_feature_groups
+    feature_columns, _ = select_feature_groups(data, [], training_core.current_settings()['selected_features'])
     dnf = training_core.prepare_dataset(dnf)
     split = training_core.make_split(dnf)
-    result = learn_dataset(dnf, split=split)
+    result = learn_dataset(dnf, split=split, feature_columns=feature_columns,
+                           feature_set_name=f'既存{len(feature_columns)}特徴量')
     X_test = result['X_test']
     y_test = result['y_test']
     y_pred = result['y_pred']
@@ -232,7 +236,7 @@ def run_analysis(smns, progress_callback=None):
                                    classification_config=training_core.current_settings())
 
     class_names = list(le.classes_)
-    feature_columns = data  # 学習に使った15特徴量
+    feature_columns = result['feature_columns']
 
     # --- 特徴量重要度 ---
     plot_feature_importance(booster, feature_columns, top_n=30, save_dir=RUN_DIR)

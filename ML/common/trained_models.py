@@ -25,7 +25,7 @@ import numpy as np
 import common.paths as paths
 
 MODEL_INFO = 'model_info.json'
-MODEL_FILES = {'xgboost': 'model.json', 'lightgbm': 'model.txt'}
+MODEL_FILES = {'xgboost': 'model.json', 'lightgbm': 'model.txt', 'randomforest': 'model.pkl'}
 PREDICT_MODULES = {'rmc': 'predict_mix_xgboost_tsfresh', 'rmb': 'predict_mix_xgboost_traditional'}
 
 
@@ -40,6 +40,9 @@ def save_model(run_dir, result, algorithm, feature_set, smns, fc_parameters_mode
         result['booster'].save_model(str(run_dir / MODEL_FILES[algorithm]))
     elif algorithm == 'lightgbm':
         result['clf'].booster_.save_model(str(run_dir / MODEL_FILES[algorithm]))
+    elif algorithm == 'randomforest':
+        with (run_dir / MODEL_FILES[algorithm]).open('wb') as stream:
+            pickle.dump(result['clf'], stream, protocol=pickle.HIGHEST_PROTOCOL)
     else:
         raise ValueError(f'不明なアルゴリズムです: {algorithm}')
     with open(run_dir / 'label_encoder.pkl', 'wb') as f:
@@ -119,6 +122,9 @@ class LoadedModel:
             import xgboost as xgb
             self.model = xgb.Booster()
             self.model.load_model(str(model_path))
+        elif self.algorithm == 'randomforest':
+            with model_path.open('rb') as stream:
+                self.model = pickle.load(stream)
         else:
             import lightgbm as lgb
             self.model = lgb.Booster(model_file=str(model_path))
@@ -140,6 +146,8 @@ class LoadedModel:
         if self.algorithm == 'xgboost':
             import xgboost as xgb
             probs = self.model.predict(xgb.DMatrix(X, feature_names=self.feature_columns))
+        elif self.algorithm == 'randomforest':
+            probs = self.model.predict_proba(X)
         else:
             probs = self.model.predict(X)
         return np.asarray(probs).reshape(len(X), len(self.class_names))

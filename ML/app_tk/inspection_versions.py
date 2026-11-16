@@ -96,9 +96,13 @@ class InspectionVersions:
         def refresh(_event=None):
             choices.clear()
             sample = sample_var.get()
-            experiment = experiment_var.get().strip() or None
+            source_sample, source_experiment = getattr(self, 'sample_sources', {}).get(sample, (sample, None))
+            if source_experiment is not None:
+                experiment_var.set(source_experiment)
+                experiment_entry.configure(state="readonly")
+            experiment = source_experiment if source_experiment is not None else experiment_var.get().strip() or None
             condition = condition_var.get().strip() or None
-            versions = list_versions(feature_set, sample, experiment=experiment,
+            versions = list_versions(feature_set, source_sample, experiment=experiment or None,
                                      condition_id=condition) if sample else []
             if versions:
                 # With a filter, selecting latest pins the latest matching result rather than

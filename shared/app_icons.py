@@ -28,5 +28,5 @@ def set_taskbar_identity(app_id):
         import ctypes
         identity = {'workbench': 'QuantumWorkbench.Launcher',
                     'ml': 'QuantumWorkbench.MLPanel',
-                    'analyzer': 'PythonVScode.Analyzer'}.get(app_id, f'QuantumWorkbench.{app_id}')
+                    'analyzer': 'QuantumWorkbench.SignalAnalyzer'}.get(app_id, f'QuantumWorkbench.{app_id}')
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(identity)

@@ -42,7 +42,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 from shared import qt_theme, t_stock, ui_theme  # noqa: E402
-from shared.app_icons import icon_path  # noqa: E402
+from shared.app_icons import icon_path, set_taskbar_identity  # noqa: E402
+from taskbar_icon import apply_taskbar_icon
 
 import first_step_io
 import second_step_io
@@ -4664,16 +4665,14 @@ class MainWindow(QMainWindow):
 
 
 def main():
-    if sys.platform == "win32":
-        # タスクバーに pythonw ではなくこのアプリのアイコンを出す
-        import ctypes
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("PythonVScode.Analyzer")
+    set_taskbar_identity('analyzer')
     app = QApplication(sys.argv)
     qt_theme.apply(app, ACCENT)
     app.setStyleSheet(STYLE)
     app.setWindowIcon(QIcon(str(icon_path('analyzer'))))
     w = MainWindow()
     w.show()
+    apply_taskbar_icon(w, icon_path('analyzer'))
     viewer_rows.warm_up()  # the result viewers read folders in worker processes
     sys.exit(app.exec())
 

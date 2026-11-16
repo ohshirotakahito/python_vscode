@@ -306,11 +306,15 @@ def run_analysis(smns, progress_callback=None):
 
     # 学習用/テスト用はイベント単位で1回だけ決め、全特徴量セットで共通に使う
     from common import training_core
+    from common.training_features import select_feature_groups
+    meta_feature_cols, tsfresh_feature_cols_all = select_feature_groups(
+        META_FEATURE_COLUMNS, tsfresh_feature_cols_all,
+        training_core.current_settings()['selected_features'])
     dnf = training_core.prepare_dataset(dnf)
     split = training_core.make_split(dnf)
 
     _report(1, "tsfresh特徴量を選択中（学習用イベントのみ使用）...")
-    if USE_TSFRESH_FEATURE_SELECTION:
+    if USE_TSFRESH_FEATURE_SELECTION and tsfresh_feature_cols_all:
         # テスト用の情報が特徴量選択に混ざらないよう、学習用の行だけで選ぶ
         tsfresh_feature_cols = apply_tsfresh_feature_selection(
             dnf.iloc[split['train']], tsfresh_feature_cols_all, n_jobs=N_JOBS, chunksize=CHUNKSIZE
@@ -323,7 +327,7 @@ def run_analysis(smns, progress_callback=None):
     # ---------------------------------------------------------
     _report(2, "Step1: 特徴量セットを比較・学習中...")
     step1_results, step1_comparison_df, step1_feature_set_names = compare_feature_sets(
-        dnf, META_FEATURE_COLUMNS, tsfresh_feature_cols,
+        dnf, meta_feature_cols, tsfresh_feature_cols,
         train_fn=functools.partial(train_xgb_classifier, split=split),
         n_jobs=N_JOBS, output_dir=RUN_DIR,
     )
@@ -332,6 +336,7 @@ def run_analysis(smns, progress_callback=None):
     # '既存15+tsfresh' のような決め打ちではなく、実際に使われた列数から
     # 生成された名前を使う
     main_result = step1_results[step1_feature_set_names['combined']]
+    analysis_feature_cols = meta_feature_cols or list(main_result['feature_columns'])
     feature_columns = main_result['feature_columns']
     le = main_result['le']
     class_names = main_result['class_names']
@@ -412,17 +417,17 @@ def run_analysis(smns, progress_callback=None):
     # --- ヒストグラム・統計データの作成と保存 ---
     hist_stats_df, summary_stats_df = data_stat(
         dnf,
-        META_FEATURE_COLUMNS,
+        analysis_feature_cols,
         save_dir=RUN_DIR,
         feature_upper_limits={'relative_signal': 150, 'duration': 150},
     )
 
     # --- PCA / UMAP による次元削減の可視化 ---
-    plot_dim_reduction(dnf, META_FEATURE_COLUMNS, method='pca', save_path=RUN_DIR / "pca_2d.png")
-    plot_dim_reduction(dnf, META_FEATURE_COLUMNS, method='umap', save_path=RUN_DIR / "umap_2d.png")
+    plot_dim_reduction(dnf, analysis_feature_cols, method='pca', save_path=RUN_DIR / "pca_2d.png")
+    plot_dim_reduction(dnf, analysis_feature_cols, method='umap', save_path=RUN_DIR / "umap_2d.png")
 
     # --- 特徴量ごとの統計検定 (ANOVA / Kruskal-Wallis) ---
-    stats_df = feature_group_tests(dnf, META_FEATURE_COLUMNS, save_path=RUN_DIR / "feature_group_tests.csv")
+    stats_df = feature_group_tests(dnf, analysis_feature_cols, save_path=RUN_DIR / "feature_group_tests.csv")
 
     # --- 重要度と統計的有意性の比較 ---
     compare_df = compare_importance_and_stats(
@@ -441,7 +446,7 @@ def run_analysis(smns, progress_callback=None):
     )
 
     # --- メタ特徴空間でのクラス間距離ヒートマップ ---
-    dist_df = class_distance_heatmap(dnf, META_FEATURE_COLUMNS, save_path=RUN_DIR / "class_distance_heatmap.png")
+    dist_df = class_distance_heatmap(dnf, analysis_feature_cols, save_path=RUN_DIR / "class_distance_heatmap.png")
 
     # --- クラス中心ネットワーク ---
     # pathway_edges には既知の反応・変換経路を (始点クラス名, 終点クラス名) のタプルで指定できる。
@@ -465,7 +470,7 @@ def run_analysis(smns, progress_callback=None):
             'fc_parameters_mode': FC_PARAMETERS_MODE,
             'use_tsfresh_feature_selection': USE_TSFRESH_FEATURE_SELECTION,
             'tsfresh_feature_selection_fit': '学習用イベントのみ',
-            'n_meta_features': len(META_FEATURE_COLUMNS),
+            'n_meta_features': len(meta_feature_cols),
             'event_limits': {'duration': DURATION_LIMIT, 'baseline': BASELINE_LIMIT, 'signal': SIGNAL_LIMIT},
             'training': training_core.manifest_config(split, main_result),
         },

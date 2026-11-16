@@ -188,8 +188,10 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         overview_activity_k=4.0,
         overview_min_activity=0.002,
         noise_method="mad",
+        detection_enabled=True,
         **kwargs,
     ):
+        self.detection_enabled = detection_enabled
         if noise_method not in ("mad", "lower_mode"):
             raise ValueError(f"Unknown noise method: {noise_method}")
         self.noise_method = noise_method
@@ -530,6 +532,11 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         self.ov_ax.set_xlim(0.0, total_s)
         self.ov_ax.set_ylim(lo.min() - pad, hi.max() + pad)
 
+        if not self.detection_enabled:
+            self._ov_cand.set_data([], [])
+            self._ov_thr.set_visible(False)
+            return
+
         # --- global robust stats -> "hot sample" threshold ---
         step = max(1, self.n // 200000)
         gmed, gsig = robust_baseline_and_std(data[::step])
@@ -837,7 +844,7 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
     def _refresh_legend(self, have_pulses, have_peaks):
         """Rebuild the legend only when the set of visible series changes."""
         sig = (
-            self.show_signal, self.show_baseline, self.show_threshold,
+            self.show_signal, self.show_baseline, self.show_threshold, self.detection_enabled,
             have_pulses, have_peaks,
         )
         if sig == self._legend_sig:
@@ -1000,7 +1007,8 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
             )
         self._preview_fig.suptitle(
             f"PREVIEW - not saved yet   |   peaks: {n_pulses}   |   "
-            f"peak values: {'ON' if self._preview_show_pv else 'OFF'}",
+            f"peak values: {'ON' if self._preview_show_pv else 'OFF'}" if self.detection_enabled else
+            "PREVIEW - not saved yet | Waveform only (detection off)",
             fontsize=12, fontweight="bold", color="#b26a00",
         )
 
@@ -1044,14 +1052,15 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
             threshold_k1=self.threshold_k1,
             threshold_k2=self.threshold_k2,
             min_width_ms=self.min_width_ms,
-        )
+        ) if self.detection_enabled else ([], baseline, baseline)
 
         ax.plot(t, y, color=getattr(self, "signal_color", "#1565c0"), linewidth=1.0, label="Signal")
-        ax.plot(t, baseline, color="#2e7d32", linewidth=1.5, label="Baseline")
-        ax.plot(t, t1, color="#ef6c00", linestyle="--", linewidth=1.0,
-                label=f"Threshold t1 (+{self.threshold_k1:g} sigma)")
-        ax.plot(t, t2, color="#c62828", linestyle="--", linewidth=1.0,
-                label=f"Threshold t2 (+{self.threshold_k2:g} sigma)")
+        if self.detection_enabled:
+            ax.plot(t, baseline, color="#2e7d32", linewidth=1.5, label="Baseline")
+            ax.plot(t, t1, color="#ef6c00", linestyle="--", linewidth=1.0,
+                    label=f"Threshold t1 (+{self.threshold_k1:g} sigma)")
+            ax.plot(t, t2, color="#c62828", linestyle="--", linewidth=1.0,
+                    label=f"Threshold t2 (+{self.threshold_k2:g} sigma)")
 
         for pulse_number, pulse in enumerate(pulses, start=1):
             start_index = pulse["start_index"]
@@ -1087,7 +1096,8 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
                 )
 
         ax.set_title(f"Selected TDMS signal | {self.current_base_name()} | "
-                     f"Peaks: {len(pulses)} | Duration: {(i1-i0)*self.dt*1000:.6g} ms")
+                     f"Peaks: {len(pulses)} | Duration: {(i1-i0)*self.dt*1000:.6g} ms" if self.detection_enabled else
+                     f"{self.current_base_name()} | Waveform only | Duration: {(i1-i0)*self.dt*1000:.6g} ms")
         ax.set_xlabel("Time from region start (ms)" if relative_time else "Measurement time (s)")
         ax.set_ylabel("Signal amplitude (nA)")
         if getattr(self, "tight_time_edges", False) and len(t) > 1:
@@ -1099,7 +1109,7 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         peak_mean = f"{np.mean(peak_values)*1000:.2f} pA" if peak_values else "-"
         ax.text(0.01, 0.97,
                 f"Waveform σ: {np.std(y)*1000:.2f} pA | Noise σ: {noise*1000:.2f} pA | Mean peak: {peak_mean}\n"
-                f"Noise method: {self.noise_estimation_status}",
+                f"Noise method: {self.noise_estimation_status}" if self.detection_enabled else "Waveform only | Detection off (no ANAL)",
                 transform=ax.transAxes, va="top", fontsize=9,
                 bbox=dict(boxstyle="round", facecolor="white", alpha=0.9), zorder=10)
 
@@ -1124,6 +1134,10 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
     def _compute_baseline_threshold(self, y, global_start):
         """Calculate with surrounding samples, then crop back to the view."""
         y = np.asarray(y, dtype=float)
+        if not self.detection_enabled:
+            self.noise_estimation_status = 'Waveform only (detection off)'
+            empty = np.zeros(len(y), dtype=float)
+            return empty, empty, empty, float('nan')
         if len(y) == 0:
             empty = np.asarray([], dtype=float)
             return empty, empty, empty, 0.0
@@ -1221,15 +1235,16 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
             threshold_k1=self.threshold_k1,
             threshold_k2=self.threshold_k2,
             min_width_ms=self.min_width_ms,
-        )
+        ) if self.detection_enabled else ([], baseline, baseline)
 
         pidx = _downsample_indices(y)
+        self.current_view_pulses = pulses, start
         peak_values = [float(np.max(y[p["start_index"]:p["end_index"]]))
                        for p in pulses if p["end_index"] > p["start_index"]]
         peak_mean = f"{np.mean(peak_values)*1000:.2f} pA" if peak_values else "-"
         self._stats_text.set_text(
             f"Waveform σ: {np.std(y)*1000:.2f} pA | Noise σ: {noise*1000:.2f} pA | Mean peak: {peak_mean}\n"
-            f"Noise method: {self.noise_estimation_status}")
+            f"Noise method: {self.noise_estimation_status}" if self.detection_enabled else "Waveform only | Detection off (no ANAL)")
         if len(y) > 50000 and len(pidx) < len(y):
             print(f"[INFO] View has {len(y)} samples; plotting a "
                   f"{len(pidx)}-point envelope to keep the UI responsive.")
@@ -1239,11 +1254,11 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
         self._l_signal.set_data(tp, yp)
         self._l_signal.set_visible(self.show_signal)
         self._l_baseline.set_data(tp, baseline[pidx])
-        self._l_baseline.set_visible(self.show_baseline)
+        self._l_baseline.set_visible(self.show_baseline and self.detection_enabled)
         self._l_t1.set_data(tp, t1[pidx])
-        self._l_t1.set_visible(self.show_threshold)
+        self._l_t1.set_visible(self.show_threshold and self.detection_enabled)
         self._l_t2.set_data(tp, t2[pidx])
-        self._l_t2.set_visible(self.show_threshold)
+        self._l_t2.set_visible(self.show_threshold and self.detection_enabled)
 
         # Detected pulses: one batched PolyCollection + one marker line.
         verts = []
@@ -1309,9 +1324,9 @@ class RobustTdmsMultiFolderBrowser(TdmsMultiFolderBrowser):
 
         lo = float(np.nanmin(yp))
         hi = float(np.nanmax(yp))
-        if self.show_baseline:
+        if self.show_baseline and self.detection_enabled:
             lo = min(lo, float(np.nanmin(baseline[pidx])))
-        if self.show_threshold:
+        if self.show_threshold and self.detection_enabled:
             hi = max(hi, float(np.nanmax(t2[pidx])))
         if not (np.isfinite(lo) and np.isfinite(hi)) or hi <= lo:
             lo, hi = 0.0, 1.0

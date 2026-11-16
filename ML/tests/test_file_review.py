@@ -10,6 +10,32 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from lib.file_review import add_signal_features, comparison, event_histogram, histogram_markers, file_statistics, filter_files, selected_events
 
 
+def test_load_same_sample_from_different_experiments(tmp_path, monkeypatch):
+    from common import file_review
+    records = {}
+    sources = {}
+    for experiment, values in [('exp-a', [1., 2.]), ('exp-b', [10., 20.])]:
+        directory = tmp_path / experiment
+        directory.mkdir()
+        pd.DataFrame({'sample_name': ['same-file'] * 2, 'ex_id': ['same-id'] * 2,
+                      'signal': values}).to_csv(directory / 'Lys_10k_Sample_ANAL_meta.csv', index=False)
+        records[experiment] = dict(directory=str(directory), run_id='same-run', ex=experiment)
+        sources[f'{experiment} / Lys'] = ('Lys', experiment)
+    calls = []
+    def resolve(feature_set, sample, selected, **kwargs):
+        calls.append((sample, kwargs['experiment']))
+        return records[kwargs['experiment']]
+    monkeypatch.setattr(file_review, 'resolve_version', resolve)
+    frame = file_review.load_events('rmc', list(sources), lambda *args: None, sample_sources=sources)
+    assert calls == [('Lys', 'exp-a'), ('Lys', 'exp-b')]
+    files = file_statistics(frame)
+    assert len(files) == 2
+    assert files.set_index('sample')['signal.mean'].to_dict() == {
+        'exp-a / Lys': 1.5, 'exp-b / Lys': 15.}
+    subset = selected_events(frame, files[files['sample'].eq('exp-a / Lys')])
+    assert subset['signal'].tolist() == [1., 2.]
+
+
 def events():
     return pd.DataFrame({
         'sample': ['s'] * 4, 'sample_name': ['a', 'b', 'b', 'b'],

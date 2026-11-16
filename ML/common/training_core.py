@@ -37,6 +37,7 @@ BALANCE_METHODS = {
 }
 
 DEFAULT_SETTINGS = {
+    'selected_features': None,
     'classification_mode': 'sample',
     'sample_groups': {},
     'split_mode': 'event',
@@ -59,6 +60,8 @@ def configure(**changes):
     if unknown:
         raise ValueError(f'不明な学習設定です: {sorted(unknown)}')
     merged = {**SETTINGS, **changes}
+    from common.training_features import validate_selection
+    validate_selection(merged['selected_features'])
     if merged['balance'] not in BALANCE_METHODS:
         raise ValueError(f"不明なクラスの偏りへの対処です: {merged['balance']}")
     if int(merged['n_trials']) < 1:
@@ -219,11 +222,14 @@ def balance_training(X, y, method, seed):
 # モデル（XGBoost / LightGBM）
 # ============================================================
 
-ALGORITHMS = ('xgboost', 'lightgbm')
+ALGORITHMS = ('xgboost', 'lightgbm', 'randomforest')
 
 
 def base_params(algorithm, num_class, n_jobs, seed):
     """探索しない場合の既定値（従来の各スクリプトの値）。"""
+    if algorithm == 'randomforest':
+        return {'max_depth': None, 'min_samples_leaf': 1, 'max_features': 'sqrt',
+                'bootstrap': True, 'random_state': seed, 'n_jobs': n_jobs}
     if algorithm == 'xgboost':
         return {'max_depth': 6, 'eta': 0.1, 'eval_metric': 'mlogloss',
                 'num_class': num_class, 'objective': 'multi:softprob'}
@@ -240,6 +246,12 @@ def _log_uniform(rng, low, high):
 
 def sample_params(algorithm, rng):
     """ランダム探索の候補を1つ作る（過学習を抑える方向の正則化も含める）。"""
+    if algorithm == 'randomforest':
+        return {'max_depth': [None, 8, 16, 32][int(rng.integers(4))],
+                'min_samples_leaf': int(rng.choice([1, 2, 5, 10])),
+                'min_samples_split': int(rng.choice([2, 5, 10])),
+                'max_features': ['sqrt', 'log2', .5, 1.0][int(rng.integers(4))],
+                'bootstrap': bool(rng.integers(2))}
     if algorithm == 'xgboost':
         return {'max_depth': int(rng.integers(3, 11)), 'eta': _log_uniform(rng, 0.01, 0.3),
                 'min_child_weight': _log_uniform(rng, 1, 100),
@@ -259,6 +271,11 @@ def sample_params(algorithm, rng):
 def _fit(algorithm, params, X, y, weight, feature_names, rounds,
          X_valid=None, y_valid=None, early_stopping_rounds=None):
     """(model, 使う木の本数, evals_result) を返す。検証データがあれば early stopping する。"""
+    if algorithm == 'randomforest':
+        from sklearn.ensemble import RandomForestClassifier
+        model = RandomForestClassifier(**params, n_estimators=rounds)
+        model.fit(X, y, sample_weight=weight)
+        return model, rounds, None
     if algorithm == 'xgboost':
         import xgboost as xgb
         dtrain = xgb.DMatrix(X, label=y, weight=weight, feature_names=feature_names)
@@ -284,6 +301,8 @@ def _fit(algorithm, params, X, y, weight, feature_names, rounds,
 
 
 def predict_proba(algorithm, model, X, feature_names, rounds):
+    if algorithm == 'randomforest':
+        return model.predict_proba(X)
     if algorithm == 'xgboost':
         import xgboost as xgb
         return model.predict(xgb.DMatrix(X, feature_names=feature_names), iteration_range=(0, rounds))
@@ -311,6 +330,10 @@ def train_classifier(dnf, feature_columns, algorithm, split, feature_set_name='m
     """分割済みのデータで学習・評価する。戻り値の辞書は従来の各スクリプトと同じキーを持つ。"""
     cfg = settings or current_settings()
     feature_columns = list(feature_columns)
+    if cfg.get('selected_features') is not None:
+        feature_columns = [c for c in feature_columns if c in cfg['selected_features']]
+    if not feature_columns:
+        raise ValueError('学習に使える特徴量がありません。特徴量の選択・自動選択設定を確認してください。')
     labels = dnf['sample'].astype(str)
     le = LabelEncoder().fit(labels)
     y = le.transform(labels)
@@ -426,6 +449,8 @@ def manifest_config(split, main_result, settings=None):
     cfg = settings or current_settings()
     return {
         'split': split['info'],
+        'requested_features': cfg.get('selected_features'),
+        'used_features': list(main_result.get('feature_columns', [])),
         'classification_mode': cfg['classification_mode'],
         'sample_groups': cfg['sample_groups'] if cfg['classification_mode'] == 'group' else {},
         'balance': cfg['balance'],

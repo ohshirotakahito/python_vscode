@@ -215,6 +215,8 @@ class FrontPanel(ttk.Frame):
         self.waveform_frame = waveform_frame
         self.preview_frame = preview_frame
         self.browser = None
+        self.view_memory = {}
+        self.display_revision = 0
         self.results = queue.Queue()
         self.file_results = queue.Queue()
         self.file_rows = {}
@@ -532,9 +534,16 @@ class FrontPanel(ttk.Frame):
                 self.open_button.state(["!disabled"])
         self.after(500, self.poll)
 
+    def capture_view(self, browser):
+        start = (browser._view_start_override if browser._view_start_override is not None
+                 else browser.chunk_idx * browser.chunk_size)
+        return dict(start=start * browser.dt, chunk_sec=browser.chunk_sec, ylim=list(browser._ylim_user))
+
     def clear_viewer(self):
         import matplotlib.pyplot as plt
         if self.browser is not None:
+            if getattr(self.browser, 'tdms_files', None):
+                self.view_memory[self.browser.current_tdms_path()] = self.capture_view(self.browser)
             if self.browser._preview_fig is not None:
                 plt.close(self.browser._preview_fig)
             plt.close(self.browser.fig)
@@ -543,9 +552,11 @@ class FrontPanel(ttk.Frame):
             for widget in frame.winfo_children():
                 widget.destroy()
 
-    def embed_viewer(self, settings, folders):
+    def embed_viewer(self, settings, folders, *, source_label='', source_navigation=None,
+                     source_switch=None, return_panel=None, restore_view=None, detection_changed=None):
         settings = dict(settings)
         initial_path = settings.pop("initial_path", None)
+        self.display_revision += 1
         import matplotlib
         # No pyplot window managers: Tk canvases are attached before widgets
         # connect their mouse/keyboard callbacks.
@@ -555,12 +566,23 @@ class FrontPanel(ttk.Frame):
         from tdms_signal_core import RobustTdmsMultiFolderBrowser
 
         self.clear_viewer()
+        restore_view = restore_view or self.view_memory.get(initial_path)
+        if restore_view:
+            settings['chunk_sec'] = restore_view['chunk_sec']
         panel = self
         candidates = candidate_file_rows(self.file_rows.values(), folders) if self.catalog_key == self.selection_key() else []
         candidate_paths = [row["path"] for row in candidates]
         created_figures = []
         header = ttk.Frame(self.waveform_frame, padding=(12, 10))
         header.pack(fill="x")
+        if source_label:
+            ttk.Label(header, text=source_label, wraplength=1250).pack(fill='x')
+        if source_switch:
+            switches = ttk.Frame(header)
+            switches.pack(fill='x', pady=4)
+            ttk.Button(switches, text='同じ計測の生TDMS', command=lambda: source_switch('raw')).pack(side='left')
+            ttk.Button(switches, text='同じ計測のANAL', command=lambda: source_switch('anal')).pack(side='left', padx=6)
+            ttk.Button(switches, text='計測一覧・ANAL版選択へ', command=lambda: self.workspace.select(return_panel)).pack(side='left')
         info = tk.StringVar(value="読み込み中…")
         ttk.Label(header, textvariable=info, style="Heading.TLabel").pack(anchor="w")
         file_row = ttk.Frame(header)
@@ -581,8 +603,13 @@ class FrontPanel(ttk.Frame):
         side_window = side_canvas.create_window((0, 0), window=sidebar, anchor="nw")
         sidebar.bind("<Configure>", lambda _: side_canvas.configure(scrollregion=side_canvas.bbox("all")))
         side_canvas.bind("<Configure>", lambda event: side_canvas.itemconfigure(side_window, width=event.width))
-        plot_frame = ttk.Frame(body)
-        plot_frame.pack(side="left", fill="both", expand=True)
+        from event_panel import EventPanel
+        split = ttk.PanedWindow(body, orient='horizontal')
+        split.pack(side='left', fill='both', expand=True)
+        events = EventPanel(split)
+        split.add(events, weight=1)
+        plot_frame = ttk.Frame(split)
+        split.add(plot_frame, weight=4)
         summary = tk.StringVar(value="波形上をドラッグして保存範囲を選択できます。")
         ttk.Label(self.waveform_frame, textvariable=summary, padding=(12, 8),
                   style="Status.TLabel").pack(fill="x")
@@ -602,6 +629,12 @@ class FrontPanel(ttk.Frame):
             return figure, axes
 
         class EmbeddedBrowser(RobustTdmsMultiFolderBrowser):
+            def on_prev_file(self, event):
+                return source_navigation(-1) if source_navigation else super().on_prev_file(event)
+
+            def on_next_file(self, event):
+                return source_navigation(1) if source_navigation else super().on_next_file(event)
+
             def __init__(self, *args, **kwargs):
                 self.tight_time_edges = True
                 super().__init__(*args, **kwargs)
@@ -676,6 +709,8 @@ class FrontPanel(ttk.Frame):
                 super().draw()
                 self.apply_plot_style()
                 if getattr(self, "_tk_controls_ready", False):
+                    pulses, offset = getattr(self, 'current_view_pulses', ([], 0))
+                    events.on_draw(self, pulses, offset)
                     self.ax.set_title("")
                     info.set(f"ファイル {self.file_idx + 1} / {len(self.tdms_files)}   ·   "
                              f"表示区間 {self.chunk_idx + 1} / {self.num_chunks}")
@@ -814,7 +849,7 @@ class FrontPanel(ttk.Frame):
 
             def on_stop(self, event):
                 panel.clear_viewer()
-                panel.workspace.select(panel)
+                panel.workspace.select(return_panel if return_panel is not None else panel)
                 panel.status.set("波形表示を終了しました。")
 
             def make_style_controls(self, frame, redraw):
@@ -859,13 +894,19 @@ class FrontPanel(ttk.Frame):
                 figure_factory=figure_factory,
             )
             browser = self.browser
+            browser.event_panel = events
+            browser.source_label = source_label
             if initial_path is not None:
-                browser.load_folder(folders.index(str(Path(initial_path).parent)))
-                browser.load_file(browser.tdms_files.index(initial_path))
+                if browser.current_tdms_path() != initial_path:
+                    browser.load_folder(folders.index(str(Path(initial_path).parent)))
+                    browser.load_file(browser.tdms_files.index(initial_path))
                 if browser.n == 0:
                     raise ValueError("選択したファイルの波形を読み込めません。")
             elif browser.n == 0:
                 raise ValueError("TDMS波形を読み込めません。グループとチャンネルを確認してください。")
+            if restore_view:
+                browser._view_start_override = max(0, min(browser.n - 1, int(restore_view['start'] / browser.dt)))
+                browser._ylim_user = restore_view['ylim']
             # Keep the legacy widgets as callback adapters, but place all
             # visible controls in Tk so the figure can use the available space.
             from matplotlib.widgets import Widget
@@ -896,10 +937,11 @@ class FrontPanel(ttk.Frame):
 
             navigation = group("波形の移動")
             button_row(navigation, [("前のファイル", browser.on_prev_file), ("次のファイル", browser.on_next_file)])
-            button_row(navigation, [("前の候補ファイル", lambda _: browser.navigate_candidate_file(-1)),
-                                    ("次の候補ファイル", lambda _: browser.navigate_candidate_file(1))])
-            ttk.Label(navigation, text=f"候補: {len(candidates)}ファイル / シグナル数の多い順",
-                      wraplength=220).pack(anchor="w", pady=(2, 6))
+            if source_navigation is None:
+                button_row(navigation, [("前の候補ファイル", lambda _: browser.navigate_candidate_file(-1)),
+                                        ("次の候補ファイル", lambda _: browser.navigate_candidate_file(1))])
+                ttk.Label(navigation, text=f"候補: {len(candidates)}ファイル / シグナル数の多い順",
+                          wraplength=220).pack(anchor="w", pady=(2, 6))
             button_row(navigation, [("前の区間", browser.on_prev_chunk), ("次の区間", browser.on_next_chunk)])
             button_row(navigation, [("前の候補区間", browser.on_prev_candidate), ("次の候補区間", browser.on_next_candidate)])
             window_var = tk.StringVar(value=str(browser.chunk_sec))
@@ -922,6 +964,16 @@ class FrontPanel(ttk.Frame):
                 browser.on_window_size_submit(str(value))
             ttk.Button(navigation, text="表示幅を適用", command=apply_window).pack(fill="x", pady=4)
             visibility = group("表示する情報")
+            detection_var = tk.BooleanVar(value=browser.detection_enabled)
+            browser._tk_detection_var = detection_var
+            def toggle_detection():
+                browser.detection_enabled = detection_var.get()
+                if detection_changed:
+                    detection_changed(browser.detection_enabled)
+                browser._compute_overview()
+                browser.draw()
+            ttk.Checkbutton(visibility, text='ビューア内検出（ANAL処理なし）', variable=detection_var,
+                            command=toggle_detection).pack(anchor='w', pady=2)
             browser._tk_visibility_vars = []
             for label, key in [("波形", "Signal"), ("ベースライン", "Baseline"),
                                ("検出閾値", "Threshold"), ("検出信号", "Pulse"), ("ピーク値", "Peak value")]:
@@ -1230,7 +1282,10 @@ def main():
     preview_frame = ttk.Frame(workspace)
     panel = FrontPanel(workspace, workspace, waveform_frame, preview_frame)
     panel.pack_forget()
-    workspace.add(panel, text="読み込み・設定")
+    from measurement_panel import MeasurementPanel
+    measurement_panel = MeasurementPanel(workspace, panel)
+    workspace.add(measurement_panel, text="計測フォルダ・設定")
+    workspace.add(panel, text="ANAL読み込み・設定")
     workspace.add(waveform_frame, text="波形")
     workspace.add(preview_frame, text="保存プレビュー")
     saved_panel = SavedFilesPanel(workspace, panel.output)
