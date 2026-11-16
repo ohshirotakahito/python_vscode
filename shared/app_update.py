@@ -47,8 +47,9 @@ def check(app_id, running):
 def install(state):
     if state.available is None or not state.target:
         raise RuntimeError('配布元のバージョン情報が未公開のため更新できません。')
-    if git('status', '--porcelain'):
+    if git('status', '--porcelain', '--untracked-files=no'):
         raise RuntimeError('ローカルの変更があるため更新できません。変更を保存・コミットしてから再確認してください。')
+    # Git itself refuses to overwrite untracked paths that collide with incoming files.
     git('merge', '--ff-only', state.target)
 
 

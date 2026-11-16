@@ -35,6 +35,9 @@ class CheckoutTests(unittest.TestCase):
             selection = client / '.workbench' / 'terminal.json'
             terminal_profile.save('user', ['viewer'], selection)
             before = selection.read_bytes()
+            untracked = client / 'filemanager' / 'local.txt'
+            untracked.parent.mkdir()
+            untracked.write_text('local data', encoding='utf-8')
             updated = bump(manifest, 'viewer', 'patch', 'Update', '2026-11-15')
             path.write_text(json.dumps(manifest), encoding='utf-8')
             git(origin, 'add', '.')
@@ -48,7 +51,19 @@ class CheckoutTests(unittest.TestCase):
                 after = app_update.check('viewer', previous)
                 self.assertTrue(after.restart_needed)
                 self.assertEqual(after.behind, 0)
+                # A subsequent update that collides with local data must fail safely.
+                incoming = origin / 'filemanager' / 'local.txt'
+                incoming.parent.mkdir()
+                incoming.write_text('remote data', encoding='utf-8')
+                git(origin, 'add', '.')
+                git(origin, 'commit', '-m', 'Add conflicting file')
+                blocked = app_update.check('viewer', previous)
+                with self.assertRaises(RuntimeError):
+                    app_update.install(blocked)
+                self.assertEqual(untracked.read_text(encoding='utf-8'), 'local data')
+                self.assertEqual(app_update.git('rev-list', '--count', 'HEAD..@{upstream}'), '1')
             self.assertEqual(selection.read_bytes(), before)
+            self.assertEqual(untracked.read_text(encoding='utf-8'), 'local data')
             self.assertEqual(load_releases(client / 'app_versions.json')['apps']['viewer']['version'], updated)
 
 

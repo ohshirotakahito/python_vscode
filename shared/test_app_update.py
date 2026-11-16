@@ -40,7 +40,7 @@ class UpdateTests(unittest.TestCase):
         with patch.object(app_update, 'git', return_value=' M source.py') as git:
             with self.assertRaises(RuntimeError):
                 app_update.install(app_update.UpdateState('1', '1', '2', 1, 'abc'))
-            git.assert_called_once_with('status', '--porcelain')
+            git.assert_called_once_with('status', '--porcelain', '--untracked-files=no')
 
     def test_clean_checkout_only_fast_forwards_to_checked_commit(self):
         with patch.object(app_update, 'git', return_value='') as git:
