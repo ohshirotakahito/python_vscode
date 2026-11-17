@@ -22,16 +22,21 @@ GitとPython、および使用する各アプリの依存パッケージをイ�
 ```powershell
 git clone https://github.com/ohshirotakahito/python_vscode.git
 cd python_vscode
-python tools/terminal_setup.py --role user --apps exmanager viewer
+python tools/terminal_setup.py --role user --apps exmanager viewer chipdb
 python launcher.py
 ```
 
-上の例では実験データ整理とTDMSビューアが利用可能です。設定時に管理者が端末ごとにアプリを選びます。
-未設定の端末もユーザー端末扱いで、この2アプリを利用できます。`--role user` だけを指定した場合も同じです。
-旧標準設定（実験データ整理のみ）のユーザー端末も、更新後のランチャーを再起動するとTDMSビューアが表示されます。
+上の例では実験データ整理・TDMSビューア・Chip Atlasが利用可能です。設定時に管理者が端末ごとにアプリを選びます。
+未設定の端末もユーザー端末扱いで、この3アプリを利用できます。`--role user` だけを指定した場合も同じです。
+旧標準設定（実験データ整理のみ、または実験データ整理＋TDMSビューア）のユーザー端末も、更新後のランチャーを再起動するとChip Atlasが表示されます。
 個別にカスタマイズされた設定は保持します。表示されない場合は上の設定コマンドを実行してください。
 明示的にアプリを空にするには `--role user --apps` と指定します。設定内容はランチャーの「端末設定」で確認できます。
 設定変更後はランチャーを再起動してください。
+
+Chip Atlasの初回起動時は「共有フォルダを選択」で、その端末からアクセスできる共有データを指定します。
+開発PCの `D:\Qstatus` をそのまま入力するのではなく、共有データのルート、`ChipDB`、または `ChipDB/DB` を指定してください。
+履歴CSVは `ChipDB/DB`、チップ台帳は同じ共有データ内の `machinedb/PLAN/chip_info.json` を使用します。
+保存先の選択はPCごとに記憶します。編集・統合を行う端末には、共有データとバックアップ先への書き込み権限も必要です。
 
 | アプリID | アプリ |
 |---|---|

@@ -3,8 +3,15 @@
   "apps": {
     "workbench": {
       "name": "Quantum Workbench",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "releases": [
+        {
+          "version": "0.6.0",
+          "date": "2026-11-17",
+          "notes": [
+            "ユーザー端末の標準アプリにChip Atlasを追加。旧標準端末にも表示し、個別設定と明示的な除外設定を保持。"
+          ]
+        },
         {
           "version": "0.5.0",
           "date": "2026-11-16",
@@ -86,8 +93,15 @@
     },
     "chipdb": {
       "name": "Chip Atlas · チップDB",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "releases": [
+        {
+          "version": "0.5.0",
+          "date": "2026-11-17",
+          "notes": [
+            "開発端末以外の標準ユーザー端末でも利用可能に変更。共有データの選択方法と台帳・CSVの保存場所を利用手順へ追記。"
+          ]
+        },
         {
           "version": "0.4.0",
           "date": "2026-11-16",
