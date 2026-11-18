@@ -40,7 +40,10 @@ except ImportError:                      # グラフなしでも一覧と再計�
 
 ACCENT = ui_theme.SCORING
 MOVING_RUNS = 20
-SOURCE_COLOURS = {MEASURED: '#5b9dff', RECONSTRUCTED: '#f0a860'}
+ERA_COLOURS = {score_store.ERA_PYTHON: '#5b9dff', score_store.ERA_LABVIEW: '#f0a860',
+               score_store.ERA_MIXED: '#b68cf5', score_store.ERA_UNKNOWN: '#8b9a92'}
+ALL = 'すべて'
+TABLE_LIMIT = 3000          # 表に出す行の上限（グラフは全部）
 LEDGER_SHOW = ('machine', 'name', 'experiment_at', 'era', 'plan', 'transfer', 'destination', 'anal_state',
                'exsv_count', 'exsv_mean', 'exsv_max', 'ac_last', 'gg_score', 'gg_missing', 'score_source', 'location')
 LEDGER_WIDTH = {'name': 300, 'plan': 220, 'destination': 260, 'gg_missing': 120, 'score_source': 110, 'location': 150,
@@ -89,8 +92,11 @@ class Table(ttk.Frame):
         self.columns = columns
         self._reverse = {}
 
-    def fill(self, rows, tag_of=None):
+    def fill(self, rows, tag_of=None, limit=None):
+        """rows を表示する。limit を渡すと先頭（新しい順）からその数だけ（多すぎると Tk が重くなるため）。"""
         self.tree.delete(*self.tree.get_children())
+        if limit is not None:
+            rows = rows[:limit]
         for i, row in enumerate(rows):
             tags = [tag_of(row)] if tag_of else []
             if i % 2:
@@ -115,8 +121,18 @@ class Table(ttk.Frame):
         return [self.rows[int(i)] for i in self.tree.selection()]
 
 
+def one_per_run(rows, kind):
+    """同じ回に計測時と再構成の両方があれば再構成だけを残す（グラフで同じ回を 2 点にしないため）。"""
+    spec = score_store.KINDS[kind]
+    if spec.number_column is None or kind == 'AutoGG':
+        return rows
+    key = lambda r: (r.get('Experimental ID', ''), r.get(spec.number_column, ''), r.get(spec.time_column, ''))  # noqa: E731
+    rebuilt = {key(r) for r in rows if r.get('Source') == RECONSTRUCTED}
+    return [r for r in rows if r.get('Source') == RECONSTRUCTED or key(r) not in rebuilt]
+
+
 class Chart(ttk.Frame):
-    """スコアの推移: 各 run の点（計測時 / 再構成で色分け）、移動平均、全体の平均。"""
+    """スコアの推移: 各 run の点（時代で色分け）、移動平均、全体の平均。"""
 
     def __init__(self, master, title):
         super().__init__(master)
@@ -139,13 +155,14 @@ class Chart(ttk.Frame):
             spine.set_color(ui_theme.BORDER)
         ax.tick_params(colors=ui_theme.MUTED, labelsize=8)
         ordered = sorted(rows, key=lambda r: (r.get(time_column, ''), r.get('Experimental ID', '')))
-        points = [(i, score_store.number(r.get(score_column)), r.get('Source', '')) for i, r in enumerate(ordered)]
-        points = [(i, s, src) for i, s, src in points if s is not None]
-        for source, colour in SOURCE_COLOURS.items():
-            xs = [i for i, _, src in points if src == source]
-            ys = [s for _, s, src in points if src == source]
+        points = [(i, score_store.number(r.get(score_column)), r.get('Era') or score_store.ERA_UNKNOWN)
+                  for i, r in enumerate(ordered)]
+        points = [(i, s, era) for i, s, era in points if s is not None]
+        for era, colour in ERA_COLOURS.items():
+            xs = [i for i, _, e in points if e == era]
+            ys = [s for _, s, e in points if e == era]
             if xs:
-                ax.plot(xs, ys, 'o', ms=3, color=colour, alpha=0.75, label=f'{source} ({len(xs)})')
+                ax.plot(xs, ys, 'o', ms=3, color=colour, alpha=0.75, label=f'{era} ({len(xs)})')
         if len(points) >= 2:
             ys = [s for _, s, _ in points]
             moving = [sum(ys[max(0, k - MOVING_RUNS + 1):k + 1]) / len(ys[max(0, k - MOVING_RUNS + 1):k + 1])
@@ -196,6 +213,11 @@ class App(tk.Tk):
         box = ttk.Combobox(bar, textvariable=self.machine_var, values=['すべて'] + self.machines, state='readonly', width=9)
         box.pack(side='left', padx=(4, 12))
         box.bind('<<ComboboxSelected>>', lambda e: self.refresh())
+        ttk.Label(bar, text='時代').pack(side='left')
+        self.era_var = tk.StringVar(value=ALL)
+        era_box = ttk.Combobox(bar, textvariable=self.era_var, values=[ALL] + list(score_store.ERAS), state='readonly', width=8)
+        era_box.pack(side='left', padx=(4, 12))
+        era_box.bind('<<ComboboxSelected>>', lambda e: self.refresh())
         ttk.Label(bar, text='検索').pack(side='left')
         self.filter_var = tk.StringVar()
         entry = ttk.Entry(bar, textvariable=self.filter_var, width=32)
@@ -288,21 +310,29 @@ class App(tk.Tk):
         return not text or any(text in str(v).casefold() for v in values)
 
     def refresh(self):
-        machine, text = self.machine_var.get(), self.filter_var.get()
-        rows = [r for r in self.ledger_rows if (machine == 'すべて' or r['machine'] == machine)
-                and self._match(text, *r.values())]
+        machine, era, text = self.machine_var.get(), self.era_var.get(), self.filter_var.get()
+        rows = [r for r in self.ledger_rows if (machine == ALL or r['machine'] == machine)
+                and (era == ALL or r.get('era') == era) and self._match(text, *r.values())]
         # GG の総合点で緑の濃さ。転送まで済んでいるのにスコアが 1 つも無い実験は橙（再計算の候補）
         self.ledger_table.fill(rows, lambda r: score_tag(r.get('gg_score'))
-                               or ('warn' if not r.get('score_source') and r.get('transfer', '').startswith('転送済み') else ''))
+                               or ('warn' if not r.get('score_source') and r.get('transfer', '').startswith('転送済み') else ''),
+                               limit=TABLE_LIMIT)
+        clipped = []
         for kind in ('EXSV', 'AC', 'AutoGG'):
-            score_rows = [r for r in self.scores[kind] if (machine == 'すべて' or r.get('Machine') == machine)
-                          and self._match(text, *r.values())]
+            score_rows = [r for r in self.scores[kind] if (machine == ALL or r.get('Machine') == machine)
+                          and (era == ALL or r.get('Era') == era) and self._match(text, *r.values())]
             column = score_store.SCORE_COLUMN[kind]
-            self.score_tables[kind].fill(score_rows, lambda r, c=column: score_tag(r.get(c)))
-            self.charts[kind].draw(score_rows, column, score_store.KINDS[kind].time_column)
+            self.score_tables[kind].fill(score_rows, lambda r, c=column: score_tag(r.get(c)), limit=TABLE_LIMIT)
+            self.charts[kind].draw(one_per_run(score_rows, kind), column, score_store.KINDS[kind].time_column)
+            if len(score_rows) > TABLE_LIMIT:
+                clipped.append(f'{kind} {len(score_rows)}')
+        if len(rows) > TABLE_LIMIT:
+            clipped.append(f'台帳 {len(rows)}')
         self._fill_rescore_table()
         counts = ', '.join(f'{k} {len(v)}' for k, v in self.scores.items())
-        self.status.set(f'台帳 {len(rows)} 行を表示（全 {len(self.ledger_rows)} 行）。保存済みスコア: {counts}。'
+        note = (f'表は新しい {TABLE_LIMIT} 行まで（{"・".join(clipped)} 行あり。装置・時代・検索で絞ってください）。'
+                if clipped else '')
+        self.status.set(f'{note}台帳 {len(rows)} 行を表示（全 {len(self.ledger_rows)} 行）。保存済みスコア: {counts}。'
                         f'AXN: {axn_bridge.axn_root() or "見つからない"}')
 
     def _fill_rescore_table(self):
@@ -427,14 +457,14 @@ class App(tk.Tk):
         def task(progress, log):
             mods = axn_bridge.load()
             log(f'AXN: {mods.root} ({mods.criteria})')
-            table, era = machine_data.machines(), score_store.era_table(self.folder)
+            table = machine_data.machines()
             outcomes = []
             for i, name in enumerate(names):
                 if self._stop.is_set():
                     log('中止しました（ここまでの分を保存します）')
                     break
                 progress(i, len(names), name)
-                outcome = rescore.rescore_experiment(name, machine, table, mods, era)
+                outcome = rescore.rescore_experiment(name, machine, table, mods)
                 outcomes.append(outcome)
                 log(outcome.summary())
                 for line in outcome.skipped:

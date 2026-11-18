@@ -32,16 +32,16 @@ Bash から `python` と打つと Windows Store のスタブで何も起きな�
 ## 自分で決めたこと（ユーザーに報告済み。変えるなら README と AXN 側へ）
 
 - 手動 GG の「1 回分」の区切り：その実験の EXSV の時刻で区切り、区間ごとに各工程の最後の試行を 1 回分とする。最初の区間 = 引き継ぎ資料の候補「最初の EXSV より前の、各工程の最後の試行」。EXSV の後に CAL だけやり直した場合も 1 回分（CAL のみ、4 工程欠け）として出る。
-- 時代（LabVIEW / Python）：Python 版 AXN の痕跡（実験フォルダの `AutoGG/`、R_AC の `AC Score` 行）があれば Python。なければ `Scores\era.json` の装置ごとの切替日（既定 AXN2・AXN3 = 2026-11-01、ほかは LabVIEW）。AXN の Python 移行は 2026-10-29 開始、実機計測は 11 月上旬から。AXN の Score.csv にある 2026-01〜02 の AXN2 の行は LabVIEW 時代の計測を AXN の `score-backfill` で採点したもの（時代は LabVIEW が正しい）。
+- 時代（LabVIEW / Python）：2026-11-18 に日付表（era.json）をやめ、1 回ごとにファイルの目印で判定する方式にした（同じ装置でも実験ごと、1 実験の中でも入れ替わるため）。目印は scoring/README.md の「時代」。AXN の Score.csv にある 2026-01〜02 の AXN2 の行は LabVIEW 時代の計測を AXN の `score-backfill` で採点したもの。
 - 基準の版 `Criteria` = `axn <コミット>; ac <定数の指紋>; exsv <定数の指紋>; gg <gg_review.VERSION>`（`axn_bridge.Modules.criteria`）。AXN の定数が変わると指紋が変わるので、古い基準の行を見分けられる。
 - 保存先 CSV の列名は AXN の Score.csv と同じ英語名 + 由来の 7 列（`Machine, Source, Era, Criteria, Files, Computed at UTC, Computed by`）。台帳 `experiment_scores.csv` だけ他の台帳（`sq_transfers.csv` など）に合わせて日本語の列名。
 - 実験フォルダの探し方は AXN の `axn/data_locations.py` `candidates` と同じ順（その PC → Tmp_backup → SQ_backup、それぞれフォルダ → zip）。共有せず同じ順を自前で持ち、`test_candidates_follow_the_same_order_as_axn` が AXN の関数と突き合わせる。AXN 側で順番が変わればこのテストが落ちる。
 
 ## まだ決まっていないこと（ユーザー・AXN 側と）
 
-1. **過去の実験の範囲。** AXN2 の EXSV 台帳には 2026 年の 49 実験しかないが、SQ_backup の AN2 には zip が 616 個ある。どこまで再計算するかはユーザーが決め、決まったら AXN 側も同じ範囲を一覧に出す（AXN 手引き「過去の実験の範囲」）。範囲が決まるまで、画面③の「未計算の実験をすべて再計算」（一覧の全部が対象）は押さず、実験を選んで動かす。1 実験は数秒〜十数秒（zip の中央ディレクトリ読みと R_/PM_/PML_ の読み込みだけ）。
-2. `era.json` の切替日の正しい値（計測 PC で Python 版を使い始めた日）。
-3. AXN3 以降の装置が Python 版に移ったときの `era.json` の追加。
+1. **過去の実験の範囲。** 2026-11-18 にユーザーが「SQserver にある全部」と決定。AXN 側に同じ範囲を一覧に出してもらう。
+2. （解決）時代は 1 回ごとに判定するので、切替日は不要になった。
+3. （解決）同上。
 
 ## 今の保存先の中身（D:\Qstatus\database\Scores、2026-11-15 に書いた）
 

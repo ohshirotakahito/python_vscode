@@ -60,8 +60,6 @@ class App(tk.Tk):
         self.title_label.pack(anchor='w')
         self.metrics = ttk.Label(right, text='共有フォルダを接続すると、AXNの履歴を表示します。', foreground=theme.MUTED)
         self.metrics.pack(anchor='w', pady=(6, 18))
-        navigation = ttk.Frame(right)
-        navigation.pack(fill='x', pady=(0, 8))
         tabs = ttk.Notebook(right)
         self.tabs = tabs
         tabs.pack(fill='both', expand=True)
@@ -80,9 +78,7 @@ class App(tk.Tk):
         tabs.select(self.registry_view)
         self.search_state = self.registry_view.search_state
         self.query.trace_add('write', lambda *_: self.filter())
-        for label, target in [('台帳一覧へ', self.registry_view), ('全チップ比較へ', self.all_view),
-                              ('選択チップの概要', self.overview), ('操作履歴・編集', history), ('解析・トレンド', analysis)]:
-            ttk.Button(navigation, text=label, command=lambda target=target: tabs.select(target)).pack(side='left', padx=(0, 6))
+        # 画面の切り替えは下のタブだけで行う（同じ移動先のボタン列は重複なので置かない）
         tools = ttk.Frame(history)
         tools.pack(fill='x', pady=(0, 10))
         ttk.Label(tools, text='行をダブルクリックして編集', style='Muted.TLabel').pack(side='left')

@@ -7,7 +7,6 @@ UTF-8（BOM 付き）CSV、新しい順。書くときは一時ファイルに�
 import csv
 from datetime import datetime, timezone
 import io
-import json
 import os
 from pathlib import Path
 import socket
@@ -19,9 +18,11 @@ from . import machine_data
 
 ENCODING = 'utf-8-sig'
 MEASURED, RECONSTRUCTED = '計測時', '再構成'
-ERA_PYTHON, ERA_LABVIEW, ERA_UNKNOWN = 'Python', 'LabVIEW', '不明'
-# Python 版 AXN で計測を始めた日（それより前は LabVIEW）。era.json で装置ごとに変えられる
-DEFAULT_ERA_SWITCH = {'AXN2': '2026-11-01', 'AXN3': '2026-11-01'}
+ERA_PYTHON, ERA_LABVIEW, ERA_MIXED, ERA_UNKNOWN = 'Python', 'LabVIEW', '混在', '不明'
+ERAS = (ERA_PYTHON, ERA_LABVIEW, ERA_MIXED, ERA_UNKNOWN)
+# Python 版 AXN の開発を始めた日。これより前の計測は必ず LabVIEW。これ以降は 1 回ごとにファイルの目印で判定する
+# （同じ装置でも実験ごと、1 実験の中でも LabVIEW と Python が入れ替わるため、日付の境目では決められない。2026-11-18 確認）
+PYTHON_EARLIEST = datetime(2026, 10, 29)
 
 PROVENANCE = ('Machine', 'Source', 'Era', 'Criteria', 'Files', 'Computed at UTC', 'Computed by')
 AC_SCORE_FIELDS = ('AC Score', 'AC Score Detail', 'AC Score n0.8-5G0 Point [n]', 'AC Score n0.9-1.2G0 Point [n]',
@@ -138,40 +139,46 @@ def provenance(machine, source, era, criteria, files):
 
 
 # --- 時代（LabVIEW / Python） ---
-def era_path(folder=None):
-    folder = default_dir() if folder is None else Path(folder)
-    return folder / 'era.json'
+def era_by_date(when):
+    """日時だけで決まる時代: Python 版の開発より前なら LabVIEW、それ以外（日時不明を含む）は 不明。"""
+    return ERA_LABVIEW if when is not None and when < PYTHON_EARLIEST else ERA_UNKNOWN
 
 
-def era_table(folder=None):
-    """{装置: 'YYYY-MM-DD'}: その日以降の計測が Python 版 AXN。無ければ既定を書いて返す。"""
-    target = era_path(folder)
-    try:
-        data = json.loads(target.read_text(encoding='utf-8'))
-        return {k: v for k, v in data.get('python_since', {}).items() if isinstance(v, str)}
-    except (OSError, ValueError, AttributeError):
-        pass
-    try:
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps({'_comment': 'Python 版 AXN で計測を始めた日（装置ごと）。それより前の計測は LabVIEW 時代。',
-                                      'python_since': DEFAULT_ERA_SWITCH}, ensure_ascii=False, indent=2),
-                          encoding='utf-8')
-    except OSError:
-        pass
-    return dict(DEFAULT_ERA_SWITCH)
+def combine_eras(eras):
+    """いくつかの回の時代をまとめる: 1 種類ならそれ、Python と LabVIEW が両方あれば 混在、分からなければ 不明。"""
+    eras = list(eras)
+    known = {e for e in eras if e in (ERA_PYTHON, ERA_LABVIEW)}
+    if ERA_MIXED in eras or len(known) > 1:
+        return ERA_MIXED
+    return known.pop() if known else ERA_UNKNOWN
 
 
-def era_of(machine, when, table):
-    """計測の時代。when は datetime（実験の日時）。装置が表に無ければ LabVIEW（Python 版はまだ）、日時不明なら 不明。"""
-    since = table.get(machine or '')
-    if when is None:
-        return ERA_UNKNOWN
-    if not since:
-        return ERA_LABVIEW
-    try:
-        return ERA_PYTHON if when >= datetime.strptime(since, '%Y-%m-%d') else ERA_LABVIEW
-    except ValueError:
-        return ERA_UNKNOWN
+def sync_measured_eras(folder=None):
+    """計測時の行の時代を、同じ回の再構成の行（ファイルの目印で判定した時代）に合わせる。戻り値は直した行数。
+
+    計測時の Score.csv には、Python 版が計測時に書いた行と、LabVIEW の計測を後から採点した行（AXN の backfill）が
+    混ざっているので、Score.csv だけでは時代が分からない。Auto GG の Score.csv は Python 版だけが書く。"""
+    changed = 0
+    for kind_name, kind in KINDS.items():
+        rows = read(kind_name, folder)
+        number = kind.number_column if kind_name != 'AutoGG' else None
+        eras = {}
+        if number:
+            eras = {(r['Experimental ID'], r.get(number, ''), r.get(kind.time_column, '')): r.get('Era', '')
+                    for r in rows if r.get('Source') == RECONSTRUCTED}
+        dirty = False
+        for r in rows:
+            if r.get('Source') != MEASURED:
+                continue
+            era = ERA_PYTHON if kind_name == 'AutoGG' else eras.get(
+                (r['Experimental ID'], r.get(number, ''), r.get(kind.time_column, '')))
+            if era and era != r.get('Era'):
+                r['Era'] = era
+                dirty = True
+                changed += 1
+        if dirty:
+            write_csv(path(kind_name, folder), kind.all_columns, rows)
+    return changed
 
 
 def number(value):

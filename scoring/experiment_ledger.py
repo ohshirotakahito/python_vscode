@@ -57,15 +57,15 @@ def summarize(scores):
     out = {}
     for name, kinds in by_name.items():
         summary = {'machine': next((r.get('Machine', '') for k in kinds.values() for rows in k.values() for r in rows
-                                    if r.get('Machine')), ''), 'era': '', 'criteria': ''}
-        sources = set()
+                                    if r.get('Machine')), ''), 'criteria': ''}
+        sources, eras = set(), []
         for kind, by_source in kinds.items():
             source = RECONSTRUCTED if RECONSTRUCTED in by_source else MEASURED if MEASURED in by_source else None
             if source is None:
                 continue
             rows = by_source[source]
             sources.add(source)
-            summary['era'] = summary['era'] or next((r.get('Era', '') for r in rows if r.get('Era')), '')
+            eras += [r.get('Era', '') for r in rows]
             if source == RECONSTRUCTED:
                 summary['criteria'] = next((r.get('Criteria', '') for r in rows if r.get('Criteria')), '')
             values = [score_store.number(r.get(score_store.SCORE_COLUMN[kind])) for r in rows]
@@ -81,6 +81,7 @@ def summarize(scores):
                 summary.update(gg_score=latest.get('AutoGG Score', ''),
                                gg_missing=latest.get('Stages missing', '').replace(';', '・') or 'なし')
         summary['score_source'] = ' + '.join(sorted(sources, key=(RECONSTRUCTED, MEASURED).index))
+        summary['era'] = score_store.combine_eras(eras)
         out[name] = summary
     return out
 
@@ -92,12 +93,12 @@ def _plan_cells(plan):
     return text, plan.destination or '（保存先未定）'
 
 
-def _row(machine, name, summary, plan, era_table, inventory, transfer=None, record=None):
+def _row(machine, name, summary, plan, inventory, transfer=None, record=None):
     when = machine_data.experiment_time(name)
     plan_text, plan_destination = _plan_cells(plan)
     row = {column: '' for column in COLUMNS}
     row.update(machine=machine, name=name, experiment_at=when.strftime('%Y-%m-%d %H:%M') if when else '',
-               era=summary.get('era') or score_store.era_of(machine, when, era_table), plan=plan_text,
+               era=summary.get('era') or score_store.era_by_date(when), plan=plan_text,
                plan_destination=plan_destination, location=inventory.get(name, ''))
     if transfer is not None:
         destination = ' / '.join(t for t in (transfer.get('転送先の実験名', ''), transfer.get('転送先のサンプル名', '')) if t)
@@ -116,12 +117,11 @@ def _row(machine, name, summary, plan, era_table, inventory, transfer=None, reco
     return row
 
 
-def build(scores, transfers=None, plans=None, records=None, inventories=None, era_table=None, machines=None):
+def build(scores, transfers=None, plans=None, records=None, inventories=None, machines=None):
     """台帳の行。scores は {kind: score_store の行}。ほかは省くと共有フォルダから読む。"""
     transfers = read_transfers_csv() if transfers is None else transfers
     plans = ex_info_links.load_plans() if plans is None else plans
     records = ex_info_links.load_transfers() if records is None else records
-    era_table = score_store.era_table() if era_table is None else era_table
     machines = machine_data.measurement_machines() if machines is None else machines
     inventories = ({m: machine_data.inventory(m) for m in machines} if inventories is None else inventories)
     summaries = summarize(scores)
@@ -134,7 +134,7 @@ def build(scores, transfers=None, plans=None, records=None, inventories=None, er
         if not name:
             continue
         covered.add((machine, name))
-        rows.append(_row(machine, name, summaries.get(name, {}), plans.get(name), era_table,
+        rows.append(_row(machine, name, summaries.get(name, {}), plans.get(name),
                          inventories.get(machine, {}), transfer=transfer))
     names = {(m, n) for m, inv in inventories.items() for n in inv}
     names |= {(s.get('machine') or machine_data.machine_of(n) or '', n) for n, s in summaries.items()}
@@ -142,10 +142,10 @@ def build(scores, transfers=None, plans=None, records=None, inventories=None, er
         matched = by_record.get((machine, name)) or []
         if matched:
             for record in matched:
-                rows.append(_row(machine, name, summaries.get(name, {}), plans.get(name), era_table,
+                rows.append(_row(machine, name, summaries.get(name, {}), plans.get(name),
                                  inventories.get(machine, {}), record=record))
         else:
-            rows.append(_row(machine, name, summaries.get(name, {}), plans.get(name), era_table,
+            rows.append(_row(machine, name, summaries.get(name, {}), plans.get(name),
                              inventories.get(machine, {})))
     rows.sort(key=lambda r: (r['name'], r['destination']), reverse=True)
     return rows

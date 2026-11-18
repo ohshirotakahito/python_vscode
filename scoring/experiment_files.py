@@ -74,6 +74,7 @@ class Experiment:
         self._index = None        # zip: {フォルダ: [(ファイル名, メンバー名)]}
         self._names = {}
         self._results = {}
+        self._logs = {}
 
     def close(self):
         if self._zip is not None:
@@ -151,9 +152,12 @@ class Experiment:
         return self._results[stage]
 
     def log_rows(self, folder, prefix):
-        """<folder> の prefix で始まる最初のログの行（1 行目の列名は除く）。無ければ None。"""
-        filename = next((n for n in self.names(folder) if n.startswith(prefix)), None)
-        return _rows(self.read_text(folder, filename)) if filename else None
+        """<folder> の prefix で始まる最初のログの行（1 行目の列名は除く）。無ければ None。読んだものは覚えておく。"""
+        key = (folder, prefix)
+        if key not in self._logs:
+            filename = next((n for n in self.names(folder) if n.startswith(prefix)), None)
+            self._logs[key] = _rows(self.read_text(folder, filename)) if filename else None
+        return self._logs[key]
 
     def pm_log(self, stage, no, when):
         """50 ms ログ PM_<stage>#<no>_<when>_*.txt の行。"""

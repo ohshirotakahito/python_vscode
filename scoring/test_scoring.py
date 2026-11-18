@@ -188,22 +188,83 @@ def test_store_upsert_replaces_same_key_and_keeps_newest_first(tmp_path):
     assert score_store.remove('AC', lambda r: r['Source'] == score_store.MEASURED, tmp_path) == 1
 
 
-def test_era_table_default_and_markers(tmp_path):
-    table = score_store.era_table(tmp_path)
-    assert table == score_store.DEFAULT_ERA_SWITCH and (tmp_path / 'era.json').exists()
-    (tmp_path / 'era.json').write_text(json.dumps({'python_since': {'AXN2': '2026-02-01'}}), encoding='utf-8')
-    table = score_store.era_table(tmp_path)
-    assert score_store.era_of('AXN2', machine_data.experiment_time('20260203_1140 x'), table) == 'Python'
-    assert score_store.era_of('AXN2', machine_data.experiment_time('20260129_0954 x'), table) == 'LabVIEW'
-    assert score_store.era_of('AXN4', machine_data.experiment_time('20261104_1105 x'), table) == 'LabVIEW'
-    assert score_store.era_of('AXN2', None, table) == score_store.ERA_UNKNOWN
+def test_era_by_date_and_combine():
+    assert score_store.era_by_date(machine_data.experiment_time('20261028_2359 x')) == score_store.ERA_LABVIEW
+    assert score_store.era_by_date(machine_data.experiment_time('20261029_0000 x')) == score_store.ERA_UNKNOWN
+    assert score_store.era_by_date(None) == score_store.ERA_UNKNOWN
+    combine = score_store.combine_eras
+    assert combine(['Python', 'Python', '不明']) == 'Python'
+    assert combine(['Python', 'LabVIEW']) == combine(['混在']) == '混在'
+    assert combine([]) == combine(['不明', '']) == '不明'
+
+
+def _log(times):
+    return [[f'{t:.2f}', '100.0', '9.9'] for t in times]
+
+
+def test_grid_era_tells_labview_from_python():
+    assert rescore.grid_era(_log([k * 0.05 for k in range(200)])) == score_store.ERA_LABVIEW
+    # Python: 実時刻（0.05 秒の刻みから外れる）。最初が 0.00 でも判定できる
+    jitter = [0.0] + [k * 0.05 + (0.01 if k % 4 else 0.0) for k in range(1, 200)]
+    assert rescore.grid_era(_log(jitter)) == score_store.ERA_PYTHON
+    assert rescore.grid_era(_log([k * 0.05 for k in range(10)])) == score_store.ERA_UNKNOWN     # 短すぎる
+    assert rescore.grid_era(None) == score_store.ERA_UNKNOWN
+
+
+class FakeExp:
+    """results / pm_log だけを持つ実験（時代の判定のテスト用）。"""
+
+    def __init__(self, name, results, logs):
+        self.name, self._results, self._logs = name, results, logs
+
+    def results(self, stage):
+        return [r for r in self._results if r.stage == stage]
+
+    def pm_log(self, stage, no, when):
+        return self._logs.get((stage, no, when))
+
+
+def _r(stage, no, when, **fields):
+    return experiment_files.Result(stage, no, when, dict(fields), f'R_{stage}#{no}_{when}_x.txt')
+
+
+def test_run_eras_in_a_mixed_experiment():
+    """10-30 の実験のように、1 実験の中で LabVIEW から Python に変わる。EXSV は直前の Gap Generation の時代を引き継ぐ。"""
+    grid = _log([k * 0.05 for k in range(100)])
+    wall = _log([k * 0.05 + 0.013 for k in range(100)])
+    results = [_r('FC', 1, '20261030_1312'), _r('CAL', 2, '20261030_1318'), _r('EXSV', 1, '20261030_1324'),
+               _r('FC', 3, '20261030_1500'), _r('AC', 3, '20261030_1505'), _r('EXSV', 2, '20261030_1510'),
+               _r('EXSV', 3, '20261111_1404', **{'EXSV Score': '23.6'})]
+    logs = {('FC', 1, '20261030_1312'): grid, ('CAL', 2, '20261030_1318'): grid,
+            ('FC', 3, '20261030_1500'): wall, ('AC', 3, '20261030_1505'): wall}
+    exp = FakeExp('20261030_1311 JMAN#2Pex5n1_x', results, logs)
+    eras, timeline = rescore.stage_eras(exp)
+    assert eras[('FC', 1, '20261030_1312')] == eras[('CAL', 2, '20261030_1318')] == 'LabVIEW'
+    assert eras[('FC', 3, '20261030_1500')] == eras[('AC', 3, '20261030_1505')] == 'Python'
+    exsv = {r.no: rescore.exsv_era(exp, r, timeline) for r in exp.results('EXSV')}
+    assert exsv == {1: 'LabVIEW', 2: 'Python', 3: 'Python'}
+    old = FakeExp('20240220_0833 x', [_r('EXSV', 1, '20240220_0844')], {})
+    assert rescore.exsv_era(old, old.results('EXSV')[0], []) == 'LabVIEW'
+
+
+def test_sync_measured_eras(tmp_path):
+    base = {'Experimental ID': NAME, 'AC#': '1', 'AC Time': '20261111_14:00', 'AC Score': '59.8', 'Era': '不明'}
+    score_store.upsert('AC', [dict(base, Source=score_store.MEASURED),
+                              dict(base, Source=score_store.RECONSTRUCTED, Era='Python'),
+                              dict(base, Source=score_store.MEASURED, **{'AC#': '2'})], tmp_path)
+    score_store.upsert('AutoGG', [{'Experimental ID': NAME, 'Round start': 'x', 'Source': score_store.MEASURED,
+                                   'Era': '不明'}], tmp_path)
+    assert score_store.sync_measured_eras(tmp_path) == 2
+    rows = {(r['Source'], r['AC#']): r['Era'] for r in score_store.read('AC', tmp_path)}
+    assert rows[(score_store.MEASURED, '1')] == 'Python' and rows[(score_store.MEASURED, '2')] == '不明'
+    assert score_store.read('AutoGG', tmp_path)[0]['Era'] == 'Python'
 
 
 # --- rescore（AXN の関数で） ---
 @needs_axn
 def test_rescore_experiment_rounds_and_scores(tmp_path, machines):
     write_experiment(Path(machines['AXN2']['SQ_backup']))
-    outcome = rescore.rescore_experiment(NAME, 'AXN2', machines, MODS, {'AXN2': '2026-11-01'})
+    outcome = rescore.rescore_experiment(NAME, 'AXN2', machines, MODS)
     assert outcome.found and outcome.era == 'LabVIEW' and outcome.skipped == []
     ac = outcome.rows['AC']
     assert len(ac) == 1 and ac[0]['Device Code'] == 'SC25-2118-40' and ac[0]['Source'] == score_store.RECONSTRUCTED
@@ -229,7 +290,7 @@ def test_rescore_experiment_rounds_and_scores(tmp_path, machines):
 @needs_axn
 def test_rescore_without_ac_log_skips_ac_but_keeps_the_round_visible(tmp_path, machines):
     write_experiment(Path(machines['AXN2']['SQ_backup']), with_ac_log=False)
-    outcome = rescore.rescore_experiment(NAME, 'AXN2', machines, MODS, {})
+    outcome = rescore.rescore_experiment(NAME, 'AXN2', machines, MODS)
     assert outcome.rows['AC'] == [] and any('PM_AC' in line for line in outcome.skipped)
     first = outcome.rows['AutoGG'][0]
     assert first['Stages used'] == 'FC;MA;TA;AC;CAL' and first['AC score'] == '' and first['Stages scored'] == '4 / 5'
@@ -239,8 +300,7 @@ def test_rescore_without_ac_log_skips_ac_but_keeps_the_round_visible(tmp_path, m
 def test_rescore_many_saves_and_ledger_joins(tmp_path, machines, monkeypatch):
     write_experiment(Path(machines['AXN2']['SQ_backup']))
     store = tmp_path / 'Scores'
-    outcomes, saved = rescore.rescore_many([NAME, 'missing'], 'AXN2', store, mods=MODS, machines_table=machines,
-                                           era_table={})
+    outcomes, saved = rescore.rescore_many([NAME, 'missing'], 'AXN2', store, mods=MODS, machines_table=machines)
     assert saved['AC'] == (1, 0) and saved['EXSV'] == (2, 0) and saved['AutoGG'] == (2, 0)
     assert not outcomes[1].found
     assert rescore.reconstructed_names(store) == {NAME}
@@ -249,7 +309,7 @@ def test_rescore_many_saves_and_ledger_joins(tmp_path, machines, monkeypatch):
                   '転送先のサンプル名': 'LE1', '解析サーバー': 'Rackstation/analysis', 'ANAL状態': '完了', 'ANAL進捗': '100.0%（46/46）',
                   '計画どおり': ''}]
     rows = experiment_ledger.build(scores, transfers=transfers, plans={}, records=[], inventories={'AXN2': {NAME: 'SQ_backup', 'other': 'Tmp_backup'}},
-                                   era_table={}, machines=['AXN2'])
+                                   machines=['AXN2'])
     assert [r['name'] for r in rows] == ['other', NAME]
     joined = rows[1]
     assert joined['exsv_count'] == '2' and joined['ac_last'] == scores['AC'][0]['AC Score'] and joined['gg_missing'] == 'FC・MA・TA・AC'
@@ -268,11 +328,11 @@ def test_measured_rows_map_score_csv(tmp_path):
         '20261111_1352 UNAN#2Pex3n2_test,SC78,2026-11-11 14:01:34,2026-11-11 13:56:17,74.9,5 / 5,100.0,57.4,67.4,59.8,89.8,,,ASZ\r\n'
         '20261111_1352 UNAN#2Pex3n2_test,SC78,2026-11-11 21:26:54,2026-11-11 21:21:52,60.3,4 / 4,100.0,65.7,,50.0,70.1,,,\r\n',
         encoding='cp932')
-    rows = rescore.measured_rows('AXN2', 'AutoGG', {'AXN2': '2026-11-01'}, root)
+    rows = rescore.measured_rows('AXN2', 'AutoGG', root)
     assert rows[0]['Source'] == score_store.MEASURED and rows[0]['Era'] == 'Python'
     assert rows[0]['Round start'] == '2026-11-11 13:56:17' and rows[0]['Stages missing'] == '' and rows[0]['Decision'] == 'ASZ'
     assert rows[1]['Stages used'] == 'FC;MA;AC;CAL' and rows[1]['Stages missing'] == 'TA'
-    assert rescore.measured_rows('AXN2', 'AC', {}, root) == []
+    assert rescore.measured_rows('AXN2', 'AC', root) == []
 
 
 def test_summarize_prefers_reconstructed_per_kind():

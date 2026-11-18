@@ -9,6 +9,7 @@ python scoring/app.py                       # ランチャー launch_apps.bat �
 python -m scoring.rescore --machine AXN2 --measured                      # 計測時の Score.csv を取り込む
 python -m scoring.rescore --machine AXN2 --experiment "20240220_0833 ANAN#2Pex1n1_LE"   # 1 実験を再構成
 python -m scoring.rescore --machine AXN2 --all --dry-run                 # 一覧にある未計算の実験を計算だけ
+python -m scoring.rescore --machine all --all                            # 全装置の未計算の実験（25 件ごとに保存。止めても続きから）
 python -m pytest -q scoring
 ```
 
@@ -22,9 +23,9 @@ Tk・matplotlib のほかに追加のライブラリはいらない。
 | 計算 | AXN の `ac.score` / `exsv_score.score` / `gg_review.evaluate` / `gg_review.aggregate` をそのまま import（`axn_bridge.py`）。コピーしない |
 | Auto GG の 1 回分 | FC・MA・TA・AC・CAL（AMP Check・Gap Check は除く）。欠けた工程は 0 点にせず、ある工程の平均。欠けた工程は `Stages missing` 列に必ず出す |
 | 手動 GG の区切り | その実験の EXSV の時刻で区切り、区間ごとに各工程の最後の試行を 1 回分とする。最初の区間 =「最初の EXSV より前の、各工程の最後の試行」。EXSV の後の CAL だけのやり直しも 1 回分（1 工程、4 工程欠け）として見える |
-| 保存先 | `D:\Qstatus\database\Scores\`（計測時の Score.csv とは別）。`ac_scores.csv` / `exsv_scores.csv` / `autogg_scores.csv`、台帳 `experiment_scores.csv`、時代の区切り `era.json` |
+| 保存先 | `D:\Qstatus\database\Scores\`（計測時の Score.csv とは別）。`ac_scores.csv` / `exsv_scores.csv` / `autogg_scores.csv`、台帳 `experiment_scores.csv` |
 | 行の属性 | `Source`（計測時 / 再構成）、`Era`（LabVIEW / Python / 不明）、`Criteria`（AXN のコミット + 基準の定数の指紋 + gg の版）、`Files`（読んだ場所）、`Computed at UTC`、`Computed by` |
-| 時代 | Python 版 AXN の痕跡（`AutoGG` フォルダ、R_AC の `AC Score`）があれば Python。なければ `era.json` の装置ごとの切替日（既定 AXN2・AXN3 = 2026-11-01、ほかは LabVIEW）。計測時の Score.csv の 2026-01〜02 の AXN2 の行は LabVIEW 時代の計測を AXN の backfill で採点したもの |
+| 時代 | 1 回ごとにファイルの目印で判定（`rescore.run_era`）。同じ装置でも実験ごと、1 実験の中でも LabVIEW と Python が入れ替わるため、日付の境目は使わない。結果ファイルに `AC Score` / `EXSV Score` の行 → Python。FC〜CAL の 50 ms ログの時刻が 0.05 秒の刻みどおり → LabVIEW、刻みから外れる行が 1 割以上 → Python（LabVIEW は回数 × 0.05、Python は実時刻を書く）。EXSV は同じ実験の直前の Gap Generation の時代を引き継ぐ。2026-10-29 より前は必ず LabVIEW。Gap Generation の 1 回分に両方あれば「混在」、目印が無ければ「不明」。計測時の Score.csv の行は、同じ回の再構成の時代に合わせる（Auto GG は Python 版だけが書くので Python） |
 | 実験の探し方 | AXN の `axn/data_locations.py` と同じ順（その PC → Tmp_backup → SQ_backup、それぞれフォルダか zip）。zip は展開せず必要なメンバーだけ読む。順番が同じことはテストで AXN の関数と突き合わせる |
 | SQserver | 読むだけ。書かない |
 | 計画・転送 | 計画は `shared.ex_info_links.load_plans`（`sample_key` で同一）、転送・ANAL は OUNmain03 が毎時書く `sq_transfers.csv`、そこに無い実験は `machinedb\SEQ\Transfers.jsonl` |
@@ -61,6 +62,6 @@ Tk・matplotlib のほかに追加のライブラリはいらない。
 
 ## まだ決まっていないこと
 
-- 過去の実験をどこまで再計算するか（AN2 の SQ_backup に zip 616 個）。決まったら AXN 側も同じ範囲を一覧に出す（引き継ぎ資料「過去の実験の範囲」）。
-  ③ の「未計算の実験をすべて再計算」は一覧にある全部が対象なので、範囲を決めるまでは実験を選んで動かすのがよい。
+- 範囲はユーザーの決定で「SQserver にある全部」（2026-11-18）。AXN 側には同じ範囲を一覧に出してもらう（引き継ぎ資料「過去の実験の範囲」）。
+- 基準は 2026 年の AXN2（Python 時代）で作られている。LabVIEW 時代の点数、特に AC は参考値として時代で分けて見る。
 - 保存先の列名は AXN の Score.csv に合わせた英語。台帳 `experiment_scores.csv` だけ他の台帳と同じ日本語の列名。
