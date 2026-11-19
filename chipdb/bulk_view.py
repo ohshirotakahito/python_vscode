@@ -172,8 +172,7 @@ class BulkEditor(tk.Toplevel):
             self.app.document = self.document
             self.app.selected_path = self.document.path
             self.app.render()
-            self.app.all_view.mark_stale()
-            self.app.start_index()
+            self.app.update_index()
             self.app.sync_chip_selection()
             self.app.status.configure(text=f'{len(changes)}セルを保存 · バックアップ: {backup} · 全チップ比較は集計を更新してください')
             self.destroy()

@@ -9,7 +9,7 @@ python scoring/app.py                       # ランチャー launch_apps.bat �
 python -m scoring.rescore --machine AXN2 --measured                      # 計測時の Score.csv を取り込む
 python -m scoring.rescore --machine AXN2 --experiment "20240220_0833 ANAN#2Pex1n1_LE"   # 1 実験を再構成
 python -m scoring.rescore --machine AXN2 --all --dry-run                 # 一覧にある未計算の実験を計算だけ
-python -m scoring.rescore --machine all --all                            # 全装置の未計算の実験（25 件ごとに保存。止めても続きから）
+python -m scoring.rescore --machine all --all                            # 全装置の未計算の実験（250 件ごとに保存。止めても続きから）
 python -m pytest -q scoring
 ```
 

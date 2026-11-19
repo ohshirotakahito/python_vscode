@@ -11,7 +11,7 @@ import tempfile
 import copy
 
 ALIASES = {
-    'sc49-3310-51': 'sc49-3310-51',
+    'sc49-3310-51': 'SC49-3310-51',          # 2026-11-18 ユーザー確認: 決まりに合わせて大文字（以前は小文字のまま）
     'sc91-00000': 'SC91-0000-10',
     'sc91-0000-10': 'SC91-0000-10',
     'sc77-4219-23': 'SC77-4219-23',
@@ -149,8 +149,21 @@ def merge_files(paths, code):
     return ''.join(','.join(row) + '\r\n' for row in output).encode('cp932'), notes
 
 
+def shared_aliases(folder):
+    """共有の対応表（machinedb/PLAN/chip_aliases.json）の旧名 → 新名。統合の項目は段階 5 で別に行うので、統合済みのものだけ。"""
+    from shared import chip_aliases as aliases
+    try:
+        table = aliases.load(aliases.table_path(folder))
+    except (OSError, ValueError):
+        return {}
+    return {e['old'].casefold(): e['new'] for e in table['entries']
+            if e.get('status') != '確認待ち' and (not e.get('merge') or e.get('steps', {}).get('merge'))}
+
+
 def preview(folder):
     folder = Path(folder).resolve()
+    for old, new in shared_aliases(folder).items():
+        ALIASES.setdefault(old, new)
     all_paths = sorted(folder.glob('*.csv'))
     groups = defaultdict(list)
     names = {p.stem.casefold(): p.stem for p in all_paths}
@@ -243,6 +256,12 @@ def reconcile_registry(folder, plans, session, dry_run=False):
                         sources[field] = dict(field=provenance['field'], value=value,
                                               sha256=current_snapshot['sha256'], imported_at=stamp())
             merged.update(code=plan['code'], snapshot=current_snapshot, updated_at=stamp())
+            # 直す前の表記は別名として残す（計測記録や生データには旧表記のまま残るので、探せるように。2026-11-18）
+            old_names = {c['code'] for c in chips} | {Path(p).stem for p in plan['sources']}
+            aliases = set(merged.get('aliases', [])) | {a for c in chips for a in c.get('aliases', [])}
+            aliases |= {n for n in old_names if n != plan['code']}
+            if aliases:
+                merged['aliases'] = sorted(aliases, key=str.casefold)
             removed = [c['code'] for c in chips if c is not primary]
             data['chips'] = [merged if c is primary else c for c in data['chips'] if c is primary or c not in chips]
             changed.append(dict(code=plan['code'], removed=removed))

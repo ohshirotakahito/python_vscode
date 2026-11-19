@@ -2,6 +2,7 @@ import tempfile
 import unittest
 import json
 from pathlib import Path
+from unittest import mock
 
 from chipdb.cleanup import HEADER, preview, apply, merge_files, canonical, reconcile_registry
 
@@ -75,7 +76,7 @@ class CleanupTests(unittest.TestCase):
             self.assertTrue((root / 'chip (2).csv').exists())
 
     def test_approved_identifiers_and_suffixes(self):
-        for source, target in [('SC49-3310-51', 'sc49-3310-51'),
+        for source, target in [('sc49-3310-51', 'SC49-3310-51'),
                                ('SC91-00000', 'SC91-0000-10'),
                                ('SC30-2315-51', 'SC30-2315-35'),
                                ('SC25-2115-34', 'SC25-2115-33'),
@@ -127,8 +128,27 @@ class CleanupTests(unittest.TestCase):
             self.assertEqual(len(updated['chips']), 1)
             self.assertEqual(updated['chips'][0]['location'], 'Shelf A')
             self.assertEqual(updated['chips'][0]['code'], 'chip')
+            self.assertEqual(updated['chips'][0]['aliases'], ['chip (2)'])          # 直す前の表記は別名に残る
             self.assertEqual(json.loads((session / 'chip_info_before.json').read_text(encoding='utf-8')), original)
             self.assertFalse(store.path.with_suffix('.lock').exists())
+
+    def test_rename_by_alias_keeps_old_spelling_as_alias(self):
+        from chipdb import cleanup
+        from chipdb.registry import Store
+        with tempfile.TemporaryDirectory() as directory, \
+                mock.patch.dict(cleanup.ALIASES, {'sc080-4307-12': 'SC80-4307-12'}):
+            root = Path(directory) / 'ChipDB' / 'DB'
+            root.mkdir(parents=True)
+            write(root / 'SC080-4307-12.csv', [event('2')], code='SC080-4307-12')
+            store = Store(root)
+            store.path.parent.mkdir(parents=True)
+            store.path.write_text(json.dumps(dict(schema_version=1, revision=1, chips=[
+                dict(key='a', code='SC080-4307-12', state='未設定', origin='SCREEN')])), encoding='utf-8')
+            apply(root, preview(root))
+            self.assertEqual(sorted(p.name for p in root.glob('*.csv')), ['SC80-4307-12.csv'])
+            self.assertTrue((root / 'SC80-4307-12.csv').read_bytes().startswith(b'SC80-4307-12,'))
+            chip = store.load()['chips'][0]
+            self.assertEqual((chip['code'], chip['aliases'], chip['origin']), ('SC80-4307-12', ['SC080-4307-12'], 'SCREEN'))
 
     def test_registry_manual_conflict_stops_without_overwriting_registry(self):
         from chipdb.registry import Store

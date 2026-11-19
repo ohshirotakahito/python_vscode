@@ -32,6 +32,21 @@ import time
 from . import axn_bridge, experiment_files, machine_data, score_store
 from .machine_data import STAGES
 from .score_store import ERA_LABVIEW, ERA_PYTHON, ERA_UNKNOWN, MEASURED, RECONSTRUCTED
+from shared import chip_aliases, machinedb
+
+_ALIAS_TABLE = None
+
+
+def current_device(code):
+    """チップID（Device Code）を、チップIDの対応表（shared.chip_aliases）で今の名前に。実験フォルダの結果ファイルや
+    計測時の Score.csv には直す前の名前が残っているため（サーバーの実験データは書き換えない。docs/chip_id_cleanup.md）。"""
+    global _ALIAS_TABLE
+    if _ALIAS_TABLE is None:
+        try:
+            _ALIAS_TABLE = chip_aliases.load(chip_aliases.table_path(machinedb.ROOT.parent))
+        except (OSError, ValueError):
+            _ALIAS_TABLE = chip_aliases.empty()
+    return chip_aliases.new_name(code, _ALIAS_TABLE) if code else code
 
 TIME_FORMAT = '%Y%m%d_%H:%M'        # AXN の「<工程> Time」と同じ書き方
 MEASURED_CRITERIA = 'AXN Score.csv'
@@ -256,7 +271,7 @@ def rescore_experiment(name, machine, machines_table, mods):
     try:
         with exp:
             outcome.location = f'{exp.location.place}: {exp.location.text}'
-            device = exp.device_code()
+            device = current_device(exp.device_code())
             prov = score_store.provenance(machine, RECONSTRUCTED, ERA_UNKNOWN, mods.criteria, exp.location.text)
             eras, timeline = stage_eras(exp)
             outcome.rows['AC'], ac_scores, skipped = ac_rows(exp, mods, device, prov, eras)
@@ -332,6 +347,7 @@ def measured_rows(machine, kind, root=None):
             continue
         era = ERA_PYTHON if kind == 'AutoGG' else score_store.era_by_date(machine_data.experiment_time(name))
         row = _measured_gg(raw) if kind == 'AutoGG' else dict(raw)
+        row['Device Code'] = current_device(row.get('Device Code', ''))
         row.update(score_store.provenance(machine, MEASURED, era, MEASURED_CRITERIA, str(path)))
         out.append(row)
     return out
@@ -361,7 +377,9 @@ def main(argv=None):
     parser.add_argument('--redo', action='store_true', help='--all で、再構成済みの実験も計算し直す')
     parser.add_argument('--measured', action='store_true', help='計測時の Score.csv を取り込む')
     parser.add_argument('--folder', default=None, help='保存先（既定 D:\\Qstatus\\database\\Scores）')
-    parser.add_argument('--save-every', type=int, default=25, help='この件数ごとに保存する（途中で止まっても残る）')
+    parser.add_argument('--save-every', type=int, default=250,
+                        help='この件数ごとに保存する（途中で止まっても残る）。共有フォルダの大きなファイルを何度も書き直すと'
+                             '同期の競合コピーができるので、間隔は広めに（2026-11-18）')
     parser.add_argument('--dry-run', action='store_true', help='計算だけして保存しない')
     args = parser.parse_args(argv)
     folder = args.folder

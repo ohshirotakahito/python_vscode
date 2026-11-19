@@ -1,6 +1,7 @@
 # 引き継ぎ：Scoring App（`scoring/`）
 
-2026-11-15 作成。Claude Code から Codex への引き継ぎ。ユーザーとのやり取りは日本語で行う。
+2026-11-15 作成。**2026-11-18 以降の作業は [HANDOFF_chip_atlas_ids_conflicts.md](HANDOFF_chip_atlas_ids_conflicts.md) を先に読むこと。**
+Claude Code から Codex への引き継ぎ。ユーザーとのやり取りは日本語で行う。
 コミット・push・PR はユーザーの指示があってから行う（ユーザーの決まり）。
 
 ## 状態

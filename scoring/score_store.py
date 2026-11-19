@@ -187,3 +187,20 @@ def number(value):
         return x if x == x else None
     except (TypeError, ValueError):
         return None
+
+
+def remap_devices(rename, folder=None):
+    """保存済みの行の Device Code を rename(code) で置き換える（チップIDの修正の後に一度）。戻り値は {kind: 直した行数}。"""
+    result = {}
+    for kind_name, kind in KINDS.items():
+        rows = read(kind_name, folder)
+        changed = 0
+        for row in rows:
+            new = rename(row.get('Device Code', ''))
+            if new != row.get('Device Code', ''):
+                row['Device Code'] = new
+                changed += 1
+        if changed:
+            write_csv(path(kind_name, folder), kind.all_columns, rows)
+        result[kind_name] = changed
+    return result

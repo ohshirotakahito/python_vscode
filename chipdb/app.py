@@ -1,21 +1,24 @@
 """Run with python chipdb/app.py. Standard library only."""
 import csv
-import math
 import queue
 import sys
 import threading
 import tkinter as tk
-from collections import Counter
+from datetime import datetime
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from shared import ui_theme as theme
 from chipdb.store import Document, db_folder, default_root, save_root
-from chipdb.summary_view import SummaryView, AllView
-from chipdb.search import date_query, usage_dates, matches
-from chipdb.registry_view import RegistryView
+from chipdb.summary_view import SummaryView
+from chipdb.search import date_query
+from chipdb.ledger_view import LedgerView, ledger_rows, row_matches
+from chipdb.library import Index
 from chipdb.bulk_view import BulkEditor
+from chipdb.trend_view import TrendView
+from chipdb.comparison_view import ComparisonView
+from chipdb.experiment_view import ExperimentView
 
 ACCENT = '#dfb86b'
 HEADINGS = ['種別', '状態', '日付', '担当者', '実験 ID', '操作', 'GAP #']
@@ -34,8 +37,8 @@ class App(tk.Tk):
         self.selected_path = None
         self.paths = []
         self.history_paths = set()
-        self.date_index = {}
-        self.date_errors = 0
+        self.index = None             # library.Index: 履歴CSVの集計と使用日（変わったファイルだけ読み直す）
+        self.entries = {}             # 画面が使う索引の写し（作業スレッドが書き換え中の辞書を直接読まない）
         self.index_version = 0
         self.index_loading = False
         self.index_messages = queue.Queue()
@@ -46,7 +49,7 @@ class App(tk.Tk):
         bar.pack(fill='x')
         ttk.Button(bar, text='共有フォルダを選択', command=self.choose).pack(side='left')
         ttk.Button(bar, text='一覧・履歴・集計を更新', command=self.scan).pack(side='left', padx=8)
-        ttk.Button(bar, text='＋ チェックイン', command=lambda: self.registry_view.edit(new=True)).pack(side='left', padx=4)
+        ttk.Button(bar, text='＋ チェックイン', command=lambda: self.ledger.edit(new=True)).pack(side='left', padx=4)
         from chipdb.cleanup_view import open_cleanup
         ttk.Button(bar, text='重複・IDを整理…', command=lambda: open_cleanup(self)).pack(side='left', padx=4)
         self.location = ttk.Label(bar, foreground=theme.MUTED)
@@ -65,18 +68,23 @@ class App(tk.Tk):
         tabs.pack(fill='both', expand=True)
         self.overview = SummaryView(tabs)
         tabs.add(self.overview, text='チップ概要')
-        history, analysis = ttk.Frame(tabs, padding=12), ttk.Frame(tabs, padding=12)
+        history = ttk.Frame(tabs, padding=12)
         tabs.add(history, text='操作履歴・編集')
-        tabs.add(analysis, text='解析・トレンド')
-        self.history_tab, self.analysis_tab = history, analysis
-        self.all_view = AllView(tabs, self.open_chip, self.select_path, refresh_sources=self.scan)
-        tabs.add(self.all_view, text='全チップ比較')
-        self.registry_view = RegistryView(tabs, self)
-        tabs.add(self.registry_view, text='チップ台帳・チェックイン')
-        tabs.insert(0, self.registry_view)
-        tabs.insert(1, self.all_view)
-        tabs.select(self.registry_view)
-        self.search_state = self.registry_view.search_state
+        # 実験データ: 上部のチップの FC・MA・TA・CAL が SQserver のどこにあるか（逆引き）。開く・取り出す
+        self.experiment_view = ExperimentView(tabs, self)
+        tabs.add(self.experiment_view, text='実験データ')
+        # 解析・トレンド: 左のチップ一覧から 1 つ・複数を選んで比べる（台帳に戻らずにチップを切り替えられる）
+        self.trend = TrendView(tabs, self)
+        tabs.add(self.trend, text='解析・トレンド')
+        self.comparison = ComparisonView(tabs, self)
+        tabs.add(self.comparison, text='操作間比較')
+        self.history_tab, self.analysis_tab = history, self.trend
+        # 台帳（管理情報）と全チップ比較（履歴CSVの集計）は 1 チップ 1 行の同じ表（2026-11-18 に統合）
+        self.ledger = LedgerView(tabs, self)
+        tabs.add(self.ledger, text='チップ台帳・比較')
+        tabs.insert(0, self.ledger)
+        tabs.select(self.ledger)
+        self.search_state = self.ledger.search_state
         self.query.trace_add('write', lambda *_: self.filter())
         # 画面の切り替えは下のタブだけで行う（同じ移動先のボタン列は重複なので置かない）
         tools = ttk.Frame(history)
@@ -84,7 +92,7 @@ class App(tk.Tk):
         ttk.Label(tools, text='行をダブルクリックして編集', style='Muted.TLabel').pack(side='left')
         ttk.Button(tools, text='選択行を編集', command=self.edit).pack(side='left', padx=8)
         ttk.Button(tools, text='表全体を編集', command=self.edit_table, style='Accent.TButton').pack(side='left', padx=4)
-        ttk.Button(tools, text='チップ管理情報を編集', command=self.registry_view.edit_current).pack(side='left')
+        ttk.Button(tools, text='チップ管理情報を編集', command=self.ledger.edit_current).pack(side='left')
         ttk.Button(tools, text='CSVを書き出す', command=self.export).pack(side='right')
         self.table = ttk.Treeview(history, show='headings', selectmode='browse')
         vertical = ttk.Scrollbar(history, orient='vertical', command=self.table.yview)
@@ -94,20 +102,6 @@ class App(tk.Tk):
         vertical.pack(side='right', fill='y')
         self.table.pack(fill='both', expand=True)
         self.table.bind('<Double-1>', self.edit)
-        options = ttk.Frame(analysis)
-        options.pack(fill='x')
-        ttk.Label(options, text='操作').pack(side='left')
-        self.kind = ttk.Combobox(options, state='readonly', width=15)
-        self.kind.pack(side='left', padx=10)
-        self.metric = ttk.Combobox(options, state='readonly', values=['Info 1', 'Info 2', 'Info 3', 'Info 4', 'Info 5', 'Info 6'], width=12)
-        self.metric.current(0)
-        self.metric.pack(side='left')
-        for combo in (self.kind, self.metric):
-            combo.bind('<<ComboboxSelected>>', self.plot)
-        self.chart = tk.Canvas(analysis, bg=theme.FIELD, highlightthickness=0)
-        self.chart.pack(fill='both', expand=True, pady=15)
-        self.chart.bind('<Configure>', self.plot)
-        ttk.Label(analysis, text='選択した操作の数値を記録順で表示。Infoの意味・単位はAXNの操作ごとに異なります。', style='Muted.TLabel').pack(anchor='w')
         self.status = ttk.Label(self, padding=(24, 10), style='Status.TLabel')
         self.status.pack(fill='x')
         self.after(100, self.scan)
@@ -125,93 +119,100 @@ class App(tk.Tk):
             self.root_path = Path(folder)
             self.scan()
 
-    def scan(self):
+    def scan(self, force=False):
+        """共有フォルダのCSV一覧と台帳を読み直し、履歴CSVの索引を更新する。force=True なら全件を読み直す。"""
         previous = self.selected_path
         folder = db_folder(self.root_path)
         self.location.configure(text=str(folder))
         self.document = None
         self.selected_path = None
-        self.all_view.sync_selection(None)
         self.table.delete(*self.table.get_children())
         self.overview.clear()
         self.title_label.configure(text='チップを選択')
         self.metrics.configure(text='共有CSVを直接閲覧・編集できます。')
         try:
             self.paths = sorted(folder.glob('*.csv')) if folder.is_dir() else []
-            self.summary.configure(text=f'{len(self.paths):03d}  CHIPS     /     AXN 共有ライブラリ')
             self.status.configure(text='接続済み · チップを選択してください' if self.paths else '未接続またはCSVなし · 「共有フォルダを選択」でAXNの共有データを指定してください')
         except OSError as exc:
             self.paths = []
             self.status.configure(text=str(exc))
         self.history_paths = set(self.paths)
-        self.registry_view.reload(folder)
+        self.ledger.reload(folder)
         source_names = {p.stem.casefold() for p in self.paths}
-        self.paths.extend(folder / (c['code'] + '.csv') for c in self.registry_view.data['chips']
+        self.paths.extend(folder / (c['code'] + '.csv') for c in self.ledger.data['chips']
                           if c['code'].casefold() not in source_names)
         self.paths.sort(key=lambda p: p.stem.casefold())
         self.summary.configure(text=f'{len(self.paths):03d}  CHIPS     /     履歴あり {len(self.history_paths)} · 測定前 {len(self.paths)-len(self.history_paths)}')
-        self.start_index()
+        if self.index is None or self.index.db != folder:
+            self.index = Index(folder)          # 前回の控えがあれば、それをすぐに表示する
+        self.entries = dict(self.index.entries)
+        self.update_index(force)
         self.filter()
-        self.all_view.reset(sorted(self.history_paths))
-        self.all_view.load()
+        self.trend.refresh_list()
+        self.comparison.refresh_list()
         if previous in self.paths:
             self.select_path(previous)
         self.plot()
 
-    def filter(self):
-        try:
-            span = date_query(self.query.get())
-        except ValueError as exc:
-            self.search_state.configure(text=str(exc))
-            self.registry_view.refresh([])
-            return
-        visible_paths = []
-        chips = {c['code'].casefold(): c for c in self.registry_view.data['chips']}
-        for path in self.paths:
-            chip = chips.get(path.stem.casefold(), {})
-            text = ' '.join(str(chip.get(key, '未登録' if key == 'state' else ''))
-                            for key in ('code', 'state', 'location', 'user', 'owner', 'origin', 'description'))
-            metadata_match = span is None and self.query.get().strip().casefold() in text.casefold()
-            if matches(path.stem, self.date_index.get(path, ()), self.query.get(), span) or metadata_match:
-                visible_paths.append(path)
-        self.registry_view.refresh(visible_paths)
-        self.sync_chip_selection()
-        detail = ' · 使用日を読み込み中…' if span and self.index_loading else ''
-        if span and not self.index_loading:
-            detail = ' · 履歴の実験日で検索'
-            if self.date_errors:
-                detail += f'（{self.date_errors}件は読込不可）'
-        self.search_state.configure(text=f'{len(visible_paths)} / {len(self.paths)} チップ{detail}')
-
-    def start_index(self):
+    def update_index(self, force=False):
+        """履歴CSVの索引を作業スレッドで更新する（変わったファイルだけ読む）。終わると表を描き直す。"""
         self.index_version += 1
-        version, paths = self.index_version, list(self.history_paths)
-        self.date_index = {}
-        self.date_errors = 0
-        self.index_loading = bool(paths)
+        version, index, paths = self.index_version, self.index, sorted(self.history_paths)
+        self.index_loading = True
+        self.ledger.index_state.configure(text='履歴CSVの変更を確認中…' + ('（全件読み直し）' if force else ''))
+        self.ledger.progress.configure(value=0, maximum=1)
 
         def worker():
-            dates, errors = {}, 0
-            for path in paths:
-                if version != self.index_version:
-                    return
-                try:
-                    dates[path] = usage_dates(Document(path).rows)
-                except (OSError, UnicodeError):
-                    errors += 1
-            self.index_messages.put((version, dates, errors))
-        if paths:
-            threading.Thread(target=worker, daemon=True).start()
+            try:
+                result = index.update(paths, force=force, cancelled=lambda: version != self.index_version,
+                                      progress=lambda i, n: self.index_messages.put((version, 'progress', (i, n))))
+            except Exception as exc:  # noqa: BLE001 - 読めない共有フォルダなどは画面に出す
+                self.index_messages.put((version, 'failed', str(exc)))
+                return
+            if result is not None:
+                self.index_messages.put((version, 'done', (dict(index.entries), result)))
+        threading.Thread(target=worker, daemon=True).start()
+
+    def filter(self):
+        query = self.query.get()
+        try:
+            span = date_query(query)
+        except ValueError as exc:
+            self.search_state.configure(text=str(exc))
+            self.ledger.show([])
+            return
+        self.ledger.rows = ledger_rows(self.paths, self.ledger.data['chips'], self.entries, self.history_paths,
+                                       getattr(self.ledger, 'alias_table', None))
+        visible = [row for row in self.ledger.rows if row_matches(row, query, span)]
+        self.ledger.show(visible)
+        detail = ''
+        if span:
+            detail = ' · 使用日を読み込み中…' if self.index_loading and not self.entries else ' · 履歴の実験日で検索'
+        self.search_state.configure(text=f'{len(visible)} / {len(self.paths)} チップ{detail}')
 
     def poll_index(self):
         try:
             while True:
-                version, dates, errors = self.index_messages.get_nowait()
-                if version == self.index_version:
-                    self.date_index = dates
-                    self.date_errors = errors
-                    self.index_loading = False
-                    self.filter()
+                version, kind, payload = self.index_messages.get_nowait()
+                if version != self.index_version:
+                    continue
+                if kind == 'progress':
+                    done, total = payload
+                    self.ledger.progress.configure(maximum=max(total, 1), value=done)
+                    self.ledger.index_state.configure(text=f'変更された履歴CSVを読み直し中 · {done} / {total}')
+                    continue
+                self.index_loading = False
+                if kind == 'failed':
+                    self.ledger.index_state.configure(text=f'履歴CSVを読めません: {payload}')
+                    continue
+                self.entries, result = payload
+                self.ledger.progress.configure(maximum=1, value=1)
+                self.ledger.show_errors(result.errors)
+                self.ledger.index_state.configure(text=f'履歴CSV {len(self.entries)} 件 · {result.text} · '
+                                                       f'{datetime.now():%H:%M:%S}')
+                self.filter()
+                self.trend.refresh_list()        # 一覧の「実験」「最終使用」を新しい集計で
+                self.comparison.refresh_list()
         except queue.Empty:
             pass
         self.after(100, self.poll_index)
@@ -245,8 +246,14 @@ class App(tk.Tk):
         self.sync_chip_selection()
 
     def sync_chip_selection(self):
-        self.registry_view.sync_selection(self.selected_path)
-        self.all_view.sync_selection(self.selected_path)
+        self.ledger.sync_selection(self.selected_path)
+        self.trend.chip_changed(self.selected_path)
+        self.comparison.chip_changed(self.selected_path)
+        self.experiment_view.chip_changed(self.selected_path)
+
+    def plot(self, event=None):
+        self.trend.plot()
+        self.comparison.plot()
 
     def render(self):
         doc = self.document
@@ -270,51 +277,12 @@ class App(tk.Tk):
         for i, row in enumerate(doc.rows):
             self.table.insert('', 'end', iid=str(i), values=row, tags=('operation' if row and row[0] == 'Experiment' else 'meta',))
         self.table.tag_configure('meta', foreground=theme.MUTED)
-        kinds = Counter(r[5].split('#')[0] for r in experiments)
-        selected_kind = self.kind.get()
-        choices = list(kinds)
-        if selected_kind and selected_kind not in choices:
-            choices.append(selected_kind)
-        self.kind.configure(values=choices)
-        self.kind.set(selected_kind or next(iter(kinds), ''))
         self.status.configure(text=f'{doc.path} · 保存時にバックアップを作成します')
-        self.plot()
 
     def open_chip(self, path):
         self.select_path(path)
         if self.selected_path == Path(path):
             self.tabs.select(self.overview)
-
-    def plot(self, event=None):
-        c = self.chart
-        c.delete('all')
-        points = []
-        if self.document:
-            column = 7 + max(self.metric.current(), 0)
-            for row in self.document.experiments:
-                if row[5].split('#')[0] == self.kind.get() and len(row) > column:
-                    try:
-                        value = float(row[column])
-                        if math.isfinite(value):
-                            points.append(value)
-                    except ValueError:
-                        pass
-        if not points:
-            c.create_text(35, 40, anchor='nw', text='数値データがある操作を選択してください', fill=theme.MUTED, font=(theme.UI, 12))
-            return
-        w, h = max(c.winfo_width(), 300), max(c.winfo_height(), 200)
-        low, high = min(points), max(points)
-        c.create_text(24, 20, anchor='nw', text=f'{self.kind.get()} / {self.metric.get()}     n={len(points)}     min {low:.5g}     max {high:.5g}     mean {sum(points)/len(points):.5g}', fill=ACCENT)
-        for i in range(5):
-            y = 60 + (h - 100) * i / 4
-            c.create_line(75, y, w - 25, y, fill=theme.BORDER)
-            c.create_text(65, y, anchor='e', text=f'{high - (high-low)*i/4:.4g}', fill=theme.MUTED)
-        coords = [(75 + i * (w - 110) / max(len(points)-1, 1), h - 40 - (v-low) / (high-low or 1) * (h-100)) for i, v in enumerate(points)]
-        if len(coords) > 1:
-            c.create_line(*[n for p in coords for n in p], fill=ACCENT, width=2)
-        for x, y in coords:
-            c.create_oval(x-3, y-3, x+3, y+3, fill=ACCENT, outline=theme.FIELD)
-        c.create_text(w-25, h-16, anchor='e', text='記録順 →', fill=theme.MUTED)
 
     def edit_table(self):
         if self.document is None:
@@ -351,9 +319,8 @@ class App(tk.Tk):
                 messagebox.showerror('保存できません', str(exc), parent=dialog)
                 return
             dialog.destroy()
-            self.start_index()
             self.render()
-            self.all_view.mark_stale()
+            self.update_index()          # 保存したチップだけが変わっているので、その 1 件だけ読み直される
             self.status.configure(text=f'保存完了 · バックアップ: {backup}')
 
         ttk.Label(dialog, text='AXNの共有CSVに保存します。変更前のファイルは自動バックアップされます。', style='Muted.TLabel').grid(row=len(row), columnspan=2, padx=15, pady=12)

@@ -32,6 +32,19 @@ def test_checkin_and_edit_metadata_preserve_identity(tmp_path):
     assert json.loads(backup.read_text(encoding='utf-8')) == data
 
 
+def test_maker_and_organization_are_saved_and_unknown_fields_survive(tmp_path):
+    store = store_at(tmp_path)
+    data = store.save_chip('SC91-01', {'origin': 'SCREEN', 'organization': '大阪大学 谷口研'}, 0, new=True)
+    chip = data['chips'][0]
+    assert (chip['origin'], chip['organization']) == ('SCREEN', '大阪大学 谷口研')
+    # 別のアプリ（AXN など）が足した、ここで知らない項目も保存で消えない
+    raw = json.loads(store.path.read_text(encoding='utf-8'))
+    raw['chips'][0]['axn_only'] = 'keep'
+    store.path.write_text(json.dumps(raw, ensure_ascii=False), encoding='utf-8')
+    data = store.save_chip('SC91-01', {'organization': 'Quantum Operation'}, data['revision'])
+    assert data['chips'][0]['axn_only'] == 'keep' and data['chips'][0]['organization'] == 'Quantum Operation'
+
+
 def test_duplicate_and_external_revision_rejected(tmp_path):
     store = store_at(tmp_path)
     store.save_chip('SC25-01', {}, 0, new=True)

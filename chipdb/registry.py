@@ -11,9 +11,11 @@ from uuid import uuid4
 from chipdb.summary import summarize
 
 STATES = ('未設定', '作製予定', '保管中', '使用中', '使用終了')
-FIELDS = {'state': '状態', 'location': '保管場所', 'user': '使用者', 'origin': '作成元',
-          'fabricated_on': '作製日', 'use_started_on': '使用開始日', 'disposed_on': '廃棄日',
-          'description': '説明・メモ'}
+# origin（製作者・作成元: SCREEN など）は AXN と共通の項目。organization（主体: そのチップを持つ・管理する
+# 組織やグループ）は 2026-11-18 に追加した項目で、AXN は知らない項目もそのまま保存するので共有台帳で残る
+FIELDS = {'state': '状態', 'location': '保管場所', 'user': '使用者', 'origin': '製作者（作成元）',
+          'organization': '主体（所属・管理）', 'fabricated_on': '作製日', 'use_started_on': '使用開始日',
+          'disposed_on': '廃棄日', 'description': '説明・メモ'}
 EXTRA = ('last_used_on', 'last_machine', 'resistance_ohm', 'gap_count', 'run_count')
 
 
@@ -123,7 +125,7 @@ class Store:
             if new and (chip or sources):
                 raise ValueError('このチップは既に存在します。管理情報の編集を使ってください。')
             if chip is None:
-                chip = dict(key=uuid4().hex, code=code, state='未設定', location='', user='', origin='',
+                chip = dict(key=uuid4().hex, code=code, state='未設定', location='', user='', origin='', organization='',
                             fabricated_on='', use_started_on='', disposed_on='', description='',
                             snapshot=None, created_at=stamp())
                 data['chips'].append(chip)

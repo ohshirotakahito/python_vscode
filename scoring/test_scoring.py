@@ -352,3 +352,15 @@ def test_criteria_changes_with_constants():
     text = MODS.criteria
     assert text.startswith('axn ') and 'gg provisional' in text
     assert axn_bridge.criteria_text(MODS) == text
+
+
+def test_device_codes_follow_the_chip_id_table(tmp_path, monkeypatch):
+    from scoring import rescore as rs
+    monkeypatch.setattr(rs, '_ALIAS_TABLE', dict(schema_version=1, revision=1, entries=[
+        dict(old='SC25-2115-9', new='SC25-2115-09', status='完了')]))
+    assert rs.current_device('SC25-2115-9') == 'SC25-2115-09'
+    assert rs.current_device('SC25-2118-40') == 'SC25-2118-40' and rs.current_device('') == ''
+    score_store.upsert('AC', [{'Experimental ID': NAME, 'Device Code': 'SC25-2115-9', 'AC#': '1', 'AC Time': 't',
+                               'Source': score_store.RECONSTRUCTED}], tmp_path)
+    assert score_store.remap_devices(rs.current_device, tmp_path) == {'AC': 1, 'EXSV': 0, 'AutoGG': 0}
+    assert score_store.read('AC', tmp_path)[0]['Device Code'] == 'SC25-2115-09'

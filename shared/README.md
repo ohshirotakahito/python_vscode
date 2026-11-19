@@ -27,6 +27,8 @@
 | `file_moves.py` | 記録（ジャーナル）つきのファイル移動・取り消し、記録の保存先 `journal_dir()`・`log_dir()`（`database/file_logs/`）、ANAL の一覧 | database, Analyzer |
 | `destination_history.py` | ローカル履歴と `SEQ/DestinationMoves/` の追跡記録から現在の保存先を求める。UNCフォルダ操作の追跡用記録を共有し、送信待ちを再送する。復元用履歴は各PCに保持 | database, Analyzer |
 | `t_stock.py` | Data 退避（T ⇄ T/stocked）の計画 | Analyzer |
+| `chip_aliases.py` | チップIDの旧名 → 新名の対応表（共有の `machinedb/PLAN/chip_aliases.json`）。読み込み・旧名から新名への置き換え・段階の記録。保存は鍵・版の確認・バックアップつき | chipdb, scoring |
+| `sync_conflicts.py` | 共有フォルダ（D:Qstatus）の同期の競合コピーを見つけ、本体に全行があるものを片付け、少しだけ行が足りないものは同じ位置に戻す。毎晩 `tools/qstatus_conflicts.py` から（[docs/qstatus_conflicts.md](../docs/qstatus_conflicts.md)） | tools（毎晩のタスク） |
 | `progress.py` | ANAL・BNAL の進捗の状態（未着手・進行中・完了・超過・解析用コピー・確認不可）と注意（欠番・退避・混在・差異・要更新・コピー不足）の判定 | database, Analyzer |
 
 ## 取り決め（守ること）
