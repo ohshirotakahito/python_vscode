@@ -403,6 +403,15 @@ def settings():
     return QSettings("TotalAnalysis", "PythonGUI")
 
 
+def operator_choices():
+    """[(label, initials)] from the member table (machinedb SEQ/Operator.csv): the same people and the same
+    「名前 (イニシャル)」labels as 実験データ整理's 転送者; the initials are what A@@ files and run logs record."""
+    from shared import machinedb, seq_records
+    rows = seq_records.rows(machinedb.SEQ / "Operator.csv")
+    return [(f"{r[0].strip()} ({r[1].strip()})", r[1].strip()) for r in rows
+            if len(r) >= 2 and r[0].strip() and r[1].strip()]
+
+
 def measurement_terminal():
     """User terminals (測定機) get only ANAL（サーバー）and the ANAL viewer, reading the published snapshot;
     PYVSCODE_ANALYZER_TERMINAL=1/0 overrides (as the database app's PYVSCODE_DATABASE_VIEWER)."""
@@ -4916,11 +4925,23 @@ class MainWindow(QMainWindow):
         self.nav[0].setChecked(True)
         sl.addStretch()
         sl.addWidget(QLabel("解析者"))
-        self.operator = QLineEdit(settings().value("operator", first_step_io.OPERATOR))
-        self.operator.setToolTip("ANAL / BNAL のファイル（A@@・B@@ のプロパティ）と実行記録に書き込む名前")
-        self.operator.textChanged.connect(self.set_operator)
+        self.operator = QComboBox()
+        self.operator.setToolTip("ANAL / BNAL のファイル（A@@・B@@ のプロパティ）と実行記録に書き込む解析者（イニシャル）。"
+                                 "選択肢は実験データ整理のメンバー表（machinedb の SEQ/Operator.csv）です")
+        self.operator.addItem("（選択してください）", "")
+        try:
+            choices = operator_choices()
+        except (OSError, ValueError) as e:
+            choices = []
+            self.operator.setToolTip(f"メンバー表を読めません: {e}")
+        for label, code in choices:
+            self.operator.addItem(label, code)
+        saved = settings().value("operator", "")
+        index = self.operator.findData(saved)
+        self.operator.setCurrentIndex(max(index, 0))
+        self.operator.currentIndexChanged.connect(lambda _: self.set_operator(self.operator.currentData() or ""))
         sl.addWidget(self.operator)
-        self.set_operator(self.operator.text())
+        self.set_operator(self.operator.currentData() or "")
         sl.addSpacing(10)
         ver = QLabel("LabVIEW 20180816 /\n20180801 の Python 移植")
         ver.setObjectName("subtitle")
