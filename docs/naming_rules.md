@@ -26,21 +26,22 @@
 | 実験・チップの責任者（Ex Info `owner_names`・chip_info `owner`） | **責任者** | Owner、担当者、所有者 | |
 | 計測した人（G PSET `Operator`・チップ履歴 `Operator`・実験ID の先頭 2 文字） | **測定者** | Operator、担当者、実験担当者 | |
 | 解析サーバーへ転送した人（exmanager の uploader） | **転送者** | アップロード担当者 | |
+| 計測条件（LG/SG レシピ）を作った人（AXN `RecipeOwners.csv` の Owner） | **作成者** | 担当者 | |
 | 人の一覧（`machinedb\SEQ\Operator.csv`：名前・2 文字コード・所属） | **メンバー表** | 担当者CSV | 責任者・測定者・転送者はここの人から選ぶ（予定） |
 | 装置の一覧（`Machine_N.csv`） | **装置表** | 装置CSV | |
 | チップの保管場所（chip_info `location`） | **保管場所** | | データの「保存場所」と分ける |
 | データの置き場所（Ex Info `locations`） | **保存場所** | | 共有・グループ・解析ルートの整理は未決（ロードマップ 4-14） |
 
-「担当者」は責任者・測定者・転送者のどれにも使わない（意味が決まらないため）。
+「担当者」は責任者・測定者・転送者・作成者のどれにも使わない（意味が決まらないため）。PC の役割（転送担当・閲覧担当など）は人ではないので残す。
 
 ## 適用状況
 
 | アプリ | 状況 |
 |---|---|
-| 実験ファイルDB・exmanager・Chip Atlas・shared（python_vscode） | 2026-11-23 に画面の呼び名を変更。Chip Atlas の「チップ台帳」画面（`chipdb/ledger_view.py`）は別作業の変更が残っているため、その作業のあとに直す |
-| AXN | **未適用**。下の「AXN でやること」 |
+| 実験ファイルDB・exmanager・Chip Atlas・shared（python_vscode） | 2026-11-23 適用（Chip Atlas のチップ台帳画面を含む） |
+| AXN | 2026-11-23 適用（v0.9.2.19、`ui_catalog.py`・`panel_i18n.py`）。残り：装置の値を `AXN#1` ではなく `AXN1` で表示する所（下の 2） |
 
-## AXN でやること（AXN の Claude Code への依頼）
+## AXN でやること（1・3・4 は 2026-11-23 済み）
 
 1. `axn/ui_catalog.py` の日本語訳を上の表に合わせる。主なもの:
    - `Sample Name`・`Sample name` → サンプル名、`Sample` → サンプル、`Sample Code` → サンプルコード、`Sample / Blank` → 計測区分

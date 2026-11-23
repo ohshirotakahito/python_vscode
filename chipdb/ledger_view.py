@@ -1,5 +1,5 @@
 """チップ台帳: 管理情報（AXN共有台帳 machinedb/PLAN/chip_info.json）と、測定の集計（各チップの履歴CSV）を
-1 チップ 1 行で並べる。チェックイン・管理情報の編集、分布・装置・担当者のグラフ、読み込みエラーもここ。
+1 チップ 1 行で並べる。チェックイン・管理情報の編集、分布・装置・測定者のグラフ、読み込みエラーもここ。
 
 以前は「チップ台帳」と「全チップ比較」の 2 つの表に分かれていた。台帳とCSVは 1 対 1 なので 1 つにまとめ、
 列のまとまり（管理情報 / 測定の集計 / すべて）を切り替えて見る（2026-11-18）。
@@ -33,7 +33,7 @@ COLUMN_SETS = {
 }
 # 見出し（列の名前は summary の列名のまま。表示だけ短く・分かりやすく）
 HEADINGS = {'チップID': 'チップID（ファイル名）', 'FC Last': 'FC 最新', 'MA Last': 'MA 最新', 'TA Last': 'TA 最新',
-            'CAL Last': 'CAL 最新', 'EX Last Date': '最終使用', 'Machine': '装置', 'Operator': '担当者'}
+            'CAL Last': 'CAL 最新', 'EX Last Date': '最終使用', 'Machine': '装置', 'Operator': '最終測定者'}
 CELL_PAD, MIN_WIDTH, MAX_WIDTH = 22, 44, 320
 NUMERIC = {c for c in COLUMNS[1:] if c not in ('EX FIRST Date', 'EX Last Date', 'Machine', 'Operator', 'FC Chip R Time')}
 NO_HISTORY = '測定前・履歴なし'
@@ -165,7 +165,7 @@ class LedgerView(ttk.Frame):
         tabs.pack(fill='both', expand=True)
         listing, charts, errors = ttk.Frame(tabs), ttk.Frame(tabs, padding=10), ttk.Frame(tabs)
         tabs.add(listing, text='一覧')
-        tabs.add(charts, text='分布・装置・担当者')
+        tabs.add(charts, text='分布・装置・測定者')
         tabs.add(errors, text='読み込みエラー')
         self.error_tab, self.sub_tabs = errors, tabs
         self.view = table(listing, ALL_COLUMNS)
@@ -182,7 +182,7 @@ class LedgerView(ttk.Frame):
         self.view.bind('<Double-1>', self.open_selected)
         self.error_view = table(errors, ('ファイル', '理由'))
         self.error_view.column('理由', width=600, stretch=True)
-        self.chart_kind = ttk.Combobox(charts, state='readonly', values=[h[0] for h in HISTOGRAMS] + ['装置別', '担当者別'], width=25)
+        self.chart_kind = ttk.Combobox(charts, state='readonly', values=[h[0] for h in HISTOGRAMS] + ['装置別', '測定者別'], width=25)
         self.chart_kind.current(0)
         self.chart_kind.pack(anchor='w')
         self.chart_kind.bind('<<ComboboxSelected>>', self.draw)
