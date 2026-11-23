@@ -36,13 +36,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # リポジトリ�
 from shared import catalog, ex_info_links, rack_store, sample_plan, seq_records  # noqa: E402
 
 try:
-    from . import bnal_progress, rackstation_view, sq_workflow, transfer_ledger
+    from . import bnal_progress, rackstation_view, sq_workflow, transfer_ledger, view_snapshot
     from .scan_lock import ScanLock
 except ImportError:
     import bnal_progress
     import rackstation_view
     import sq_workflow
     import transfer_ledger
+    import view_snapshot
     from scan_lock import ScanLock
 
 BASE = Path(__file__).resolve().parent
@@ -52,9 +53,9 @@ STATUS_PATH = BASE / 'logs' / 'publish_status.json'
 LOG_PATH = BASE / 'logs' / 'publish.log'
 TASK_NAME = 'Qstatus Ledger Publish'
 FILES = dict(sq='sq_experiments.csv', analysis=rackstation_view.CSV_PATH.name, bnal='bnal_progress.csv',
-             transfer='sq_transfers.csv', status='ledger_status.csv')
+             transfer='sq_transfers.csv', view=view_snapshot.FILE, status='ledger_status.csv')
 LEDGER_TITLES = dict(sq='SQserver 実験一覧', analysis='解析サーバー ANAL進捗', bnal='BNAL進捗',
-                     transfer='SQserver→解析サーバー 転送・ANAL')
+                     transfer='SQserver→解析サーバー 転送・ANAL', view='閲覧用DB（ユーザー端末の実験ファイルDB）')
 DEFAULT_SETTINGS = dict(
     enabled=False,           # タスク スケジューラからの実行（--scheduled）をするか
     scan_sq=True,            # 毎回 SQserver の Recent_Data を走査する
@@ -151,7 +152,7 @@ def sq_rows(entries, cell, exported_at):
 
 def export_sq(db, configured, destination, cell):
     from_app = _app()
-    entries = from_app.App.read_inventory(db, '', configured)[4]
+    entries = _inventory(db, configured)[4]
     exported_at = now_utc()
     write_csv(destination, from_app.SQ_ENTRY_TITLES + ('区分', EXPORTED_AT), sq_rows(entries, cell, exported_at))
     return len(entries)
@@ -221,8 +222,7 @@ def export_bnal(db, configured, destination, cell, plan=None):
 
 def export_transfers(db, configured, destination, cell):
     from shared import destination_history
-    from_app = _app()
-    entries = from_app.App.read_inventory(db, '', configured)[4]
+    entries = _inventory(db, configured)[4]
     machines = seq_records.machines(seq_records.MACHINE_CSV)
     history = seq_records.history(seq_records.LEGACY_HISTORY, seq_records.LOCAL_HISTORY)
     try:
@@ -239,13 +239,30 @@ def export_transfers(db, configured, destination, cell):
     return len(rows)
 
 
-EXPORTERS = dict(sq=export_sq, analysis=export_analysis, bnal=export_bnal, transfer=export_transfers)
+_INVENTORY = {}   # one read of the ② list per export_all (it is slow on the full DB)
+
+
+def _inventory(db, configured):
+    key = str(db)
+    if key not in _INVENTORY:
+        _INVENTORY[key] = _app().App.read_inventory(db, '', configured)
+    return _INVENTORY[key]
+
+
+def export_view(db, configured, destination, cell):
+    """The read-only snapshot and ② list that user terminals open (view_snapshot)."""
+    return view_snapshot.export(db, list(_inventory(db, configured)), destination)
+
+
+EXPORTERS = dict(sq=export_sq, analysis=export_analysis, bnal=export_bnal, transfer=export_transfers,
+                 view=export_view)
 
 
 def export_all(db, configured, out_dir, scans):
     """Write every ledger; one failure (e.g. open in Excel) does not stop the others."""
     cell = _app().App.cell
     results = {}
+    _INVENTORY.clear()
     for name, exporter in EXPORTERS.items():
         started = time.monotonic()
         try:
@@ -255,6 +272,7 @@ def export_all(db, configured, out_dir, scans):
         except Exception as exc:
             results[name] = dict(ok=False, error=str(exc), at=now_utc())
             log.error('書き出し失敗 %s: %s', FILES[name], exc)
+    _INVENTORY.clear()
     host = socket.gethostname()
     status_rows = [[LEDGER_TITLES[name], FILES[name], r.get('rows', ''), r['at'], host,
                     '' if r['ok'] else f"失敗（前回のファイルのまま）: {r['error']}"] for name, r in results.items()]

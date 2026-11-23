@@ -7,6 +7,7 @@ import queue
 import threading
 import time
 import tkinter as tk
+import types
 from tkinter import ttk, filedialog, messagebox
 from tkinter import font as tkfont
 import sys
@@ -15,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # リポジトリ�
 from shared import catalog, ui_theme  # noqa: E402
 
 try:
-    from . import inventory_views, recent_progress, sq_workflow, rackstation_view, bnal_progress, anal_progress, plan_view, ex_info_view
+    from . import inventory_views, recent_progress, sq_workflow, rackstation_view, bnal_progress, anal_progress, plan_view, ex_info_view, id_map_view, view_snapshot
 except ImportError:
     import inventory_views
     import recent_progress
@@ -25,6 +26,8 @@ except ImportError:
     import anal_progress
     import plan_view
     import ex_info_view
+    import id_map_view
+    import view_snapshot
 try:
     from .scan_lock import ScanLock
 except ImportError:
@@ -48,6 +51,30 @@ SQ_ENTRY_COLUMNS = ('group', 'container', 'machine', 'name', 'analysis_state', '
                     'experiment_at', 'analysis_started_at', 'last_success', 'status')
 SQ_ENTRY_TITLES = ('グループ', 'backup / ANフォルダ', '装置', '元の名前', '解析着手', 'EXSV/T TDMS数', 'EXZSV TDMS数',
                    '実験日時', '解析着手日時', '最終取得 UTC', '取得状態')
+# 画面だけ「元の名前」を「実験ID」と呼ぶ（CSV の列名は AXN が読むので変えない）
+SQ_ENTRY_DISPLAY_TITLES = tuple('実験ID（元の名前）' if t == '元の名前' else t for t in SQ_ENTRY_TITLES)
+
+
+def read_only_terminal():
+    """User terminals (測定機) open the published snapshot read-only; PYVSCODE_DATABASE_VIEWER=1/0 overrides."""
+    if os.environ.get('PYVSCODE_DATABASE_VIEWER'):
+        return os.environ['PYVSCODE_DATABASE_VIEWER'] != '0'
+    from shared import terminal_profile
+    try:
+        return terminal_profile.load()['role'] != 'developer'
+    except (OSError, ValueError):
+        return True
+
+
+def filter_inventory(inventory, search):
+    """The ② list narrowed by the search text, as read_inventory does for groups (3) and entries (4)."""
+    if not search:
+        return inventory
+    text = search.casefold()
+    narrowed = list(inventory)
+    for index in (3, 4):
+        narrowed[index] = [r for r in inventory[index] if text in ' '.join(str(v) for v in r.values()).casefold()]
+    return narrowed
 
 
 def selected_source_kind(server, root):
@@ -81,10 +108,17 @@ class App(tk.Tk):
         self.geometry('1450x950')
         style = ui_theme.apply(self, ui_theme.DATABASE)
         style.configure('Treeview', rowheight=26)
-        ui_theme.header(self, '実験ファイル データベース', 'サーバーごとのファイル保存状況と解析着手状況・ファイル操作',
+        self.read_only = read_only_terminal()
+        subtitle = 'サーバーごとのファイル保存状況と解析着手状況・ファイル操作'
+        if self.read_only:
+            subtitle = '閲覧専用 — 開発PCが毎時公開する保存済みデータを表示（サーバーの更新・ファイル操作・台帳の編集はできません）'
+        ui_theme.header(self, '実験ファイル データベース', subtitle,
                         '\uEE94', ui_theme.DATABASE, on_close=lambda: self.close()).pack(fill='x')
         self.db_path = catalog.DEFAULT_DB
-        catalog.initialize(self.db_path)
+        if self.read_only:
+            self.db_path = view_snapshot.view_db()
+        else:
+            catalog.initialize(self.db_path)
         self.configured = DEFAULTS
         if CONFIG.exists():
             try:
@@ -106,6 +140,7 @@ class App(tk.Tk):
         # タブは作業の流れの順: ①気づく（計画・要対応）→ ②③実態を見る → ④進捗を確かめる → ⑤直す
         self.plan_panel = ttk.Frame(self.main_tabs)
         self.ex_info_panel = ttk.Frame(self.main_tabs)
+        self.id_map_panel = ttk.Frame(self.main_tabs)
         self.sq_panel = ttk.Frame(self.main_tabs)
         self.analysis_panel = ttk.Frame(self.main_tabs)
         self.progress_tabs = ttk.Notebook(self.main_tabs)
@@ -114,13 +149,18 @@ class App(tk.Tk):
         self.progress_tabs.add(self.anal_panel, text='Stage 1 · ANAL')
         self.progress_tabs.add(self.bnal_panel, text='Stage 2 · BNAL')
         # もとのファイル管理アプリ（コピー・サンプル名変更・名前変更・フォルダ作成）。処理中は DB の更新と同時に走らせない
-        self.fileops = FileOpsPanel(self.main_tabs, owner=self)
+        if self.read_only:
+            self.fileops = types.SimpleNamespace(busy=False, can_close=lambda: True)
+        else:
+            self.fileops = FileOpsPanel(self.main_tabs, owner=self)
         self.main_tabs.add(self.ex_info_panel, text='Ex Info')
+        self.main_tabs.add(self.id_map_panel, text='実験ID 対応')
         self.main_tabs.add(self.plan_panel, text='① Plan & Issues')
         self.main_tabs.add(self.sq_panel, text='② Source · SQserver')
         self.main_tabs.add(self.analysis_panel, text='③ Analysis Servers')
         self.main_tabs.add(self.progress_tabs, text='④ Progress')
-        self.main_tabs.add(self.fileops, text='⑤ File Ops')
+        if not self.read_only:
+            self.main_tabs.add(self.fileops, text='⑤ File Ops')
         self.buttons = []
         target = ttk.LabelFrame(self.sq_panel, text='更新する範囲を選択（ほかの範囲の記録は保持します）', padding=8)
         target.pack(fill='x', padx=8)
@@ -161,6 +201,12 @@ class App(tk.Tk):
                    command=lambda: recent_progress.open_window(self)).grid(row=0, column=10, padx=4)
         ttk.Button(target, text='台帳の共有', command=self.publish_settings).grid(row=0, column=11, padx=4)
         target.columnconfigure(12, weight=1)  # 入力欄は固定幅。余白は右端へ
+        if self.read_only:
+            published = view_snapshot.published_at(self.db_path)
+            ttk.Label(self.sq_panel, padding=(8, 6), wraplength=1300,
+                      text=f'閲覧専用：開発PCが公開した SQserver の一覧です（公開 {published or "未取得"}・{self.db_path.parent}）。'
+                           'サーバーの更新は開発PCで行います。').pack(fill='x', before=target)
+            target.pack_forget()
         # 2本のバーを見出しと色で区別する（サーバー更新＝アプリの紫、表示の読み込み＝紫寄りの青）
         style = ttk.Style(self)
         bars = ttk.Frame(self.sq_panel)
@@ -217,7 +263,7 @@ class App(tk.Tk):
             ('sq_groups', 'SQserver グループ集計',
              ('server', 'group', 'container', 'folder_count', 'archive_count', 'started_count', 'pending_count', 'started_rate', 'history_note', 'root', 'last_success', 'status'),
              ('サーバー', 'グループ', 'backup / ANフォルダ', '直下フォルダ数', '圧縮ファイル数', '着手数', '未着手数', '着手率', '履歴照合の確認事項', '保存先', '最終取得 UTC', '取得状態')),
-            ('sq_entries', 'SQserver 実験一覧', SQ_ENTRY_COLUMNS, SQ_ENTRY_TITLES),
+            ('sq_entries', 'SQserver 実験一覧', SQ_ENTRY_COLUMNS, SQ_ENTRY_DISPLAY_TITLES),
             ('updates', '更新状況・履歴',
              ('server', 'share_name', 'status', 'direct_folders', 'analysis_started', 'analysis_pending', 'analysis_rate', 'folder_count', 'elapsed', 'started', 'finished', 'error', 'count_note', 'root'),
              ('サーバー', '共有名', '状態', '直下実験フォルダ総数', '解析着手数', '未着手数', '着手率', '確認フォルダ数（全階層）', '経過秒', '開始 UTC', '終了 UTC', '処理中の場所・エラー', '着手照合の確認事項', '共有')),
@@ -249,7 +295,13 @@ class App(tk.Tk):
         bnal_progress.create_panel(self, self.bnal_panel)
         self.plan_reload = plan_view.create_panel(self, self.plan_panel)
         ex_info_view.create_panel(self, self.ex_info_panel, on_saved=self.plan_reload)
+        self.id_map_focus, self.id_map_sq = id_map_view.create_panel(self, self.id_map_panel)
         self.refresh()
+
+    def open_id_map(self, keys):
+        """① Plan & Issues → 実験ID 対応: show only the 実験IDs of these (実験名, サンプル名)."""
+        self.main_tabs.select(self.id_map_panel)
+        self.id_map_focus(keys)
 
     def open_progress(self, stage, keys):
         """① Plan & Issues → ④ Progress: open Stage 1 (anal) or Stage 2 (bnal) on these (experiment, sample)."""
@@ -284,6 +336,7 @@ class App(tk.Tk):
         self.refresh_version += 1
         version = self.refresh_version
         path, search = self.db_path, self.search.get()
+        read_only = getattr(self, 'read_only', False)
         configured = [dict(source) for source in self.configured]
         self.db_label.config(text=f'読み込み中: {path}')
         self.reading = True
@@ -293,6 +346,14 @@ class App(tk.Tk):
         self.read_progress.start(15)
 
         def worker():
+            if read_only:      # the published ② list; the snapshot has no file tables to aggregate
+                try:
+                    saved = json.loads(view_snapshot.cache_path(path).read_text(encoding='utf-8'))
+                    self.events.put(('refresh', (version, filter_inventory(saved['inventory'], search), None)))
+                except (OSError, ValueError, KeyError, TypeError) as exc:
+                    self.events.put(('refresh', (version, None, f'公開された一覧を読めません（{path.parent}）。'
+                                                                f'開発PCの「台帳の共有」が動いているか確認してください。\n{exc}')))
+                return
             try:
                 cache = path.with_suffix('.view.json')
                 try:
@@ -389,6 +450,8 @@ class App(tk.Tk):
                     row['status'] = '実行中／終了未確認'
         self.display_rows = rows
         datasets = dict(sq_groups=groups, sq_entries=entries, updates=history)
+        if not self.search.get() and hasattr(self, 'id_map_sq'):  # 検索で絞った一覧では未整理を判定しない
+            self.id_map_sq(entries)
         if self.busy:
             datasets['updates'] = self.views['updates']['rows']
         else:

@@ -10,5 +10,5 @@ Shared changes must increment every affected application, including `workbench`
 when its behavior changes. Keep unrelated apps' versions unchanged.
 Run `python -m unittest shared.test_app_release shared.test_app_update` after release/update changes.
 Terminal selection is PC-local in ignored `.workbench/terminal.json`; never commit or distribute it.
-New PCs default to the user role with `exmanager`, `viewer`, and `chipdb` enabled, as requested by the user. Legacy standard exmanager-only and exmanager/viewer profiles also enable Chip Atlas; preserve custom selections and explicit version-3 choices. This development PC is explicitly configured locally.
+New PCs default to the user role with `exmanager`, `viewer`, `chipdb`, and `database` enabled, as requested by the user; on user terminals `database` is read-only and opens the snapshot that `database/publish.py` writes to `D:\Qstatus\database`. Legacy standard profiles (exmanager-only and exmanager/viewer before version 3, exmanager/viewer/chipdb before version 4) also get the current default; preserve custom selections and explicit version-4 choices. This development PC is explicitly configured locally.
 After terminal or deployment changes also run `shared.test_terminal_profile` and `shared.test_update_checkout`.

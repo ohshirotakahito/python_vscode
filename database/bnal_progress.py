@@ -1208,8 +1208,9 @@ def create_panel(parent, window):
     ttk.Button(actions, text='DBを再読込', command=reload_db).pack(side='left', padx=6)
     ttk.Button(actions, text='台帳の BNAL 対象を選択', command=select_plan_targets).pack(side='left', padx=6)
     ttk.Checkbutton(actions, text='CSVにないBNAL@（一覧外）も表示', variable=show_extra).pack(side='left', padx=6)
-    ttk.Button(actions, text='選択サンプルのANAL/stockedをANALへ戻す…', command=restore_selected).pack(side='left', padx=(24, 0))
-    ttk.Button(actions, text='選択サンプルのANAL旧世代をANAL/oldへ…', command=move_old_selected).pack(side='left', padx=6)
+    if not getattr(parent, 'read_only', False):   # ユーザー端末ではサーバー上のフォルダを動かさない
+        ttk.Button(actions, text='選択サンプルのANAL/stockedをANALへ戻す…', command=restore_selected).pack(side='left', padx=(24, 0))
+        ttk.Button(actions, text='選択サンプルのANAL旧世代をANAL/oldへ…', command=move_old_selected).pack(side='left', padx=6)
     def focus(keys):
         """From ① Plan & Issues: select these (experiment, sample) and show them with the ledger's SEQlist."""
         sample_filter.set('')

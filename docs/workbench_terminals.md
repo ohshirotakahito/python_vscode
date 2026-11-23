@@ -22,13 +22,17 @@ GitとPython、および使用する各アプリの依存パッケージをイ�
 ```powershell
 git clone https://github.com/ohshirotakahito/python_vscode.git
 cd python_vscode
-python tools/terminal_setup.py --role user --apps exmanager viewer chipdb
+python tools/terminal_setup.py --role user --apps exmanager viewer chipdb database
 python launcher.py
 ```
 
-上の例では実験データ整理・TDMSビューア・Chip Atlasが利用可能です。設定時に管理者が端末ごとにアプリを選びます。
-未設定の端末もユーザー端末扱いで、この3アプリを利用できます。`--role user` だけを指定した場合も同じです。
-旧標準設定（実験データ整理のみ、または実験データ整理＋TDMSビューア）のユーザー端末も、更新後のランチャーを再起動するとChip Atlasが表示されます。
+上の例では実験データ整理・TDMSビューア・Chip Atlas・実験ファイルDBが利用可能です。設定時に管理者が端末ごとにアプリを選びます。
+未設定の端末もユーザー端末扱いで、この4アプリを利用できます。`--role user` だけを指定した場合も同じです。
+旧標準設定（実験データ整理のみ／実験データ整理＋TDMSビューア／実験データ整理＋TDMSビューア＋Chip Atlas）のユーザー端末も、更新後のランチャーを再起動すると Chip Atlas と実験ファイルDB が表示されます。
+
+ユーザー端末の実験ファイルDBは**閲覧専用**です。開発PCの「台帳の共有」（毎時）が `D:\Qstatus\database` に書き出す
+`inventory_view.sqlite3`（解析サーバーの集計）と `inventory_view.view.json`（SQserver の一覧）を読みます。
+サーバーの更新・⑤ File Ops・ANALフォルダの移動・台帳と Ex Info の編集は表示しません。
 個別にカスタマイズされた設定は保持します。表示されない場合は上の設定コマンドを実行してください。
 明示的にアプリを空にするには `--role user --apps` と指定します。設定内容はランチャーの「端末設定」で確認できます。
 設定変更後はランチャーを再起動してください。

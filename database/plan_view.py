@@ -96,7 +96,7 @@ def create_panel(parent, window):
     bar.pack(fill='x')
     query, view = tk.StringVar(), tk.StringVar(value='確認事項あり')
     owner = tk.StringVar(value=ALL_OWNERS)
-    ttk.Label(bar, text='絞り込み（実験 / サンプル）').pack(side='left')
+    ttk.Label(bar, text='絞り込み（実験名 / サンプル名）').pack(side='left')
     ttk.Entry(bar, textvariable=query, width=28).pack(side='left', padx=6)
     ttk.Label(bar, text='Owner').pack(side='left', padx=(8, 4))
     owner_box = ttk.Combobox(bar, textvariable=owner, state='readonly', width=20, values=(ALL_OWNERS,))
@@ -108,7 +108,9 @@ def create_panel(parent, window):
 
     edit = ttk.LabelFrame(window, text='選択したサンプルの台帳を変更（Ctrl / Shift で複数選択。「変更しない」の項目はそのまま）',
                           padding=8)
-    edit.pack(fill='x', padx=8)
+    read_only = getattr(parent, 'read_only', False)   # ユーザー端末: 台帳は見るだけ
+    if not read_only:
+        edit.pack(fill='x', padx=8)
     choice = {}
     for n, (key, label, width) in enumerate((('kind', '試料の種類', 10), ('bnal', 'BNAL', 10),
                                              ('seqlist', 'SEQlist', 34), ('bc', 'BC', 24))):
@@ -127,7 +129,7 @@ def create_panel(parent, window):
     ttk.Label(window, padding=(8, 0), wraplength=1300, style='Muted.TLabel',
               text='確認事項　赤＝矛盾（台帳と実際が食い違う・参照先がない）　黄＝設定不足（未分類・種類・SEQlist・BC）　'
                    '青＝作業待ち（BNAL 対象で ANAL 完了なのに BNAL 未開始）。BNAL@ フォルダが空のものは開始に数えません。'
-                   '行を右クリック（ダブルクリック）で ④ Progress を開く・解析サーバーから再取得。'
+                   '行を右クリック（ダブルクリック）で ④ Progress・実験ID 対応 を開く・解析サーバーから再取得。'
                    'SEQlist・BC は machinedb の表で、核酸・アミノ酸は中身で判定します。').pack(side='bottom', fill='x')
     tree = parent.table(COLUMNS, TITLES, 18, True, parent=window)
     tree.configure(selectmode='extended')
@@ -187,6 +189,8 @@ def create_panel(parent, window):
         show()
 
     def apply():
+        if read_only:
+            return
         keys = list(tree.selection())
         changes = changes_for(keys, *(choice[k].get() for k in ('kind', 'bnal', 'seqlist', 'bc')))
         if not keys or not changes:
@@ -285,8 +289,10 @@ def create_panel(parent, window):
     menu = tk.Menu(window, tearoff=False)
     menu.add_command(label='④ Progress › Stage 1 · ANAL で開く', command=lambda: open_progress('anal'))
     menu.add_command(label='④ Progress › Stage 2 · BNAL で開く（台帳の SEQlist で集計）', command=lambda: open_progress('bnal'))
-    menu.add_separator()
-    menu.add_command(label='選択サンプルを解析サーバーから再取得', command=refresh)
+    menu.add_command(label='実験ID 対応 で開く（このサンプルの実験ID）', command=lambda: chosen() and parent.open_id_map(chosen()))
+    if not read_only:
+        menu.add_separator()
+        menu.add_command(label='選択サンプルを解析サーバーから再取得', command=refresh)
 
     def popup(event):
         item = tree.identify_row(event.y)

@@ -5,7 +5,8 @@ from pathlib import Path
 from shared.app_release import ROOT, load_releases
 
 PROFILE = ROOT / '.workbench' / 'terminal.json'
-DEFAULT_USER_APPS = ('exmanager', 'viewer', 'chipdb')
+DEFAULT_USER_APPS = ('exmanager', 'viewer', 'chipdb', 'database')
+PROFILE_VERSION = 4
 
 
 def load(path=PROFILE):
@@ -20,11 +21,12 @@ def load(path=PROFILE):
     if not isinstance(apps, list) or any(not isinstance(app, str) or app not in known for app in apps):
         raise ValueError('端末設定に不明なアプリが指定されています。')
     apps = list(dict.fromkeys(apps))
-    # Upgrade historical standard profiles; explicitly saved version-3 choices
-    # and other custom selections remain authoritative. Never rewrite on load.
+    # Upgrade historical standard profiles (each was the default of its time) to today's default;
+    # custom selections and anything saved as version 4 remain authoritative. Never rewrite on load.
     version = data.get('profile_version', 1)
     standard = ((version == 1 and apps == ['exmanager']) or
-                (version in (1, 2) and apps == ['exmanager', 'viewer']))
+                (version in (1, 2) and apps == ['exmanager', 'viewer']) or
+                (version in (1, 2, 3) and sorted(apps) == ['chipdb', 'exmanager', 'viewer']))
     if data['role'] == 'user' and standard:
         apps = list(DEFAULT_USER_APPS)
     return {'role': data['role'], 'apps': apps}
@@ -45,7 +47,7 @@ def save(role, apps, path=PROFILE):
     known = set(load_releases()['apps']) - {'workbench'}
     if role not in ('developer', 'user') or any(app not in known for app in apps):
         raise ValueError('端末の役割またはアプリIDが不正です。')
-    data = {'profile_version': 3, 'role': role, 'apps': list(dict.fromkeys(apps))}
+    data = {'profile_version': PROFILE_VERSION, 'role': role, 'apps': list(dict.fromkeys(apps))}
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix('.tmp')
     temporary.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')

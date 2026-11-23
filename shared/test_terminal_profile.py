@@ -15,7 +15,8 @@ class TerminalTests(unittest.TestCase):
         self.assertTrue(profile.allowed('exmanager', data))
         self.assertTrue(profile.allowed('viewer', data))
         self.assertTrue(profile.allowed('chipdb', data))
-        self.assertEqual(data['apps'], ['exmanager', 'viewer', 'chipdb'])
+        self.assertEqual(data['apps'], ['exmanager', 'viewer', 'chipdb', 'database'])
+        self.assertTrue(profile.allowed('database', data))
         self.assertFalse(profile.allowed('analyzer', data))
 
     def test_legacy_standard_user_profile_adds_viewer_without_rewriting_file(self):
@@ -23,7 +24,7 @@ class TerminalTests(unittest.TestCase):
             path = Path(directory) / 'terminal.json'
             path.write_text(json.dumps({'role': 'user', 'apps': ['exmanager']}), encoding='utf-8')
             before = path.read_bytes()
-            self.assertEqual(profile.load(path)['apps'], ['exmanager', 'viewer', 'chipdb'])
+            self.assertEqual(profile.load(path)['apps'], list(profile.DEFAULT_USER_APPS))
             self.assertEqual(path.read_bytes(), before)
 
     def test_custom_and_explicit_selections_are_preserved(self):
@@ -44,9 +45,23 @@ class TerminalTests(unittest.TestCase):
                 path.write_text(json.dumps({'profile_version': version, 'role': 'user',
                                              'apps': ['exmanager', 'viewer']}), encoding='utf-8')
                 before = path.read_bytes()
-                self.assertEqual(profile.load(path)['apps'], ['exmanager', 'viewer', 'chipdb'])
+                self.assertEqual(profile.load(path)['apps'], list(profile.DEFAULT_USER_APPS))
                 self.assertEqual(path.read_bytes(), before)
             path.write_text(json.dumps({'profile_version': 2, 'role': 'user', 'apps': ['exmanager']}), encoding='utf-8')
+            self.assertEqual(profile.load(path)['apps'], ['exmanager'])
+
+    def test_three_app_standard_before_version_4_adds_database_but_explicit_choices_stay(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'terminal.json'
+            for version in (1, 2, 3):
+                path.write_text(json.dumps({'profile_version': version, 'role': 'user',
+                                            'apps': ['exmanager', 'viewer', 'chipdb']}), encoding='utf-8')
+                before = path.read_bytes()
+                self.assertEqual(profile.load(path)['apps'], list(profile.DEFAULT_USER_APPS))
+                self.assertEqual(path.read_bytes(), before)
+            profile.save('user', ['exmanager', 'viewer', 'chipdb'], path)      # chosen as version 4
+            self.assertEqual(profile.load(path)['apps'], ['exmanager', 'viewer', 'chipdb'])
+            path.write_text(json.dumps({'profile_version': 3, 'role': 'user', 'apps': ['exmanager']}), encoding='utf-8')
             self.assertEqual(profile.load(path)['apps'], ['exmanager'])
 
     def test_user_selection_and_developer_role(self):

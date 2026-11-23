@@ -330,7 +330,7 @@ def create_panel(parent, window):
     bar.pack(fill='x')
     query = tk.StringVar()
     incomplete_only = tk.BooleanVar(value=False)
-    ttk.Label(bar, text='絞り込み（実験 / サンプル）').pack(side='left')
+    ttk.Label(bar, text='絞り込み（実験名 / サンプル名）').pack(side='left')
     ttk.Entry(bar, textvariable=query, width=30).pack(side='left', padx=6)
     ttk.Checkbutton(bar, text='未完了のみ', variable=incomplete_only, command=lambda: show()).pack(side='left', padx=6)
     status = tk.StringVar(value='③ Analysis Servers で更新した保存済み情報から集計します（サーバーには接続しません）。')
@@ -430,10 +430,11 @@ def create_panel(parent, window):
     actions = ttk.Frame(bar)
     actions.pack(side='left', padx=(24, 0))
     ttk.Button(actions, text='DBを再読込', command=reload_db).pack(side='left')
-    ttk.Button(actions, text='選択行のANAL/stockedをANALへ戻す…', command=lambda: bnal_progress.restore_stocked(
-        parent, window, selected_rows(bnal_progress.restore_wanted), reload_db)).pack(side='left', padx=(24, 0))
-    ttk.Button(actions, text='選択行のANAL旧世代をANAL/oldへ…', command=lambda: bnal_progress.move_old_generations(
-        parent, window, selected_rows(bnal_progress.old_wanted), reload_db)).pack(side='left', padx=6)
+    if not getattr(parent, 'read_only', False):   # ユーザー端末ではサーバー上のフォルダを動かさない
+        ttk.Button(actions, text='選択行のANAL/stockedをANALへ戻す…', command=lambda: bnal_progress.restore_stocked(
+            parent, window, selected_rows(bnal_progress.restore_wanted), reload_db)).pack(side='left', padx=(24, 0))
+        ttk.Button(actions, text='選択行のANAL旧世代をANAL/oldへ…', command=lambda: bnal_progress.move_old_generations(
+            parent, window, selected_rows(bnal_progress.old_wanted), reload_db)).pack(side='left', padx=6)
     def focus(keys):
         """From ① Plan & Issues: show every row of these (experiment, sample) in the detail tab, selected."""
         wanted = set(keys)

@@ -429,13 +429,16 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
 
     selected_button = ttk.Button(controls, text='選択中のグループを更新',
                                  command=lambda: load((selected_group(),)) if selected_group() else None)
-    selected_button.pack(side='left', padx=4)
     all_button = ttk.Button(controls, text='全グループを更新', command=lambda: load(tuple(labels)))
-    all_button.pack(side='left', padx=4)
+    read_only = getattr(parent, 'read_only', False)   # ユーザー端末: 公開された保存済みデータを見るだけ
+    if not read_only:
+        selected_button.pack(side='left', padx=4)
+        all_button.pack(side='left', padx=4)
     refresh_button = ttk.Button(controls, text='DBを再表示', command=load)
     refresh_button.pack(side='left', padx=4)
     stop_button = ttk.Button(controls, text='更新を中止', command=cancel.set)
-    stop_button.pack(side='left', padx=4)
+    if not read_only:
+        stop_button.pack(side='left', padx=4)
     # BNAL@名は常に保存。tdms数はフォルダごとにサーバーへ1回アクセスするため、検索中の実験に限って任意で取得する
     count_bnal_tdms = tk.BooleanVar(value=True)
     ttk.Checkbutton(controls, text='BNAL内訳のTDMS数も取得（検索中の実験のみ）',
