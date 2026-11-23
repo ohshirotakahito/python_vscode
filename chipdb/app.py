@@ -21,7 +21,7 @@ from chipdb.comparison_view import ComparisonView
 from chipdb.experiment_view import ExperimentView
 
 ACCENT = '#dfb86b'
-HEADINGS = ['種別', '状態', '日付', '担当者', '実験 ID', '操作', 'GAP #']
+HEADINGS = ['種別', '状態', '日付', '測定者', '実験ID', '操作', 'GAP #']
 
 
 class App(tk.Tk):

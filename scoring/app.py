@@ -46,8 +46,10 @@ ALL = 'すべて'
 TABLE_LIMIT = 3000          # 表に出す行の上限（グラフは全部）
 LEDGER_SHOW = ('machine', 'name', 'experiment_at', 'era', 'plan', 'transfer', 'destination', 'anal_state',
                'exsv_count', 'exsv_mean', 'exsv_max', 'ac_last', 'gg_score', 'gg_missing', 'score_source', 'location')
-LEDGER_WIDTH = {'name': 300, 'plan': 220, 'destination': 260, 'gg_missing': 120, 'score_source': 110, 'location': 150,
-                'experiment_at': 120}
+# 実験一覧の列幅（px、利用者の指定で固定。ドラッグでは変えられない）
+LEDGER_WIDTH = {'machine': 58, 'name': 300, 'experiment_at': 120, 'era': 97, 'plan': 156, 'transfer': 72,
+                'destination': 162, 'anal_state': 85, 'exsv_count': 90, 'exsv_mean': 90, 'exsv_max': 90,
+                'ac_last': 100, 'gg_score': 97, 'gg_missing': 108, 'score_source': 74, 'location': 163}
 KIND_TITLES = {'EXSV': 'EXSV', 'AC': 'AC', 'AutoGG': 'Gap Generation (Auto GG)'}
 KIND_SHOW = {
     'EXSV': ('Source', 'Machine', 'Experimental ID', 'EXSV#', 'EXSV Time', 'EXSV Score', 'EXSV Score Detail',
@@ -70,12 +72,15 @@ def score_tag(value):
 class Table(ttk.Frame):
     """スクロールバー付きの Treeview。"""
 
-    def __init__(self, master, columns, titles, widths=None, height=12):
+    def __init__(self, master, columns, titles, widths=None, height=12, fixed=False):
         super().__init__(master)
         self.tree = ttk.Treeview(self, columns=columns, show='headings', height=height, selectmode='extended')
         for col, title in zip(columns, titles):
             self.tree.heading(col, text=title, command=lambda c=col: self.sort_by(c))
             self.tree.column(col, width=(widths or {}).get(col, 110), stretch=False, anchor='w')
+        if fixed:                                    # 見出しの境目のドラッグで列幅を変えさせない
+            self.tree.bind('<Button-1>', self._block_resize, add=True)
+            self.tree.bind('<Motion>', self._block_resize, add=True)
         self.tree.tag_configure('even', background=ui_theme.STRIPE)
         self.tree.tag_configure('great', background=ui_theme.row('success', 0.45))
         self.tree.tag_configure('good', background=ui_theme.row('success', 0.28))
@@ -91,6 +96,10 @@ class Table(ttk.Frame):
         self.columnconfigure(0, weight=1)
         self.columns = columns
         self._reverse = {}
+
+    def _block_resize(self, event):
+        if self.tree.identify_region(event.x, event.y) == 'separator':
+            return 'break'
 
     def fill(self, rows, tag_of=None, limit=None):
         """rows を表示する。limit を渡すと先頭（新しい順）からその数だけ（多すぎると Tk が重くなるため）。"""
@@ -242,7 +251,7 @@ class App(tk.Tk):
         ttk.Label(tab, text='1 行 = 1 実験 × 転送先の 1 サンプル（sq_transfers.csv と同じ単位）。スコアは再構成があればそれを、なければ計測時の Score.csv。'
                   '行を選ぶと下にその実験の全スコアを出します。').pack(anchor='w')
         titles = [experiment_ledger.TITLE_OF[c] for c in LEDGER_SHOW]
-        self.ledger_table = Table(tab, LEDGER_SHOW, titles, LEDGER_WIDTH, height=18)
+        self.ledger_table = Table(tab, LEDGER_SHOW, titles, LEDGER_WIDTH, height=18, fixed=True)
         self.ledger_table.pack(fill='both', expand=True, pady=(6, 4))
         self.ledger_table.tree.bind('<<TreeviewSelect>>', lambda e: self.show_experiment())
         self.detail = tk.Text(tab, height=10, wrap='none', font=(ui_theme.MONO, 9))

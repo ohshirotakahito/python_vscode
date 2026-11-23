@@ -364,3 +364,23 @@ def test_device_codes_follow_the_chip_id_table(tmp_path, monkeypatch):
                                'Source': score_store.RECONSTRUCTED}], tmp_path)
     assert score_store.remap_devices(rs.current_device, tmp_path) == {'AC': 1, 'EXSV': 0, 'AutoGG': 0}
     assert score_store.read('AC', tmp_path)[0]['Device Code'] == 'SC25-2115-09'
+
+
+def test_ledger_columns_have_fixed_widths_and_cannot_be_dragged():
+    tk = pytest.importorskip('tkinter')
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip('no display')
+    root.withdraw()
+    try:
+        from scoring import app
+        table = app.Table(root, app.LEDGER_SHOW, app.LEDGER_SHOW, app.LEDGER_WIDTH, fixed=True)
+        assert set(app.LEDGER_WIDTH) == set(app.LEDGER_SHOW)
+        for column in app.LEDGER_SHOW:
+            assert table.tree.column(column, 'width') == app.LEDGER_WIDTH[column]
+            assert not table.tree.column(column, 'stretch')
+        table.tree.identify_region = lambda x, y: 'separator'
+        assert table._block_resize(type('E', (), {'x': 0, 'y': 0})()) == 'break'
+    finally:
+        root.destroy()

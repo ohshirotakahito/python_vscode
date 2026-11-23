@@ -33,7 +33,7 @@ class ComparisonView(ttk.Frame):
         left, right = ttk.Frame(split, width=320), ttk.Frame(split)
         split.add(left, weight=0)
         split.add(right, weight=1)
-        ttk.Label(left, text='ChipID（Ctrl / Shiftで複数選択）').pack(anchor='w')
+        ttk.Label(left, text='チップID（Ctrl / Shiftで複数選択）').pack(anchor='w')
         self.search = tk.StringVar()
         ttk.Entry(left, textvariable=self.search).pack(fill='x', pady=5)
         self.search.trace_add('write', lambda *_: self.refresh_list())
@@ -41,7 +41,7 @@ class ComparisonView(ttk.Frame):
         listing.pack(fill='both', expand=True)
         self.chips = ttk.Treeview(listing, columns=('chip', *KINDS), show='headings', selectmode='extended')
         for key in ('chip', *KINDS):
-            self.chips.heading(key, text='ChipID' if key == 'chip' else key,
+            self.chips.heading(key, text='チップID' if key == 'chip' else key,
                                command=lambda k=key: self.sort_list(k))
             self.chips.column(key, width=140 if key == 'chip' else 43, anchor='w' if key == 'chip' else 'e')
         self.chips.grid(row=0, column=0, sticky='nsew')
@@ -150,8 +150,8 @@ class ComparisonView(ttk.Frame):
         summary_page, detail_page = ttk.Frame(tabs), ttk.Frame(tabs)
         tabs.add(summary_page, text='代表値一覧')
         tabs.add(detail_page, text='履歴明細（点をクリックして確認）')
-        self.representatives = self.make_table(summary_page, ('ChipID', 'X代表値', 'Y代表値', 'X件数', 'Y件数'))
-        self.details = self.make_table(detail_page, ('ChipID', '操作', '指標', '値', '日時', '日時の由来', '実験ID', 'GAP', '担当者', 'CSV行'))
+        self.representatives = self.make_table(summary_page, ('チップID', 'X代表値', 'Y代表値', 'X件数', 'Y件数'))
+        self.details = self.make_table(detail_page, ('チップID', '操作', '指標', '値', '日時', '日時の由来', '実験ID', 'GAP', '測定者', 'CSV行'))
         self.representatives.bind('<<TreeviewSelect>>', self.representative_selected)
         self.representatives.bind('<Double-1>', lambda e: self.open_point(self.representatives.identify_row(e.y)))
         pages = ttk.Frame(detail_page)
@@ -360,7 +360,7 @@ class ComparisonView(ttk.Frame):
                                   + f' | 代表値範囲による除外 {range_excluded}チップ'
                                   + (f' | 読み込みエラー: {" / ".join(self.errors)[:200]}' if self.errors else ''))
             if not self.histories:
-                c.create_text(30, 30, anchor='nw', text='左のChipID一覧から比較するチップを選択してください。', fill=theme.MUTED)
+                c.create_text(30, 30, anchor='nw', text='左のチップID一覧から比較するチップを選択してください。', fill=theme.MUTED)
             self.valid_configuration = True
         except ValueError as error:
             self.status.configure(text=f'設定を確認してください: {error}')

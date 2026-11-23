@@ -24,7 +24,7 @@ def load(path=None):
     for project in data['projects']:
         owners = project.get('owner_names', [])
         if not isinstance(owners, list) or any(not isinstance(n, str) for n in owners):
-            raise ValueError('Ex InfoのOwnerが不正です')
+            raise ValueError('Ex Infoの責任者が不正です')
     return data
 
 

@@ -55,6 +55,8 @@ def enrich(groups, entries):
                  if PureWindowsPath(info.get(field, '')) == container]
         valid = bool(codes) and not error
         for row in members:
+            if len(codes) == 1:     # 装置は装置コード（AXN1）で表示する。名前から読んだ AN#1 などは別名（docs/naming_rules.md）
+                row['machine'] = codes[0]
             row['analysis_state'] = ('着手済み' if any((code, row['name']) in history_keys for code in codes)
                                      else '未着手') if valid else '確認不可'
             dates = [first_dates[(code, row['name'])] for code in codes if (code, row['name']) in first_dates]

@@ -6,7 +6,7 @@
 
 材料（どれもサーバーには接続しない）:
     転送履歴   : Uploader.csv（LabVIEW 版）＋ Uploader_python.csv（exmanager）。実験ID → 転送先の実験名・サンプル名
-    転送の記録 : machinedb\\SEQ\\Transfers.jsonl。転送先の共有と試料・ブランク
+    転送の記録 : machinedb\\SEQ\\Transfers.jsonl。転送先の共有と計測区分（サンプル / ブランク）
     計画       : machinedb\\PLAN\\MeasurementLinks.jsonl（AXN の G PSET）。実験ID → Ex Info の実験・サンプル
 """
 import tkinter as tk
@@ -21,7 +21,7 @@ except ImportError:
 
 COLUMNS = ('experiment', 'sample', 'experimental_id', 'machine', 'kind', 'experiment_at', 'sq', 'state',
            'transferred', 'shares', 'plan')
-TITLES = ('実験名', 'サンプル名', '実験ID（測定フォルダ名）', '装置', '試料・ブランク', '実験日時', 'SQserver の測定フォルダ',
+TITLES = ('実験名', 'サンプル名', '実験ID（測定フォルダ名）', '装置', '計測区分', '実験日時', 'SQserver の測定フォルダ',
           '状態', '転送日時', '転送先の共有', '計画（Ex Info）')
 WIDTHS = dict(experiment=170, sample=140, experimental_id=330, machine=60, kind=90, experiment_at=130, sq=170,
               state=230, transferred=200, shares=170, plan=300)

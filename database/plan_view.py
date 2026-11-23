@@ -17,7 +17,7 @@ except ImportError:
 from shared import bnal_lists, catalog, ex_info_owners, machinedb, plan_check, rack_store, sample_plan, ui_theme  # noqa: E402
 
 COLUMNS = ('experiment', 'sample', 'owner', 'shares', 'anal', 'bnal_started', 'kind', 'bnal', 'seqlists', 'bc', 'issues', 'updated')
-TITLES = ('実験名', 'サンプル名', 'Owner（Ex Info）', '共有', 'ANAL（最も進んだ共有）', 'BNAL開始target数', '試料の種類', 'BNAL', 'SEQlist', 'BC',
+TITLES = ('実験名', 'サンプル名', '責任者（Ex Info）', '共有', 'ANAL（最も進んだ共有）', 'BNAL開始target数', 'サンプルの種類', 'BNAL', 'SEQlist', 'BC',
           '確認事項', '最終更新')
 WIDTHS = dict(experiment=170, sample=130, owner=150, shares=210, anal=150, bnal_started=110, kind=80, bnal=70, seqlists=180,
               bc=110, issues=330, updated=230)
@@ -29,8 +29,8 @@ VIEWS = {'すべて': lambda r: True, '確認事項あり': lambda r: r['issues'
 KEEP, NONE = '変更しない', 'なし'
 LEVEL_TAGS = {plan_check.CONFLICT: ('danger', 0.3), plan_check.MISSING: ('warning', 0.14),
               plan_check.WAITING: ('info', 0.2)}
-ALL_OWNERS = 'すべてのOwner'
-OWNER_STATES = {'unset': 'Owner未設定', 'unmatched': 'Ex Info未照合', 'ambiguous': '照合要確認'}
+ALL_OWNERS = 'すべての責任者'
+OWNER_STATES = {'unset': '責任者未設定', 'unmatched': 'Ex Info未照合', 'ambiguous': '照合要確認'}
 
 
 def owner_matches(row, selected):
@@ -98,7 +98,7 @@ def create_panel(parent, window):
     owner = tk.StringVar(value=ALL_OWNERS)
     ttk.Label(bar, text='絞り込み（実験名 / サンプル名）').pack(side='left')
     ttk.Entry(bar, textvariable=query, width=28).pack(side='left', padx=6)
-    ttk.Label(bar, text='Owner').pack(side='left', padx=(8, 4))
+    ttk.Label(bar, text='責任者').pack(side='left', padx=(8, 4))
     owner_box = ttk.Combobox(bar, textvariable=owner, state='readonly', width=20, values=(ALL_OWNERS,))
     owner_box.pack(side='left')
     ttk.Label(bar, text='表示').pack(side='left', padx=(10, 4))
@@ -112,7 +112,7 @@ def create_panel(parent, window):
     if not read_only:
         edit.pack(fill='x', padx=8)
     choice = {}
-    for n, (key, label, width) in enumerate((('kind', '試料の種類', 10), ('bnal', 'BNAL', 10),
+    for n, (key, label, width) in enumerate((('kind', 'サンプルの種類', 10), ('bnal', 'BNAL', 10),
                                              ('seqlist', 'SEQlist', 34), ('bc', 'BC', 24))):
         ttk.Label(edit, text=label).grid(row=0, column=n * 2, padx=(0 if n == 0 else 14, 4), sticky='w')
         choice[key] = tk.StringVar(value=KEEP)
@@ -176,7 +176,7 @@ def create_panel(parent, window):
             definitions = ex_info_owners.load()
         except (OSError, ValueError) as exc:
             definitions = dict(projects=[], samples=[], locations=[])
-            saved['owner_warning'] = f'　Ex InfoのOwnerを読めません: {exc}'
+            saved['owner_warning'] = f'　Ex Infoの責任者を読めません: {exc}'
         saved['rows'] = ex_info_owners.attach(saved['rows'], samples, definitions)
         names = sorted({n for row in saved['rows'] for n in row['owner_names']}, key=str.casefold)
         owner_box['values'] = (ALL_OWNERS, *names, *OWNER_STATES.values())

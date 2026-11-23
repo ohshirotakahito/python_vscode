@@ -26,7 +26,7 @@ class OwnerTests(TestCase):
         self.assertTrue(plan_view.owner_matches(b, plan_view.ALL_OWNERS))
         data['projects'][0]['owner_names'] = []
         a, _ = ex_info_owners.attach(rows, samples, data)
-        self.assertTrue(plan_view.owner_matches(a, 'Owner未設定'))
+        self.assertTrue(plan_view.owner_matches(a, '責任者未設定'))
 
     def test_same_names_on_another_share_do_not_assign_an_owner_and_conflicts_are_explicit(self):
         rows = [dict(experiment='E', sample='S')]

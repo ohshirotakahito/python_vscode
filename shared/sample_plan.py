@@ -1,6 +1,6 @@
 """サンプル台帳: サンプルごと（実験＋サンプル。共有は問わない）に人が決める解析の予定。
 
-    kind     : 試料の種類 '核酸' / 'アミノ酸'（BNAL で使う SEQlist・BC の種類が決まる）
+    kind     : サンプルの種類 '核酸' / 'アミノ酸'（BNAL で使う SEQlist・BC の種類が決まる）
     bnal     : BNAL に回すか 'target'（対象）/ 'excluded'（対象外）。無ければ未分類
     seqlists : 使う SEQlist の CSV 名のリスト
     bc       : 使う BC の CSV 名
@@ -44,7 +44,7 @@ def _check(fields):
         if value is None:
             continue
         if name == 'kind' and value not in KINDS:
-            raise ValueError(f'試料の種類は {"・".join(KINDS)} のどれかです: {value}')
+            raise ValueError(f'サンプルの種類は {"・".join(KINDS)} のどれかです: {value}')
         if name == 'bnal' and value not in BNAL:
             raise ValueError(f'BNAL の振り分けは target / excluded です: {value}')
         if name == 'seqlists' and not (isinstance(value, list) and all(isinstance(v, str) for v in value)):

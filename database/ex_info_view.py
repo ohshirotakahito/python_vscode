@@ -5,7 +5,7 @@ from tkinter import ttk, messagebox
 
 from shared import ex_info_links, ex_info_store
 
-ALL, UNSET = 'すべてのOwner', 'Owner未設定'
+ALL, UNSET = 'すべての責任者', '責任者未設定'
 
 
 def rows(data):
@@ -42,17 +42,17 @@ def create_panel(parent, window, on_saved=lambda: None):
     query, owner = tk.StringVar(), tk.StringVar(value=ALL)
     ttk.Label(bar, text='実験名・サンプル名・説明').pack(side='left')
     ttk.Entry(bar, textvariable=query, width=30).pack(side='left', padx=6)
-    ttk.Label(bar, text='Owner').pack(side='left', padx=(10, 4))
+    ttk.Label(bar, text='責任者').pack(side='left', padx=(10, 4))
     owners = ttk.Combobox(bar, textvariable=owner, state='readonly', width=22, values=(ALL, UNSET))
     owners.pack(side='left')
     ttk.Button(bar, text='再読み込み', command=lambda: reload()).pack(side='left', padx=8)
     read_only = getattr(parent, 'read_only', False)   # ユーザー端末: Ex Info の編集は AXN で行う
-    edit_button = ttk.Button(bar, text='Owner・説明を編集', command=lambda: edit())
+    edit_button = ttk.Button(bar, text='責任者・説明を編集', command=lambda: edit())
     if not read_only:
         edit_button.pack(side='left')
     ttk.Label(window, text=f'AXNと共通の台帳: {ex_info_links.LEDGER}', padding=(8, 2)).pack(anchor='w')
     columns = ('project', 'sample', 'owner', 'project_description', 'sample_description', 'medium', 'locations', 'active')
-    titles = ('実験名', 'サンプル名', 'Owner（実験共通）', '実験の説明', 'サンプルの説明', 'Medium', '登録した保存場所', '表示設定')
+    titles = ('実験名', 'サンプル名', '責任者（実験共通）', '実験の説明', 'サンプルの説明', '溶媒', '登録した保存場所', '表示設定')
     tree = parent.table(columns, titles, 18, True, parent=window)
     tree.configure(selectmode='browse')
     for col in columns:
@@ -70,7 +70,7 @@ def create_panel(parent, window, on_saved=lambda: None):
         if selected and tree.exists(selected[0]):
             tree.selection_set(selected[0])
         if saved['data'] is not None:
-            status.set(f"表示 {len(visible)} / {len(saved['rows'])} 行　Ownerは実験内の全サンプルに共通です。"
+            status.set(f"表示 {len(visible)} / {len(saved['rows'])} 行　責任者は実験内の全サンプルに共通です。"
                        '名前・保存場所は閲覧のみ。編集ではサーバーフォルダを変更しません。')
 
     def reload():
@@ -99,13 +99,13 @@ def create_panel(parent, window, on_saved=lambda: None):
         project = next(p for p in baseline['projects'] if p['key'] == row['project_key'])
         sample = next((s for s in baseline['samples'] if s['key'] == row['sample_key']), None)
         dialog = tk.Toplevel(window)
-        dialog.title('Ex Info — Owner・説明')
+        dialog.title('Ex Info — 責任者・説明')
         dialog.transient(parent)
         body = ttk.Frame(dialog, padding=12)
         body.pack(fill='both', expand=True)
         ttk.Label(body, text=row['project'] + (' / ' + row['sample'] if sample else '')).pack(anchor='w')
         inputs = {}
-        fields = [('owner_names', '実験のOwner（全サンプル共通・1行に1人）', '\n'.join(project.get('owner_names', []))),
+        fields = [('owner_names', '実験の責任者（全サンプル共通・1行に1人）', '\n'.join(project.get('owner_names', []))),
                   ('project_description', '実験の説明（全サンプル共通）', project.get('description', ''))]
         if sample:
             fields.append(('sample_description', '選択したサンプルの説明', sample.get('description', '')))

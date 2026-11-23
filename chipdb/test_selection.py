@@ -9,7 +9,7 @@ import unittest
 from unittest import mock
 
 from chipdb.app import App
-from chipdb.ledger_view import COLUMN_SETS, NO_HISTORY, ledger_rows, row_matches, sort_rows
+from chipdb.ledger_view import COLUMN_SETS, NO_HISTORY, USAGE_DURATION, ledger_rows, row_matches, sort_rows
 from chipdb.search import date_query
 
 
@@ -42,14 +42,16 @@ class LedgerRowTests(unittest.TestCase):
         record = summarize([line.split(',') for line in chip_csv('chip-a', 5).decode('cp932').splitlines()])
         entries = {measured: Entry(1, 1, record, ['2026-11-13'])}
         chips = [dict(code='chip-a', state='使用中', location='Shelf B', user='Bob', origin='SCREEN', aliases=['chip_A-old'],
-                      organization='Taniguchi lab'),
-                 dict(code='chip-new', state='保管中', description='spare')]
+                      organization='Taniguchi lab', use_started_on='2026-11-11'),
+                 dict(code='chip-new', state='保管中', description='spare', use_started_on='2026-11-11')]
         rows = {r['チップID']: r for r in ledger_rows([measured, pending], chips, entries, {measured})}
         self.assertEqual(rows['chip-a']['GAP#'], '5')
         self.assertEqual(rows['chip-a']['保管場所'], 'Shelf B')
         self.assertEqual(rows['chip-a']['ID確認'], '一致')
         self.assertEqual(rows['chip-new']['履歴'], NO_HISTORY)
         self.assertEqual(rows['chip-new']['GAP#'], '')
+        self.assertEqual(rows['chip-a'][USAGE_DURATION], '2日 10:00')
+        self.assertEqual(rows['chip-new'][USAGE_DURATION], '')
         match = lambda q: sorted(r['チップID'] for r in rows.values() if row_matches(r, q, date_query(q)))  # noqa: E731
         self.assertEqual((rows['chip-a']['製作者'], rows['chip-a']['主体']), ('SCREEN', 'Taniguchi lab'))
         self.assertEqual(match('Taniguchi'), ['chip-a'])      # 主体
@@ -64,6 +66,7 @@ class LedgerRowTests(unittest.TestCase):
         self.assertEqual(match(''), ['chip-a', 'chip-new'])
         for columns in COLUMN_SETS.values():
             self.assertEqual(columns[0], 'チップID')
+            self.assertEqual(columns[columns.index('EX Last Date') + 1], USAGE_DURATION)
         for reverse in (False, True):                          # 空欄（測定前）はどちらの向きでも最後
             self.assertEqual([r['チップID'] for r in sort_rows(list(rows.values()), 'GAP#', reverse)][-1], 'chip-new')
 

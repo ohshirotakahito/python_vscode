@@ -6,7 +6,7 @@ from chipdb.bulk import Draft
 from chipdb.summary_view import table
 from shared import ui_theme as theme
 
-HEADINGS = ['種別', '状態', '日付', '担当者', '実験 ID', '操作', 'GAP #']
+HEADINGS = ['種別', '状態', '日付', '測定者', '実験ID', '操作', 'GAP #']
 
 
 class BulkEditor(tk.Toplevel):

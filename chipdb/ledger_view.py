@@ -5,6 +5,7 @@
 列のまとまり（管理情報 / 測定の集計 / すべて）を切り替えて見る（2026-11-18）。
 """
 import csv
+from datetime import datetime
 from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
@@ -18,13 +19,16 @@ from shared import ui_theme as theme
 
 ACCENT = '#dfb86b'
 LEDGER_COLUMNS = ('チップID', 'ID修正', '状態', '保管場所', '使用者', '製作者', '主体', '作製日', '使用開始日', '履歴')
-STAT_COLUMNS = ('CSV内ChipID', 'ID確認', *COLUMNS[1:])
+USAGE_DURATION = '使用経過時間'
+LAST_DATE_INDEX = COLUMNS.index('EX Last Date')
+MEASUREMENT_COLUMNS = (*COLUMNS[1:LAST_DATE_INDEX + 1], USAGE_DURATION, *COLUMNS[LAST_DATE_INDEX + 1:])
+STAT_COLUMNS = ('CSV内ChipID', 'ID確認', *MEASUREMENT_COLUMNS)
 ALL_COLUMNS = LEDGER_COLUMNS + STAT_COLUMNS
 COLUMN_SETS = {
     # 工程の最新値（FC・MA・TA・CAL の Info1、AXN と同じ有効範囲）も管理情報と一緒に見る（2026-11-18、ユーザー）
     '管理情報': LEDGER_COLUMNS + ('GAP#', 'Ex#', 'Run#', 'FC Last', 'MA Last', 'TA Last', 'CAL Last',
-                               'EX Last Date', 'Machine', 'ID確認'),
-    '測定の集計': ('チップID', '履歴', 'ID確認', *COLUMNS[1:]),
+                               'EX Last Date', USAGE_DURATION, 'Machine', 'ID確認'),
+    '測定の集計': ('チップID', '履歴', 'ID確認', *MEASUREMENT_COLUMNS),
     'すべて': ALL_COLUMNS,
 }
 # 見出し（列の名前は summary の列名のまま。表示だけ短く・分かりやすく）
@@ -35,6 +39,18 @@ NUMERIC = {c for c in COLUMNS[1:] if c not in ('EX FIRST Date', 'EX Last Date', 
 NO_HISTORY = '測定前・履歴なし'
 READ_ERROR = '読み込みエラー'
 SEARCH_KEYS = ('code', 'state', 'location', 'user', 'owner', 'origin', 'organization', 'description')
+
+
+def usage_duration_minutes(start_date, last_used):
+    """使用開始日の午前0時から最終使用までの分数。計算できない場合は None。"""
+    try:
+        start = datetime.strptime(start_date, '%Y-%m-%d')
+        end = datetime.strptime(last_used, '%Y/%m/%d_%H:%M')
+    except (TypeError, ValueError):
+        return None
+    if end >= start:
+        return int((end - start).total_seconds() // 60)
+    return None
 
 
 def id_fix_text(code, table):
@@ -71,6 +87,12 @@ def ledger_rows(paths, chips, entries, history_paths, alias_table=None):
                     '_dates': entry.usage_dates if entry is not None else set(),
                     '_text': ' '.join(str(chip.get(key, '未登録' if key == 'state' else '')) for key in SEARCH_KEYS)
                     + ' ' + ' '.join(chip.get('aliases', []))})          # 直す前の表記（別名）でも探せる
+        minutes = usage_duration_minutes(row['使用開始日'], row['EX Last Date'])
+        if minutes is not None:
+            days, remainder = divmod(minutes, 24 * 60)
+            hours, minute = divmod(remainder, 60)
+            row[USAGE_DURATION] = f'{days}日 {hours:02d}:{minute:02d}'
+            row['_usage_minutes'] = minutes
         rows.append(row)
     return rows
 
@@ -92,6 +114,8 @@ def sort_rows(rows, column, reverse):
 
 def sort_key(column):
     def key(row):
+        if column == USAGE_DURATION:
+            return (0, row['_usage_minutes'], '')
         value = row.get(column, '')
         try:
             return (0, float(value), '')

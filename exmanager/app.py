@@ -14,7 +14,7 @@ from csv_editor import CsvEditor  # noqa: E402
 from destination_preview import DestinationPreview  # noqa: E402
 from shared import ex_info_links, sample_plan, ui_theme  # noqa: E402
 
-# サンプル台帳（machinedb）の項目。転送するときに試料の種類と BNAL に回すかを決めておく
+# サンプル台帳（machinedb）の項目。転送するときにサンプルの種類と BNAL に回すかを決めておく
 PLAN_KINDS = ('未設定', *sample_plan.KINDS)
 PLAN_BNAL = ('未分類', *sample_plan.BNAL.values())
 
@@ -146,7 +146,7 @@ class App(tk.Tk):
         destination_tab = ttk.LabelFrame(upper, text='2. 保存先の選択', padding=(0, 4, 0, 2))
         select = ttk.Frame(source_tab, padding=(0, 0, 0, 4))
         select.pack(fill='x')
-        for n, (key, label) in enumerate([('machine','装置'), ('selection','コピー元'), ('uploader','アップロード担当者')]):
+        for n, (key, label) in enumerate([('machine','装置'), ('selection','コピー元'), ('uploader','転送者')]):
             ttk.Label(select, text=label).grid(row=(n//4)*2, column=n%4, sticky='w')
             self.vars[key] = tk.StringVar()
             box = ttk.Combobox(select, textvariable=self.vars[key], state='readonly', width=27)
@@ -157,10 +157,10 @@ class App(tk.Tk):
         for key in ('machine', 'selection'):
             self.boxes[key].bind('<<ComboboxSelected>>', lambda event: self.show_cached_sources())
         ttk.Button(select, text='① コピー元一覧を更新', style='Primary.TButton', command=self.ask_sources).grid(row=1, column=3, sticky='w', padx=(12, 4))
-        ttk.Button(select, text='装置・担当者CSVを再読み込み', style='Conditional.TButton', command=self.load).grid(row=1, column=4, sticky='w', padx=4)
+        ttk.Button(select, text='装置表・メンバー表を再読み込み', style='Conditional.TButton', command=self.load).grid(row=1, column=4, sticky='w', padx=4)
         ttk.Button(select, text='保存履歴を開く', command=self.open_history_window).grid(row=1, column=5, sticky='w', padx=4)
         ttk.Button(select, text='装置CSVを閲覧・編集', command=lambda: self.edit_csv('machine')).grid(row=1, column=6, sticky='w', padx=4)
-        ttk.Button(select, text='担当者CSVを閲覧・編集', command=lambda: self.edit_csv('operator')).grid(row=1, column=7, sticky='w', padx=4)
+        ttk.Button(select, text='メンバー表を閲覧・編集', command=lambda: self.edit_csv('operator')).grid(row=1, column=7, sticky='w', padx=4)
         batch = ttk.Frame(source_tab)
         batch.pack(fill='x', padx=4, pady=(0, 4))
         ttk.Button(batch, text='全装置のRecent_Dataを更新', command=self.sources_all).pack(side='left', padx=4)
@@ -210,7 +210,7 @@ class App(tk.Tk):
         history_frame.rowconfigure(0, weight=1)
         history_frame.columnconfigure(0, weight=1)
         self.history_tree = ttk.Treeview(history_frame, columns=('date','experiment_at','experiment','sample','kind','operator','uploader'), show='headings', height=12)
-        for key, title, width in [('date','アップロード日時',160), ('experiment_at','実験日時',160), ('experiment','保存先実験',180), ('sample','サンプル',140), ('kind','区分',80), ('operator','実験担当者',130), ('uploader','アップロード担当者',150)]:
+        for key, title, width in [('date','アップロード日時',160), ('experiment_at','実験日時',160), ('experiment','保存先実験',180), ('sample','サンプル',140), ('kind','計測区分',80), ('operator','測定者',130), ('uploader','転送者',150)]:
             self.history_tree.heading(key, text=title)
             self.history_tree.column(key, width=width)
         self.history_tree.grid(row=0, column=0, sticky='nsew')
@@ -218,7 +218,7 @@ class App(tk.Tk):
         destination_tab.pack(fill='x', padx=10, pady=(8, 0))
         panel = ttk.Frame(destination_tab)
         panel.pack(fill='x')
-        fields = [('db', '装置・担当者CSVフォルダ', str(core.DB)), ('legacy', 'LabVIEW版履歴CSV', str(core.DB / 'Uploader.csv')), ('local', 'Python版履歴CSV', str(core.BASE / 'logs' / 'Uploader_python.csv')), ('root', '保存先解析ルート', r'\\Rackstation\analysis')]
+        fields = [('db', '装置表・メンバー表のフォルダ', str(core.DB)), ('legacy', 'LabVIEW版履歴CSV', str(core.DB / 'Uploader.csv')), ('local', 'Python版履歴CSV', str(core.BASE / 'logs' / 'Uploader_python.csv')), ('root', '保存先解析ルート', r'\\Rackstation\analysis')]
         self.vars['db'] = tk.StringVar(value=str(core.DB))
         fields = [field for field in fields if field[0] != 'db']
         for n, (key, label, default) in enumerate(fields):
@@ -243,7 +243,7 @@ class App(tk.Tk):
             ttk.Button(loaders, text=label + 'を閲覧・編集', command=lambda k=key: self.edit_csv(k)).pack(side='left', padx=3)
         select = ttk.Frame(destination_tab, padding=(0, 2, 0, 0))
         select.pack(fill='x')
-        for n, (key, label) in enumerate([('experiment','保存先実験'), ('sample','保存先サンプル'), ('kind','区分')]):
+        for n, (key, label) in enumerate([('experiment','保存先実験'), ('sample','保存先サンプル'), ('kind','計測区分')]):
             ttk.Label(select, text=label).grid(row=(n//4)*2, column=n%4, sticky='w')
             self.vars[key] = tk.StringVar()
             box = ttk.Combobox(select, textvariable=self.vars[key], state='readonly', width=27)
@@ -253,12 +253,12 @@ class App(tk.Tk):
         self.vars['kind'].set('Sample')
         self.boxes['experiment'].bind('<<ComboboxSelected>>', self.samples)
         self.boxes['sample'].bind('<<ComboboxSelected>>', lambda event: self.show_plan())
-        # サンプル台帳: 保存先サンプルの試料の種類・BNAL に回すか（変えるとすぐ台帳に保存する）
+        # サンプル台帳: 保存先サンプルのサンプルの種類・BNAL に回すか（変えるとすぐ台帳に保存する）
         plan_row = ttk.Frame(destination_tab, padding=(0, 2, 0, 4))
         plan_row.pack(fill='x')
         ttk.Label(plan_row, text='サンプル台帳').pack(side='left', padx=(4, 8))
         self.plan_vars = {}
-        for key, label, choices in (('kind', '試料の種類', PLAN_KINDS), ('bnal', 'BNAL', PLAN_BNAL)):
+        for key, label, choices in (('kind', 'サンプルの種類', PLAN_KINDS), ('bnal', 'BNAL', PLAN_BNAL)):
             ttk.Label(plan_row, text=label).pack(side='left', padx=(8, 4))
             self.plan_vars[key] = tk.StringVar()
             box = ttk.Combobox(plan_row, textvariable=self.plan_vars[key], values=choices, state='disabled', width=10)
@@ -385,7 +385,7 @@ class App(tk.Tk):
                 if key in ('machine', 'operator') else Path(self.vars[key].get()))
         def saved():
             self.current = None
-            label = {'legacy': 'LabVIEW版CSV', 'local': 'Python版CSV', 'machine': '装置CSV', 'operator': '担当者CSV'}[key]
+            label = {'legacy': 'LabVIEW版CSV', 'local': 'Python版CSV', 'machine': '装置表', 'operator': 'メンバー表'}[key]
             self.log(f'{label}を保存しました（バックアップを作成しました）')
             if key in ('machine', 'operator'):
                 self.load()
@@ -566,7 +566,7 @@ class App(tk.Tk):
             operators = data.get('operators', [])
             self.people = {f'{r[0]} ({r[1]})':r[1] for r in operators if len(r)>=2 and r[0] and r[1]}
             self.set_choices('uploader', list(self.people))
-            self.log(f'CSV読込: 装置 {len(self.machine_data)} 件 / 担当者 {len(self.people)} 件。保存先は「保存先一覧を読み込み」で取得してください。')
+            self.log(f'CSV読込: 装置 {len(self.machine_data)} 件 / メンバー {len(self.people)} 件。保存先は「保存先一覧を読み込み」で取得してください。')
             if 'history_sync' in data:
                 added, removed = data['history_sync']
                 self.log(f'履歴CSV同期: LabVIEW版CSVから {added} 件追加 / Python版CSVの重複 {removed} 件整理。')
@@ -630,7 +630,7 @@ class App(tk.Tk):
         plan_frame = ttk.LabelFrame(dialog, text='サンプル台帳（作成したサンプルすべてに登録）', padding=8)
         plan_frame.grid(row=5, column=0, columnspan=2, padx=12, sticky='ew')
         new_plan = {}
-        for n, (key, label, choices) in enumerate((('kind', '試料の種類', PLAN_KINDS), ('bnal', 'BNAL', PLAN_BNAL))):
+        for n, (key, label, choices) in enumerate((('kind', 'サンプルの種類', PLAN_KINDS), ('bnal', 'BNAL', PLAN_BNAL))):
             ttk.Label(plan_frame, text=label).grid(row=0, column=n * 2, padx=(0, 4), sticky='w')
             new_plan[key] = tk.StringVar(value=choices[0])
             ttk.Combobox(plan_frame, textvariable=new_plan[key], values=choices, state='readonly', width=10).grid(
@@ -900,7 +900,7 @@ class App(tk.Tk):
         if not selected or not all(v[k] for k in ('experiment','sample','uploader')):
             if selected and v['uploader']:
                 self.boxes['experiment'].focus_set()
-            messagebox.showinfo('選択不足', '実験・保存先・担当者を選択してください。')
+            messagebox.showinfo('選択不足', '実験・保存先・転送者を選択してください。')
             return
         if self.source_context != (v['machine'], v['selection']):
             messagebox.showinfo('一覧更新', 'コピー元一覧を更新してください。')
@@ -952,7 +952,7 @@ class App(tk.Tk):
         v = self.values()
         selected = self.tree.selection()
         if not selected or not v['uploader']:
-            messagebox.showinfo('選択不足', 'コピー元の実験とアップロード担当者を選択してください。')
+            messagebox.showinfo('選択不足', 'コピー元の実験と転送者を選択してください。')
             return
         if self.source_context != (v['machine'], v['selection']):
             messagebox.showinfo('一覧更新', 'コピー元一覧を更新してください。')
@@ -1056,7 +1056,7 @@ class App(tk.Tk):
         frame.columnconfigure(0, weight=1)
         tree = ttk.Treeview(frame, columns=('set', 'source', 'target', 'kind'), show='headings', selectmode='extended')
         for key, title, width in [('set', 'セット', 60), ('source', 'コピー元実験', 380),
-                                  ('target', '保存先サンプル', 500), ('kind', '区分', 90)]:
+                                  ('target', '保存先サンプル', 500), ('kind', '計測区分', 90)]:
             tree.heading(key, text=title)
             tree.column(key, width=width)
         tree.grid(row=0, column=0, sticky='nsew')
