@@ -3,8 +3,15 @@
   "apps": {
     "workbench": {
       "name": "Quantum Workbench",
-      "version": "0.7.0",
+      "version": "0.8.0",
       "releases": [
+        {
+          "version": "0.8.0",
+          "date": "2026-11-23",
+          "notes": [
+            "ユーザー端末の初期アプリにシグナル解析（ANAL（サーバー）と ANAL 結果ビューアのみ）を追加。未設定の端末と旧標準設定（実験データ整理・TDMSビューア・Chip Atlas・実験ファイルDB の組み合わせ）の端末で表示。個別に選んだ設定は保持。"
+          ]
+        },
         {
           "version": "0.7.0",
           "date": "2026-11-23",
@@ -476,8 +483,15 @@
     },
     "database": {
       "name": "実験ファイルDB",
-      "version": "0.5.1",
+      "version": "0.5.2",
       "releases": [
+        {
+          "version": "0.5.2",
+          "date": "2026-11-23",
+          "notes": [
+            "サンプル台帳の BNAL 設定候補とチェックで、SEQlist の CSV に明示された Peptide／Nucleotide の分類を使用する。"
+          ]
+        },
         {
           "version": "0.5.1",
           "date": "2026-11-23",
@@ -566,8 +580,43 @@
     },
     "analyzer": {
       "name": "シグナル解析",
-      "version": "0.3.5",
+      "version": "0.6.0",
       "releases": [
+        {
+          "version": "0.6.0",
+          "date": "2026-11-23",
+          "notes": [
+            "測定機（ユーザー端末）では ANAL（サーバー）と ANAL 結果ビューアだけを表示。一覧は開発PCが毎時公開する閲覧用DB（D:\\Qstatus\\database）を読み、操作は解析と「現状を調べる」に限定（DB 更新・全自動着手・T/stocked や ANAL/stocked の移動・整理・やり直しは開発PCのみ）。"
+          ]
+        },
+        {
+          "version": "0.5.2",
+          "date": "2026-11-23",
+          "notes": [
+            "LabVIEW で作成した BNAL 結果の解析条件・帰属点テーブルに長さの異なるチャンネルがあっても、結果ビューアで長い信号と帰属点を表示できるようにした。"
+          ]
+        },
+        {
+          "version": "0.5.1",
+          "date": "2026-11-23",
+          "notes": [
+            "サーバーでの BNAL 解析後に結果ビューアの実験・サンプル・target 一覧を自動更新し、新しく解析した実験を選べるようにした。"
+          ]
+        },
+        {
+          "version": "0.5.0",
+          "date": "2026-11-23",
+          "notes": [
+            "BNAL の「target リストを編集」に新規作成、既存リストへの target 追加、分類変更を集約。新規作成は空から始めるか、元リスト名を編集して選択行または全行を取り込める。"
+          ]
+        },
+        {
+          "version": "0.4.0",
+          "date": "2026-11-23",
+          "notes": [
+            "BNAL の target 作成で Peptide／Nucleotide を指定し、入力中の target を含む新しい CSV を SEQlist に保存すると自動で選択。既存の CSV も分類を変更できる。"
+          ]
+        },
         {
           "version": "0.3.5",
           "date": "2026-11-16",

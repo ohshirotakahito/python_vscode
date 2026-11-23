@@ -10,6 +10,7 @@ B@@ keeps the ANAL '#NNN' number, so a target resumes by analysing the ANAL numb
 ANAL/stocked (ANAL set aside) is not analysed; it is only reported.
 """
 import csv
+import io
 import os
 import re
 import shutil
@@ -182,9 +183,24 @@ def write_bc(path, src_path, levels):
         csv.writer(f, lineterminator="\r\n").writerows(rows)
 
 
-def write_targets(path, targets, append=False):
+def write_targets(path, targets, append=False, *, exclusive=False):
     """SEQlist csv rows name, sequence, length (append keeps the existing rows)."""
-    mode = "a" if append else "w"
+    if append:
+        with open(path, "a+b", opener=lambda name, flags: os.open(name, flags & ~os.O_CREAT)) as f:
+            f.seek(0)
+            existing = f.read()
+            try:
+                existing.decode("utf-8-sig")
+                encoding = "cp932" if existing.isascii() else "utf-8"
+            except UnicodeDecodeError:
+                encoding = "cp932"
+            with io.StringIO(newline="") as buffer:
+                csv.writer(buffer, lineterminator="\r\n").writerows(
+                    (name, seq, len(seq)) for name, seq in targets)
+                separator = "\r\n" if existing and not existing.endswith((b"\n", b"\r")) else ""
+                f.write((separator + buffer.getvalue()).encode(encoding, errors="replace"))
+        return
+    mode = "x" if exclusive else "w"
     with open(path, mode, newline="", encoding="cp932", errors="replace") as f:
         csv.writer(f, lineterminator="\r\n").writerows([name, seq, len(seq)] for name, seq in targets)
 
@@ -242,6 +258,14 @@ def bc_dir(seq_kind_name=None, root=None):
 def seq_files(kind, root=None):
     """SEQlist csv names of one kind ('Nucleotide' | 'Peptide') in the folder."""
     return list(bnal_lists.seq_files(seq_dir(kind, root), kind))
+
+
+def set_seq_kind(path, kind):
+    bnal_lists.set_seq_kind(path, kind)
+
+
+def seq_file_kinds(root):
+    return bnal_lists.seq_files(root)
 
 
 def bc_files(seq_kind_name, root=None):

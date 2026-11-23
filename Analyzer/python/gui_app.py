@@ -29,7 +29,7 @@ from PyQt6.QtGui import QColor, QFont, QIcon
 from PyQt6.QtWidgets import (
     QAbstractItemView, QApplication, QButtonGroup, QCheckBox, QComboBox, QCompleter, QDialog, QDoubleSpinBox,
     QFileDialog, QFormLayout, QFrame, QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel,
-    QLineEdit, QListWidget, QMainWindow, QMessageBox, QPlainTextEdit, QProgressBar, QPushButton,
+    QLineEdit, QListWidget, QMainWindow, QMenu, QMessageBox, QPlainTextEdit, QProgressBar, QPushButton,
     QRadioButton, QSizePolicy, QSpinBox, QSplitter, QStackedWidget, QTabWidget, QTableWidget, QTableWidgetItem,
     QTextBrowser,
     QVBoxLayout, QWidget,
@@ -401,6 +401,29 @@ SEQ_DIR = server_bnal.SEQ_DIR
 
 def settings():
     return QSettings("TotalAnalysis", "PythonGUI")
+
+
+def measurement_terminal():
+    """User terminals (測定機) get only ANAL（サーバー）and the ANAL viewer, reading the published snapshot;
+    PYVSCODE_ANALYZER_TERMINAL=1/0 overrides (as the database app's PYVSCODE_DATABASE_VIEWER)."""
+    if os.environ.get("PYVSCODE_ANALYZER_TERMINAL"):
+        return os.environ["PYVSCODE_ANALYZER_TERMINAL"] != "0"
+    from shared import terminal_profile
+    try:
+        return terminal_profile.load()["role"] != "developer"
+    except (OSError, ValueError):
+        return True
+
+
+TERMINAL = measurement_terminal()
+
+
+def inventory_db():
+    """The DB the sample lists read: the published read-only snapshot on terminals, else the chosen inventory."""
+    if TERMINAL:
+        from database import view_snapshot
+        return str(view_snapshot.view_db())
+    return settings().value("inventory_db", str(server_anal.DEFAULT_DB))
 
 
 def read_seq_csv(path):
@@ -1105,7 +1128,7 @@ class ServerAnalPage(QWidget):
                                                "T 直下の tdms を 1st Step で解析して T\\ANAL に保存"))
 
         db_row = QHBoxLayout()
-        self.db = QLineEdit(settings().value("inventory_db", str(server_anal.DEFAULT_DB)))
+        self.db = QLineEdit(inventory_db())
         b_db, b_reload = QPushButton("参照…"), QPushButton("DB を再読込")
         b_db.clicked.connect(self.choose_db)
         b_reload.clicked.connect(self.reload)
@@ -1119,6 +1142,8 @@ class ServerAnalPage(QWidget):
         db_row.addWidget(b_reload)
         db_row.addWidget(b_discover)
         lay.addLayout(db_row)
+        # 測定機: 一覧は公開DB（読むだけ）。解析と「現状を調べる」以外（DB 更新・移動・削除）は開発PCで行う
+        dev_only = [b_db, b_discover]
         self.db_info = QLabel("")
         self.db_info.setObjectName("subtitle")
         lay.addWidget(self.db_info)
@@ -1177,6 +1202,8 @@ class ServerAnalPage(QWidget):
             b.setToolTip(tip)
             b.clicked.connect(slot)
             sel.addWidget(b)
+            if "stocked" in text:
+                dev_only.append(b)
         self.b_check = QPushButton("現状を調べる")
         self.b_check.setToolTip("チェックしたサンプルの T・T/stocked・ANAL・ANAL/stocked をサーバーで読み（変更はしません）、"
                                 "未解析の数と、整理が必要なもの（T の A@@・空ファイル・退避・重複・番号の付け直し）を下の一覧に出します")
@@ -1193,6 +1220,7 @@ class ServerAnalPage(QWidget):
             "stocked 内で #番号が重なるものは新しい方だけ戻します。記録が残り、「整理の履歴…」から元に戻せます")
         self.b_restore_anal.clicked.connect(lambda: self.restore_stocked("ANAL"))
         sel.addWidget(self.b_restore_anal)
+        dev_only += [self.b_restore, self.b_restore_anal]
         sel.addStretch()
         self.count = QLabel("")
         sel.addWidget(self.count)
@@ -1207,6 +1235,7 @@ class ServerAnalPage(QWidget):
         self.update_db.setToolTip("解析したサンプルだけをサーバーで数え直し、実験ファイル データベースに保存します"
                                   "（データベースアプリの「更新」と同じ内容）")
         opt.addWidget(self.update_db)
+        dev_only.append(self.update_db)
         opt.addSpacing(20)
         opt.addWidget(QLabel("更新から"))
         opt.addWidget(self.settle)
@@ -1222,7 +1251,10 @@ class ServerAnalPage(QWidget):
         self.show_condition()
         lay.addLayout(opt)
 
-        auto = QHBoxLayout()
+        auto_box = QWidget()  # 全自動着手（整理を含む）と DB 更新：開発PCだけ
+        auto = QHBoxLayout(auto_box)
+        auto.setContentsMargins(0, 0, 0, 0)
+        dev_only.append(auto_box)
         self.b_auto = QPushButton("▶▶  全自動着手")
         self.b_auto.setObjectName("primary")
         self.b_auto.setToolTip("チェックした未着手・進行中のサンプルを順番に：T/stocked を T へ戻す → 整理できるものを整理"
@@ -1244,11 +1276,16 @@ class ServerAnalPage(QWidget):
         self.b_discard.clicked.connect(self.discard_auto)
         auto.addWidget(self.b_resume)
         auto.addWidget(self.b_discard)
-        lay.addLayout(auto)
+        lay.addWidget(auto_box)
 
-        self.run = RunPanel(self.finished, self.send)
+        self.run = RunPanel(self.finished, None if TERMINAL else self.send)
         self.run.button.clicked.connect(self.start)
         lay.addWidget(self.run, 2)
+        if TERMINAL:
+            self.update_db.setChecked(False)
+            self.db.setReadOnly(True)
+            for w in dev_only + self.status_dev_only:
+                w.hide()
         self.db_changed.connect(self.reload)
         self.samples_done.connect(self.uncheck)
         self.auto_changed.connect(self.show_resume)
@@ -1256,6 +1293,12 @@ class ServerAnalPage(QWidget):
         self.show_resume()
 
     # -- database -------------------------------------------------------------
+    def snapshot_note(self):
+        from database import view_snapshot
+        at = view_snapshot.published_at(self.db.text().strip())
+        return (f"一覧は開発PCが公開した閲覧用DB（{at or '公開日時不明'}・毎時更新）の値です。"
+                "ここでの解析は次の公開で一覧に反映されます")
+
     def choose_db(self):
         path, _ = QFileDialog.getOpenFileName(self, "inventory.sqlite3", self.db.text(), "SQLite (*.sqlite3 *.db)")
         if path:
@@ -1354,11 +1397,13 @@ class ServerAnalPage(QWidget):
             self.rows = []
             self.db_info.setText(f"データベースを読めません: {e}")
         else:
-            settings().setValue("inventory_db", path)
+            if not TERMINAL:
+                settings().setValue("inventory_db", path)
             dates = sorted(r["last_success"] for r in self.rows if r["last_success"])
             down = sorted({r["group"] for r in self.rows if not r["reachable"]})
             self.db_info.setText(f"{len(self.rows)} サンプル　DB 取得日時 (UTC) {dates[0][:16] if dates else '-'} 〜 "
-                                 f"{dates[-1][:16] if dates else '-'}　※ 一覧は保存済みの DB の値です（サーバーには接続しません）"
+                                 f"{dates[-1][:16] if dates else '-'}　※ "
+                                 + (self.snapshot_note() if TERMINAL else "一覧は保存済みの DB の値です（サーバーには接続しません）")
                                  + (f"　接続失敗: {', '.join(down)}" if down else ""))
         current = self.group.currentText()
         self.group.blockSignals(True)
@@ -1581,7 +1626,8 @@ class ServerAnalPage(QWidget):
         bl = QVBoxLayout(box)
         bl.setContentsMargins(0, 6, 0, 0)
         row = QHBoxLayout()
-        self.status_label = QLabel("現状: チェックしたサンプルで「現状を調べる」を押すと、整理が必要なものを一覧にします")
+        self.status_label = QLabel("現状: チェックしたサンプルで「現状を調べる」を押すと、整理が必要なものを一覧にします"
+                                   + ("（整理は開発PCで行います）" if TERMINAL else ""))
         row.addWidget(self.status_label, 1)
         self.only_todo = QCheckBox("未解析だけのものは隠す")
         self.only_todo.setChecked(False)
@@ -1610,6 +1656,7 @@ class ServerAnalPage(QWidget):
         b_hist.setToolTip("ここと実験ファイルDBで行った移動・削除の記録を一覧にし、選んだ操作を元に戻します")
         b_hist.clicked.connect(self.show_journals)
         row.addWidget(b_hist)
+        self.status_dev_only = [self.b_fix, b_all, b_redo, b_archive, b_hist]
         bl.addLayout(row)
         self.issue_table = QTableWidget(0, len(self.ISSUE_COLS))
         self.issue_table.setHorizontalHeaderLabels(self.ISSUE_COLS)
@@ -2262,17 +2309,35 @@ def colored_seq(seq, colors, size=10):
 
 
 class TargetDialog(QDialog):
-    """Create targets: type name + sequence, generate modified variants, save to a SEQlist csv."""
+    """Draft a new SEQlist CSV or add targets to the selected CSV."""
 
-    def __init__(self, parent, bc, seq_dir, current_csv, base=None):
+    def __init__(self, parent, seq_dir, current_csv, current_kind, bc_for_kind, *, new_list, base=None):
         super().__init__(parent)
-        self.setWindowTitle("target の作成")
+        self.setWindowTitle("新しい target リスト" if new_list else "既存リストに target を追加")
         self.resize(900, 620)
-        self.bc, self.seq_dir, self.current_csv = bc, Path(seq_dir), current_csv
-        self.colors = server_bnal.species(bc)
+        self.seq_dir, self.current_csv = Path(seq_dir), current_csv
+        self.bc_for_kind = bc_for_kind
+        self.initial_target = base
+        self.saved_kind = current_kind
         self.saved = None
         lay = QVBoxLayout(self)
         form = QFormLayout()
+        self.kind_box = QComboBox()
+        self.kind_box.addItems(["", *server_bnal.SEQ_KINDS])
+        if new_list:
+            self.source_box = QComboBox()
+            self.source_box.addItem("空のリストから作成", "")
+            for filename, kind in server_bnal.seq_file_kinds(self.seq_dir).items():
+                if kind:
+                    self.source_box.addItem(filename, kind)
+            self.filename = QLineEdit()
+            self.source_filename = ""
+            form.addRow("元リスト", self.source_box)
+            form.addRow("新しいファイル名", self.filename)
+            form.addRow("分類", self.kind_box)
+        else:
+            form.addRow("追加先", QLabel(f"{current_csv}（{current_kind}）"))
+            self.kind_box.setCurrentText(current_kind)
         self.name = QLineEdit(base[0] if base else "")
         self.seq = QLineEdit(base[1] if base else "")
         self.seq.setFont(QFont("Consolas", 11))
@@ -2290,7 +2355,6 @@ class TargetDialog(QDialog):
         row.addSpacing(20)
         row.addWidget(QLabel("修飾体を作る：文字"))
         self.mod_letter = QComboBox()
-        self.mod_letter.addItems([f"{b}  {n}" for b, n, *_ in bc if b != "B"])
         row.addWidget(self.mod_letter)
         row.addWidget(QLabel("位置（1始まり、カンマ区切り。空欄は置き換え元の文字の全位置）"))
         self.positions = QLineEdit()
@@ -2306,10 +2370,36 @@ class TargetDialog(QDialog):
         lay.addLayout(row)
         self.table = QTableWidget(0, 3)
         self.table.setHorizontalHeaderLabels(["target 名", "配列", "長さ"])
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.table.verticalHeader().setVisible(False)
-        lay.addWidget(self.table, 1)
+        tables = QSplitter(Qt.Orientation.Horizontal)
+        if new_list:
+            source_panel = QWidget()
+            source_layout = QVBoxLayout(source_panel)
+            source_layout.setContentsMargins(0, 0, 0, 0)
+            source_layout.addWidget(QLabel("元リストの target"))
+            self.source_table = QTableWidget(0, 2)
+            self.source_table.setHorizontalHeaderLabels(["target 名", "配列"])
+            self.source_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+            self.source_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+            self.source_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+            self.source_table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+            source_layout.addWidget(self.source_table)
+            source_buttons = QHBoxLayout()
+            self.copy_button, self.copy_all_button = buttons(
+                source_buttons, [("選択行を取り込む", self.copy_source_rows),
+                                 ("全行を取り込む", self.copy_all_source_rows)])
+            source_layout.addLayout(source_buttons)
+            tables.addWidget(source_panel)
+        draft = QWidget()
+        draft_layout = QVBoxLayout(draft)
+        draft_layout.setContentsMargins(0, 0, 0, 0)
+        draft_layout.addWidget(QLabel("新しいリストの target" if new_list else "追加する target"))
+        draft_layout.addWidget(self.table)
+        tables.addWidget(draft)
+        lay.addWidget(tables, 1)
         row = QHBoxLayout()
         buttons(row, [("選択行を削除", self.delete_rows)])
         row.addStretch()
@@ -2319,9 +2409,65 @@ class TargetDialog(QDialog):
         lay.addLayout(row)
         row = QHBoxLayout()
         row.addStretch()
-        buttons(row, [(f"{current_csv} に追加…" if current_csv else "（CSV 未選択）", self.append_csv),
-                      ("新しい CSV として保存…", self.save_new), ("閉じる", self.reject)])
+        save_button = ("新しい CSV として保存", self.save_new) if new_list else ("既存リストに追加…", self.append_csv)
+        buttons(row, [save_button, ("閉じる", self.reject)])
         lay.addLayout(row)
+        self.kind_box.currentTextChanged.connect(self.update_kind)
+        self.update_kind(self.kind_box.currentText())
+        if new_list:
+            self.source_box.currentIndexChanged.connect(self.load_source)
+            index = self.source_box.findText(current_csv)
+            if index > 0:
+                self.source_box.setCurrentIndex(index)
+            else:
+                self.load_source()
+
+    def load_source(self):
+        index = self.source_box.currentIndex()
+        filename = self.source_box.currentText() if index > 0 else ""
+        if self.filename.text() == self.source_filename:
+            self.filename.setText(filename)
+        self.source_filename = filename
+        self.kind_box.setCurrentText(self.source_box.currentData() or "")
+        try:
+            self.source_rows = server_bnal.read_targets(self.seq_dir / filename) if filename else []
+        except (OSError, ValueError) as e:
+            self.source_rows = []
+            QMessageBox.warning(self, "元リスト", f"{filename} を読めませんでした。\n{e}")
+        self.source_table.clearSelection()
+        self.source_table.setRowCount(len(self.source_rows))
+        for row, (name, seq) in enumerate(self.source_rows):
+            self.source_table.setItem(row, 0, QTableWidgetItem(name))
+            self.source_table.setItem(row, 1, QTableWidgetItem(seq))
+        self.copy_button.setEnabled(bool(self.source_rows))
+        self.copy_all_button.setEnabled(bool(self.source_rows))
+
+    def copy_source_rows(self):
+        indexes = self.source_table.selectionModel().selectedRows()
+        self.copy_source(sorted(index.row() for index in indexes))
+
+    def copy_all_source_rows(self):
+        self.copy_source(range(len(self.source_rows)))
+
+    def copy_source(self, indexes):
+        names = {name for name, _ in self.rows()}
+        added = skipped = 0
+        for index in indexes:
+            name, seq = self.source_rows[index]
+            if name in names:
+                skipped += 1
+                continue
+            self.insert_target(name, seq)
+            names.add(name)
+            added += 1
+        self.msg.setText(f"{added} 件を取り込み、同名 {skipped} 件をスキップ" if added or skipped
+                         else "取り込む行を選択してください")
+
+    def update_kind(self, kind):
+        bc = self.bc_for_kind(kind) if kind else []
+        self.colors = server_bnal.species(bc)
+        self.mod_letter.clear()
+        self.mod_letter.addItems([f"{b}  {n}" for b, n, *_ in bc if b != "B"])
         self.update_preview()
 
     @staticmethod
@@ -2343,18 +2489,24 @@ class TargetDialog(QDialog):
         if name in names:
             self.msg.setText(f"{name} はすでに一覧にあります")
             return
+        self.insert_target(name, seq)
+        self.msg.setText(f"{self.table.rowCount()} 件")
+
+    def insert_target(self, name, seq):
         r = self.table.rowCount()
         self.table.insertRow(r)
         self.table.setItem(r, 0, QTableWidgetItem(name))
         self.table.setItem(r, 1, QTableWidgetItem(seq))
         self.table.item(r, 1).setFont(QFont("Consolas", 10))
         self.table.setItem(r, 2, QTableWidgetItem(str(len(seq))))
-        self.msg.setText(f"{self.table.rowCount()} 件")
 
     def make_variants(self):
         name, seq = self.name.text().strip(), self.clean(self.seq.text())
         if not name or not seq:
             self.msg.setText("先に元の target 名と配列を入力してください")
+            return
+        if not self.mod_letter.currentText():
+            self.msg.setText("分類に対応する BC を選択してください")
             return
         letter = self.mod_letter.currentText().split()[0]
         text = self.positions.text().strip()
@@ -2367,7 +2519,7 @@ class TargetDialog(QDialog):
                 return
             pos = [i + 1 for i, ch in enumerate(seq) if ch == src]
         new = server_bnal.variants(name, seq, letter, pos)
-        if name not in [self.table.item(r, 0).text() for r in range(self.table.rowCount())]:
+        if (name, seq) != self.initial_target and name not in {n for n, _ in self.rows()}:
             self.add(name, seq)
         for n, s in new:
             self.add(n, s)
@@ -2381,11 +2533,15 @@ class TargetDialog(QDialog):
                 for r in range(self.table.rowCount()) if self.table.item(r, 0).text().strip()]
 
     def append_csv(self):
-        rows = self.rows()
-        if not rows or not self.current_csv:
+        rows = self.validated_rows()
+        if not rows:
             return
         path = self.seq_dir / self.current_csv
-        existing = {n for n, _ in server_bnal.read_targets(path)}
+        try:
+            existing = {n for n, _ in server_bnal.read_targets(path)}
+        except (OSError, ValueError) as e:
+            QMessageBox.warning(self, "target の追加", f"{path} を読めませんでした。\n{e}")
+            return
         dup = [n for n, _ in rows if n in existing]
         if dup:
             QMessageBox.warning(self, "target の作成", "すでに CSV にある名前です:\n" + "\n".join(dup[:10]))
@@ -2393,19 +2549,62 @@ class TargetDialog(QDialog):
         if QMessageBox.question(self, "target の作成", f"{path}\nに {len(rows)} 件を追加します。"
                                 "（共有フォルダのファイルです）よろしいですか？") != QMessageBox.StandardButton.Yes:
             return
-        server_bnal.write_targets(path, rows, append=True)
+        try:
+            server_bnal.write_targets(path, rows, append=True)
+        except OSError as e:
+            QMessageBox.warning(self, "target の追加", f"{path} に追加できませんでした。\n{e}")
+            return
         self.saved = self.current_csv
         self.accept()
 
-    def save_new(self):
+    def validated_rows(self):
         rows = self.rows()
+        name, seq = self.name.text().strip(), self.clean(self.seq.text())
+        if (name, seq) != self.initial_target and (name, seq) not in rows and (name or seq):
+            if not name or not seq:
+                self.msg.setText("target 名と配列を入力してください")
+                return
+            rows.append((name, seq))
+        if not rows or any(not re.fullmatch(r"[A-Z]+", s) for _, s in rows):
+            self.msg.setText("target 名と配列（英字）を入力してください")
+            return
+        if len({n for n, _ in rows}) != len(rows):
+            self.msg.setText("同じ target 名が複数あります")
+            return
+        return rows
+
+    def save_new(self):
+        rows = self.validated_rows()
         if not rows:
             return
-        path, _ = QFileDialog.getSaveFileName(self, "新しい target CSV", str(self.seq_dir), "CSV (*.csv)")
-        if path:
-            server_bnal.write_targets(path, rows)
-            self.saved = Path(path).name if Path(path).parent == self.seq_dir else None
-            self.accept()
+        kind = self.kind_box.currentText()
+        if not kind:
+            self.msg.setText("新規 CSV の分類（Peptide または Nucleotide）を選択してください")
+            self.kind_box.setFocus()
+            return
+        filename = self.filename.text().strip()
+        stem = filename[:-4] if filename.lower().endswith(".csv") else filename
+        if (not stem or stem.endswith((".", " ")) or re.search(r'[<>:"/\\|?*\x00-\x1f]', stem)
+                or re.fullmatch(r"CON|PRN|AUX|NUL|(?:COM|LPT)[1-9¹²³]", stem.split(".")[0].rstrip(), re.I)):
+            self.msg.setText("有効な CSV ファイル名を入力してください")
+            return
+        path = self.seq_dir / (stem + ".csv")
+        try:
+            server_bnal.write_targets(path, rows, exclusive=True)
+            try:
+                server_bnal.set_seq_kind(path, kind)
+            except OSError:
+                path.unlink()
+                raise
+        except FileExistsError:
+            self.msg.setText(f"{path.name} はすでにあります。新しいファイル名を入力してください")
+            self.filename.setFocus()
+            return
+        except OSError as e:
+            QMessageBox.warning(self, "新しい target CSV", f"{path} に保存できませんでした。\n{e}")
+            return
+        self.saved, self.saved_kind = path.name, kind
+        self.accept()
 
 
 class HistoryDialog(QDialog):
@@ -2551,7 +2750,7 @@ class ServerBnalPage(QWidget):
             lambda k: (settings().setValue("seq_kind", k), self.overrides.clear(), self.fill_dirs()))
         f2.addWidget(self.kind_box)
         self.seq_dir = QLineEdit(settings().value("seqlist_folder", str(server_bnal.SEQ_DIR)))
-        self.seq_dir.setToolTip("SEQlist のフォルダ（machinedb の SEQlist。核酸・ペプチドは CSV の中身で見分けます）")
+        self.seq_dir.setToolTip("SEQlist のフォルダ（分類が未指定の CSV は配列から自動判定）")
         f2.addWidget(self.seq_dir, 1)
         buttons(f2, [("参照…", self.choose_seq_dir)])
         l2.addLayout(f2)
@@ -2560,7 +2759,17 @@ class ServerBnalPage(QWidget):
         self.csv_box.setMinimumWidth(200)
         self.csv_box.currentTextChanged.connect(self.load_targets)
         f3.addWidget(self.csv_box, 1)
-        buttons(f3, [("＋ target を作成…", self.create_targets)])
+        edit = QPushButton("target リストを編集")
+        menu = QMenu(edit)
+        menu.addAction("新しい target リストを作成…", lambda: self.edit_targets(new_list=True))
+        append_action = menu.addAction("既存リストに target を追加…", lambda: self.edit_targets(new_list=False))
+        kind_action = menu.addAction("既存リストの分類を変更…", self.change_csv_kind)
+        menu.aboutToShow.connect(lambda: (
+            append_action.setEnabled(bool(self.csv_box.currentText())),
+            kind_action.setEnabled(bool(self.csv_box.currentText())),
+        ))
+        edit.setMenu(menu)
+        f3.addWidget(edit)
         l2.addLayout(f3)
         self.target_table = check_table(self.TARGET_COLS)
         keep_widths(self.target_table, "bnal_target_widths", [75, 82, 35, 62, 63])
@@ -2753,6 +2962,19 @@ class ServerBnalPage(QWidget):
         except Exception:
             return []
 
+    def bc_for_kind(self, kind):
+        if kind == self.kind_box.currentText():
+            return self.bc()
+        folder = self.bc_folder()
+        files = server_bnal.bc_files(kind, folder)
+        if not files:
+            return []
+        selected = settings().value(f"bc_file/{kind}", "")
+        try:
+            return server_bnal.read_bc(folder / (selected if selected in files else files[0]))
+        except (OSError, ValueError):
+            return []
+
     def colors(self):
         return server_bnal.species(self.bc())
 
@@ -2848,12 +3070,44 @@ class ServerBnalPage(QWidget):
         self.checked_targets = set(names)
         self.fill_targets()
 
-    def create_targets(self):
+    def edit_targets(self, *, new_list):
+        filename = self.csv_box.currentText()
+        if not new_list and not filename:
+            return
         row = self.target_table.currentRow()
-        base = self.targets[row] if 0 <= row < len(self.targets) else None
-        dlg = TargetDialog(self, self.bc(), self.seq_folder(), self.csv_box.currentText(), base)
+        base = self.targets[row] if not new_list and 0 <= row < len(self.targets) else None
+        dlg = TargetDialog(self, self.seq_folder(), filename, self.kind_box.currentText(), self.bc_for_kind,
+                           new_list=new_list, base=base)
         if dlg.exec() and dlg.saved:
-            self.fill_dirs(select=dlg.saved)
+            checked = self.checked_targets
+            self.select_target_csv(dlg.saved_kind, dlg.saved)
+            if not new_list and self.csv_box.currentText() == filename:
+                self.set_targets(checked)
+
+    def change_csv_kind(self):
+        filename = self.csv_box.currentText()
+        if not filename:
+            return
+        kinds = list(server_bnal.SEQ_KINDS)
+        kind, ok = QInputDialog.getItem(self, "target CSV の分類", filename, kinds,
+                                        kinds.index(self.kind_box.currentText()), False)
+        if not ok:
+            return
+        try:
+            server_bnal.set_seq_kind(self.seq_folder() / filename, kind)
+        except OSError as e:
+            QMessageBox.warning(self, "target CSV の分類", f"分類を保存できませんでした。\n{e}")
+            return
+        self.select_target_csv(kind, filename)
+
+    def select_target_csv(self, kind, filename):
+        if kind != self.kind_box.currentText():
+            self.kind_box.blockSignals(True)
+            self.kind_box.setCurrentText(kind)
+            self.kind_box.blockSignals(False)
+            settings().setValue("seq_kind", kind)
+            self.overrides.clear()
+        self.fill_dirs(select=filename)
 
     # -- base table -----------------------------------------------------------------
     def bases_for(self, seq, bc=None):
@@ -3578,8 +3832,13 @@ class QueuePage(QWidget):
 # ---------------------------------------------------------------------------
 # viewer
 # ---------------------------------------------------------------------------
-def read_tables(t, names):
-    return {n: pd.DataFrame({c.name: c[:] for c in t[n].channels()}) for n in names if n in t}
+def read_tables(t, names, columns=None):
+    columns = columns or {}
+    return {
+        name: pd.DataFrame({c.name: c[:] for c in t[name].channels()
+                            if name not in columns or c.name in columns[name]})
+        for name in names if name in t
+    }
 
 
 def anal_folder(path):
@@ -3815,8 +4074,8 @@ class ViewerPage(QWidget):
     def pick_key(self):
         return "viewer_pick" if self.kind == "A" else "bviewer_pick"
 
-    def load_db(self):
-        db = settings().value("inventory_db", str(server_anal.DEFAULT_DB))
+    def load_db(self, *, open_selection=True):
+        db = inventory_db()
         try:
             rows = server_anal.load_samples(db)
             bnals = server_bnal.load_bnals(db) if self.kind == "B" else {}
@@ -3837,7 +4096,15 @@ class ViewerPage(QWidget):
         self.p_group.addItems(sorted({r["group"] for r in self.db_rows}))
         self.p_group.setCurrentText(last[0])
         self.p_group.blockSignals(False)
-        self.fill_exps(select=last[1], sample=last[2], target=last[3])
+        was_quiet = getattr(self, "quiet", False)
+        self.quiet = was_quiet or not open_selection
+        try:
+            self.fill_exps(select=last[1], sample=last[2], target=last[3])
+        finally:
+            self.quiet = was_quiet
+
+    def refresh_picker(self):
+        self.load_db(open_selection=False)
 
     def fill_exps(self, *_, select=None, sample=None, target=None):
         g = self.p_group.currentText()
@@ -4257,6 +4524,11 @@ class ViewerPage(QWidget):
 
     A_TABLES = ["S Table", "R Table", "B Table", "AR Table"]
     B_TABLES = ["LSP Table", "LTP Table", "BR Table", "BC Table"]
+    # LabVIEW can write repeated baseline values in unused BC and LTP channels.
+    B_COLUMNS = {
+        "BC Table": {"Sample name", "Sample Sequence", "Right Read MIN [n]"},
+        "LTP Table": {"L#", "Assinged Base", "Time [s]", "Raw data [pA]"},
+    }
 
     def open_file(self, path):
         known = dict(self.known_a)
@@ -4266,7 +4538,10 @@ class ViewerPage(QWidget):
             try:
                 with viewer_rows.tdms(path) as t:
                     kind = "B" if "BR Table" in t or Path(path).name.upper().startswith("B@@") else "A"
-                    tab = read_tables(t, self.B_TABLES if kind == "B" else self.A_TABLES)
+                    if kind == "B":
+                        tab = read_tables(t, self.B_TABLES, self.B_COLUMNS)
+                    else:
+                        tab = read_tables(t, self.A_TABLES)
                     data = t["Data"]["Ch1"][:] * 1000 if "Data" in t and "Ch1" in t["Data"] else np.array([])
                 return [(kind, tab, data)]
             except Exception as e:
@@ -4608,16 +4883,24 @@ class MainWindow(QMainWindow):
         sl = QVBoxLayout(side)
         sl.setContentsMargins(8, 10, 8, 16)
         self.stack = QStackedWidget()
-        self.viewer, self.bviewer = ViewerPage("A"), ViewerPage("B")
-        self.queue = QueuePage(self.show_result, self.queue_changed)
-        first = FirstStepPage(self.show_result, self.queue.add)
-        pages = [("①  ANAL（サーバー）", ServerAnalPage(self.show_result, self.queue.add)),
-                 ("①  1st Step（ファイル）", first),
-                 ("②  BNAL（サーバー）", ServerBnalPage(self.show_result, self.queue.add)),
-                 ("②  2nd Step（ファイル）", SecondStepPage(self.show_result, self.queue.add)),
-                 ("③  解析キュー", self.queue),
-                 ("◎  ANAL 結果ビューア", self.viewer),
-                 ("◎  BNAL 結果ビューア", self.bviewer)]
+        self.viewer = ViewerPage("A")
+        if TERMINAL:  # 測定機: ANAL（サーバー）と ANAL 結果ビューアだけ
+            self.bviewer = self.queue = None
+            pages = [("①  ANAL（サーバー）", ServerAnalPage(self.show_result, None)),
+                     ("◎  ANAL 結果ビューア", self.viewer)]
+        else:
+            self.bviewer = ViewerPage("B")
+            self.queue = QueuePage(self.show_result, self.queue_changed)
+            first = FirstStepPage(self.show_result, self.queue.add)
+            server_bnal_page = ServerBnalPage(self.show_result, self.queue.add)
+            server_bnal_page.db_changed.connect(self.bviewer.refresh_picker)
+            pages = [("①  ANAL（サーバー）", ServerAnalPage(self.show_result, self.queue.add)),
+                     ("①  1st Step（ファイル）", first),
+                     ("②  BNAL（サーバー）", server_bnal_page),
+                     ("②  2nd Step（ファイル）", SecondStepPage(self.show_result, self.queue.add)),
+                     ("③  解析キュー", self.queue),
+                     ("◎  ANAL 結果ビューア", self.viewer),
+                     ("◎  BNAL 結果ビューア", self.bviewer)]
         group = QButtonGroup(self)
         self.nav = []
         for i, (text, page) in enumerate(pages):
@@ -4655,8 +4938,9 @@ class MainWindow(QMainWindow):
         self.nav[i].setText(f"③  解析キュー ({pending})" if pending else "③  解析キュー")
 
     def show_result(self, path, a_files=()):
-        viewer = self.bviewer if Path(path).name.upper().startswith("B@@") else self.viewer
-        for a in a_files:
+        is_b = self.bviewer is not None and Path(path).name.upper().startswith("B@@")
+        viewer = self.bviewer if is_b else self.viewer
+        for a in a_files if self.bviewer is not None else ():
             self.bviewer.known_a[Path(a).name] = str(a)
         viewer.open(path)
         i = self.stack.indexOf(viewer)

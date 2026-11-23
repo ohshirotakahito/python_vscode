@@ -68,6 +68,19 @@ class SamplePlanTests(TestCase):
 
 
 class BnalListsTests(TestCase):
+    def test_explicit_csv_kind_can_override_detection_and_be_changed(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp, 'xx.csv')
+            original = b'example,ACGT,4\r\n'
+            path.write_bytes(original)
+            self.assertEqual(bnal_lists.seq_files(tmp), {'xx.csv': 'Nucleotide'})
+            bnal_lists.set_seq_kind(path, 'Peptide')
+            self.assertEqual(bnal_lists.seq_files(tmp, 'Peptide'), {'xx.csv': 'Peptide'})
+            self.assertEqual(bnal_lists.seq_files(tmp, 'Nucleotide'), {})
+            bnal_lists.set_seq_kind(path, 'Nucleotide')
+            self.assertEqual(bnal_lists.seq_files(tmp), {'xx.csv': 'Nucleotide'})
+            self.assertEqual(path.read_bytes(), original)
+
     def test_kinds_are_told_from_contents_in_one_folder(self):
         with TemporaryDirectory() as tmp:
             seq, bc = Path(tmp, 'SEQlist'), Path(tmp, 'BC')

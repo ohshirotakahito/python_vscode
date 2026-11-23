@@ -15,9 +15,10 @@ class TerminalTests(unittest.TestCase):
         self.assertTrue(profile.allowed('exmanager', data))
         self.assertTrue(profile.allowed('viewer', data))
         self.assertTrue(profile.allowed('chipdb', data))
-        self.assertEqual(data['apps'], ['exmanager', 'viewer', 'chipdb', 'database'])
+        self.assertEqual(data['apps'], ['exmanager', 'viewer', 'chipdb', 'database', 'analyzer'])
         self.assertTrue(profile.allowed('database', data))
-        self.assertFalse(profile.allowed('analyzer', data))
+        self.assertTrue(profile.allowed('analyzer', data))
+        self.assertFalse(profile.allowed('scoring', data))
 
     def test_legacy_standard_user_profile_adds_viewer_without_rewriting_file(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -59,10 +60,25 @@ class TerminalTests(unittest.TestCase):
                 before = path.read_bytes()
                 self.assertEqual(profile.load(path)['apps'], list(profile.DEFAULT_USER_APPS))
                 self.assertEqual(path.read_bytes(), before)
-            profile.save('user', ['exmanager', 'viewer', 'chipdb'], path)      # chosen as version 4
+            profile.save('user', ['exmanager', 'viewer', 'chipdb'], path)      # chosen as version 5
             self.assertEqual(profile.load(path)['apps'], ['exmanager', 'viewer', 'chipdb'])
             path.write_text(json.dumps({'profile_version': 3, 'role': 'user', 'apps': ['exmanager']}), encoding='utf-8')
             self.assertEqual(profile.load(path)['apps'], ['exmanager'])
+
+    def test_four_app_standard_before_version_5_adds_analyzer_but_explicit_choices_stay(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'terminal.json'
+            four = ['exmanager', 'viewer', 'chipdb', 'database']
+            for version in (1, 2, 3, 4):
+                path.write_text(json.dumps({'profile_version': version, 'role': 'user', 'apps': four}),
+                                encoding='utf-8')
+                before = path.read_bytes()
+                self.assertEqual(profile.load(path)['apps'], list(profile.DEFAULT_USER_APPS))
+                self.assertEqual(path.read_bytes(), before)
+            profile.save('user', four, path)                                    # chosen as version 5
+            self.assertEqual(profile.load(path)['apps'], four)
+            path.write_text(json.dumps({'profile_version': 4, 'role': 'developer', 'apps': four}), encoding='utf-8')
+            self.assertEqual(profile.load(path)['apps'], four)
 
     def test_user_selection_and_developer_role(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -1,12 +1,14 @@
 """BNAL の target リスト（SEQlist）とコンダクタンス値の表（BC）の読み込み（Analyzer・実験ファイルDB で共通）。
 
-どちらも machinedb にフォルダ分けせずに置かれている（LabVIEW と同じ）。核酸かアミノ酸かは中身で判定する:
+どちらも machinedb にフォルダ分けせずに置かれている（LabVIEW と同じ）。SEQlist は明示した分類を優先し、未指定なら中身で判定する:
     SEQlist: アミノ酸にしかない文字（D E I K L P Q V）を使う配列が過半数なら Peptide、それ以外は Nucleotide
     BC     : アミノ酸の3文字名（Ala など）が10個以上あれば Amino acid、それ以外は Base
 """
 import csv
+import os
 import re
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 from shared import machinedb
 
@@ -72,6 +74,35 @@ def bc_kind(bc):
     return 'Amino acid' if is_amino(bc) else 'Base'
 
 
+def _seq_kind_path(path):
+    return Path(path).with_suffix('.csv.kind')
+
+
+def set_seq_kind(path, kind):
+    """Save the explicit group beside the CSV so all clients see the same group."""
+    if kind not in SEQ_KINDS:
+        raise ValueError(kind)
+    destination = _seq_kind_path(path)
+    f = NamedTemporaryFile(mode='w', encoding='ascii', dir=destination.parent, delete=False)
+    temporary = Path(f.name)
+    try:
+        with f:
+            f.write(kind + '\n')
+        os.replace(temporary, destination)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def seq_file_kind(path):
+    try:
+        kind = _seq_kind_path(path).read_text(encoding='ascii').strip()
+    except (FileNotFoundError, UnicodeDecodeError):
+        kind = None
+    if kind in SEQ_KINDS:
+        return kind
+    return seq_kind(read_targets(path))
+
+
 def _files(folder, kind_of):
     out = {}
     for path in sorted(Path(folder).glob('*.csv'), key=lambda p: p.name.casefold()):
@@ -84,7 +115,7 @@ def _files(folder, kind_of):
 
 def seq_files(folder=None, kind=None):
     """{csv name: 'Nucleotide' | 'Peptide' | None} in the SEQlist folder; with kind, only that kind."""
-    files = _files(folder or machinedb.SEQLIST, lambda p: seq_kind(read_targets(p)))
+    files = _files(folder or machinedb.SEQLIST, seq_file_kind)
     return {n: k for n, k in files.items() if kind is None or k == kind}
 
 

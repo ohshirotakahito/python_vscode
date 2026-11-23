@@ -5,8 +5,8 @@ from pathlib import Path
 from shared.app_release import ROOT, load_releases
 
 PROFILE = ROOT / '.workbench' / 'terminal.json'
-DEFAULT_USER_APPS = ('exmanager', 'viewer', 'chipdb', 'database')
-PROFILE_VERSION = 4
+DEFAULT_USER_APPS = ('exmanager', 'viewer', 'chipdb', 'database', 'analyzer')
+PROFILE_VERSION = 5
 
 
 def load(path=PROFILE):
@@ -22,11 +22,12 @@ def load(path=PROFILE):
         raise ValueError('端末設定に不明なアプリが指定されています。')
     apps = list(dict.fromkeys(apps))
     # Upgrade historical standard profiles (each was the default of its time) to today's default;
-    # custom selections and anything saved as version 4 remain authoritative. Never rewrite on load.
+    # custom selections and anything saved as version 5 remain authoritative. Never rewrite on load.
     version = data.get('profile_version', 1)
     standard = ((version == 1 and apps == ['exmanager']) or
                 (version in (1, 2) and apps == ['exmanager', 'viewer']) or
-                (version in (1, 2, 3) and sorted(apps) == ['chipdb', 'exmanager', 'viewer']))
+                (version in (1, 2, 3) and sorted(apps) == ['chipdb', 'exmanager', 'viewer']) or
+                (version in (1, 2, 3, 4) and sorted(apps) == ['chipdb', 'database', 'exmanager', 'viewer']))
     if data['role'] == 'user' and standard:
         apps = list(DEFAULT_USER_APPS)
     return {'role': data['role'], 'apps': apps}
