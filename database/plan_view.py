@@ -14,7 +14,7 @@ try:
     from . import bnal_progress, rackstation_view
 except ImportError:
     import bnal_progress, rackstation_view
-from shared import bnal_lists, catalog, ex_info_owners, machinedb, plan_check, rack_store, sample_plan, ui_theme  # noqa: E402
+from shared import bnal_lists, catalog, ex_info_mismatch, ex_info_owners, machinedb, plan_check, rack_store, sample_plan, ui_theme  # noqa: E402
 
 COLUMNS = ('experiment', 'sample', 'owner', 'shares', 'anal', 'bnal_started', 'kind', 'bnal', 'seqlists', 'bc', 'issues', 'updated')
 TITLES = ('プロジェクト名', 'サンプル名', '責任者（Ex Info）', '共有', 'ANAL（最も進んだ共有）', 'BNAL開始target数', 'サンプルの種類', 'BNAL', 'SEQlist', 'BC',
@@ -104,6 +104,8 @@ def create_panel(parent, window):
     ttk.Label(bar, text='表示').pack(side='left', padx=(10, 4))
     ttk.Combobox(bar, textvariable=view, values=list(VIEWS), state='readonly', width=22).pack(side='left')
     ttk.Button(bar, text='台帳とDBを再読み込み', command=lambda: reload()).pack(side='left', padx=10)
+    mismatch_button = ttk.Button(bar, text='Ex Info 不一致…', command=lambda: show_mismatch())
+    mismatch_button.pack(side='left')
     ttk.Label(bar, text=f'台帳: {machinedb.SAMPLE_PLAN}', style='Muted.TLabel').pack(side='right')
 
     edit = ttk.LabelFrame(window, text='選択したサンプルの台帳を変更（Ctrl / Shift で複数選択。「変更しない」の項目はそのまま）',
@@ -161,6 +163,29 @@ def create_panel(parent, window):
                       if saved.get('conflicts') else '')
                    + saved.get('owner_warning', ''))
 
+    def show_mismatch():
+        """台帳のサンプルのうち、Ex Info の保存場所と 1 つに結び付かないもの（理由・直し方）。読むだけ。"""
+        rows = saved.get('mismatch', [])
+        dialog = tk.Toplevel(window)
+        dialog.title(f'サンプル台帳と Ex Info の不一致（{len(rows)} 件）')
+        dialog.geometry('1300x420')
+        ttk.Label(dialog, padding=8, wraplength=1250, justify='left',
+                  text='台帳のサンプル（プロジェクトフォルダ｜サンプルフォルダ）のうち、AXN の Ex Info に登録した保存場所と '
+                       '1 つに結び付かないものです。直すと、次の毎時の公開で結び付き（sample_key を記録）、この一覧から消えます。'
+                       f'同じ一覧を {publish_csv()} にも書き出しています。').pack(fill='x')
+        frame = ttk.Frame(dialog)
+        frame.pack(fill='both', expand=True, padx=8, pady=(0, 8))
+        table = ttk.Treeview(frame, columns=ex_info_mismatch.COLUMNS, show='headings')
+        for column, title, width in zip(ex_info_mismatch.COLUMNS, ex_info_mismatch.TITLES, (190, 150, 130, 300, 250, 420)):
+            table.heading(column, text=title)
+            table.column(column, width=width, stretch=column in ('server', 'hint'))
+        scroll = ttk.Scrollbar(frame, orient='vertical', command=table.yview)
+        table.configure(yscrollcommand=scroll.set)
+        table.pack(side='left', fill='both', expand=True)
+        scroll.pack(side='right', fill='y')
+        for row in rows:
+            table.insert('', 'end', values=[row[c] for c in ex_info_mismatch.COLUMNS])
+
     def reload():
         try:
             samples, bnals = bnal_progress.load_saved(parent.db_path)
@@ -178,6 +203,8 @@ def create_panel(parent, window):
             definitions = dict(projects=[], samples=[], locations=[])
             saved['owner_warning'] = f'　Ex Infoの責任者を読めません: {exc}'
         saved['rows'] = ex_info_owners.attach(saved['rows'], samples, definitions)
+        saved['mismatch'] = ex_info_mismatch.mismatches(plan, samples, definitions) if definitions['projects'] else []
+        mismatch_button.configure(text=f"Ex Info 不一致 {len(saved['mismatch'])} 件…")
         names = sorted({n for row in saved['rows'] for n in row['owner_names']}, key=str.casefold)
         owner_box['values'] = (ALL_OWNERS, *names, *OWNER_STATES.values())
         if owner.get() not in owner_box['values']:
@@ -308,3 +335,8 @@ def create_panel(parent, window):
     owner.trace_add('write', show)
     window.after(0, reload)
     return reload
+
+
+def publish_csv():
+    """Where the hourly publish writes the mismatch list (database/publish.py FILES['mismatch'])."""
+    return machinedb.ROOT.parent / 'database' / 'ex_info_mismatch.csv'

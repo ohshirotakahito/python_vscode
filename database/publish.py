@@ -15,7 +15,8 @@
     analysis_server_all.csv  解析サーバーのサンプルごとのANAL進捗（Analysis_serverタブと同じ）
     bnal_progress.csv        サンプル台帳で BNAL 対象のサンプルの target ごとのBNAL進捗
     sq_transfers.csv         SQserver Recent_Data の実験ごとの解析サーバーへの転送と ANAL進捗（transfer_ledger.py）
-    ledger_status.csv        上の4つをいつ・どのPCが書いたか、走査の結果
+    ex_info_mismatch.csv     サンプル台帳と AXN の Ex Info の不一致（理由・直し方）
+    ledger_status.csv        上の台帳をいつ・どのPCが書いたか、走査の結果
 """
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
@@ -53,9 +54,11 @@ STATUS_PATH = BASE / 'logs' / 'publish_status.json'
 LOG_PATH = BASE / 'logs' / 'publish.log'
 TASK_NAME = 'Qstatus Ledger Publish'
 FILES = dict(sq='sq_experiments.csv', analysis=rackstation_view.CSV_PATH.name, bnal='bnal_progress.csv',
-             transfer='sq_transfers.csv', view=view_snapshot.FILE, status='ledger_status.csv')
+             transfer='sq_transfers.csv', view=view_snapshot.FILE, mismatch='ex_info_mismatch.csv',
+             status='ledger_status.csv')
 LEDGER_TITLES = dict(sq='SQserver 実験ID一覧', analysis='解析サーバー ANAL進捗', bnal='BNAL進捗',
-                     transfer='SQserver→解析サーバー 転送・ANAL', view='閲覧用DB（ユーザー端末の実験ファイルDB）')
+                     transfer='SQserver→解析サーバー 転送・ANAL', view='閲覧用DB（ユーザー端末の実験ファイルDB）',
+                     mismatch='サンプル台帳と Ex Info の不一致')
 DEFAULT_SETTINGS = dict(
     enabled=False,           # タスク スケジューラからの実行（--scheduled）をするか
     scan_sq=True,            # 毎回 SQserver の Recent_Data を走査する
@@ -254,8 +257,20 @@ def export_view(db, configured, destination, cell):
     return view_snapshot.export(db, list(_inventory(db, configured)), destination)
 
 
+def export_mismatch(db, configured, destination, cell):
+    """Sample-ledger entries that match no single AXN Ex Info sample, with the reason and how to fix it
+    (shared.ex_info_mismatch). Written after link_samples, so linked entries are not listed."""
+    from shared import ex_info_mismatch, ex_info_owners
+    samples, _ = bnal_progress.load_saved(db)
+    rows = ex_info_mismatch.mismatches(sample_plan.load(), samples, ex_info_owners.load())
+    exported_at = now_utc()
+    write_csv(destination, ex_info_mismatch.TITLES + (EXPORTED_AT,),
+              [[row[key] for key in ex_info_mismatch.COLUMNS] + [exported_at] for row in rows])
+    return len(rows)
+
+
 EXPORTERS = dict(sq=export_sq, analysis=export_analysis, bnal=export_bnal, transfer=export_transfers,
-                 view=export_view)
+                 view=export_view, mismatch=export_mismatch)
 
 
 def export_all(db, configured, out_dir, scans):
