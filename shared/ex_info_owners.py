@@ -59,3 +59,22 @@ def attach(rows, samples, data):
             state = 'matched' if owners else 'unset'
         result.append(dict(row, owner_names=owners, owner_state=state))
     return result
+
+
+def member_names():
+    """メンバー表（machinedb の SEQ/Operator.csv）の名前。読めなければ空。"""
+    from shared import machinedb, seq_records
+    try:
+        rows = seq_records.rows(machinedb.SEQ / 'Operator.csv')
+    except (OSError, ValueError):
+        return []
+    return [r[0].strip() for r in rows if r and r[0].strip()]
+
+
+def candidates(data, members=None):
+    """責任者の候補。AXN の owner_picker.candidates と同じ決まり：メンバー表の名前・覚えている責任者
+    （ex_info.json の owner_names）・各プロジェクトの責任者。Other は除く。"""
+    members = member_names() if members is None else members
+    names = (set(members) | set(data.get('owner_names', []))
+             | {n for p in data.get('projects', []) for n in p.get('owner_names', [])})
+    return sorted({n.strip() for n in names if isinstance(n, str) and n.strip()} - {'Other'}, key=str.casefold)

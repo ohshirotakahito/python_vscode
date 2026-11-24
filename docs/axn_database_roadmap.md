@@ -70,7 +70,9 @@ SQserver（Recent_Data → Archived_Data → Stocked_Data）
 - **未整理の測定フォルダ**: SQserver Recent_Data に、解析サーバーへ転送していない測定フォルダが 116 件ある（実験ID 対応タブの黄色の行）。
 - **サンプル台帳が 2 つ**: Ex Info のサンプル（AXN）と sample_plan.json（実験ファイルDB の BNAL 対象・SEQlist・BC）が、名前でしかつながっていない。
 - **Python 版の転送履歴が共有されていない**: `Uploader_python.csv` は開発PC のリポジトリ内にあり、ユーザー端末では Transfers.jsonl（2026-11-13 以降）の分しか見えない。
-- **AXN の取り込みが開発PC のファイルを直接開く**: AXN Ex Info の取り込みは、既定で `python_vscode\database\inventory.sqlite3` を開く（`ex_info_gui.py`）。閲覧用DB を読む形にできる。
+- ~~**AXN の取り込みが開発PC のファイルを直接開く**~~: 2026-11-24 に AXN v0.9.2.23 で、既定を閲覧用DB `D:\Qstatus\database\inventory_view.sqlite3` に変更（なければ従来の DB）。
+- ~~**AXN が旧チップIDを知らない**~~: 2026-11-24 に AXN v0.9.2.23 で、`chip_aliases.json` とチップ台帳の `aliases` を読み、General PSET は旧名を新名で記録するように。
+- **責任者の入力**: 実験ファイルDB の Ex Info 編集は自由入力だった。2026-11-24 に AXN と同じ候補（メンバー表の名前・これまでの責任者）から選べるように（`shared/ex_info_owners.candidates`）。メンバー表にない責任者（Daicel など）はそのまま候補に残る。
 - **Archived_Data・Stocked_Data は未取得**: 古い実験ID が SQserver のどこにあるかはまだ分からない。
 
 ### 2-4. 名前の対照表（同じものの呼び名・項目名）
@@ -170,6 +172,7 @@ SQserver（Recent_Data → Archived_Data → Stocked_Data）
 | 2026-11-23 | 測定機からも実験ファイルDB を開きたい | 4-7 | 閲覧専用で実装済み |
 | 2026-11-23 | AXN のチップと実験DB などで使う名前を共通にし、重複を減らしたい。連携がうまくいっているか分からない | 4-9〜4-15 | 対照表（2-4）・つながりの数値（2-5）・重複（2-6）を作成。呼び名を 1 つずつ決める |
 | 2026-11-23 | 実験ID 対応タブに、G PSET とチップ履歴からチップ・計測した人・試料名を出せそう | 4-3・4-10 | 案（実験ID で G PSET とチップ履歴を引ける） |
+| 2026-11-24 | AXN のチップ・プロジェクト・サンプル情報とのつながりを点検。チップ台帳・Ex Info の書き方（lock・revision・backups）と項目は一致。穴は 3 つ：AXN が旧チップIDを知らない、取り込みが開発PC の DB を開く、責任者が自由入力 | 3 つとも対応（AXN v0.9.2.23・実験ファイルDB）。AXN 側はコミット待ち |
 | 2026-11-24 | AXN で決めた「プロジェクト → サンプル → 実験ID」を、実験ファイルDB・Chip Atlas・実験データ整理の用語にも広げて統一したい | 4-14 ほか | 移行計画を naming_rules.md に起案。「実験」は意味が 3 通り混ざっているので 1 つずつ直す |
 
 ---

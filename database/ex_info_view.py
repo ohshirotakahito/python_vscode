@@ -3,7 +3,7 @@ import copy
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-from shared import ex_info_links, ex_info_store
+from shared import ex_info_links, ex_info_owners, ex_info_store
 
 ALL, UNSET = 'すべての責任者', '責任者未設定'
 
@@ -115,6 +115,24 @@ def create_panel(parent, window, on_saved=lambda: None):
             widget.insert('1.0', value)
             widget.pack(fill='both', expand=True)
             inputs[key] = widget
+            if key == 'owner_names':
+                # AXN の Ex Info と同じ候補（メンバー表の名前・これまでの責任者）から選ぶ。新しい名前は上に直接入力
+                picker = ttk.Frame(body)
+                picker.pack(fill='x', pady=(4, 0))
+                ttk.Label(picker, text='候補から追加').pack(side='left')
+                choice = ttk.Combobox(picker, values=ex_info_owners.candidates(baseline), state='readonly', width=30)
+                choice.pack(side='left', padx=6)
+
+                def add_owner(text=widget, box=choice):
+                    name = box.get().strip()
+                    lines = [n.strip() for n in text.get('1.0', 'end-1c').splitlines() if n.strip()]
+                    if name and name.casefold() not in {n.casefold() for n in lines}:
+                        text.delete('1.0', 'end')
+                        text.insert('1.0', '\n'.join(lines + [name]))
+                    box.set('')
+
+                choice.bind('<<ComboboxSelected>>', lambda _: add_owner())
+                ttk.Label(picker, text='候補にない名前は上に直接入力（次から候補に出ます）').pack(side='left')
 
         def save():
             names = list(dict.fromkeys(n.strip() for n in inputs['owner_names'].get('1.0', 'end-1c').splitlines() if n.strip()))
