@@ -11,7 +11,7 @@ def sample_names(root, experiment):
     if not experiment:
         return []
     if experiment in ('.', '..') or re.search(r'[<>:"/\\|?*\x00-\x1f]', experiment):
-        raise ValueError('実験名に使用できない文字があります。')
+        raise ValueError('プロジェクト名に使用できない文字があります。')
     folder = Path(root) / experiment
     try:
         return sorted((p.name for p in folder.iterdir() if p.is_dir()), key=str.casefold)
@@ -24,7 +24,7 @@ def sample_names(root, experiment):
 
 class DestinationPreview(ttk.LabelFrame):
     def __init__(self, master, root, experiment, samples):
-        super().__init__(master, text='選択した実験の既存サンプル', padding=8)
+        super().__init__(master, text='選択したプロジェクトの既存サンプル', padding=8)
         self.root, self.experiment, self.samples = root, experiment, samples
         self.names = []
         self.loaded_for = None
@@ -33,7 +33,7 @@ class DestinationPreview(ttk.LabelFrame):
         self.events = queue.Queue()
         row = ttk.Frame(self)
         row.pack(fill='x')
-        self.status = ttk.Label(row, text='実験を選択してください。')
+        self.status = ttk.Label(row, text='プロジェクトを選択してください。')
         self.status.pack(side='left', fill='x', expand=True)
         ttk.Button(row, text='一覧を更新', command=self.schedule).pack(side='right')
         body = ttk.Frame(self)
@@ -86,8 +86,8 @@ class DestinationPreview(ttk.LabelFrame):
                     self.listbox.insert('end', name)
                 self.status.configure(text=(f'取得できません: {error}' if error else
                     f'{experiment}：{len(names)} サンプル' if names else
-                    '既存サンプルはありません（新しい実験・サンプルを作成できます）。' if experiment else
-                    '実験を選択または入力してください。'))
+                    '既存サンプルはありません（新しいプロジェクト・サンプルを作成できます）。' if experiment else
+                    'プロジェクトを選択または入力してください。'))
                 self.show_overlap()
         except queue.Empty:
             pass

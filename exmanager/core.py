@@ -639,7 +639,7 @@ def execute_batch(jobs, log=print, progress=None):
             try:
                 callback = None
                 if progress:
-                    callback = lambda phase, n, total, name: progress(f'セット {set_no}/{max(j[0] for j in jobs)}・実験 {number}/{len(jobs)} {phase}', n, total, name)
+                    callback = lambda phase, n, total, name: progress(f'セット {set_no}/{max(j[0] for j in jobs)}・実験ID {number}/{len(jobs)} {phase}', n, total, name)
                 execute(p, log, callback)
                 complete = record(p, spec['context'], spec['legacy'], spec['local'])
                 state = '完了' if complete else '警告あり'

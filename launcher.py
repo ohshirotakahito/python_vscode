@@ -50,7 +50,7 @@ class App:
 APPS = [
     App('7', 'Chip Atlas · チップDB', 'AXN共有チップDBの閲覧・履歴編集・数値トレンド解析',
         r'chipdb\app.py', '.', '\uE950', '#dfb86b'),
-    App('1', '実験データ整理', '元実験の転送セット作成・照合・コピーと履歴管理',
+    App('1', '実験データ整理', '測定フォルダ（実験ID）の転送セット作成・照合・コピーと履歴管理',
         r'exmanager\app.py', '.', '\uE8AB', ui_theme.EXMANAGER),
     App('2', '実験ファイルDB', 'ファイル保存状況・解析着手状況と、コピー・リネーム・フォルダ作成',
         r'database\app.py', '.', '\uEE94', ui_theme.DATABASE),

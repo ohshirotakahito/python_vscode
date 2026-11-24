@@ -125,7 +125,7 @@ class App(tk.Tk):
         self.boxes = {}
         self.pc = pc_config.load()
         self.restore_initial = True
-        ui_theme.header(self, '実験データ整理', '元実験の転送セット作成・照合・コピーと履歴管理',
+        ui_theme.header(self, '実験データ整理', '測定フォルダ（実験ID）の転送セット作成・照合・コピーと履歴管理',
                         '\uE8AB', ui_theme.EXMANAGER, on_close=self.close).pack(fill='x')
         self.main_split = tk.PanedWindow(self, orient='vertical', sashwidth=6, sashrelief='flat',
                                          background=ui_theme.BORDER, borderwidth=0, opaqueresize=True)
@@ -180,7 +180,7 @@ class App(tk.Tk):
         self.tree.heading('100khz', text='100kHz件数')
         self.tree.column('10khz', width=90, stretch=False, anchor='e')
         self.tree.column('100khz', width=90, stretch=False, anchor='e')
-        self.tree.heading('name', text='実験フォルダ（Ctrl / Shiftで複数選択）')
+        self.tree.heading('name', text='実験ID（Ctrl / Shiftで複数選択）')
         self.tree.heading('history', text='履歴件数')
         self.tree.heading('destinations', text='保存先数')
         self.tree.heading('latest', text='最終保存日時')
@@ -203,14 +203,14 @@ class App(tk.Tk):
         self.history_window.title('保存履歴')
         self.history_window.geometry('1100x400')
         self.history_window.protocol('WM_DELETE_WINDOW', self.history_window.withdraw)
-        self.history_label = ttk.Label(self.history_window, text='実験を選択すると保存履歴を表示します。')
+        self.history_label = ttk.Label(self.history_window, text='実験IDを選択すると保存履歴を表示します。')
         self.history_label.pack(anchor='w', padx=10, pady=8)
         history_frame = ttk.Frame(self.history_window)
         history_frame.pack(fill='both', expand=True, padx=10, pady=(0, 10))
         history_frame.rowconfigure(0, weight=1)
         history_frame.columnconfigure(0, weight=1)
         self.history_tree = ttk.Treeview(history_frame, columns=('date','experiment_at','experiment','sample','kind','operator','uploader'), show='headings', height=12)
-        for key, title, width in [('date','アップロード日時',160), ('experiment_at','実験日時',160), ('experiment','保存先実験',180), ('sample','サンプル',140), ('kind','計測区分',80), ('operator','測定者',130), ('uploader','転送者',150)]:
+        for key, title, width in [('date','アップロード日時',160), ('experiment_at','実験日時',160), ('experiment','保存先プロジェクト',180), ('sample','サンプル',140), ('kind','計測区分',80), ('operator','測定者',130), ('uploader','転送者',150)]:
             self.history_tree.heading(key, text=title)
             self.history_tree.column(key, width=width)
         self.history_tree.grid(row=0, column=0, sticky='nsew')
@@ -243,7 +243,7 @@ class App(tk.Tk):
             ttk.Button(loaders, text=label + 'を閲覧・編集', command=lambda k=key: self.edit_csv(k)).pack(side='left', padx=3)
         select = ttk.Frame(destination_tab, padding=(0, 2, 0, 0))
         select.pack(fill='x')
-        for n, (key, label) in enumerate([('experiment','保存先実験'), ('sample','保存先サンプル'), ('kind','計測区分')]):
+        for n, (key, label) in enumerate([('experiment','保存先プロジェクト'), ('sample','保存先サンプル'), ('kind','計測区分')]):
             ttk.Label(select, text=label).grid(row=(n//4)*2, column=n%4, sticky='w')
             self.vars[key] = tk.StringVar()
             box = ttk.Combobox(select, textvariable=self.vars[key], state='readonly', width=27)
@@ -268,7 +268,7 @@ class App(tk.Tk):
         self.plan_status = ttk.Label(plan_row, style='Muted.TLabel', text='保存先サンプルを選ぶと表示します')
         self.plan_status.pack(side='left', padx=12)
         ttk.Button(select, text='② 選択内容を転送セットに追加', style='Primary.TButton', command=self.add_set).grid(row=1, column=3, sticky='w', padx=(12, 4))
-        ttk.Button(select, text='保存先実験・サンプルを追加', style='Conditional.TButton', command=self.add_destination).grid(row=1, column=4, sticky='w', padx=4)
+        ttk.Button(select, text='保存先プロジェクト・サンプルを追加', style='Conditional.TButton', command=self.add_destination).grid(row=1, column=4, sticky='w', padx=4)
         ttk.Button(select, text='計画どおりにセットへ追加', style='Primary.TButton', command=self.add_planned_sets).grid(row=1, column=5, sticky='w', padx=4)
         self.registration_summary = ttk.Label(registered, text='3. 登録した組み合わせ：0セット — コピー元を複数選択 → 保存先サンプルを選択 → ②で追加。サンプルごとに繰り返せます。')
         self.registration_summary.pack(anchor='w', padx=10, pady=(4, 0))
@@ -279,7 +279,7 @@ class App(tk.Tk):
         self.batch_tree = ttk.Treeview(batch_frame, columns=('set','folders','source','target','ex_plan','plan','name_check','source10','target10','source100','target100','duplicates','nonduplicates','person'), show='headings', height=4, selectmode='extended')
         # 名前の照合が「不一致」「判定不可」のセットは行を橙にする（一致しなくても正しい場合があるので目安）
         self.batch_tree.tag_configure('name_mismatch', background=ui_theme.row('warning', 0.22), foreground=ui_theme.TEXT)
-        for key, title, width in [('set','セット',55),('folders','計測フォルダ数',100),('source','コピー元計測フォルダ（複数可）',330),('target','保存先サンプル（1か所）・区分',360),('ex_plan','計画との照合',130),('plan','台帳（種類・BNAL）',150),('name_check','名前の照合',170),('source10','元10kHz',90),('target10','先10kHz',90),('source100','元100kHz',90),('target100','先100kHz',90),('duplicates','内容重複確認',160),('nonduplicates','重複なし（TDMS）',180),('person','アップロード担当者',160)]:
+        for key, title, width in [('set','セット',55),('folders','計測フォルダ数',100),('source','コピー元計測フォルダ（複数可）',330),('target','保存先サンプル（1か所）・計測区分',360),('ex_plan','計画との照合',130),('plan','台帳（種類・BNAL）',150),('name_check','名前の照合',170),('source10','元10kHz',90),('target10','先10kHz',90),('source100','元100kHz',90),('target100','先100kHz',90),('duplicates','内容重複確認',160),('nonduplicates','重複なし（TDMS）',180),('person','アップロード担当者',160)]:
             self.batch_tree.heading(key, text=title)
             self.batch_tree.column(key, width=width)
         self.batch_tree.grid(row=0, column=0, sticky='nsew')
@@ -611,14 +611,14 @@ class App(tk.Tk):
         if self.busy:
             return
         dialog = tk.Toplevel(self)
-        dialog.title('保存先実験・サンプルの追加')
+        dialog.title('保存先プロジェクト・サンプルの追加')
         dialog.transient(self)
         dialog.grab_set()
         root = self.vars['root'].get()
         experiment = tk.StringVar(value=self.vars['experiment'].get())
         samples = tk.StringVar()
         ttk.Label(dialog, text=f'保存先: {root}').grid(row=0, column=0, columnspan=2, padx=12, pady=8, sticky='w')
-        ttk.Label(dialog, text='保存先実験（新規入力／既存から選択）').grid(row=1, column=0, padx=12, sticky='w')
+        ttk.Label(dialog, text='保存先プロジェクト（新規入力／既存から選択）').grid(row=1, column=0, padx=12, sticky='w')
         ttk.Combobox(dialog, textvariable=experiment, values=self.boxes['experiment']['values'], width=40).grid(row=1, column=1, padx=12, pady=6)
         ttk.Label(dialog, text='サンプル名（カンマ区切り）').grid(row=2, column=0, padx=12, sticky='w')
         ttk.Entry(dialog, textvariable=samples, width=43).grid(row=2, column=1, padx=12, pady=6)
@@ -735,7 +735,7 @@ class App(tk.Tk):
         self.source_context = None
         self.tree.delete(*self.tree.get_children())
         self.history_tree.delete(*self.history_tree.get_children())
-        self.history_label.configure(text='実験を選択すると保存履歴を表示します。')
+        self.history_label.configure(text='実験IDを選択すると保存履歴を表示します。')
         self.source_label.configure(text=text, foreground=ui_theme.TEXT)
 
     def show_cached_sources(self):
@@ -776,7 +776,7 @@ class App(tk.Tk):
         frame.rowconfigure(0, weight=1)
         frame.columnconfigure(0, weight=1)
         tree = ttk.Treeview(frame, columns=('name', '10khz', '100khz'), show='headings', height=12)
-        for column, title, width in [('name', '実験フォルダ', 420), ('10khz', '10kHz件数', 90), ('100khz', '100kHz件数', 90)]:
+        for column, title, width in [('name', '実験ID（測定フォルダ）', 420), ('10khz', '10kHz件数', 90), ('100khz', '100kHz件数', 90)]:
             tree.heading(column, text=title)
             tree.column(column, width=width, stretch=column == 'name', anchor='w' if column == 'name' else 'e')
         for row in folders:
@@ -784,7 +784,7 @@ class App(tk.Tk):
         tree.grid(row=0, column=0, sticky='nsew')
         self.add_scrollbars(frame, tree)
         ttk.Label(dialog, text='変更がなければ「前回の一覧を使う」を選んでください（履歴列は最新のCSVで表示します）。\n'
-                              '実験の追加や測定途中のフォルダがある場合は「再取得して更新」を選んでください。').pack(anchor='w', padx=12)
+                              '新しい測定フォルダや測定途中のフォルダがある場合は「再取得して更新」を選んでください。').pack(anchor='w', padx=12)
         buttons = ttk.Frame(dialog)
         buttons.pack(fill='x', padx=12, pady=12)
         def choose(rescan):
@@ -883,7 +883,7 @@ class App(tk.Tk):
             active = selected[-1] if selected else ''
         self.history_tree.delete(*self.history_tree.get_children())
         if not active:
-            self.history_label.configure(text='実験を選択すると保存履歴を表示します。')
+            self.history_label.configure(text='実験IDを選択すると保存履歴を表示します。')
             return
         name = self.tree.item(active, 'values')[0]
         records = self.source_histories.get(active, [])
@@ -900,7 +900,7 @@ class App(tk.Tk):
         if not selected or not all(v[k] for k in ('experiment','sample','uploader')):
             if selected and v['uploader']:
                 self.boxes['experiment'].focus_set()
-            messagebox.showinfo('選択不足', '実験・保存先・転送者を選択してください。')
+            messagebox.showinfo('選択不足', 'コピー元の実験ID・保存先・転送者を選択してください。')
             return
         if self.source_context != (v['machine'], v['selection']):
             messagebox.showinfo('一覧更新', 'コピー元一覧を更新してください。')
@@ -952,7 +952,7 @@ class App(tk.Tk):
         v = self.values()
         selected = self.tree.selection()
         if not selected or not v['uploader']:
-            messagebox.showinfo('選択不足', 'コピー元の実験と転送者を選択してください。')
+            messagebox.showinfo('選択不足', 'コピー元の実験IDと転送者を選択してください。')
             return
         if self.source_context != (v['machine'], v['selection']):
             messagebox.showinfo('一覧更新', 'コピー元一覧を更新してください。')
@@ -977,13 +977,13 @@ class App(tk.Tk):
                         + '\n'.join(f'・{name}: {reason}' for name, reason in skipped[:12])
                         + ('\n…' if len(skipped) > 12 else '')) if skipped else ''
         if not groups:
-            messagebox.showinfo('計画どおりにセットへ追加', '計画どおりに追加できる実験はありません。' + skipped_text)
+            messagebox.showinfo('計画どおりにセットへ追加', '計画どおりに追加できる実験IDはありません。' + skipped_text)
             return
         uploader, machine, selection = self.people[v['uploader']], v['machine'], v['selection']
         targets = [Path(root) / experiment / sample for root, experiment, sample, _ in groups]
 
         def checked(missing):
-            lines = [f'・{Path(root) / experiment / sample} [{kind}] ← {len(paths)}実験'
+            lines = [f'・{Path(root) / experiment / sample} [{kind}] ← {len(paths)}件の実験ID'
                      for (root, experiment, sample, kind), paths in groups.items()]
             text = f'次の {len(groups)} セットを追加します。\n' + '\n'.join(lines)
             if missing:
@@ -1001,8 +1001,8 @@ class App(tk.Tk):
                                           legacy=v['legacy'], local=v['local']))
                 if missing:
                     self.log('保存先フォルダ作成完了: ' + ' / '.join(map(str, missing)))
-                self.log(f'計画どおりにセットへ追加: {len(groups)}セット・{sum(map(len, groups.values()))}実験'
-                         + (f'（追加できなかった実験 {len(skipped)}件）' if skipped else ''))
+                self.log(f'計画どおりにセットへ追加: {len(groups)}セット・{sum(map(len, groups.values()))}件の実験ID'
+                         + (f'（追加できなかった実験ID {len(skipped)}件）' if skipped else ''))
                 self.refresh_sets()
 
             def create():
@@ -1055,7 +1055,7 @@ class App(tk.Tk):
         frame.rowconfigure(0, weight=1)
         frame.columnconfigure(0, weight=1)
         tree = ttk.Treeview(frame, columns=('set', 'source', 'target', 'kind'), show='headings', selectmode='extended')
-        for key, title, width in [('set', 'セット', 60), ('source', 'コピー元実験', 380),
+        for key, title, width in [('set', 'セット', 60), ('source', 'コピー元の実験ID', 380),
                                   ('target', '保存先サンプル', 500), ('kind', '計測区分', 90)]:
             tree.heading(key, text=title)
             tree.column(key, width=width)
@@ -1289,7 +1289,7 @@ class App(tk.Tk):
         jobs = self.current
         for _, _, spec in jobs:
             spec['context'].update(pc_id=self.pc['pc_id'], pc_name=self.pc['display_name'])
-        if not messagebox.askyesno('一括コピー開始', f'{len(self.sets)} セット / {len(jobs)} 実験を登録済みの保存先へコピーします。\n解析用ファイルは全内容が一致する保存先ファイルがあればスキップします。\nraw dataは実験フォルダ単位で保存します。開始しますか？'):
+        if not messagebox.askyesno('一括コピー開始', f'{len(self.sets)} セット / {len(jobs)} 件の実験IDを登録済みの保存先へコピーします。\n解析用ファイルは全内容が一致する保存先ファイルがあればスキップします。\nraw dataは実験フォルダ単位で保存します。開始しますか？'):
             return
         def work():
             return core.execute_batch(jobs, lambda s: self.events.put(('log',s)), progress=self.progress)
@@ -1310,7 +1310,7 @@ class App(tk.Tk):
             summary = '実行結果（全ファイル）：' + ' ／ '.join(f'{label} {counts.get(label, 0)}件' for label in ('コピー完了', '既存一致スキップ', '既存未検証スキップ', '停止箇所', '未処理'))
             self.plan_label.configure(text=summary)
             self.log(summary)
-            self.log('実験ごとの結果を確認してください。再実行する場合はコピー予定を再作成してください。')
+            self.log('実験IDごとの結果を確認してください。再実行する場合はコピー予定を再作成してください。')
             self.details_tabs.select(self.plan_frame)
             self.clear_finished_sets(results)
         self.run(work, done)
