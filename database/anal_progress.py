@@ -122,11 +122,11 @@ def resume_text(cell):
 
 DETAIL_COLUMNS = ('experiment', 'sample', 'group', 'total', 'analysed', 'progress', 'state',
                   'mixed', 'stocked', 'duplicate_risk', 'resume', 'gaps', 'missing', 'last_success')
-DETAIL_TITLES = ('プロジェクト名', 'サンプル名', 'グループ', 'T（直下＋stocked）', 'ANAL（直下＋stocked）', '進捗', '状態',
+DETAIL_TITLES = ('プロジェクト名', 'サンプル名', '共有', 'T（直下＋stocked）', 'ANAL（直下＋stocked）', '進捗', '状態',
                  'ANALの#番号重複', 'ANAL/stockedへの退避', '実験重複の可能性',
                  '再開地点', '欠番（途中の未解析）', '未解析の#番号（すべて）', '最終取得 UTC')
 SUMMARY_COLUMNS = ('group', 'samples', 'complete', 'partial', 'unstarted', 'unknown', 'copy', 'tdms', 'rate')
-SUMMARY_TITLES = ('グループ', 'サンプル数', '完了', '進行中', '未着手', '未計数・対象なし', '解析用コピー', 'ANAL済／T', '進捗')
+SUMMARY_TITLES = ('共有', 'サンプル数', '完了', '進行中', '未着手', '未計数・対象なし', '解析用コピー', 'ANAL済／T', '進捗')
 
 
 def detail_values(entry, cell):

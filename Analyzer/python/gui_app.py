@@ -1122,7 +1122,7 @@ class ServerAnalPage(QWidget):
     db_changed = pyqtSignal()
     samples_done = pyqtSignal(list)
     auto_changed = pyqtSignal()
-    COLS = ["グループ", "プロジェクト", "サンプル", "T", "T/stocked", "ANAL", "ANAL/stocked", "進捗", "状態",
+    COLS = ["共有", "プロジェクト", "サンプル", "T", "T/stocked", "ANAL", "ANAL/stocked", "進捗", "状態",
             "再開#", "注意", "実フォルダ（確認結果）", "DB 取得日時"]
 
     def __init__(self, open_in_viewer, send_to_queue):
@@ -1163,7 +1163,7 @@ class ServerAnalPage(QWidget):
         self.search = QLineEdit()
         self.search.setPlaceholderText("プロジェクト名・サンプル名で検索")
         self.show_state = {}
-        flt.addWidget(QLabel("グループ"))
+        flt.addWidget(QLabel("共有"))
         flt.addWidget(self.group)
         flt.addWidget(self.search, 1)
         # 超過・確認不可は異常・情報不足なので、最初から表示して見落とさないようにする
@@ -1197,10 +1197,10 @@ class ServerAnalPage(QWidget):
 
         sel = QHBoxLayout()
         for text, slot, tip in [
-                ("全部選択", self.select_all, "表示中の行をすべて選択（接続できないグループは除く）。"
+                ("全部選択", self.select_all, "表示中の行をすべて選択（接続できない共有は除く）。"
                                            "解析するのは各サンプルの T のうち A@@ の無いファイルだけです"),
                 ("全解除", self.clear_selection, ""),
-                ("自動選択", self.auto_select, "表示中の未着手・進行中のうち、接続できるグループで、注意欄（欠番・退避・混在・要更新）が"
+                ("自動選択", self.auto_select, "表示中の未着手・進行中のうち、接続できる共有で、注意欄（欠番・退避・混在・要更新）が"
                                              "空のものを選択（外した理由はログに表示）"),
                 ("T/stocked ありを選択", self.select_stocked, "表示中で T/stocked が 0 でないサンプルを選択"
                                                           "（「T/stocked → T に戻す」でまとめて移動できます）"),
@@ -1486,7 +1486,7 @@ class ServerAnalPage(QWidget):
         skipped = len(self.shown) - len(rows)
         self.run.log.appendPlainText(f"全部選択: 表示中 {len(self.shown)} 件のうち {len(rows)} 件を選択（"
                                      + "、".join(f"{k} {v}" for k, v in states.items()) + "）"
-                                     + (f"。接続できないグループの {skipped} 件は除外" if skipped else ""))
+                                     + (f"。接続できない共有の {skipped} 件は除外" if skipped else ""))
 
     def clear_selection(self):
         self.set_checked(set())
@@ -1502,11 +1502,11 @@ class ServerAnalPage(QWidget):
         for r in unfinished:
             if server_anal.auto_pick(r):
                 continue
-            for why in (server_anal.blocking(r) if r["reachable"] else ["接続できないグループ"]):
+            for why in (server_anal.blocking(r) if r["reachable"] else ["接続できない共有"]):
                 reasons[why] = reasons.get(why, 0) + 1
         self.run.log.appendPlainText(
             f"自動選択: 表示中の未着手・進行中 {len(unfinished)} 件のうち {len(picked)} 件を選択"
-            "（基準：接続できるグループで、注意欄の欠番・退避・混在・要更新がどれも無いもの）"
+            "（基準：接続できる共有で、注意欄の欠番・退避・混在・要更新がどれも無いもの）"
             + ("。外したもの: " + "、".join(f"{k} {v} 件" for k, v in reasons.items()) if reasons else ""))
 
     def select_stocked(self):
@@ -1622,7 +1622,7 @@ class ServerAnalPage(QWidget):
 
     # -- duplicated numbers ----------------------------------------------------------
     # -- current state (anal_status): survey the checked samples, put right what can be ---------
-    ISSUE_COLS = ["対処", "グループ", "プロジェクト", "サンプル", "内容", "件数", "説明", "手作業・対処"]
+    ISSUE_COLS = ["対処", "共有", "プロジェクト", "サンプル", "内容", "件数", "説明", "手作業・対処"]
     # order in which checked actions are carried out (results and broken files first, then stocked, then duplicates)
     ACTION_ORDER = ["results_in_t", "empty_raw", "restore_t", "raw_copy", "broken_anal", "old_anal", "restore_anal"]
     ACTION_TEXT = {"results_in_t": "ANAL へ移す", "empty_raw": "T/broken へ移す", "restore_t": "T に戻す",
@@ -1743,7 +1743,7 @@ class ServerAnalPage(QWidget):
         """Survey the checked samples on the server (nothing is changed)."""
         rows = [r for r in self.selected() if r["reachable"]]
         if not rows:
-            QMessageBox.information(self, "ANAL（サーバー）", "調べるサンプルにチェックを入れてください（接続できるグループのみ）。")
+            QMessageBox.information(self, "ANAL（サーバー）", "調べるサンプルにチェックを入れてください（接続できる共有のみ）。")
             return
         settle = self.settle.value()
         self.b_check.setEnabled(False)
@@ -1924,7 +1924,7 @@ class ServerAnalPage(QWidget):
             return None
         down = [r for r in rows if not r["reachable"]]
         if down and QMessageBox.question(
-                self, "ANAL（サーバー）", f"DB で接続失敗になっているグループのサンプルが {len(down)} 件あります。"
+                self, "ANAL（サーバー）", f"DB で接続失敗になっている共有のサンプルが {len(down)} 件あります。"
                                          "このまま試しますか？") != QMessageBox.StandardButton.Yes:
             return None
         chosen = self.ask_condition(f"{len(rows)} サンプルの T 直下にある未解析のファイルを、この条件で解析します。")
@@ -2267,7 +2267,7 @@ class ServerAnalPage(QWidget):
 
     def finished(self, outputs):
         if not self.update_db.isChecked():
-            self.run.log.appendPlainText("※ DB の件数は、実験ファイル データベースでそのグループ / プロジェクトを更新すると反映されます。")
+            self.run.log.appendPlainText("※ DB の件数は、実験ファイル データベースでその共有 / プロジェクトを更新すると反映されます。")
 
 
 # ---------------------------------------------------------------------------
@@ -2673,11 +2673,11 @@ class HistoryDialog(QDialog):
 class ServerBnalPage(QWidget):
     db_changed = pyqtSignal()
     combos_done = pyqtSignal(list)
-    SAMPLE_COLS = ["グループ", "プロジェクト", "サンプル", "ANAL", "ANAL/stocked", "BNAL@"]
+    SAMPLE_COLS = ["共有", "プロジェクト", "サンプル", "ANAL", "ANAL/stocked", "BNAL@"]
     TARGET_COLS = ["target", "配列", "長さ", "種別", "基本配列"]
     GROUP_FILTERS = {"対象＋未分類": {"target", None}, "BNAL 対象": {"target"}, "非対象": {"excluded"},
                      "未分類": {None}, "すべて": {"target", "excluded", None}}
-    STATUS_COLS = ["グループ", "プロジェクト", "サンプル", "target", "種別", "配列", "ANAL", "ANAL/stocked", "BNAL TDMS", "進捗",
+    STATUS_COLS = ["共有", "プロジェクト", "サンプル", "target", "種別", "配列", "ANAL", "ANAL/stocked", "BNAL TDMS", "進捗",
                    "状態", "注意", "実フォルダ（確認結果）"]
 
     def __init__(self, open_in_viewer, send_to_queue):
@@ -2690,7 +2690,7 @@ class ServerBnalPage(QWidget):
         self.overrides = {}       # edited relative levels {letter: level}
         lay = QVBoxLayout(self)
         lay.setContentsMargins(24, 20, 24, 20)
-        lay.addWidget(header("BNAL（サーバー）", "グループ・サンプルと target を選んで「組み合わせに追加」を繰り返し、"
+        lay.addWidget(header("BNAL（サーバー）", "共有・サンプルと target を選んで「組み合わせに追加」を繰り返し、"
                                                "組み合わせごとに ANAL のうち B@@ の無いものを解析して T\\BNAL@<target> に保存"))
         db_row = QHBoxLayout()
         self.db = QLineEdit(settings().value("inventory_db", str(server_anal.DEFAULT_DB)))
@@ -2701,7 +2701,7 @@ class ServerBnalPage(QWidget):
 
         top = QSplitter(Qt.Orientation.Horizontal)
         # (1) samples
-        g1 = QGroupBox("① グループ → サンプル（ANAL のあるもの）")
+        g1 = QGroupBox("① 共有 → サンプル（ANAL のあるもの）")
         l1 = QVBoxLayout(g1)
         f1 = QHBoxLayout()
         self.group = QComboBox()
@@ -3298,7 +3298,7 @@ class ServerBnalPage(QWidget):
 
     # -- live check -------------------------------------------------------------
     # -- current state (bnal_status): survey the samples checked in (1), put right what can be ------------
-    B_ISSUE_COLS = ["✓", "グループ", "プロジェクト", "サンプル", "target", "内容", "件数", "説明", "手作業・対処"]
+    B_ISSUE_COLS = ["✓", "共有", "プロジェクト", "サンプル", "target", "内容", "件数", "説明", "手作業・対処"]
     B_ACTION_ORDER = ["restore_anal", "empty_b", "broken_b", "old_b", "orphan_b"]
     B_ACTION_TEXT = {"restore_anal": "ANAL に戻す", "empty_b": "削除（元に戻せる）", "old_b": "削除（元に戻せる）",
                      "broken_b": "削除して解析し直す（元に戻せる）", "orphan_b": "old へ移す"}

@@ -217,7 +217,7 @@ def create_panel(parent, window):
     ttk.Label(window, textvariable=status, padding=(8, 4), wraplength=1300).pack(side='bottom', fill='x')
     ttk.Label(window, padding=(8, 0), style='Muted.TLabel',
               text=f'赤＝{OFF_PLAN}（Ex Info の計画と違うプロジェクト名・サンプル名に転送）　黄＝{UNSORTED}　青＝{PLANNED_ONLY}'
-                   f'　SQserver の測定フォルダ「{NOT_ON_SQ}」＝② で取得済みのグループにない（未取得のグループにある・移動・削除）').pack(
+                   f'　SQserver の測定フォルダ「{NOT_ON_SQ}」＝② で取得済みの SQserver フォルダにない（未取得のフォルダにある・移動・削除）').pack(
         side='bottom', fill='x')
     tree = parent.table(COLUMNS, TITLES, 18, True, parent=window)
     for col in COLUMNS:

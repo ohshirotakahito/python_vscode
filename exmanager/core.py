@@ -41,7 +41,7 @@ def plan_groups(sources, plans, roots):
         elif plan.kind not in ('Sample', 'Blank'):
             skipped.append((name, f'区分が不明（{plan.kind!r}）'))
         elif ex_info_links.path_key(plan.root) not in known:
-            skipped.append((name, f'解析ルート一覧にない共有: {plan.root}'))
+            skipped.append((name, f'保存先の共有CSVにない共有: {plan.root}'))
         else:
             key = (known[ex_info_links.path_key(plan.root)], plan.experiment_folder, plan.sample_folder, plan.kind)
             groups.setdefault(key, []).append(source)
@@ -209,7 +209,7 @@ def create_destinations(root, experiment, samples):
             raise ValueError(f'使用できないフォルダ名です: {name!r}')
     root = Path(root)
     if not root.is_dir():
-        raise ValueError(f'保存先解析ルートが存在しません: {root}')
+        raise ValueError(f'保存先の共有が存在しません: {root}')
     for sample in samples:
         create_sample_folders(root, experiment, sample)
     return sorted(p.name for p in root.iterdir() if p.is_dir()), sorted(p.name for p in (root / experiment).iterdir() if p.is_dir())

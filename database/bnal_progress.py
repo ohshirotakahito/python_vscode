@@ -503,7 +503,7 @@ DETAIL_TITLES = ('実験名', 'サンプル名', 'target', 'グループ', 'ANAL
                  '同じ#番号の重複', '進捗（対ANAL）', '状態', '配列種別', '基本配列名', '基本配列TDMS数（同じ共有）',
                  'ANAL数との一致', '基本配列との一致', 'TDMS確認 UTC')
 SUMMARY_COLUMNS = ('group', 'expected', 'started', 'complete', 'uncounted', 'tdms', 'rate')
-SUMMARY_TITLES = ('グループ', '期待target数', '着手target数', '完了target数', 'TDMS未計数', '済／期待', '進捗')
+SUMMARY_TITLES = ('共有', '期待target数', '着手target数', '完了target数', 'TDMS未計数', '済／期待', '進捗')
 
 
 def summary_values(row):

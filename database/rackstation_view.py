@@ -77,7 +77,7 @@ TITLES = ('実験名', 'サンプル名', 'ファイル数（T直下）', 'T/sto
           'BNAL@*フォルダ数', 'TDMS容量', '最終取得 UTC', '取得状態')
 CAPACITY_COLUMNS = ('group', 'root', 'status', 'experiments', 'samples', 't_tdms', 'anal_tdms', 'tdms_bytes',
                     'volume', 'volume_rate', 'last_success', 'last_attempt', 'error')
-CAPACITY_TITLES = ('グループ', '解析ルート', '状態', 'プロジェクト数', 'サンプル数', 'T直下TDMS数', 'ANAL解析数',
+CAPACITY_TITLES = ('共有', '共有のパス', '状態', 'プロジェクト数', 'サンプル数', 'T直下TDMS数', 'ANAL解析数',
                    'TDMS容量（T+ANAL）', 'ボリューム使用量 / 全体', '使用率', '最終全体取得 UTC', '最終試行 UTC', 'エラー・除外')
 OVERALL = '全体まとめ'
 CSV_PATH = Path(r'D:\Qstatus\database\analysis_server_all.csv')
@@ -231,16 +231,16 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
 
     overall_tab = ttk.Frame(tabs)
     tabs.add(overall_tab, text=OVERALL)
-    ttk.Label(overall_tab, text='全グループの保存済み結果を1つにまとめた表です。同じプロジェクト・サンプルは並べて表示します。',
+    ttk.Label(overall_tab, text='全共有の保存済み結果を1つにまとめた表です。同じプロジェクト・サンプルは並べて表示します。',
               padding=(8, 4)).pack(fill='x')
-    overall_tree = make_tree(overall_tab, ('group',) + COLUMNS, ('グループ',) + naming.screen_titles(TITLES))
+    overall_tree = make_tree(overall_tab, ('group',) + COLUMNS, ('共有',) + naming.screen_titles(TITLES))
     group_views = {}
     for (server, share), label in zip(groups, labels):
         tab = ttk.Frame(tabs)
         tabs.add(tab, text=label)
         bar = ttk.Frame(tab, padding=(8, 4))
         bar.pack(fill='x')
-        ttk.Label(bar, text='解析ルート').pack(side='left')
+        ttk.Label(bar, text='共有のパス').pack(side='left')
         root = tk.StringVar(value=default_root(parent.configured, server, share))
         ttk.Entry(bar, textvariable=root, width=55).pack(side='left', padx=6)
         group_views[label] = dict(server=server, root=root, tab=tab, tree=make_tree(tab, COLUMNS, naming.screen_titles(TITLES)))
@@ -427,9 +427,9 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
             render(changed)
         window.after(150, poll)
 
-    selected_button = ttk.Button(controls, text='選択中のグループを更新',
+    selected_button = ttk.Button(controls, text='選択中の共有を更新',
                                  command=lambda: load((selected_group(),)) if selected_group() else None)
-    all_button = ttk.Button(controls, text='全グループを更新', command=lambda: load(tuple(labels)))
+    all_button = ttk.Button(controls, text='全共有を更新', command=lambda: load(tuple(labels)))
     read_only = getattr(parent, 'read_only', False)   # ユーザー端末: 公開された保存済みデータを見るだけ
     if not read_only:
         selected_button.pack(side='left', padx=4)
@@ -443,7 +443,7 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
     count_bnal_tdms = tk.BooleanVar(value=True)
     ttk.Checkbutton(controls, text='BNAL内訳のTDMS数も取得（検索中のプロジェクトのみ）',
                     variable=count_bnal_tdms).pack(side='left', padx=4)
-    ttk.Label(controls, text='「選択中のグループ」は下のタブで開いているグループです（全体まとめでは選べません）。').pack(side='left', padx=8)
+    ttk.Label(controls, text='「選択中の共有」は下のタブで開いている共有です（全体まとめでは選べません）。').pack(side='left', padx=8)
     tabs.bind('<<NotebookTabChanged>>', update_buttons)
     update_buttons()
     window.after(150, poll)

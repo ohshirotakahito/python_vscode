@@ -218,7 +218,7 @@ class App(tk.Tk):
         destination_tab.pack(fill='x', padx=10, pady=(8, 0))
         panel = ttk.Frame(destination_tab)
         panel.pack(fill='x')
-        fields = [('db', '装置表・メンバー表のフォルダ', str(core.DB)), ('legacy', 'LabVIEW版履歴CSV', str(core.DB / 'Uploader.csv')), ('local', 'Python版履歴CSV', str(core.BASE / 'logs' / 'Uploader_python.csv')), ('root', '保存先解析ルート', r'\\Rackstation\analysis')]
+        fields = [('db', '装置表・メンバー表のフォルダ', str(core.DB)), ('legacy', 'LabVIEW版履歴CSV', str(core.DB / 'Uploader.csv')), ('local', 'Python版履歴CSV', str(core.BASE / 'logs' / 'Uploader_python.csv')), ('root', '保存先の共有', r'\\Rackstation\analysis')]
         self.vars['db'] = tk.StringVar(value=str(core.DB))
         fields = [field for field in fields if field[0] != 'db']
         for n, (key, label, default) in enumerate(fields):
@@ -232,7 +232,7 @@ class App(tk.Tk):
                 self.boxes['root'] = ttk.Combobox(root_panel, textvariable=self.vars[key], state='readonly', width=45)
                 self.boxes['root'].grid(row=0, column=0, sticky='ew')
                 self.boxes['root'].bind('<<ComboboxSelected>>', lambda event: self.load_destinations())
-                ttk.Button(root_panel, text='解析ルートCSVを閲覧・編集', command=self.edit_roots).grid(row=0, column=1, padx=(8, 0))
+                ttk.Button(root_panel, text='保存先の共有CSVを閲覧・編集', command=self.edit_roots).grid(row=0, column=1, padx=(8, 0))
             else:
                 ttk.Entry(panel, textvariable=self.vars[key], width=95).grid(row=n, column=1, sticky='ew')
         panel.columnconfigure(1, weight=1)
@@ -362,11 +362,11 @@ class App(tk.Tk):
         except Exception as exc:
             self.boxes['root']['values'] = ()
             self.vars['root'].set('')
-            self.log(f'解析ルートCSV読込エラー: {exc}')
+            self.log(f'保存先の共有CSV読込エラー: {exc}')
 
     def edit_roots(self):
         if self.busy:
-            messagebox.showinfo('処理中', '処理終了後に解析ルートCSVを開いてください。', parent=self)
+            messagebox.showinfo('処理中', '処理終了後に保存先の共有CSVを開いてください。', parent=self)
             return
         def saved():
             self.current = None
@@ -598,7 +598,7 @@ class App(tk.Tk):
         self.boxes['experiment']['values'] = ()
         self.boxes['sample']['values'] = ()
         if not v['root']:
-            self.log('解析ルートCSVに保存先を追加し、解析ルートを選択してください。')
+            self.log('保存先の共有CSVに共有を追加し、保存先の共有を選択してください。')
             return
         def done(names):
             self.set_choices('experiment', names)

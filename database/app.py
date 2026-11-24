@@ -52,7 +52,7 @@ SQ_ENTRY_COLUMNS = ('group', 'container', 'machine', 'name', 'analysis_state', '
 SQ_ENTRY_TITLES = ('グループ', 'backup / ANフォルダ', '装置', '元の名前', '解析着手', 'EXSV/T TDMS数', 'EXZSV TDMS数',
                    '実験日時', '解析着手日時', '最終取得 UTC', '取得状態')
 # 画面だけ「元の名前」を「実験ID」と呼ぶ（CSV の列名は AXN が読むので変えない）
-SQ_ENTRY_DISPLAY_TITLES = naming.screen_titles(SQ_ENTRY_TITLES)
+SQ_ENTRY_DISPLAY_TITLES = naming.screen_titles(SQ_ENTRY_TITLES, naming.SQ_SCREEN)
 
 
 def read_only_terminal():
@@ -260,9 +260,9 @@ class App(tk.Tk):
         self.notebook.pack(fill='both', expand=True, padx=8)
         self.views = {}
         specifications = [
-            ('sq_groups', 'SQserver グループ集計',
+            ('sq_groups', 'SQserver フォルダ集計',
              ('server', 'group', 'container', 'folder_count', 'archive_count', 'started_count', 'pending_count', 'started_rate', 'history_note', 'root', 'last_success', 'status'),
-             ('サーバー', 'グループ', 'backup / ANフォルダ', '直下フォルダ数', '圧縮ファイル数', '着手数', '未着手数', '着手率', '履歴照合の確認事項', '保存先', '最終取得 UTC', '取得状態')),
+             ('サーバー', 'SQserver フォルダ', 'backup / ANフォルダ', '直下フォルダ数', '圧縮ファイル数', '着手数', '未着手数', '着手率', '履歴照合の確認事項', '保存先', '最終取得 UTC', '取得状態')),
             ('sq_entries', 'SQserver 実験ID一覧', SQ_ENTRY_COLUMNS, SQ_ENTRY_DISPLAY_TITLES),
             ('updates', '更新状況・履歴',
              ('server', 'share_name', 'status', 'direct_folders', 'analysis_started', 'analysis_pending', 'analysis_rate', 'folder_count', 'elapsed', 'started', 'finished', 'error', 'count_note', 'root'),
@@ -400,7 +400,7 @@ class App(tk.Tk):
                                             last_attempt=None, error=''))
         rows, analysis = [], []
         source_rows = [r for r in source_rows if r['server'].casefold() == 'sqserver']
-        progress('保存済みDBのグループ・プロジェクト一覧を集計中')
+        progress('保存済みDBの共有・プロジェクト一覧を集計中')
         groups, entries = inventory_views.sq_inventory(path)
         groups = [r for r in groups if r['server'].casefold() == 'sqserver']
         entries = [r for r in entries if r['server'].casefold() == 'sqserver']
@@ -592,7 +592,7 @@ class App(tk.Tk):
 
         ttk.Button(picker, text='フォルダを選んで追加', command=browse).pack(side='left')
         ttk.Label(dialog, text='フォルダを選ぶと下の設定に追加されます。複数ある場合は繰り返し選び、最後に「保存」を押してください。\nSQserverはbackup_AN1、data、data_stocked、data内のAN1などを選べます。').pack(padx=10)
-        ttk.Label(dialog, text='サーバー名 | 種別 | 絶対パス\n種別: analysis（解析）、experiment（SQ自動分類）、sq_recent、sq_data、sq_stocked\nSQserverはbackup_*・data・data_stockedを含む共有、または各グループのパスを指定します。\n共有名で分類できない場合はsq_recent等を選択。backup_*が別共有なら各共有を1行ずつ登録。\n空欄は更新対象外。解析用はプロジェクトフォルダを直接含む共有を指定。親子で重なるパスは登録しないでください。').pack(padx=10, pady=10)
+        ttk.Label(dialog, text='サーバー名 | 種別 | 絶対パス\n種別: analysis（解析）、experiment（SQ自動分類）、sq_recent、sq_data、sq_stocked\nSQserverはbackup_*・data・data_stockedを含む共有、または各 SQserver フォルダ（Recent_Data など）のパスを指定します。\n共有名で分類できない場合はsq_recent等を選択。backup_*が別共有なら各共有を1行ずつ登録。\n空欄は更新対象外。解析用はプロジェクトフォルダを直接含む共有を指定。親子で重なるパスは登録しないでください。').pack(padx=10, pady=10)
         editor_frame = ttk.Frame(dialog)
         editor_frame.pack(fill='both', expand=True, padx=10)
         editor_frame.rowconfigure(0, weight=1)

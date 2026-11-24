@@ -24,6 +24,7 @@ BANNED = {
     '実験一覧': 'プロジェクト一覧、または実験ID一覧',
     '試料': 'サンプル',
     '担当者': '責任者・測定者・転送者・作成者',
+    '解析ルート': '共有（保存先の共有・共有のパス）',
 }
 DATA_NAMES = set(naming.SCREEN)
 
@@ -70,6 +71,8 @@ class NamingTests(unittest.TestCase):
         titles = ('実験名', 'サンプル名', '元の名前')
         self.assertEqual(naming.screen_titles(titles), ('プロジェクト名', 'サンプル名', '実験ID（元の名前）'))
         self.assertEqual(titles[0], '実験名')
+        self.assertEqual(naming.screen_titles(('グループ',)), ('共有',))
+        self.assertEqual(naming.screen_titles(('グループ',), naming.SQ_SCREEN), ('SQserver フォルダ',))
 
 
 if __name__ == '__main__':
