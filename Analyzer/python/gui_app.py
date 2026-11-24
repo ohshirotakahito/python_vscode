@@ -1122,7 +1122,7 @@ class ServerAnalPage(QWidget):
     db_changed = pyqtSignal()
     samples_done = pyqtSignal(list)
     auto_changed = pyqtSignal()
-    COLS = ["グループ", "実験", "サンプル", "T", "T/stocked", "ANAL", "ANAL/stocked", "進捗", "状態",
+    COLS = ["グループ", "プロジェクト", "サンプル", "T", "T/stocked", "ANAL", "ANAL/stocked", "進捗", "状態",
             "再開#", "注意", "実フォルダ（確認結果）", "DB 取得日時"]
 
     def __init__(self, open_in_viewer, send_to_queue):
@@ -1143,7 +1143,7 @@ class ServerAnalPage(QWidget):
         b_reload.clicked.connect(self.reload)
         b_reload.setToolTip("保存済みDBを読み直します。サーバー上の新規サンプルは調査しません。")
         b_discover = QPushButton("サーバーを調べて一覧を更新…")
-        b_discover.setToolTip("サーバー上の新しい実験・サンプルも探し、DBへ保存して一覧を更新します。")
+        b_discover.setToolTip("サーバー上の新しいプロジェクト・サンプルも探し、DBへ保存して一覧を更新します。")
         b_discover.clicked.connect(self.discover_samples)
         db_row.addWidget(QLabel("データベース"))
         db_row.addWidget(self.db, 1)
@@ -1161,7 +1161,7 @@ class ServerAnalPage(QWidget):
         self.group = QComboBox()
         self.group.setMinimumWidth(190)
         self.search = QLineEdit()
-        self.search.setPlaceholderText("実験名・サンプル名で検索")
+        self.search.setPlaceholderText("プロジェクト名・サンプル名で検索")
         self.show_state = {}
         flt.addWidget(QLabel("グループ"))
         flt.addWidget(self.group)
@@ -1321,7 +1321,7 @@ class ServerAnalPage(QWidget):
         group = self.group.currentText()
         scope = group if group not in ("", "すべて") else "すべての解析サーバー共有（新規サンプルを含む）"
         if QMessageBox.question(self, "サーバーから一覧を更新",
-                f"対象: {scope}\n\nサーバーに接続し、新しい実験・サンプルとANAL進捗を調べてDBに保存します。\n"
+                f"対象: {scope}\n\nサーバーに接続し、新しいプロジェクト・サンプルとANAL進捗を調べてDBに保存します。\n"
                 "現在の検索・状態フィルターに隠れているサンプルも調査します。時間がかかる場合があります。\n実行しますか？") != QMessageBox.StandardButton.Yes:
             return
         import json
@@ -1622,7 +1622,7 @@ class ServerAnalPage(QWidget):
 
     # -- duplicated numbers ----------------------------------------------------------
     # -- current state (anal_status): survey the checked samples, put right what can be ---------
-    ISSUE_COLS = ["対処", "グループ", "実験", "サンプル", "内容", "件数", "説明", "手作業・対処"]
+    ISSUE_COLS = ["対処", "グループ", "プロジェクト", "サンプル", "内容", "件数", "説明", "手作業・対処"]
     # order in which checked actions are carried out (results and broken files first, then stocked, then duplicates)
     ACTION_ORDER = ["results_in_t", "empty_raw", "restore_t", "raw_copy", "broken_anal", "old_anal", "restore_anal"]
     ACTION_TEXT = {"results_in_t": "ANAL へ移す", "empty_raw": "T/broken へ移す", "restore_t": "T に戻す",
@@ -2267,7 +2267,7 @@ class ServerAnalPage(QWidget):
 
     def finished(self, outputs):
         if not self.update_db.isChecked():
-            self.run.log.appendPlainText("※ DB の件数は、実験ファイル データベースでそのグループ / 実験を更新すると反映されます。")
+            self.run.log.appendPlainText("※ DB の件数は、実験ファイル データベースでそのグループ / プロジェクトを更新すると反映されます。")
 
 
 # ---------------------------------------------------------------------------
@@ -2673,11 +2673,11 @@ class HistoryDialog(QDialog):
 class ServerBnalPage(QWidget):
     db_changed = pyqtSignal()
     combos_done = pyqtSignal(list)
-    SAMPLE_COLS = ["グループ", "実験", "サンプル", "ANAL", "ANAL/stocked", "BNAL@"]
+    SAMPLE_COLS = ["グループ", "プロジェクト", "サンプル", "ANAL", "ANAL/stocked", "BNAL@"]
     TARGET_COLS = ["target", "配列", "長さ", "種別", "基本配列"]
     GROUP_FILTERS = {"対象＋未分類": {"target", None}, "BNAL 対象": {"target"}, "非対象": {"excluded"},
                      "未分類": {None}, "すべて": {"target", "excluded", None}}
-    STATUS_COLS = ["グループ", "実験", "サンプル", "target", "種別", "配列", "ANAL", "ANAL/stocked", "BNAL TDMS", "進捗",
+    STATUS_COLS = ["グループ", "プロジェクト", "サンプル", "target", "種別", "配列", "ANAL", "ANAL/stocked", "BNAL TDMS", "進捗",
                    "状態", "注意", "実フォルダ（確認結果）"]
 
     def __init__(self, open_in_viewer, send_to_queue):
@@ -2706,7 +2706,7 @@ class ServerBnalPage(QWidget):
         f1 = QHBoxLayout()
         self.group = QComboBox()
         self.search = QLineEdit()
-        self.search.setPlaceholderText("実験名・サンプル名で検索")
+        self.search.setPlaceholderText("プロジェクト名・サンプル名で検索")
         self.groups = server_bnal.read_groups()  # {sample id: 'target' | 'excluded'}
         self.bnal_filter = QComboBox()
         self.bnal_filter.addItems(list(self.GROUP_FILTERS))
@@ -3298,7 +3298,7 @@ class ServerBnalPage(QWidget):
 
     # -- live check -------------------------------------------------------------
     # -- current state (bnal_status): survey the samples checked in (1), put right what can be ------------
-    B_ISSUE_COLS = ["✓", "グループ", "実験", "サンプル", "target", "内容", "件数", "説明", "手作業・対処"]
+    B_ISSUE_COLS = ["✓", "グループ", "プロジェクト", "サンプル", "target", "内容", "件数", "説明", "手作業・対処"]
     B_ACTION_ORDER = ["restore_anal", "empty_b", "broken_b", "old_b", "orphan_b"]
     B_ACTION_TEXT = {"restore_anal": "ANAL に戻す", "empty_b": "削除（元に戻せる）", "old_b": "削除（元に戻せる）",
                      "broken_b": "削除して解析し直す（元に戻せる）", "orphan_b": "old へ移す"}
@@ -3918,11 +3918,11 @@ class ViewerPage(QWidget):
         lay.setContentsMargins(24, 20, 24, 20)
         row = QHBoxLayout()
         if kind == "A":
-            row.addWidget(header("ANAL 結果ビューア", "サーバー・実験・サンプルを選ぶと、その T\\ANAL の A@@ をまとめて表示"
+            row.addWidget(header("ANAL 結果ビューア", "サーバー・プロジェクト・サンプルを選ぶと、その T\\ANAL の A@@ をまとめて表示"
                                                      "（信号数・バースト数・時間の合計、ファイルごとの波形）"), 1)
             dir_tip = "一覧にないフォルダ（サンプルフォルダまたは T\\ANAL）を直接指定します"
         else:
-            row.addWidget(header("BNAL 結果ビューア", "サーバー・実験・サンプル・target を選ぶと、その T\\BNAL@target の "
+            row.addWidget(header("BNAL 結果ビューア", "サーバー・プロジェクト・サンプル・target を選ぶと、その T\\BNAL@target の "
                                                      "B@@ をまとめて表示（長い信号・カバレッジの合計、ファイルごとの帰属）"), 1)
             dir_tip = "一覧にない BNAL@target フォルダを直接指定します"
         self.folder_key = "viewer_folder" if kind == "A" else "bviewer_folder"
@@ -4040,7 +4040,7 @@ class ViewerPage(QWidget):
         self.p_group.setMinimumWidth(190)
         self.p_exp.setMinimumWidth(220)
         self.p_sample.setMinimumWidth(220)
-        boxes = [("サーバー", self.p_group), ("実験", self.p_exp), ("サンプル", self.p_sample)]
+        boxes = [("サーバー", self.p_group), ("プロジェクト", self.p_exp), ("サンプル", self.p_sample)]
         if self.kind == "B":
             # a sample can hold hundreds of targets: type part of the name to find one
             self.p_target = QComboBox()

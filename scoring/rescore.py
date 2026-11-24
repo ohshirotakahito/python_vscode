@@ -373,8 +373,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='EXSV / AC / Gap Generation スコアの再構成と取り込み')
     parser.add_argument('--machine', required=True, help='装置コード（AXN2 など）。all で全装置')
     parser.add_argument('--experiment', action='append', default=[], help='Experimental ID（複数可）')
-    parser.add_argument('--all', action='store_true', help='SQserver の一覧にある実験のうち、まだ再構成していないもの全部')
-    parser.add_argument('--redo', action='store_true', help='--all で、再構成済みの実験も計算し直す')
+    parser.add_argument('--all', action='store_true', help='SQserver の一覧にある実験IDのうち、まだ再構成していないもの全部')
+    parser.add_argument('--redo', action='store_true', help='--all で、再構成済みの実験IDも計算し直す')
     parser.add_argument('--measured', action='store_true', help='計測時の Score.csv を取り込む')
     parser.add_argument('--folder', default=None, help='保存先（既定 D:\\Qstatus\\database\\Scores）')
     parser.add_argument('--save-every', type=int, default=250,
@@ -402,7 +402,7 @@ def main(argv=None):
         return 0
     mods = axn_bridge.load()
     table = machine_data.machines()
-    print(f'AXN: {mods.root} ({mods.criteria}); {len(jobs)} 実験', flush=True)
+    print(f'AXN: {mods.root} ({mods.criteria}); {len(jobs)} 件の実験ID', flush=True)
     pending, totals = [], {'AC': 0, 'EXSV': 0, 'AutoGG': 0}
     started = time.monotonic()
 

@@ -247,9 +247,9 @@ class App(tk.Tk):
 
     def _build_ledger_tab(self):
         tab = ttk.Frame(self.notebook, padding=8)
-        self.notebook.add(tab, text='① 実験（計画 → 計測 → 転送 → ANAL → スコア）')
-        ttk.Label(tab, text='1 行 = 1 実験 × 転送先の 1 サンプル（sq_transfers.csv と同じ単位）。スコアは再構成があればそれを、なければ計測時の Score.csv。'
-                  '行を選ぶと下にその実験の全スコアを出します。').pack(anchor='w')
+        self.notebook.add(tab, text='① 実験ID（計画 → 計測 → 転送 → ANAL → スコア）')
+        ttk.Label(tab, text='1 行 = 1 実験ID × 転送先の 1 サンプル（sq_transfers.csv と同じ単位）。スコアは再構成があればそれを、なければ計測時の Score.csv。'
+                  '行を選ぶと下にその実験IDの全スコアを出します。').pack(anchor='w')
         titles = [experiment_ledger.TITLE_OF[c] for c in LEDGER_SHOW]
         self.ledger_table = Table(tab, LEDGER_SHOW, titles, LEDGER_WIDTH, height=18, fixed=True)
         self.ledger_table.pack(fill='both', expand=True, pady=(6, 4))
@@ -278,7 +278,7 @@ class App(tk.Tk):
     def _build_rescore_tab(self):
         tab = ttk.Frame(self.notebook, padding=8)
         self.notebook.add(tab, text='③ 再計算（SQserver のログから）')
-        ttk.Label(tab, text='SQserver の一覧（Upload）にある、左上で選んだ装置の実験。AXN と同じ関数で AC・EXSV・Gap Generation（1 回分 = FC・MA・TA・AC・CAL）'
+        ttk.Label(tab, text='SQserver の一覧（Upload）にある、左上で選んだ装置の実験ID。AXN と同じ関数で AC・EXSV・Gap Generation（1 回分 = FC・MA・TA・AC・CAL）'
                   'のスコアを再構成し、保存先に書きます（SQserver は読むだけ）。装置を「すべて」以外にしてください。',
                   wraplength=1400).pack(anchor='w')
         columns = ('name', 'experiment_at', 'location', 'measured', 'reconstructed')
@@ -288,9 +288,9 @@ class App(tk.Tk):
         self.rescore_table.pack(fill='both', expand=True, pady=(6, 4))
         buttons = ttk.Frame(tab)
         buttons.pack(fill='x')
-        self.run_button = ttk.Button(buttons, text='選択した実験を再計算', style='Execute.TButton', command=self.rescore_selected)
+        self.run_button = ttk.Button(buttons, text='選択した実験IDを再計算', style='Execute.TButton', command=self.rescore_selected)
         self.run_button.pack(side='left')
-        self.run_all_button = ttk.Button(buttons, text='未計算の実験をすべて再計算', style='Conditional.TButton',
+        self.run_all_button = ttk.Button(buttons, text='未計算の実験IDをすべて再計算', style='Conditional.TButton',
                                          command=self.rescore_all)
         self.run_all_button.pack(side='left', padx=(8, 0))
         self.import_button = ttk.Button(buttons, text='計測時の Score.csv を取り込む', command=self.import_measured)
@@ -492,7 +492,7 @@ class App(tk.Tk):
             return
         names = [r['name'] for r in self.rescore_table.selected_rows()]
         if not names:
-            messagebox.showinfo('実験を選んでください', '一覧で実験を選んでください（複数可）。', parent=self)
+            messagebox.showinfo('実験IDを選んでください', '一覧で実験IDを選んでください（複数可）。', parent=self)
             return
         self._run_rescore(machine, names)
 
@@ -502,9 +502,9 @@ class App(tk.Tk):
             return
         names = [r['name'] for r in self.rescore_table.rows if not r['reconstructed']]
         if not names:
-            messagebox.showinfo('再計算', 'この装置の実験はすべて再構成済みです。', parent=self)
+            messagebox.showinfo('再計算', 'この装置の実験IDはすべて再構成済みです。', parent=self)
             return
-        if not messagebox.askyesno('再計算', f'{len(names)} 実験を SQserver から読んで再計算します。時間がかかります。続けますか？', parent=self):
+        if not messagebox.askyesno('再計算', f'{len(names)} 件の実験IDを SQserver から読んで再計算します。時間がかかります。続けますか？', parent=self):
             return
         self._run_rescore(machine, names)
 
