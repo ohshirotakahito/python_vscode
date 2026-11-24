@@ -10,7 +10,7 @@ import sys
 import tkinter as tk
 from tkinter import ttk, messagebox
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # リポジトリ直下（shared/ を読むため）
-from shared import catalog, progress, ui_theme  # noqa: E402
+from shared import catalog, naming, progress, ui_theme  # noqa: E402
 try:
     from . import inventory_views
     from .scan_lock import ScanLock
@@ -77,7 +77,7 @@ TITLES = ('実験名', 'サンプル名', 'ファイル数（T直下）', 'T/sto
           'BNAL@*フォルダ数', 'TDMS容量', '最終取得 UTC', '取得状態')
 CAPACITY_COLUMNS = ('group', 'root', 'status', 'experiments', 'samples', 't_tdms', 'anal_tdms', 'tdms_bytes',
                     'volume', 'volume_rate', 'last_success', 'last_attempt', 'error')
-CAPACITY_TITLES = ('グループ', '解析ルート', '状態', '実験数', 'サンプル数', 'T直下TDMS数', 'ANAL解析数',
+CAPACITY_TITLES = ('グループ', '解析ルート', '状態', 'プロジェクト数', 'サンプル数', 'T直下TDMS数', 'ANAL解析数',
                    'TDMS容量（T+ANAL）', 'ボリューム使用量 / 全体', '使用率', '最終全体取得 UTC', '最終試行 UTC', 'エラー・除外')
 OVERALL = '全体まとめ'
 CSV_PATH = Path(r'D:\Qstatus\database\analysis_server_all.csv')
@@ -208,7 +208,7 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
     # 「選択中のグループを更新」も下のタブを対象にするので、同じ行に並べる
     search_bar = ttk.Frame(window, padding=(8, 8, 8, 0))
     search_bar.pack(fill='x')
-    ttk.Label(search_bar, text='実験名で検索').pack(side='left')
+    ttk.Label(search_bar, text='プロジェクト名で検索').pack(side='left')
     search = tk.StringVar()
     ttk.Entry(search_bar, textvariable=search, width=40).pack(side='left', padx=6)
     ttk.Button(search_bar, text='検索をクリア', command=lambda: search.set('')).pack(side='left')
@@ -231,9 +231,9 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
 
     overall_tab = ttk.Frame(tabs)
     tabs.add(overall_tab, text=OVERALL)
-    ttk.Label(overall_tab, text='全グループの保存済み結果を1つにまとめた表です。同じ実験・サンプルは並べて表示します。',
+    ttk.Label(overall_tab, text='全グループの保存済み結果を1つにまとめた表です。同じプロジェクト・サンプルは並べて表示します。',
               padding=(8, 4)).pack(fill='x')
-    overall_tree = make_tree(overall_tab, ('group',) + COLUMNS, ('グループ',) + TITLES)
+    overall_tree = make_tree(overall_tab, ('group',) + COLUMNS, ('グループ',) + naming.screen_titles(TITLES))
     group_views = {}
     for (server, share), label in zip(groups, labels):
         tab = ttk.Frame(tabs)
@@ -243,7 +243,7 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
         ttk.Label(bar, text='解析ルート').pack(side='left')
         root = tk.StringVar(value=default_root(parent.configured, server, share))
         ttk.Entry(bar, textvariable=root, width=55).pack(side='left', padx=6)
-        group_views[label] = dict(server=server, root=root, tab=tab, tree=make_tree(tab, COLUMNS, TITLES))
+        group_views[label] = dict(server=server, root=root, tab=tab, tree=make_tree(tab, COLUMNS, naming.screen_titles(TITLES)))
     ttk.Label(window, text='ANAL進捗＝ANAL解析数÷ファイル数　赤：0%　黄：途中　緑：100%　紫：100%超・要確認　灰：対象なし／確認不可　'
                            '行をダブルクリックすると詳細を表示します。', padding=(8, 4)).pack(fill='x')
     status = tk.StringVar(value='指定構造の10k_Sample/Tを集計します。構造が異なるフォルダは対象外です。')
@@ -328,7 +328,7 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
         if scan_labels and count_bnal_tdms.get():
             query = search.get().strip().casefold()
             if not query and not messagebox.askyesno(
-                    'BNAL内訳の取得', '検索欄が空のため、全実験のBNAL@フォルダを1つずつ確認します。\n'
+                    'BNAL内訳の取得', '検索欄が空のため、全プロジェクトのBNAL@フォルダを1つずつ確認します。\n'
                     'サーバーへのアクセスが大幅に増えます。続けますか？', parent=window):
                 return
             count_bnal = lambda experiment: query in experiment.casefold()  # noqa: E731
@@ -441,7 +441,7 @@ def create_panel(parent, window, groups=ANALYSIS_GROUPS):
         stop_button.pack(side='left', padx=4)
     # BNAL@名は常に保存。tdms数はフォルダごとにサーバーへ1回アクセスするため、検索中の実験に限って任意で取得する
     count_bnal_tdms = tk.BooleanVar(value=True)
-    ttk.Checkbutton(controls, text='BNAL内訳のTDMS数も取得（検索中の実験のみ）',
+    ttk.Checkbutton(controls, text='BNAL内訳のTDMS数も取得（検索中のプロジェクトのみ）',
                     variable=count_bnal_tdms).pack(side='left', padx=4)
     ttk.Label(controls, text='「選択中のグループ」は下のタブで開いているグループです（全体まとめでは選べません）。').pack(side='left', padx=8)
     tabs.bind('<<NotebookTabChanged>>', update_buttons)

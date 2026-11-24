@@ -117,7 +117,7 @@ class FileOpsPanel(ttk.Frame):
         server = self.field(frame, group, 'server', 'サーバー名', 'Rackstation', values=COPY_SERVERS)
         self.field(frame, group, 'share', '共有フォルダ名', 'analysis',
                    browse=lambda: self.select_copy_folder('share', group))
-        self.field(frame, group, 'experiment', '実験フォルダ名',
+        self.field(frame, group, 'experiment', 'プロジェクトフォルダ名',
                    browse=lambda: self.select_copy_folder('experiment', group))
         self.field(frame, group, 'samples', 'サンプル名（カンマ区切り）')
         fields = self.fields[group]
@@ -129,7 +129,7 @@ class FileOpsPanel(ttk.Frame):
         server = self.field(f, 'copy', 'server', 'コピー元サーバー', 'Rackstation', values=COPY_SERVERS)
         self.field(f, 'copy', 'share', 'コピー元共有フォルダ', 'analysis',
                    browse=lambda: self.select_copy_folder('share'))
-        self.field(f, 'copy', 'experiment', '実験フォルダ名',
+        self.field(f, 'copy', 'experiment', 'プロジェクトフォルダ名',
                    browse=lambda: self.select_copy_folder('experiment'))
         self.field(f, 'copy', 'samples', 'サンプル名（カンマ区切り）',
                    browse=lambda: self.select_copy_folder('samples'))
@@ -398,7 +398,7 @@ class FileOpsPanel(ttk.Frame):
             server = component(fields['server'].get(), 'サーバー名')
             share = (fields['share'].get().strip() if key == 'share' else
                      component(fields['share'].get().strip(), '共有フォルダ名'))
-            experiment = (component(fields['experiment'].get().strip(), '実験フォルダ名')
+            experiment = (component(fields['experiment'].get().strip(), 'プロジェクトフォルダ名')
                           if key == 'samples' else None)
         except ValueError as exc:
             messagebox.showerror('入力を確認してください', str(exc), parent=self)
@@ -406,7 +406,7 @@ class FileOpsPanel(ttk.Frame):
         parent = f'//{server}' if key == 'share' else f'//{server}/{share}'
         if key == 'samples':
             parent += '/' + experiment
-        target_label = {'share': '共有フォルダ', 'experiment': '実験フォルダ', 'samples': 'サンプル'}[key]
+        target_label = {'share': '共有フォルダ', 'experiment': 'プロジェクトフォルダ', 'samples': 'サンプル'}[key]
         dialog = tk.Toplevel(self)
         dialog.title(f'{target_label}の一覧から選択')
         dialog.geometry('660x470')
@@ -523,8 +523,8 @@ class FileOpsPanel(ttk.Frame):
             valid = valid and len(parts) == 3 and parts[1].casefold() == share.casefold()
         if not valid:
             messagebox.showerror('選択先を確認してください',
-                                 '指定サーバーの共有フォルダ、または共有フォルダ直下の実験フォルダを選択してください。'
-                                 '\n実験フォルダの選択では、現在の共有フォルダ内から選んでください。',
+                                 '指定サーバーの共有フォルダ、または共有フォルダ直下のプロジェクトフォルダを選択してください。'
+                                 '\nプロジェクトフォルダの選択では、現在の共有フォルダ内から選んでください。',
                                  parent=self)
             return False
         fields = self.fields[group]
@@ -538,9 +538,9 @@ class FileOpsPanel(ttk.Frame):
         self.field(f, 'sample_rename', 'server', 'サーバー', 'Rackstation', values=COPY_SERVERS)
         self.field(f, 'sample_rename', 'share', '共有フォルダ', 'analysis',
                    browse=lambda: self.select_copy_folder('share', 'sample_rename'))
-        self.field(f, 'sample_rename', 'experiment', '実験フォルダ名',
+        self.field(f, 'sample_rename', 'experiment', 'プロジェクトフォルダ名',
                    browse=lambda: self.select_copy_folder('experiment', 'sample_rename'))
-        self.field(f, 'sample_rename', 'folder', '対象サンプルフォルダ名（実験直下）',
+        self.field(f, 'sample_rename', 'folder', '対象サンプルフォルダ名（プロジェクト直下）',
                    browse=self.select_rename_sample)
         self.field(f, 'sample_rename', 'old', '現サンプル名（名前内の置換対象）')
         self.field(f, 'sample_rename', 'new', '新サンプル名')
@@ -627,7 +627,7 @@ class FileOpsPanel(ttk.Frame):
         selected = filedialog.askdirectory(parent=self, initialdir=parent, mustexist=True)
         if selected:
             if os.path.normcase(os.path.normpath(os.path.dirname(selected))) != os.path.normcase(os.path.normpath(parent)):
-                messagebox.showerror('選択先を確認してください', '指定した実験フォルダの直下から選択してください。', parent=self)
+                messagebox.showerror('選択先を確認してください', '指定したプロジェクトフォルダの直下から選択してください。', parent=self)
                 return
             name = os.path.basename(selected)
             fields['folder'].set(name)
@@ -681,8 +681,8 @@ class FileOpsPanel(ttk.Frame):
         self.shared(f, 'folders')
         self.actions(f, 'folders', [('フォルダ作成', lambda: self.submit('folders'))],
                      '各サンプルに10k/100kのSample・Blank、raw data、T、stocked等の既存構成を作成します。\n'
-                     '実験フォルダは一覧から選択、または新しい名前を直接入力できます。\n'
-                     '未作成の実験フォルダは新規作成し、既存フォルダはそのまま利用します。サンプル名は必須です。')
+                     'プロジェクトフォルダは一覧から選択、または新しい名前を直接入力できます。\n'
+                     '未作成のプロジェクトフォルダは新規作成し、既存フォルダはそのまま利用します。サンプル名は必須です。')
 
     def submit(self, kind, preview=False):
         if self.busy:

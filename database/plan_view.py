@@ -17,7 +17,7 @@ except ImportError:
 from shared import bnal_lists, catalog, ex_info_owners, machinedb, plan_check, rack_store, sample_plan, ui_theme  # noqa: E402
 
 COLUMNS = ('experiment', 'sample', 'owner', 'shares', 'anal', 'bnal_started', 'kind', 'bnal', 'seqlists', 'bc', 'issues', 'updated')
-TITLES = ('実験名', 'サンプル名', '責任者（Ex Info）', '共有', 'ANAL（最も進んだ共有）', 'BNAL開始target数', 'サンプルの種類', 'BNAL', 'SEQlist', 'BC',
+TITLES = ('プロジェクト名', 'サンプル名', '責任者（Ex Info）', '共有', 'ANAL（最も進んだ共有）', 'BNAL開始target数', 'サンプルの種類', 'BNAL', 'SEQlist', 'BC',
           '確認事項', '最終更新')
 WIDTHS = dict(experiment=170, sample=130, owner=150, shares=210, anal=150, bnal_started=110, kind=80, bnal=70, seqlists=180,
               bc=110, issues=330, updated=230)
@@ -96,7 +96,7 @@ def create_panel(parent, window):
     bar.pack(fill='x')
     query, view = tk.StringVar(), tk.StringVar(value='確認事項あり')
     owner = tk.StringVar(value=ALL_OWNERS)
-    ttk.Label(bar, text='絞り込み（実験名 / サンプル名）').pack(side='left')
+    ttk.Label(bar, text='絞り込み（プロジェクト名 / サンプル名）').pack(side='left')
     ttk.Entry(bar, textvariable=query, width=28).pack(side='left', padx=6)
     ttk.Label(bar, text='責任者').pack(side='left', padx=(8, 4))
     owner_box = ttk.Combobox(bar, textvariable=owner, state='readonly', width=20, values=(ALL_OWNERS,))

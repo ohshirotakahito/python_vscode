@@ -21,7 +21,7 @@ except ImportError:
 
 COLUMNS = ('experiment', 'sample', 'experimental_id', 'machine', 'kind', 'experiment_at', 'sq', 'state',
            'transferred', 'shares', 'plan')
-TITLES = ('実験名', 'サンプル名', '実験ID（測定フォルダ名）', '装置', '計測区分', '実験日時', 'SQserver の測定フォルダ',
+TITLES = ('プロジェクト名', 'サンプル名', '実験ID（測定フォルダ名）', '装置', '計測区分', '実験日時', 'SQserver の測定フォルダ',
           '状態', '転送日時', '転送先の共有', '計画（Ex Info）')
 WIDTHS = dict(experiment=170, sample=140, experimental_id=330, machine=60, kind=90, experiment_at=130, sq=170,
               state=230, transferred=200, shares=170, plan=300)
@@ -186,22 +186,22 @@ def load(sq_entries=None):
         sq_entries = [dict(e, machine=backups.get(str(e.get('container', '')).casefold()) or e.get('machine') or '')
                       for e in sq_entries]
     else:
-        warnings.append('SQserver の実験一覧（② と同じ保存済みデータ）を読み込み中。読み込むと未整理の測定フォルダも表示します')
+        warnings.append('SQserver の実験ID一覧（② と同じ保存済みデータ）を読み込み中。読み込むと未整理の測定フォルダも表示します')
     return build_rows(history, transfers, plans, sq_entries), warnings
 
 
 def create_panel(parent, window):
     """Build the panel; returns (focus(keys) showing only these (実験名, サンプル名), set_sq_entries(entries))."""
     ttk.Label(window, padding=(8, 6, 8, 0), wraplength=1300, style='Muted.TLabel',
-              text='実験名（解析サーバーの実験フォルダ・Ex Info の実験）› サンプル名（その下のフォルダ）› '
+              text='プロジェクト名（解析サーバーのプロジェクトフォルダ・Ex Info のプロジェクト）› サンプル名（その下のフォルダ）› '
                    '実験ID（測定フォルダ名。AXN の Experimental ID・SQserver の元の名前）。1 サンプルに複数の実験IDがあります。'
                    '実験IDは SQserver の測定フォルダ側から見ています（② と同じ保存済み一覧）。解析サーバー側はファイル数だけを'
-                   '保存しているため、転送履歴・転送の記録で結び付けます。どこにも転送していない測定フォルダは、実験名・サンプル名が'
+                   '保存しているため、転送履歴・転送の記録で結び付けます。どこにも転送していない測定フォルダは、プロジェクト名・サンプル名が'
                    '空の「SQserver のみ」の行（黄）になります。サーバーには接続しません。').pack(fill='x')
     bar = ttk.Frame(window, padding=8)
     bar.pack(fill='x')
     query, machine, state = tk.StringVar(), tk.StringVar(value=ALL_MACHINES), tk.StringVar(value=ALL_STATES)
-    ttk.Label(bar, text='絞り込み（実験名 / サンプル名 / 実験ID）').pack(side='left')
+    ttk.Label(bar, text='絞り込み（プロジェクト名 / サンプル名 / 実験ID）').pack(side='left')
     ttk.Entry(bar, textvariable=query, width=30).pack(side='left', padx=6)
     ttk.Label(bar, text='装置').pack(side='left', padx=(10, 4))
     machines = ttk.Combobox(bar, textvariable=machine, state='readonly', width=14, values=(ALL_MACHINES,))
@@ -216,7 +216,7 @@ def create_panel(parent, window):
     status = tk.StringVar()
     ttk.Label(window, textvariable=status, padding=(8, 4), wraplength=1300).pack(side='bottom', fill='x')
     ttk.Label(window, padding=(8, 0), style='Muted.TLabel',
-              text=f'赤＝{OFF_PLAN}（Ex Info の計画と違う実験名・サンプル名に転送）　黄＝{UNSORTED}　青＝{PLANNED_ONLY}'
+              text=f'赤＝{OFF_PLAN}（Ex Info の計画と違うプロジェクト名・サンプル名に転送）　黄＝{UNSORTED}　青＝{PLANNED_ONLY}'
                    f'　SQserver の測定フォルダ「{NOT_ON_SQ}」＝② で取得済みのグループにない（未取得のグループにある・移動・削除）').pack(
         side='bottom', fill='x')
     tree = parent.table(COLUMNS, TITLES, 18, True, parent=window)

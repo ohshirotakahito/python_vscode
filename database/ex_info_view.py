@@ -40,7 +40,7 @@ def create_panel(parent, window, on_saved=lambda: None):
     bar = ttk.Frame(window, padding=8)
     bar.pack(fill='x')
     query, owner = tk.StringVar(), tk.StringVar(value=ALL)
-    ttk.Label(bar, text='実験名・サンプル名・説明').pack(side='left')
+    ttk.Label(bar, text='プロジェクト名・サンプル名・説明').pack(side='left')
     ttk.Entry(bar, textvariable=query, width=30).pack(side='left', padx=6)
     ttk.Label(bar, text='責任者').pack(side='left', padx=(10, 4))
     owners = ttk.Combobox(bar, textvariable=owner, state='readonly', width=22, values=(ALL, UNSET))
@@ -52,7 +52,7 @@ def create_panel(parent, window, on_saved=lambda: None):
         edit_button.pack(side='left')
     ttk.Label(window, text=f'AXNと共通の台帳: {ex_info_links.LEDGER}', padding=(8, 2)).pack(anchor='w')
     columns = ('project', 'sample', 'owner', 'project_description', 'sample_description', 'medium', 'locations', 'active')
-    titles = ('実験名', 'サンプル名', '責任者（実験共通）', '実験の説明', 'サンプルの説明', '溶媒', '登録した保存場所', '表示設定')
+    titles = ('プロジェクト名', 'サンプル名', '責任者（プロジェクト共通）', 'プロジェクトの説明', 'サンプルの説明', '溶媒', '登録した保存場所', '表示設定')
     tree = parent.table(columns, titles, 18, True, parent=window)
     tree.configure(selectmode='browse')
     for col in columns:
@@ -70,7 +70,7 @@ def create_panel(parent, window, on_saved=lambda: None):
         if selected and tree.exists(selected[0]):
             tree.selection_set(selected[0])
         if saved['data'] is not None:
-            status.set(f"表示 {len(visible)} / {len(saved['rows'])} 行　責任者は実験内の全サンプルに共通です。"
+            status.set(f"表示 {len(visible)} / {len(saved['rows'])} 行　責任者はプロジェクト内の全サンプルに共通です。"
                        '名前・保存場所は閲覧のみ。編集ではサーバーフォルダを変更しません。')
 
     def reload():
@@ -105,8 +105,8 @@ def create_panel(parent, window, on_saved=lambda: None):
         body.pack(fill='both', expand=True)
         ttk.Label(body, text=row['project'] + (' / ' + row['sample'] if sample else '')).pack(anchor='w')
         inputs = {}
-        fields = [('owner_names', '実験の責任者（全サンプル共通・1行に1人）', '\n'.join(project.get('owner_names', []))),
-                  ('project_description', '実験の説明（全サンプル共通）', project.get('description', ''))]
+        fields = [('owner_names', 'プロジェクトの責任者（全サンプル共通・1行に1人）', '\n'.join(project.get('owner_names', []))),
+                  ('project_description', 'プロジェクトの説明（全サンプル共通）', project.get('description', ''))]
         if sample:
             fields.append(('sample_description', '選択したサンプルの説明', sample.get('description', '')))
         for key, title, value in fields:

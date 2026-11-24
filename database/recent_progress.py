@@ -123,7 +123,7 @@ def open_window(parent):
                              ('backup', '確認状態', '現存フォルダ数', '着手済み', '未着手', '着手率', '確認エラー'),
                              8, parent=window)
     details = parent.table(('backup', 'name', 'state', 'count', 'latest', 'destination', 'root'),
-                           ('backup', '実験フォルダ名', '着手状況', '履歴件数', '最終コピー履歴', '保存先実験／サンプル', '確認元'),
+                           ('backup', '実験ID（測定フォルダ名）', '着手状況', '履歴件数', '最終コピー履歴', '保存先プロジェクト／サンプル', '確認元'),
                            16, True, parent=window)
     details.tag_configure('pending', background=ui_theme.row('warning'))
     results = queue.Queue()

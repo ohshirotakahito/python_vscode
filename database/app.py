@@ -13,7 +13,7 @@ from tkinter import font as tkfont
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # リポジトリ直下（shared/ を読むため）
-from shared import catalog, ui_theme  # noqa: E402
+from shared import catalog, naming, ui_theme  # noqa: E402
 
 try:
     from . import inventory_views, recent_progress, sq_workflow, rackstation_view, bnal_progress, anal_progress, plan_view, ex_info_view, id_map_view, view_snapshot
@@ -52,7 +52,7 @@ SQ_ENTRY_COLUMNS = ('group', 'container', 'machine', 'name', 'analysis_state', '
 SQ_ENTRY_TITLES = ('グループ', 'backup / ANフォルダ', '装置', '元の名前', '解析着手', 'EXSV/T TDMS数', 'EXZSV TDMS数',
                    '実験日時', '解析着手日時', '最終取得 UTC', '取得状態')
 # 画面だけ「元の名前」を「実験ID」と呼ぶ（CSV の列名は AXN が読むので変えない）
-SQ_ENTRY_DISPLAY_TITLES = tuple('実験ID（元の名前）' if t == '元の名前' else t for t in SQ_ENTRY_TITLES)
+SQ_ENTRY_DISPLAY_TITLES = naming.screen_titles(SQ_ENTRY_TITLES)
 
 
 def read_only_terminal():
@@ -246,7 +246,7 @@ class App(tk.Tk):
                               if self.source_tree.identify_region(event.x, event.y) == 'separator' else None)
         search_bar = ttk.Frame(self.sq_panel, padding=8)
         search_bar.pack(fill='x')
-        ttk.Label(search_bar, text='パス・実験・サンプル名で検索').pack(side='left')
+        ttk.Label(search_bar, text='パス・プロジェクト・サンプル名で検索').pack(side='left')
         self.search = tk.StringVar()
         entry = ttk.Entry(search_bar, textvariable=self.search, width=50)
         entry.pack(side='left', padx=5)
@@ -263,10 +263,10 @@ class App(tk.Tk):
             ('sq_groups', 'SQserver グループ集計',
              ('server', 'group', 'container', 'folder_count', 'archive_count', 'started_count', 'pending_count', 'started_rate', 'history_note', 'root', 'last_success', 'status'),
              ('サーバー', 'グループ', 'backup / ANフォルダ', '直下フォルダ数', '圧縮ファイル数', '着手数', '未着手数', '着手率', '履歴照合の確認事項', '保存先', '最終取得 UTC', '取得状態')),
-            ('sq_entries', 'SQserver 実験一覧', SQ_ENTRY_COLUMNS, SQ_ENTRY_DISPLAY_TITLES),
+            ('sq_entries', 'SQserver 実験ID一覧', SQ_ENTRY_COLUMNS, SQ_ENTRY_DISPLAY_TITLES),
             ('updates', '更新状況・履歴',
              ('server', 'share_name', 'status', 'direct_folders', 'analysis_started', 'analysis_pending', 'analysis_rate', 'folder_count', 'elapsed', 'started', 'finished', 'error', 'count_note', 'root'),
-             ('サーバー', '共有名', '状態', '直下実験フォルダ総数', '解析着手数', '未着手数', '着手率', '確認フォルダ数（全階層）', '経過秒', '開始 UTC', '終了 UTC', '処理中の場所・エラー', '着手照合の確認事項', '共有')),
+             ('サーバー', '共有名', '状態', '直下フォルダ総数', '解析着手数', '未着手数', '着手率', '確認フォルダ数（全階層）', '経過秒', '開始 UTC', '終了 UTC', '処理中の場所・エラー', '着手照合の確認事項', '共有')),
         ]
         for key, title, columns, titles in specifications:
             tab = ttk.Frame(self.notebook)
@@ -284,7 +284,7 @@ class App(tk.Tk):
             tree.bind('<Double-1>', lambda event, current=tree: self.show_row_details(current))
         self.notebook.bind('<<NotebookTabChanged>>', lambda _: self.update_total())
         ttk.Label(self.sq_panel, text='未作成＝フォルダなし / 0＝存在して0件。TDMS・stockedは各フォルダ直下のみ。行をダブルクリックすると詳細を表示します。').pack(anchor='w', padx=8)
-        self.status = tk.StringVar(value='サーバー・共有・実験を選んで個別に更新できます。閲覧のみなら接続しません。')
+        self.status = tk.StringVar(value='サーバー・共有・フォルダを選んで個別に更新できます。閲覧のみなら接続しません。')
         ttk.Label(self.sq_panel, textvariable=self.status, padding=8, wraplength=1300).pack(fill='x')
         self.protocol('WM_DELETE_WINDOW', self.close)
         self.after(150, self.poll)
@@ -400,7 +400,7 @@ class App(tk.Tk):
                                             last_attempt=None, error=''))
         rows, analysis = [], []
         source_rows = [r for r in source_rows if r['server'].casefold() == 'sqserver']
-        progress('保存済みDBのグループ・実験一覧を集計中')
+        progress('保存済みDBのグループ・プロジェクト一覧を集計中')
         groups, entries = inventory_views.sq_inventory(path)
         groups = [r for r in groups if r['server'].casefold() == 'sqserver']
         entries = [r for r in entries if r['server'].casefold() == 'sqserver']
@@ -686,7 +686,7 @@ class App(tk.Tk):
         try:
             scope = catalog.normalize_scope(self.target_scope.get())
             if scope == '.':
-                raise ValueError('更新する実験の相対パスを選択または入力してください。')
+                raise ValueError('更新するフォルダの相対パスを選択または入力してください。')
         except ValueError as exc:
             messagebox.showerror('更新対象', str(exc))
             return
@@ -694,11 +694,11 @@ class App(tk.Tk):
 
     def update_selected(self):
         if self.db_path != catalog.DEFAULT_DB:
-            messagebox.showinfo('更新対象', 'ローカルDBを表示してから実験を選択してください。')
+            messagebox.showinfo('更新対象', 'ローカルDBを表示してから更新する行を選択してください。')
             return
         view = self.active_view()
         if view not in (self.views['analysis'], self.views['sq_entries']):
-            messagebox.showinfo('更新対象', '解析用4台またはSQserver実験一覧で更新する行を選択してください。')
+            messagebox.showinfo('更新対象', '解析用4台またはSQserver 実験ID一覧で更新する行を選択してください。')
             return
         jobs = []
         for item in view['tree'].selection():
@@ -719,7 +719,7 @@ class App(tk.Tk):
             messagebox.showinfo('ファイル操作中', '⑤ File Ops の処理が終わってから更新してください。')
             return
         if not jobs:
-            messagebox.showinfo('更新対象なし', '保存先の共有パスを設定し、更新するサーバー・共有・実験を選んでください。')
+            messagebox.showinfo('更新対象なし', '保存先の共有パスを設定し、更新するサーバー・共有・フォルダを選んでください。')
             return
         lock = ScanLock('実験ファイルDB（② Source · SQserver の更新）')
         if not lock.acquire():
@@ -945,7 +945,7 @@ class App(tk.Tk):
         frame.pack(fill='both', expand=True)
         ttk.Label(frame, text=f'書き出し先: {publish.PUBLISH_DIR}\n'
                               f'台帳: {", ".join(publish.FILES.values())}\n'
-                              '計測PCはこのフォルダの同期から、実験のアップロード後の進捗（解析着手・ANAL・BNAL）を確認します。',
+                              '計測PCはこのフォルダの同期から、測定フォルダ（実験ID）の転送後の進捗（解析着手・ANAL・BNAL）を確認します。',
                   wraplength=640, justify='left').pack(anchor='w')
         settings = publish.load_settings()
         enabled = tk.BooleanVar(value=settings['enabled'])

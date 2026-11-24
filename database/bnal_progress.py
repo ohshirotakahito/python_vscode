@@ -18,7 +18,7 @@ except ImportError:
     import rackstation_view
 from shared import catalog, ui_theme  # noqa: E402  (rackstation_view puts the repository root on sys.path)
 from shared.seq_targets import DEFAULT_TARGET_DIR, list_target_csvs, read_targets  # noqa: E402,F401
-from shared import progress, sample_plan  # noqa: E402
+from shared import naming, progress, sample_plan  # noqa: E402
 
 UNSTARTED_GROUP = '—'
 
@@ -971,7 +971,7 @@ def create_panel(parent, window):
     top = ttk.Frame(window, padding=8)
     top.pack(fill='x')
     # 左：サンプル選択　右：targetリスト（CSV）選択
-    left = ttk.LabelFrame(top, text='① 実験・サンプルを選択（10k_Sample。Ctrl / Shiftで複数可）', padding=6)
+    left = ttk.LabelFrame(top, text='① プロジェクト・サンプルを選択（10k_Sample。Ctrl / Shiftで複数可）', padding=6)
     left.pack(side='left', fill='both', expand=True)
     sample_filter = tk.StringVar()
     filter_bar = ttk.Frame(left)
@@ -1028,7 +1028,7 @@ def create_panel(parent, window):
         warning_box.delete('1.0', 'end')
         warning_box.insert('1.0', '\n'.join(lines) if lines else '警告はありません。')
         warning_box.config(state='disabled')
-    detail_tree = parent.table(DETAIL_COLUMNS, DETAIL_TITLES, 18, True, parent=detail_tab)
+    detail_tree = parent.table(DETAIL_COLUMNS, naming.screen_titles(DETAIL_TITLES), 18, True, parent=detail_tab)
     for col in DETAIL_COLUMNS:
         detail_tree.column(col, width=240 if col in ('target', 'base_target', 'state', 'tdms_checked') else 140)
     for tag, color in [('unstarted', ui_theme.row('danger')), ('partial', ui_theme.row('warning')),
@@ -1124,7 +1124,7 @@ def create_panel(parent, window):
             return show_by_plan(selected)
         csvs = [csv_list.get(i) for i in csv_list.curselection()]
         if not selected or not csvs:
-            messagebox.showinfo('BNAL進捗', '実験・サンプルとtargetリスト（CSV）をそれぞれ1つ以上選択してください。', parent=window)
+            messagebox.showinfo('BNAL進捗', 'プロジェクト・サンプルとtargetリスト（CSV）をそれぞれ1つ以上選択してください。', parent=window)
             return
         expected = []
         try:
@@ -1147,7 +1147,7 @@ def create_panel(parent, window):
 
     def show_by_plan(selected):
         if not selected:
-            messagebox.showinfo('BNAL進捗', '実験・サンプルを1つ以上選択してください。', parent=window)
+            messagebox.showinfo('BNAL進捗', 'プロジェクト・サンプルを1つ以上選択してください。', parent=window)
             return
         try:
             saved['samples'], saved['bnals'] = load_saved(parent.db_path)

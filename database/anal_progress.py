@@ -122,7 +122,7 @@ def resume_text(cell):
 
 DETAIL_COLUMNS = ('experiment', 'sample', 'group', 'total', 'analysed', 'progress', 'state',
                   'mixed', 'stocked', 'duplicate_risk', 'resume', 'gaps', 'missing', 'last_success')
-DETAIL_TITLES = ('実験名', 'サンプル名', 'グループ', 'T（直下＋stocked）', 'ANAL（直下＋stocked）', '進捗', '状態',
+DETAIL_TITLES = ('プロジェクト名', 'サンプル名', 'グループ', 'T（直下＋stocked）', 'ANAL（直下＋stocked）', '進捗', '状態',
                  'ANALの#番号重複', 'ANAL/stockedへの退避', '実験重複の可能性',
                  '再開地点', '欠番（途中の未解析）', '未解析の#番号（すべて）', '最終取得 UTC')
 SUMMARY_COLUMNS = ('group', 'samples', 'complete', 'partial', 'unstarted', 'unknown', 'copy', 'tdms', 'rate')
@@ -330,7 +330,7 @@ def create_panel(parent, window):
     bar.pack(fill='x')
     query = tk.StringVar()
     incomplete_only = tk.BooleanVar(value=False)
-    ttk.Label(bar, text='絞り込み（実験名 / サンプル名）').pack(side='left')
+    ttk.Label(bar, text='絞り込み（プロジェクト名 / サンプル名）').pack(side='left')
     ttk.Entry(bar, textvariable=query, width=30).pack(side='left', padx=6)
     ttk.Checkbutton(bar, text='未完了のみ', variable=incomplete_only, command=lambda: show()).pack(side='left', padx=6)
     status = tk.StringVar(value='③ Analysis Servers で更新した保存済み情報から集計します（サーバーには接続しません）。')

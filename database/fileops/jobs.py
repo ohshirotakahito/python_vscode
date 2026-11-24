@@ -151,7 +151,7 @@ def describe_error(exc):
     elif isinstance(exc, PermissionError):
         reason, advice = 'アクセスが拒否されました。', 'コピー元の読み取り権限、同期用共有の書き込み権限、サーバーのログイン状態を確認してください。'
     elif isinstance(exc, FileNotFoundError):
-        reason, advice = '指定したファイルまたはフォルダが見つかりません。', '表示されたパスのサーバー・共有・実験・サンプル名、周波数、Sample / Blankを確認してください。'
+        reason, advice = '指定したファイルまたはフォルダが見つかりません。', '表示されたパスのサーバー・共有・プロジェクト・サンプル名、周波数、Sample / Blankを確認してください。'
     elif isinstance(exc, NotADirectoryError):
         reason, advice = '指定先がフォルダではありません。', '同じ名前のファイルがないか、指定パスを確認してください。'
     elif isinstance(exc, ValueError):
