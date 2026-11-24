@@ -279,7 +279,7 @@ class App(tk.Tk):
         self.batch_tree = ttk.Treeview(batch_frame, columns=('set','folders','source','target','ex_plan','plan','name_check','source10','target10','source100','target100','duplicates','nonduplicates','person'), show='headings', height=4, selectmode='extended')
         # 名前の照合が「不一致」「判定不可」のセットは行を橙にする（一致しなくても正しい場合があるので目安）
         self.batch_tree.tag_configure('name_mismatch', background=ui_theme.row('warning', 0.22), foreground=ui_theme.TEXT)
-        for key, title, width in [('set','セット',55),('folders','計測フォルダ数',100),('source','コピー元計測フォルダ（複数可）',330),('target','保存先サンプル（1か所）・計測区分',360),('ex_plan','計画との照合',130),('plan','台帳（種類・BNAL）',150),('name_check','名前の照合',170),('source10','元10kHz',90),('target10','先10kHz',90),('source100','元100kHz',90),('target100','先100kHz',90),('duplicates','内容重複確認',160),('nonduplicates','重複なし（TDMS）',180),('person','アップロード担当者',160)]:
+        for key, title, width in [('set','セット',55),('folders','計測フォルダ数',100),('source','コピー元計測フォルダ（複数可）',330),('target','保存先サンプル（1か所）・計測区分',360),('ex_plan','計画との照合',130),('plan','台帳（種類・BNAL）',150),('name_check','名前の照合',170),('source10','元10kHz',90),('target10','先10kHz',90),('source100','元100kHz',90),('target100','先100kHz',90),('duplicates','内容重複確認',160),('nonduplicates','重複なし（TDMS）',180),('person','転送者',160)]:
             self.batch_tree.heading(key, text=title)
             self.batch_tree.column(key, width=width)
         self.batch_tree.grid(row=0, column=0, sticky='nsew')
@@ -1289,7 +1289,7 @@ class App(tk.Tk):
         jobs = self.current
         for _, _, spec in jobs:
             spec['context'].update(pc_id=self.pc['pc_id'], pc_name=self.pc['display_name'])
-        if not messagebox.askyesno('一括コピー開始', f'{len(self.sets)} セット / {len(jobs)} 件の実験IDを登録済みの保存先へコピーします。\n解析用ファイルは全内容が一致する保存先ファイルがあればスキップします。\nraw dataは実験フォルダ単位で保存します。開始しますか？'):
+        if not messagebox.askyesno('一括コピー開始', f'{len(self.sets)} セット / {len(jobs)} 件の実験IDを登録済みの保存先へコピーします。\n解析用ファイルは全内容が一致する保存先ファイルがあればスキップします。\nraw dataは測定フォルダ（実験ID）単位で保存します。開始しますか？'):
             return
         def work():
             return core.execute_batch(jobs, lambda s: self.events.put(('log',s)), progress=self.progress)

@@ -11,7 +11,7 @@
     python database/publish.py --install-task | --remove-task
 
 書き出す台帳（UTF-8 BOM付きCSV。書き終えてから置き換えるので、途中の中身は見えない）:
-    sq_experiments.csv       SQserver 実験一覧（装置・元の名前・解析着手・TDMS数）
+    sq_experiments.csv       SQserver 実験ID一覧（装置・元の名前・解析着手・TDMS数）
     analysis_server_all.csv  解析サーバーのサンプルごとのANAL進捗（Analysis_serverタブと同じ）
     bnal_progress.csv        サンプル台帳で BNAL 対象のサンプルの target ごとのBNAL進捗
     sq_transfers.csv         SQserver Recent_Data の実験ごとの解析サーバーへの転送と ANAL進捗（transfer_ledger.py）
@@ -54,7 +54,7 @@ LOG_PATH = BASE / 'logs' / 'publish.log'
 TASK_NAME = 'Qstatus Ledger Publish'
 FILES = dict(sq='sq_experiments.csv', analysis=rackstation_view.CSV_PATH.name, bnal='bnal_progress.csv',
              transfer='sq_transfers.csv', view=view_snapshot.FILE, status='ledger_status.csv')
-LEDGER_TITLES = dict(sq='SQserver 実験一覧', analysis='解析サーバー ANAL進捗', bnal='BNAL進捗',
+LEDGER_TITLES = dict(sq='SQserver 実験ID一覧', analysis='解析サーバー ANAL進捗', bnal='BNAL進捗',
                      transfer='SQserver→解析サーバー 転送・ANAL', view='閲覧用DB（ユーザー端末の実験ファイルDB）')
 DEFAULT_SETTINGS = dict(
     enabled=False,           # タスク スケジューラからの実行（--scheduled）をするか

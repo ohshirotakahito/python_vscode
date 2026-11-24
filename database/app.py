@@ -592,7 +592,7 @@ class App(tk.Tk):
 
         ttk.Button(picker, text='フォルダを選んで追加', command=browse).pack(side='left')
         ttk.Label(dialog, text='フォルダを選ぶと下の設定に追加されます。複数ある場合は繰り返し選び、最後に「保存」を押してください。\nSQserverはbackup_AN1、data、data_stocked、data内のAN1などを選べます。').pack(padx=10)
-        ttk.Label(dialog, text='サーバー名 | 種別 | 絶対パス\n種別: analysis（解析）、experiment（SQ自動分類）、sq_recent、sq_data、sq_stocked\nSQserverはbackup_*・data・data_stockedを含む共有、または各グループのパスを指定します。\n共有名で分類できない場合はsq_recent等を選択。backup_*が別共有なら各共有を1行ずつ登録。\n空欄は更新対象外。解析用は実験フォルダを直接含む共有を指定。親子で重なるパスは登録しないでください。').pack(padx=10, pady=10)
+        ttk.Label(dialog, text='サーバー名 | 種別 | 絶対パス\n種別: analysis（解析）、experiment（SQ自動分類）、sq_recent、sq_data、sq_stocked\nSQserverはbackup_*・data・data_stockedを含む共有、または各グループのパスを指定します。\n共有名で分類できない場合はsq_recent等を選択。backup_*が別共有なら各共有を1行ずつ登録。\n空欄は更新対象外。解析用はプロジェクトフォルダを直接含む共有を指定。親子で重なるパスは登録しないでください。').pack(padx=10, pady=10)
         editor_frame = ttk.Frame(dialog)
         editor_frame.pack(fill='both', expand=True, padx=10)
         editor_frame.rowconfigure(0, weight=1)
