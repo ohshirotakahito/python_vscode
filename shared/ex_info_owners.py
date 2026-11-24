@@ -28,7 +28,9 @@ def load(path=None):
     return data
 
 
-def attach(rows, samples, data):
+def candidate_keys(rows, samples, data):
+    """For each row (experiment, sample = the folder names), the Ex Info sample keys registered at a location
+    where that folder exists (root + project folder + sample folder). Never matched by names alone."""
     projects = {p['key']: p for p in data['projects'] if p.get('key')}
     definitions = {s['key']: s for s in data['samples'] if s.get('key')}
     locations = defaultdict(set)
@@ -49,6 +51,22 @@ def attach(rows, samples, data):
         candidates = set()
         for root in roots[(row['experiment'], row['sample'])]:
             candidates.update(locations.get((root, row['experiment'].casefold(), row['sample'].casefold()), ()))
+        result.append(candidates)
+    return result
+
+
+def sample_keys(pairs, samples, data):
+    """{(experiment, sample): Ex Info sample key} for the folder pairs that match exactly one Ex Info sample."""
+    pairs = list(pairs)
+    found = candidate_keys([dict(experiment=e, sample=s) for e, s in pairs], samples, data)
+    return {pair: next(iter(keys)) for pair, keys in zip(pairs, found) if len(keys) == 1}
+
+
+def attach(rows, samples, data):
+    projects = {p['key']: p for p in data['projects'] if p.get('key')}
+    definitions = {s['key']: s for s in data['samples'] if s.get('key')}
+    result = []
+    for row, candidates in zip(rows, candidate_keys(rows, samples, data)):
         state, owners = 'unmatched', []
         if len(candidates) > 1:
             state = 'ambiguous'

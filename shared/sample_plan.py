@@ -5,6 +5,9 @@
     seqlists : 使う SEQlist の CSV 名のリスト
     bc       : 使う BC の CSV 名
     note     : メモ
+    sample_key : AXN の Ex Info のサンプル（UUID）。登録した保存場所のフォルダと 1 つに決まるときだけ、
+               開発PC の毎時の公開（database/publish.py → link_ex_info）が書く。名前だけでは結び付けない。
+               一度結び付いたら、後で照合できなくなっても消さない（フォルダや名前を変えても同じサンプルとたどれる）
 
 サーバーを調べた結果（実験ファイルDB）とは分けて、machinedb（D:\\Qstatus の共有フォルダ）に JSON で置き、各 PC から共有する。
 保存は「最新のファイルを読み直して、変えた項目だけを書き込む」ので、別の PC の変更を消さない。
@@ -20,7 +23,7 @@ from shared import machinedb
 
 KINDS = ('核酸', 'アミノ酸')
 BNAL = {'target': '対象', 'excluded': '対象外'}
-FIELDS = ('kind', 'bnal', 'seqlists', 'bc', 'note')
+FIELDS = ('kind', 'bnal', 'seqlists', 'bc', 'note', 'sample_key')
 
 
 def key(experiment, sample):
@@ -49,6 +52,8 @@ def _check(fields):
             raise ValueError(f'BNAL の振り分けは target / excluded です: {value}')
         if name == 'seqlists' and not (isinstance(value, list) and all(isinstance(v, str) for v in value)):
             raise ValueError('seqlists は CSV 名のリストです')
+        if name == 'sample_key' and not (isinstance(value, str) and value.strip()):
+            raise ValueError('sample_key は Ex Info のサンプルのキーです')
 
 
 def update(changes, who=None, path=None):
@@ -107,3 +112,26 @@ def import_bnal_groups(groups, who=None, path=None):
     if changes:
         update(changes, who=who, path=path)
     return sorted(changes), conflicts
+
+
+def link_changes(plan, keys):
+    """{key: {'sample_key': ...}} for ledger entries whose (experiment, sample) now matches exactly one Ex Info
+    sample (keys: shared.ex_info_owners.sample_keys) and do not hold that key yet. Entries are never created, and
+    a key once recorded is not removed when the folders no longer match."""
+    changes = {}
+    for (experiment, sample), sample_key in keys.items():
+        k = key(experiment, sample)
+        if k in plan and plan[k].get('sample_key') != sample_key:
+            changes[k] = dict(sample_key=sample_key)
+    return changes
+
+
+def link_ex_info(samples, data, who='publish', path=None):
+    """Record Ex Info sample keys in the ledger (only entries that change). Returns the number recorded."""
+    from shared import ex_info_owners
+    plan = load(path)
+    pairs = [tuple(k.split('|', 1)) for k in plan if '|' in k]
+    changes = link_changes(plan, ex_info_owners.sample_keys(pairs, samples, data))
+    if changes:
+        update(changes, who=who, path=path)
+    return len(changes)

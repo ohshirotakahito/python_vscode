@@ -318,9 +318,23 @@ def scan_analysis(configured, db, count_bnal=None):
     return results
 
 
+def link_samples(db):
+    """Record AXN Ex Info sample keys in the sample ledger (shared.sample_plan.link_ex_info). Returns a status."""
+    from shared import ex_info_owners
+    try:
+        samples, _ = bnal_progress.load_saved(db)
+        count = sample_plan.link_ex_info(samples, ex_info_owners.load())
+    except Exception as exc:  # the ledgers are still written
+        log.warning('Ex Info との結び付けに失敗: %s', exc)
+        return dict(result=f'失敗: {exc}', at=now_utc())
+    log.info('Ex Info との結び付け: %d 件', count)
+    return dict(result=f'完了 {count}件を記録', at=now_utc())
+
+
 def run(settings, scan=True, full=False, db=catalog.DEFAULT_DB, out_dir=PUBLISH_DIR, configured=None,
-        lock=None, status_path=STATUS_PATH):
-    """Scan (when asked and no other scan is running), then write every ledger. Returns the status dict."""
+        lock=None, status_path=STATUS_PATH, link=None):
+    """Scan (when asked and no other scan is running), then write every ledger. Returns the status dict.
+    link: record Ex Info sample keys in the shared sample ledger; by default only for the real DB (not in tests)."""
     started = now_utc()
     configured = load_configured() if configured is None else configured
     if not Path(db).exists():
@@ -343,6 +357,8 @@ def run(settings, scan=True, full=False, db=catalog.DEFAULT_DB, out_dir=PUBLISH_
             holder = lock.holder()
             scans['走査'] = dict(result=f'ほかの走査が実行中のため省略（{holder}）', at=now_utc())
             log.info('ほかの走査が実行中のため走査を省略し、保存済みDBから書き出します: %s', holder)
+    if Path(db) == catalog.DEFAULT_DB if link is None else link:
+        scans['Ex Info との結び付け'] = link_samples(db)
     exports = export_all(db, configured, out_dir, scans)
     status = dict(started=started, finished=now_utc(), full=full, scanned=bool(scan), scans=scans,
                   exports=exports, ok=all(r['ok'] for r in exports.values())
