@@ -61,9 +61,24 @@ BASE_COLORS = {"G": "#3b82f6", "A": "#ef4444", "C": "#d946ef", "U": "#2dd4bf", "
 AMINO_COLORS = {**sequence_colors.AMINO_TEXT_COLORS, "B": BASE_COLORS["B"]}
 
 
-def letter_colors(kind):
-    """Colours of the letters of a target list kind ('Peptide' / 'Nucleotide')."""
-    return AMINO_COLORS if kind == "Peptide" else BASE_COLORS
+def letter_colors(kind, letters=""):
+    """Colours of the letters of a target list kind ('Peptide' / 'Nucleotide').
+
+    Letters outside the standard set (modified amino acids / bases such as Z = m1Lys) get their own
+    colours from EXTRA_COLORS, so the viewer still draws their points, level line and legend entry.
+    B stays last so the legend lists the residues first."""
+    base = AMINO_COLORS if kind == "Peptide" else BASE_COLORS
+    extra = [ch for ch in dict.fromkeys(str(letters)) if ch.isalpha() and ch not in base]
+    if not extra:
+        return base
+    colors = {k: v for k, v in base.items() if k != "B"}
+    colors.update({ch: EXTRA_COLORS[i % len(EXTRA_COLORS)] for i, ch in enumerate(extra)})
+    colors["B"] = base["B"]
+    return colors
+
+
+# modified letters: hues the standard amino-acid / base colours do not use
+EXTRA_COLORS = ["#f472b6", "#a3e635", "#38bdf8", "#facc15", "#c4b5fd", "#fda4af"]
 APP_TITLE = "シグナル解析"
 APP_SUBTITLE = "1st Step（ANAL）・2nd Step（BNAL）の解析と結果ビューア"
 APP_ICON = ""
@@ -5381,7 +5396,11 @@ class ViewerPage(QWidget):
             tab.setdefault(n, pd.DataFrame(columns=["L#", "File name"]))
         self.sample, self.b_path = bc["Sample Sequence"], str(path)
         # Nucleotide / Peptide chosen in BNAL (old B@@ files: judged from the sequence)
-        self.colors = letter_colors(sequence_colors.list_kind(tab.get("list_kind"), self.sample))
+        ltp = tab.get("LTP Table")
+        assigned = "".join(sorted(set(map(str, ltp["Assinged Base"])))) if (
+            ltp is not None and "Assinged Base" in ltp) else ""
+        self.colors = letter_colors(sequence_colors.list_kind(tab.get("list_kind"), self.sample),
+                                    str(self.sample) + assigned)
         info = {"Sample name": bc["Sample name"], "Sample Sequence": self.sample}
         info.update({k: br[k] for k in br.index if "BNAL" not in k})
         if self.folder_info:  # folder totals stay on top, the selected file below
