@@ -1,6 +1,7 @@
 """解析・トレンド: 左のチップ一覧で 1 つ、または複数のチップを選び、操作・Info の数値を重ねて比べる。
 
 - 左の一覧は履歴のあるチップ（検索欄でIDを絞り込み）。Ctrl / Shift で複数選択すると、同じグラフに色分けして重ねる。
+  選んだ行は、そのチップの線と同じ色で塗る（どの線がどのチップか一覧でも分かるように）。
 - 1 つだけ選ぶと、そのチップがアプリ全体の選択になる（上部のチップ名・概要・履歴も切り替わる）。台帳を開き直さずに次々と見られる。
 - 横軸は「回数（記録順）」「経過時間」「日時」。経過時間は各チップの最初の Experiment（使用開始）を 0 とし、
   Info 3 の測定時刻（なければ実験の日付）までの時間。チップどうしを使用開始から揃えて比べられる。縦軸は切りのよい目盛り。
@@ -22,6 +23,8 @@ METRICS = ('Info 1', 'Info 2', 'Info 3', 'Info 4', 'Info 5', 'Info 6')
 LIST_COLUMNS = ('id', 'ex', 'count', 'last')
 COLOURS = (ACCENT, '#5b9dff', '#5fbf77', '#f27fb2', '#b68cf5', '#4fc1b5', '#ff7b72', '#e6efe9')
 MAX_SERIES = len(COLOURS)
+LIST_STYLE = 'Trend.Treeview'
+ROW_TEXT = '#10161b'           # 線の色で塗った行の文字（明るい色の上でも読める濃い色）
 
 
 def natural_key(path):
@@ -73,6 +76,7 @@ class TrendView(ttk.Frame):
         self.documents = {}            # {パス: (サイズ, 更新日時, 行)}: 比較で読んだチップの控え
         self.chosen = []               # 比べているチップ（選んだ順）
         self.notes = []
+        self.colours = {}              # {パス: 線の色}: 一覧の選んだ行を同じ色で塗る
         panes = ttk.Panedwindow(self, orient='horizontal')
         panes.pack(fill='both', expand=True)
         left = ttk.Frame(panes, padding=(0, 0, 10, 0))
@@ -90,7 +94,13 @@ class TrendView(ttk.Frame):
         frame = ttk.Frame(left)
         frame.pack(fill='both', expand=True)
         # 「回数」は右で選んだ操作（FC・MA など）の回数。見出しを押すとその列で並べ替え（もう一度で逆順）
-        self.chips = ttk.Treeview(frame, columns=LIST_COLUMNS, show='headings', selectmode='extended', height=20)
+        # 選んだ行の色は行ごとのタグで付ける。共通の Treeview の「選択中は 1 色」が勝たないよう、専用スタイルで空にする
+        style = ttk.Style(self)
+        style.map(LIST_STYLE, background=[], foreground=[])
+        self.chips = ttk.Treeview(frame, columns=LIST_COLUMNS, show='headings', selectmode='extended', height=20,
+                                  style=LIST_STYLE)
+        self.chips.tag_configure('chosen', background=style.lookup('Treeview', 'background', ['selected']),
+                                 foreground='#ffffff')
         for col, title, width in (('id', 'チップID', 130), ('ex', '実験', 46), ('count', '回数', 64), ('last', '最終使用', 92)):
             self.chips.heading(col, text=title, command=lambda c=col: self.sort_list(c))
             self.chips.column(col, width=width, stretch=col == 'id', anchor='e' if col in ('ex', 'count') else 'w')
@@ -177,6 +187,19 @@ class TrendView(ttk.Frame):
             self.chips.insert('', 'end', iid=str(path), values=values)
         self.chips_state.configure(text=f'{len(rows)} / {len(self.app.history_paths)} チップ')
         self._select_in_list(self.chosen)
+        self.paint_list()
+
+    def paint_list(self):
+        """選んでいる行をそのチップの線の色で塗る。線のないチップ（数値なし・9 つ目以降）は共通の選択色。"""
+        selected = set(self.chips.selection())
+        for iid in self.chips.get_children():
+            colour = self.colours.get(Path(iid)) if iid in selected else None
+            if colour:
+                tag = 'line' + colour
+                self.chips.tag_configure(tag, background=colour, foreground=ROW_TEXT)
+                self.chips.item(iid, tags=(tag,))
+            else:
+                self.chips.item(iid, tags=('chosen',) if iid in selected else ())
 
     def sort_list(self, column):
         current, reverse = self.list_sort
@@ -304,7 +327,7 @@ class TrendView(ttk.Frame):
     def series(self):
         """[(チップID, 色, 点の一覧)]。点のないチップは notes に回す。"""
         column = 7 + max(self.metric.current(), 0)
-        out, self.notes = [], []
+        out, self.notes, self.colours = [], [], {}
         if len(self.chosen) > MAX_SERIES:
             self.notes.append(f'先に選んだ {MAX_SERIES} チップだけを表示（{len(self.chosen)} 選択）')
         for path in self.chosen[:MAX_SERIES]:
@@ -318,7 +341,8 @@ class TrendView(ttk.Frame):
                 origin = start_time(rows) or min((t for _, t, _ in points if t is not None), default=None)
                 points = [(n, (t - origin).total_seconds() / 3600 if t and origin else None, v) for n, t, v in points]
             if points:
-                out.append((path.stem, COLOURS[len(out) % len(COLOURS)], points))
+                self.colours[path] = COLOURS[len(out) % len(COLOURS)]
+                out.append((path.stem, self.colours[path], points))
             else:
                 self.notes.append(f'{path.stem}: この操作の数値なし')
         return out
@@ -335,8 +359,10 @@ class TrendView(ttk.Frame):
             series = [(name, colour, sorted((p for p in pts if p[1] is not None), key=lambda p: p[1]))
                       for name, colour, pts in series]
             series = [s for s in series if s[2]]
+            self.colours = {p: c for p, c in self.colours.items() if c in {colour for _, colour, _ in series}}
             if undated:
                 self.notes.append(f'日時のない {undated} 点は除外')
+        self.paint_list()
         if not series:
             text = '左の一覧でチップを選んでください' if not self.chosen else '数値データがある操作を選択してください'
             c.create_text(35, 40, anchor='nw', text=text, fill=theme.MUTED, font=(theme.UI, 12))
