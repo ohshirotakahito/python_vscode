@@ -45,8 +45,8 @@ class FileFilterDialog(tk.Toplevel):
         self.table = DataTable(self, height=10)
         self.table.pack(fill='both', expand=True, padx=10)
         ttk.Label(self, text=('条件を保存した後、元の画面の「予測を実行」を押してください。' if prediction else
-                             '条件を保存した後、元の画面の「⑤ 学習を実行」で学習を開始します。')).pack(pady=(8, 0))
-        ttk.Button(self, text='条件を保存して戻る' if prediction else '④ 条件を保存して戻る', command=self._apply).pack(pady=10)
+                             '条件を保存した後、元の画面の「学習を開始」で学習を始めます。')).pack(pady=(8, 0))
+        ttk.Button(self, text='条件を保存して戻る', command=self._apply).pack(pady=10)
         self._column_changed()
         self._refresh()
 

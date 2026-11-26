@@ -15,6 +15,7 @@ from common.feature_store import list_versions, resolve_version
 from common.fc_parameters import FC_PARAMETER_MODES
 from common.training_core import BALANCE_METHODS, DEFAULT_SETTINGS
 from tab_browser import RunResultView
+from theme import MUTED, SUCCESS, WARNING
 from widgets import CheckList, ProgressPanel, ScrollableFrame
 from training_queue import TrainingQueue, execute as execute_training_queue
 
@@ -52,48 +53,61 @@ class TrainTab(ttk.Frame):
         paned.pack(fill="both", expand=True)
 
         # --- 左: 設定 ---
+        # 必須の手順（1 実験フォルダ → 2 サンプル → 学習を開始）だけを常に表示し、
+        # 任意の設定は折りたたみ欄にまとめる。既定のままでも学習できる。
         left_panel = ttk.Frame(paned, padding=(0, 0, 8, 0))
         paned.add(left_panel, weight=1)
-        actions = ttk.LabelFrame(left_panel, text="⑤ 学習を実行", padding=6)
+        actions = ttk.LabelFrame(left_panel, text="学習を開始", padding=6)
         actions.pack(side="bottom", fill="x", pady=(6, 0))
         settings = ScrollableFrame(left_panel)
         settings.pack(fill="both", expand=True)
         left = settings.inner
-        ttk.Label(left, text="パイプライン").pack(anchor="w")
-        self.pipeline = tk.StringVar(value=list(PIPELINES)[0])
-        combo = ttk.Combobox(left, textvariable=self.pipeline, values=list(PIPELINES),
-                             state="readonly")
-        combo.pack(fill="x", pady=(0, 6))
-        combo.bind("<<ComboboxSelected>>", lambda _e: self._pipeline_changed())
 
-        ttk.Label(left, text="実験フォルダ（出どころ）").pack(anchor="w")
+        basic = ttk.LabelFrame(left, text="必須の手順", padding=6)
+        basic.pack(fill="x", pady=(0, 6))
+        ttk.Label(basic, text="手順1　実験フォルダ（出どころ）を選ぶ").pack(anchor="w")
         self.experiment = tk.StringVar()
-        self.experiment_combo = ttk.Combobox(left, state="readonly")
+        self.experiment_combo = ttk.Combobox(basic, state="readonly")
         self.experiment_combo.pack(fill="x")
         self.experiment_combo.bind("<<ComboboxSelected>>", self._filter_samples)
-        self.source_hint = ttk.Label(left, wraplength=400)
-        self.source_hint.pack(fill="x", pady=(2, 4))
+        self.source_hint = ttk.Label(basic, wraplength=400, foreground=MUTED)
+        self.source_hint.pack(fill="x", pady=(2, 6))
 
-        ttk.Label(left, text="① クラス（サンプル）を2つ以上選択（クリックで選択・解除）").pack(anchor="w")
+        ttk.Label(basic, text="手順2　学習するサンプル（クラス）を2つ以上クリックして選ぶ").pack(anchor="w")
         self.sample_selection_summary = tk.StringVar(value="選択中（0件）: なし")
-        self.samples = CheckList(left, height=10, on_change=self._samples_changed)
+        self.samples = CheckList(basic, height=12, on_change=self._samples_changed)
         self.samples.pack(fill="both", expand=True, pady=2)
-        ttk.Label(left, textvariable=self.sample_selection_summary,
+        ttk.Label(basic, textvariable=self.sample_selection_summary,
                   wraplength=340).pack(anchor="w", fill="x")
-        sample_actions = ttk.Frame(left)
+        sample_actions = ttk.Frame(basic)
         sample_actions.pack(fill="x", pady=2)
         sample_actions.columnconfigure((0, 1), weight=1, uniform="sample_actions")
         ttk.Button(sample_actions, text="すべて選択",
                    command=self.samples.select_all).grid(row=0, column=0, sticky="ew", padx=(0, 2))
         ttk.Button(sample_actions, text="すべて解除",
                    command=self.samples.clear_selection).grid(row=0, column=1, sticky="ew", padx=(2, 0))
-        ttk.Button(left, text="抽出結果の日時・条件を確認 / 使用する版を選択",
-                   command=self._choose_versions).pack(fill="x", pady=2)
-        self.version_summary = ttk.Label(left, text="未指定のサンプルは最新の完了版を使用",
+        ttk.Label(basic, text="手順3　いちばん下の「学習を開始」を押す",
+                  foreground=MUTED).pack(anchor="w", pady=(4, 0))
+
+        advanced = self._collapsible(left, "詳細設定（任意・既定のままで学習できます）")
+        self.advanced_section = advanced
+        ttk.Label(advanced.body, text="パイプライン").pack(anchor="w")
+        self.pipeline = tk.StringVar(value=list(PIPELINES)[0])
+        combo = ttk.Combobox(advanced.body, textvariable=self.pipeline, values=list(PIPELINES),
+                             state="readonly")
+        combo.pack(fill="x", pady=(0, 6))
+        combo.bind("<<ComboboxSelected>>", lambda _e: self._pipeline_changed())
+
+        version_frame = ttk.LabelFrame(advanced.body, text="使用する抽出結果の版", padding=6)
+        version_frame.pack(fill="x", pady=(0, 6))
+        ttk.Button(version_frame, text="抽出結果の日時・条件を確認 / 使用する版を選択",
+                   command=self._choose_versions).pack(fill="x")
+        self.version_summary = ttk.Label(version_frame, text="未指定のサンプルは最新の完了版を使用",
                                          wraplength=340)
         self.version_summary.pack(anchor="w")
-        group_frame = ttk.LabelFrame(left, text="分類単位・グループ設定", padding=6)
-        group_frame.pack(fill="x", pady=6)
+
+        group_frame = ttk.LabelFrame(advanced.body, text="分類単位・グループ設定", padding=6)
+        group_frame.pack(fill="x", pady=(0, 6))
         self.classification_mode = tk.StringVar(value="sample")
         ttk.Radiobutton(group_frame, text="サンプル別（従来）", variable=self.classification_mode,
                         value="sample").pack(anchor="w")
@@ -109,23 +123,10 @@ class TrainTab(ttk.Frame):
         ttk.Radiobutton(group_frame, text="評価：元サンプル単位（各群3サンプル以上）",
                         variable=self.split_mode, value="sample").pack(anchor="w")
         ttk.Label(group_frame, text="グループ別では登録した全所属サンプルで1回学習します。\n"
-                  "実行する内容は下の一覧に表示します。", wraplength=380).pack(fill="x")
-        self.add_combo_button = ttk.Button(left, text="② 選択中のクラスを組み合わせに追加 ↓",
-                                          command=self._add_combo)
-        self.add_combo_button.pack(fill="x", pady=2)
+                  "実行する内容は「複数の組み合わせ」欄に表示します。", wraplength=380).pack(fill="x")
 
-        self.execution_label = ttk.Label(left, text="実行する組み合わせ（1行につき1回の学習）", wraplength=380)
-        self.execution_label.pack(anchor="w", pady=(6, 0))
-        execution_frame = ttk.Frame(left)
-        execution_frame.pack(fill="x", pady=2)
-        self.combos = tk.Listbox(execution_frame, height=5, exportselection=False)
-        self.combos.pack(fill="x", pady=2)
-        self.group_preview = tk.Listbox(execution_frame, height=5, exportselection=False)
-        self.remove_combo_button = ttk.Button(left, text="選択した組み合わせを削除", command=self._remove_combo)
-        self.remove_combo_button.pack(fill="x")
-
-        self.tsfresh_frame = ttk.LabelFrame(left, text="tsfresh設定", padding=6)
-        self.tsfresh_frame.pack(fill="x", pady=6)
+        self.tsfresh_frame = ttk.LabelFrame(advanced.body, text="tsfresh設定", padding=6)
+        self.tsfresh_frame.pack(fill="x", pady=(0, 6))
         self.fc_mode = tk.StringVar(value="minimal")
         for mode, label in FC_PARAMETER_MODES.items():
             ttk.Radiobutton(self.tsfresh_frame, text=label, value=mode,
@@ -134,8 +135,8 @@ class TrainTab(ttk.Frame):
         ttk.Checkbutton(self.tsfresh_frame, text="tsfresh特徴量選択を使う（学習用データのみで選択）",
                         variable=self.use_selection).pack(anchor="w")
 
-        feature_frame = ttk.LabelFrame(left, text="学習に使う特徴量", padding=6)
-        feature_frame.pack(fill="x", pady=6)
+        feature_frame = ttk.LabelFrame(advanced.body, text="学習に使う特徴量", padding=6)
+        feature_frame.pack(fill="x", pady=(0, 6))
         ttk.Button(feature_frame, text="特徴量を選択 / 除外（検索・一括選択）",
                    command=self._choose_training_features).pack(fill="x")
         self.feature_selection_summary = ttk.Label(feature_frame, text="全特徴量を候補に使用", wraplength=400)
@@ -144,7 +145,7 @@ class TrainTab(ttk.Frame):
         self.fc_mode.trace_add('write', lambda *_: self._update_feature_summary())
 
         # 全パイプライン共通の学習設定（common/training_core.py）
-        training_frame = self.training_frame = ttk.LabelFrame(left, text="学習設定（全パイプライン共通）", padding=6)
+        training_frame = self.training_frame = ttk.LabelFrame(advanced.body, text="学習設定（全パイプライン共通）", padding=6)
         training_frame.pack(fill="x", pady=(0, 6))
         ttk.Label(training_frame, text="クラスの偏りへの対処").pack(anchor="w")
         self.balance = tk.StringVar(value=BALANCE_METHODS[DEFAULT_SETTINGS["balance"]])
@@ -160,16 +161,34 @@ class TrainTab(ttk.Frame):
         ttk.Label(training_frame, text="イベント単位の評価では学習用/テスト用を8:2に分けます。"
                   "元サンプル単位の評価も上で選択できます。探索すると学習時間は約（候補数+1）倍になります。", wraplength=380).pack(anchor="w", pady=(4, 0))
 
-        self.settings_end = ttk.Frame(left)
+        filter_frame = ttk.LabelFrame(advanced.body, text="学習ファイルの絞り込み", padding=6)
+        filter_frame.pack(fill="x", pady=(0, 6))
+        self.settings_end = ttk.Frame(filter_frame)
         self.settings_end.pack(fill="x")
-        ttk.Button(left, text="③ 学習ファイルの絞り込みを設定（任意）",
+        ttk.Button(filter_frame, text="学習ファイルの絞り込みを設定",
                    command=self._choose_file_filters).pack(fill="x", pady=2)
-        ttk.Label(left, text="distanceもここで指定します（例：distance.mean = 0.54）。", wraplength=400).pack(anchor="w")
-        self.file_filter_summary = ttk.Label(left, text="ファイル絞り込み：なし", wraplength=400)
+        ttk.Label(filter_frame, text="distanceもここで指定します（例：distance.mean = 0.54）。", wraplength=400).pack(anchor="w")
+        self.file_filter_summary = ttk.Label(filter_frame, text="ファイル絞り込み：なし", wraplength=400)
         self.file_filter_summary.pack(fill="x")
-        self.run_hint = ttk.Label(actions, wraplength=400)
-        self.run_hint.pack(anchor="w", pady=(0, 4))
-        queue_frame = ttk.LabelFrame(left, text='④ 学習セットの待機一覧（登録した順に自動実行）', padding=6)
+
+        batch = self._collapsible(left, "複数の組み合わせをまとめて学習（任意）")
+        self.batch_section = batch
+        ttk.Label(batch.body, text="1回だけ学習するなら不要です。手順2で選んだサンプルを追加すると、"
+                  "1行につき1回ずつ学習します。", wraplength=380, foreground=MUTED).pack(anchor="w")
+        self.add_combo_button = ttk.Button(batch.body, text="選択中のサンプルを組み合わせに追加 ↓",
+                                          command=self._add_combo)
+        self.add_combo_button.pack(fill="x", pady=2)
+        self.execution_label = ttk.Label(batch.body, text="実行する組み合わせ（1行につき1回の学習）", wraplength=380)
+        self.execution_label.pack(anchor="w", pady=(6, 0))
+        execution_frame = ttk.Frame(batch.body)
+        execution_frame.pack(fill="x", pady=2)
+        self.combos = tk.Listbox(execution_frame, height=5, exportselection=False)
+        self.combos.pack(fill="x", pady=2)
+        self.group_preview = tk.Listbox(execution_frame, height=5, exportselection=False)
+        self.remove_combo_button = ttk.Button(batch.body, text="選択した組み合わせを削除", command=self._remove_combo)
+        self.remove_combo_button.pack(fill="x")
+
+        queue_frame = ttk.LabelFrame(batch.body, text='学習セットの待機一覧（条件を変えて続けて学習）', padding=6)
         queue_frame.pack(fill='x', pady=6)
         ttk.Button(queue_frame, text='現在のサンプル・学習条件をセットに登録', command=self._enqueue).pack(fill='x')
         queue_body = ttk.Frame(queue_frame)
@@ -193,15 +212,25 @@ class TrainTab(ttk.Frame):
         self.queue_summary = ttk.Label(queue_frame, text='0セット', wraplength=400)
         self.queue_summary.pack(fill='x')
         ttk.Label(queue_frame, text='登録後に設定を変えても登録済みの条件は変わりません。\n実行中も追加できます。中止した場合、未着手のセットは待機状態で残します。', wraplength=400).pack(fill='x')
+
+        # --- 実行欄（常に表示） ---
+        self.ready_label = ttk.Label(actions, wraplength=400)
+        self.ready_label.pack(anchor="w")
+        self.run_hint = ttk.Label(actions, wraplength=400, foreground=MUTED)
+        run_row = ttk.Frame(actions)
+        run_row.pack(fill="x", pady=4)
+        run_row.columnconfigure(0, weight=3)
+        run_row.columnconfigure(1, weight=1)
+        self.run_button = ttk.Button(run_row, text="▶ 学習を開始", style="Execute.TButton",
+                                     command=self._run)
+        self.run_button.grid(row=0, column=0, sticky="ew", ipady=4, padx=(0, 4))
+        self.cancel_button = ttk.Button(run_row, text="学習を中止", command=self._cancel,
+                                        state="disabled")
+        self.cancel_button.grid(row=0, column=1, sticky="ew", ipady=4)
+        self.progress = ProgressPanel(actions, log_height=2)
+        self.progress.pack(fill="both", expand=True)
         self._queue_poll_id = self.after(200, self._refresh_queue)
         self.bind('<Destroy>', self._queue_destroyed)
-        self.run_button = ttk.Button(actions, text="⑤ 待機セットを順番に学習（未登録なら現在の条件）", command=self._run)
-        self.run_button.pack(fill="x", pady=4)
-        self.cancel_button = ttk.Button(actions, text="学習を中止", command=self._cancel,
-                                        state="disabled")
-        self.cancel_button.pack(fill="x", pady=(0, 4))
-        self.progress = ProgressPanel(actions, log_height=3)
-        self.progress.pack(fill="both", expand=True)
 
         # --- 右: 結果 ---
         right = ttk.Frame(paned)
@@ -223,6 +252,91 @@ class TrainTab(ttk.Frame):
         self._classification_changed()
         self._pipeline_changed()
 
+    # --- 画面構成 ---
+    def _collapsible(self, parent, title):
+        """見出しボタンで開閉する欄。中身は戻り値の .body に配置する（初期状態は閉じる）。"""
+        section = ttk.Frame(parent)
+        section.pack(fill="x", pady=(0, 6))
+        section.title = title
+        section.body = ttk.Frame(section, padding=(8, 4, 0, 0))
+        section.opened = False
+
+        def toggle():
+            section.opened = not section.opened
+            if section.opened:
+                section.body.pack(fill="x")
+            else:
+                section.body.pack_forget()
+            section.header.configure(text=("▼ " if section.opened else "▶ ") + section.title)
+
+        section.header = ttk.Button(section, text="▶ " + title, command=toggle)
+        section.header.pack(fill="x")
+        return section
+
+    def _custom_settings(self):
+        """既定から変えている詳細設定の一覧（閉じた欄の見出しに表示する）。"""
+        changed = []
+        if self.pipeline.get() != list(PIPELINES)[0]:
+            changed.append("パイプライン")
+        if self.feature_versions:
+            changed.append("抽出版")
+        if self.classification_mode.get() == 'group':
+            changed.append("グループ別")
+        if self.split_mode.get() != 'event':
+            changed.append("評価単位")
+        if PIPELINES[self.pipeline.get()]["tsfresh"] and (
+                self.fc_mode.get() != 'minimal' or not self.use_selection.get()):
+            changed.append("tsfresh")
+        if self._selected_training_features() is not None:
+            changed.append("特徴量")
+        if (self.balance.get() != BALANCE_METHODS[DEFAULT_SETTINGS["balance"]]
+                or bool(self.tune.get()) != bool(DEFAULT_SETTINGS["tune"])):
+            changed.append("学習設定")
+        if self.file_filter_rules:
+            changed.append("ファイル絞り込み")
+        return changed
+
+    def _update_ready(self, jobs):
+        """実行欄の「次に何をすればよいか」とボタン名を、現在の状態に合わせて更新する。"""
+        waiting = sum(job['state'] == '待機' for job in jobs)
+        grouped = self.classification_mode.get() == 'group'
+        combos = self.combos.size()
+        selected = len(self.samples.get_selected())
+        if waiting:
+            text, ok = f"✔ 待機中の学習セット {waiting} 件を順番に学習できます", True
+            button = f"▶ 学習を開始（待機セット {waiting} 件）"
+        elif grouped:
+            ok = bool(self.sample_groups)
+            text = ("✔ 登録したグループで学習できます" if ok else
+                    "グループが未設定です：詳細設定の「グループ名・所属サンプルを設定」で登録してください")
+            button = "▶ 学習を開始（グループ別）"
+        elif combos:
+            text, ok = f"✔ 登録した組み合わせ {combos} 件を順番に学習できます", True
+            button = f"▶ 学習を開始（組み合わせ {combos} 件）"
+        else:
+            ok = selected >= 2
+            text = (f"✔ 選択中の {selected} サンプルで学習できます" if ok else
+                    f"手順2でサンプルをあと {2 - selected} つ以上選んでください")
+            button = "▶ 学習を開始"
+        if self.ready_label.cget("text") != text:
+            self.ready_label.configure(text=text, foreground=SUCCESS if ok else WARNING)
+        if self.run_button.cget("text") != button:
+            self.run_button.configure(text=button)
+        changed = self._custom_settings()
+        title = ("詳細設定（任意）— 変更あり: " + "、".join(changed) if changed else
+                 "詳細設定（任意・既定のままで学習できます）")
+        if self.advanced_section.title != title:
+            self.advanced_section.title = title
+            self.advanced_section.header.configure(
+                text=("▼ " if self.advanced_section.opened else "▶ ") + title)
+        batch_title = ("複数の組み合わせをまとめて学習（任意）"
+                       + (f"— 組み合わせ {combos} 件" if combos else "")
+                       + (f"— 待機セット {waiting} 件" if waiting else ""))
+        if self.batch_section.title != batch_title:
+            self.batch_section.title = batch_title
+            self.batch_section.header.configure(
+                text=("▼ " if self.batch_section.opened else "▶ ") + batch_title)
+
     # --- 入力 ---
     def _classification_changed(self):
         grouped = self.classification_mode.get() == 'group'
@@ -238,16 +352,14 @@ class TrainTab(ttk.Frame):
             self.group_preview.pack(fill='x', pady=2)
             count = sum(len(members) for members in self.sample_groups.values())
             self.execution_label.configure(text=f'実行予定：グループ分類を1回（{len(self.sample_groups)}群・{count}サンプル）')
-            self.run_hint.configure(text='④で現在のグループ・条件を学習セットに登録できます。\n'
-                                    '⑤で待機セットを順番に実行します。\n'
-                                    '待機セットがなければ、現在の全グループで1回学習します。')
+            self.run_hint.configure(text='グループ別：現在の全グループで1回学習します。')
+            self.run_hint.pack(anchor="w", pady=(0, 2), after=getattr(self, 'ready_label', None))
         else:
             self.group_preview.pack_forget()
             self.combos.pack(fill='x', pady=2)
             self.execution_label.configure(text='実行する組み合わせ（1行につき1回の学習）')
-            self.run_hint.configure(text='④でサンプルの組み合わせと現在の条件を学習セットに登録します。\n'
-                                    '⑤で待機セットを順番に実行します。\n'
-                                    '待機セットがなければ、現在の条件で実行します。')
+            self.run_hint.configure(text='')
+            self.run_hint.pack_forget()
 
     def apply_review_selection(self, feature_set, samples, versions, rules):
         if hasattr(self, 'classification_mode'):
@@ -276,7 +388,7 @@ class TrainTab(ttk.Frame):
         self._set_file_filters(rules)
         self.progress.log('\n精査画面のサンプル・抽出版・ファイル条件を反映しました。\n'
                           '組み合わせ一覧は今回のサンプルに置き換えました。\n'
-                          '学習設定を確認して「学習を実行」を押してください。\n')
+                          '学習設定を確認して「学習を開始」を押してください。\n')
         return True
 
     def _samples_changed(self, selected):
@@ -778,6 +890,7 @@ class TrainTab(ttk.Frame):
                 self.queue_tree.insert('', 'end', iid=key, values=values)
         counts = {state: sum(job['state'] == state for job in jobs) for state in ('待機', '実行中', '完了')}
         self.queue_summary.configure(text=f"全{len(jobs)}セット / 待機{counts['待機']} / 実行中{counts['実行中']} / 完了{counts['完了']}")
+        self._update_ready(jobs)
 
     def _refresh_queue(self):
         self._render_queue()
