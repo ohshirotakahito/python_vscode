@@ -11,9 +11,11 @@ q値は LCP Table の塩基ごとの Q value / ASCII_Q（Phred+33）を bnal_sou
 """
 from __future__ import annotations
 
+import sys
 import warnings
 from collections import Counter
 from dataclasses import dataclass
+from pathlib import Path
 
 import matplotlib
 import numpy as np
@@ -23,6 +25,10 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Patch, Rectangle
 
 from bnal_plots import DATASET_COLORS, POSITION, VALUE
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 BASE = 'Assigned Base'
 Q_VALUE = 'Q value [x]'
@@ -42,6 +48,13 @@ TEXT_COLORS = {
     'M': '#d08bff', 'N': '#ff8cc6', 'S': '#4fd6e8', 'X': '#d9a066', 'Z': '#9d9dff', 'F': '#ff6fa3',
 }
 STANDARD_BASES = set('AUTGC')
+# アミノ酸の色（図＝白背景用 / 画面の文字＝暗い背景用）は シグナル解析の結果ビューアと共通。
+# AMINO_ONLY: 核酸の BC では使わない文字。BNAL の記録が無い古い B@@ では、参照配列にこれがあればペプチド
+from shared.bnal_lists import AMINO_ONLY  # noqa: E402
+from shared.sequence_colors import (AMINO_COLORS, AMINO_GROUP_OF, AMINO_GROUPS, AMINO_ORDER,  # noqa: E402,F401
+                                    AMINO_TEXT_COLORS)
+NUCLEOTIDE, PEPTIDE = 'nucleotide', 'peptide'
+LIST_KINDS = {'Nucleotide': NUCLEOTIDE, 'Peptide': PEPTIDE}   # BNAL の target リストの分類 -> 表示の種類
 # 読みの向きは塩基の色と被らないよう無彩色系にする
 DIRECTION_COLORS = {FORWARD: '#455a64', REVERSE: '#a7b4bd'}
 
@@ -54,7 +67,18 @@ Q_BANDS = (5.0, 10.0)         # 文字列表示の色分け: 低 < 5 ≦ 中 < 1
 Q_MAX_CHAR = 40               # ASCII_Q の上限（'I'）
 
 
-def base_color(base, text=False):
+def sequence_kind(letters) -> str:
+    """配列の文字から核酸かペプチドかを決める（アミノ酸だけの文字が1つでもあればペプチド）"""
+    return PEPTIDE if any(ch in AMINO_ONLY for s in letters for ch in str(s)) else NUCLEOTIDE
+
+
+def unit_name(kind) -> str:
+    return 'アミノ酸' if kind == PEPTIDE else '塩基'
+
+
+def base_color(base, text=False, kind=NUCLEOTIDE):
+    if kind == PEPTIDE:
+        return (AMINO_TEXT_COLORS if text else AMINO_COLORS).get(base, '#cfcfcf' if text else OTHER_COLOR)
     return (TEXT_COLORS if text else BASE_COLORS).get(base, '#cfcfcf' if text else OTHER_COLOR)
 
 
@@ -247,6 +271,17 @@ class Assembly:
     def sequence(self):
         return ''.join(self.reference.tolist())
 
+    list_kind: str = ''       # BNAL で選んだ target リストの分類（'Nucleotide' / 'Peptide'。記録なしは空）
+
+    @property
+    def kind(self):
+        """'nucleotide' / 'peptide'。BNAL の記録を優先し、無ければ（古い B@@）参照配列の文字から決める"""
+        return LIST_KINDS.get(self.list_kind) or sequence_kind(self.reference.tolist())
+
+    @property
+    def unit(self):
+        return unit_name(self.kind)
+
     @property
     def has_quality(self):
         return bool(len(self.reads)) and self.reads['mean_q'].notna().any()
@@ -257,19 +292,21 @@ class Assembly:
             return f'{self.label}: 読み 0 本（全 {self.total_reads:,} 本）'
         fwd = int((r['direction'] == FORWARD).sum())
         lengths = Counter(r['length'])
-        top = '、'.join(f'{n}塩基 {c:,}' for n, c in lengths.most_common(3))
+        unit = self.unit
+        top = '、'.join(f'{n}{unit} {c:,}' for n, c in lengths.most_common(3))
         shown = f'{len(r):,}' + (f' / 全 {self.total_reads:,}' if len(r) != self.total_reads else '')
-        text = (f'{self.label}: 参照 {self.sequence}（{len(self.reference)} 塩基）／読み {shown} 本'
+        text = (f'{self.label}: 参照 {self.sequence}（{len(self.reference)} {unit}）／読み {shown} 本'
                 f'（→ {fwd:,} / ← {len(r) - fwd:,}）／長さ 平均 {r["length"].mean():.1f}（{top}）')
         if self.has_quality:
             q = np.concatenate([x for x in r['quals']])
-            text += f'／塩基の Q 中央値 {np.nanmedian(q):.1f}（読みの平均Q 中央値 {r["mean_q"].median():.1f}）'
+            text += f'／{unit}の Q 中央値 {np.nanmedian(q):.1f}（読みの平均Q 中央値 {r["mean_q"].median():.1f}）'
         else:
             text += '／q値なし（古いキャッシュ。サーバーから読み直すと付きます）'
         return text
 
 
-def build(raw: pd.DataFrame, label, target='', direction='both', min_length=1, min_read_q=0.0) -> Assembly:
+def build(raw: pd.DataFrame, label, target='', direction='both', min_length=1, min_read_q=0.0,
+          list_kind='') -> Assembly:
     """min_read_q: 読みの平均Q がこれ未満の読みを除く（q値の無い読みは残す）"""
     reads = extract_reads(raw)
     total = len(reads)
@@ -278,43 +315,53 @@ def build(raw: pd.DataFrame, label, target='', direction='both', min_length=1, m
     reads = reads[reads['length'] >= min_length]
     if min_read_q > 0:
         reads = reads[~(reads['mean_q'] < min_read_q)]
-    return Assembly(label, target, reference(raw), reads.reset_index(drop=True), total)
+    return Assembly(label, target, reference(raw), reads.reset_index(drop=True), total, list_kind or '')
 
 
 # ============= 図 =============
-def _letter_color(base):
+def _letter_color(base, kind=NUCLEOTIDE):
     """色付きのマスに載せる文字色（明るい色の上は黒、それ以外は白）"""
-    r, g, b = matplotlib.colors.to_rgb(base_color(base))
+    r, g, b = matplotlib.colors.to_rgb(base_color(base, kind=kind))
     return '#202020' if 0.299 * r + 0.587 * g + 0.114 * b > 0.6 else 'white'
 
 
-def _draw_sequence_row(ax, positions, bases, y, height=0.9, fontsize=11, highlight=()):
+def _draw_sequence_row(ax, positions, bases, y, height=0.9, fontsize=11, highlight=(), kind=NUCLEOTIDE):
     for i, (pos, base) in enumerate(zip(positions, bases)):
         if not base:
             continue
-        ax.add_patch(Rectangle((i - 0.45, y - height / 2), 0.9, height, facecolor=base_color(base),
+        ax.add_patch(Rectangle((i - 0.45, y - height / 2), 0.9, height, facecolor=base_color(base, kind=kind),
                                edgecolor='black' if pos in highlight else 'none',
                                linewidth=2.0 if pos in highlight else 0))
         ax.text(i, y, base, ha='center', va='center', fontsize=fontsize, fontweight='bold',
-                color=_letter_color(base), family='Consolas')
+                color=_letter_color(base, kind), family='Consolas')
 
 
-def _base_legend(fig, letters, directions=True, fade=False):
-    handles = [Patch(facecolor=base_color(b), label=b + ('（修飾）' if b not in STANDARD_BASES else ''))
-               for b in letters]
+def letter_label(base, kind=NUCLEOTIDE):
+    """凡例の文字: 核酸は A/U/G/C 以外に（修飾）、アミノ酸は性質のグループを付ける"""
+    if kind == PEPTIDE:
+        return f'{base}（{AMINO_GROUP_OF.get(base, "その他")}）'
+    return base + ('（修飾）' if base not in STANDARD_BASES else '')
+
+
+def _base_legend(fig, letters, directions=True, fade=False, kind=NUCLEOTIDE):
+    handles = [Patch(facecolor=base_color(b, kind=kind), label=letter_label(b, kind)) for b in letters]
     if directions:
         handles += [Patch(facecolor=DIRECTION_COLORS[FORWARD], label='順方向 →'),
                     Patch(facecolor=DIRECTION_COLORS[REVERSE], label='逆方向 ←')]
     if fade:
-        handles += [Patch(facecolor=matplotlib.colors.to_rgba(BASE_COLORS['A'], 1.0), label=f'Q≥{Q_FADE[1]:.0f}'),
-                    Patch(facecolor=matplotlib.colors.to_rgba(BASE_COLORS['A'], 0.45), label='Q 中'),
-                    Patch(facecolor=matplotlib.colors.to_rgba(BASE_COLORS['A'], Q_FADE_MIN_ALPHA),
+        sample = base_color(letters[0], kind=kind) if letters else BASE_COLORS['A']
+        handles += [Patch(facecolor=matplotlib.colors.to_rgba(sample, 1.0), label=f'Q≥{Q_FADE[1]:.0f}'),
+                    Patch(facecolor=matplotlib.colors.to_rgba(sample, 0.45), label='Q 中'),
+                    Patch(facecolor=matplotlib.colors.to_rgba(sample, Q_FADE_MIN_ALPHA),
                           label=f'Q≤{Q_FADE[0]:.0f}（淡いほど低品質）')]
-    fig.legend(handles=handles, loc='lower center', ncol=len(handles), fontsize=8, frameon=False,
+    ncol = len(handles) if len(handles) <= 16 else (len(handles) + 1) // 2
+    fig.legend(handles=handles, loc='lower center', ncol=ncol, fontsize=8, frameon=False,
                bbox_to_anchor=(0.5, 0.0))
 
 
-def _sorted_letters(bases):
+def _sorted_letters(bases, kind=NUCLEOTIDE):
+    if kind == PEPTIDE:
+        return sorted(set(bases) - {''}, key=lambda b: (AMINO_ORDER.index(b) if b in AMINO_ORDER else 99, b))
     return sorted(set(bases) - {''}, key=lambda b: (b not in STANDARD_BASES, b))
 
 
@@ -346,6 +393,7 @@ def plot_pileup(asm: Assembly, figure=None, sort='start', merge=True, max_rows=3
     if not positions:
         raise ValueError('Assigned Base が無いため、アセンブリを表示できません')
     has_q = asm.has_quality
+    kind = asm.kind
     if color in ('q', 'base_q') and not has_q:
         color = 'base'
     col = {p: i for i, p in enumerate(positions)}
@@ -363,7 +411,8 @@ def plot_pileup(asm: Assembly, figure=None, sort='start', merge=True, max_rows=3
     ax_side = fig.add_subplot(grid[-1, 1], sharey=ax_pile)
 
     # 参照配列
-    _draw_sequence_row(ax_ref, positions, asm.reference.tolist(), 0, fontsize=12 if len(positions) <= 30 else 8)
+    _draw_sequence_row(ax_ref, positions, asm.reference.tolist(), 0, fontsize=12 if len(positions) <= 30 else 8,
+                       kind=kind)
     ax_ref.set_ylim(-0.6, 0.6)
     ax_ref.set_yticks([0])
     ax_ref.set_yticklabels(['参照'])
@@ -401,7 +450,7 @@ def plot_pileup(asm: Assembly, figure=None, sort='start', merge=True, max_rows=3
     n = len(shown)
     rgb = np.ones((max(n, 1), len(positions), 3))
     scalar = np.full((max(n, 1), len(positions)), np.nan)
-    letters = _sorted_letters(asm.reference.tolist() + [b for s in shown['sequence'] for b in s])
+    letters = _sorted_letters(asm.reference.tolist() + [b for s in shown['sequence'] for b in s], kind)
     for r, row in enumerate(shown.itertuples()):
         for k, base in enumerate(row.sequence):
             c = col.get(row.start + k)
@@ -413,7 +462,7 @@ def plot_pileup(asm: Assembly, figure=None, sort='start', merge=True, max_rows=3
             elif color == 'q':
                 scalar[r, c] = q
             else:
-                base_rgb = np.array(matplotlib.colors.to_rgb(base_color(base)))
+                base_rgb = np.array(matplotlib.colors.to_rgb(base_color(base, kind=kind)))
                 a = float(q_alpha(q)) if color == 'base_q' else 1.0
                 rgb[r, c] = base_rgb * a + (1 - a)
     extent = (-0.5, len(positions) - 0.5, max(n, 1) - 0.5, -0.5)
@@ -440,7 +489,7 @@ def plot_pileup(asm: Assembly, figure=None, sort='start', merge=True, max_rows=3
                 elif color == 'base_q' and q_alpha(row.quals[k]) < 0.55:
                     text_color = '#303030'
                 else:
-                    text_color = _letter_color(base)
+                    text_color = _letter_color(base, kind)
                 ax_pile.text(c, r, base, ha='center', va='center', fontsize=size, family='Consolas',
                              color=text_color, fontweight='bold')
     if n <= 150:
@@ -451,7 +500,7 @@ def plot_pileup(asm: Assembly, figure=None, sort='start', merge=True, max_rows=3
                 ax_pile.plot(col[row.start] - 0.5, r, '<', color=DIRECTION_COLORS[REVERSE], markersize=4, clip_on=False)
     ax_pile.set_xticks(range(len(positions)))
     ax_pile.set_xticklabels([f'{p}\n{b}' for p, b in zip(positions, asm.reference)], fontsize=7)
-    ax_pile.set_xlabel(f'{POSITION}（位置） / 参照の塩基')
+    ax_pile.set_xlabel(f'{POSITION}（位置） / 参照の{asm.unit}')
     ax_pile.set_ylabel('まとめた読み（同じ区間・向き）' if merge else '読み')
     ax_pile.set_yticks([])
 
@@ -482,7 +531,7 @@ def plot_pileup(asm: Assembly, figure=None, sort='start', merge=True, max_rows=3
         fig.colorbar(image, ax=[ax_pile, ax_side], fraction=0.03, extend='max' if color == 'q' else 'neither',
                      label=VALUE if color == 'value' else 'Q 値（Phred）')
     else:
-        _base_legend(fig, letters, fade=color == 'base_q')
+        _base_legend(fig, letters, fade=color == 'base_q', kind=kind)
         fig.get_layout_engine().set(rect=(0, 0.04, 1, 0.96))
     return fig
 
@@ -505,19 +554,22 @@ def plot_compare(assemblies, figure=None):
     ax_q = fig.add_subplot(grid[2], sharex=ax_seq) if has_q else None
 
     first = assemblies[0].reference
+    kinds = {a.kind for a in assemblies}
+    kind = kinds.pop() if len(kinds) == 1 else NUCLEOTIDE
     letters = set()
     for k, a in enumerate(assemblies):
         bases = [a.reference.get(p, '') for p in positions]
         letters.update(b for b in bases if b)
         diff = {p for p, b in zip(positions, bases) if k and b and b != first.get(p, '')}
-        _draw_sequence_row(ax_seq, positions, bases, k, fontsize=11 if len(positions) <= 30 else 7, highlight=diff)
+        _draw_sequence_row(ax_seq, positions, bases, k, fontsize=11 if len(positions) <= 30 else 7, highlight=diff,
+                           kind=a.kind)
     ax_seq.set_ylim(n - 0.4, -0.6)
     ax_seq.set_yticks(range(n))
     ax_seq.set_yticklabels([f'{k + 1}: {a.label}' for k, a in enumerate(assemblies)], fontsize=8)
     for k, tick in enumerate(ax_seq.get_yticklabels()):
         tick.set_color(DATASET_COLORS[k % len(DATASET_COLORS)])
     _style_top_axis(ax_seq, positions)
-    ax_seq.set_title('参照配列の比較（太枠＝1番目と違う塩基）', fontsize=9)
+    ax_seq.set_title(f'参照配列の比較（太枠＝1番目と違う{unit_name(kind)}）', fontsize=9)
 
     xs = np.arange(len(positions))
     for k, a in enumerate(assemblies):
@@ -542,7 +594,7 @@ def plot_compare(assemblies, figure=None):
     bottom.set_xticklabels([str(p) for p in positions], fontsize=8)
     bottom.set_xlabel(f'{POSITION}（位置）')
     fig.suptitle(f'アセンブリの比較（{n} データ）', fontsize=10)
-    _base_legend(fig, _sorted_letters(letters), directions=False)
+    _base_legend(fig, _sorted_letters(letters, kind), directions=False, kind=kind)
     fig.get_layout_engine().set(rect=(0, 0.04, 1, 0.96))
     return fig
 

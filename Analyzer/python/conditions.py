@@ -43,6 +43,30 @@ FIELDS = {
 # BNAL sets also keep the BC (conductance table) file per list kind: values["bc_files"] = {kind: file name}
 DEFAULT_VALUES = {"anal": {k: FIRST_DEFAULT[k] for k, *_ in FIELDS["anal"]},
                   "bnal": {**{k: SECOND_DEFAULT[k] for k, *_ in FIELDS["bnal"]}, "bc_files": {}}}
+# Right Read MIN per SEQlist kind: values["right_read_min"] is the Nucleotide (LabVIEW) value; a kind listed here
+# (or in values["rr_min_by_kind"]) uses its own value. Peptides default to 3, as the user decided (2026-11-25).
+RR_MIN_DEFAULTS = {"Peptide": 3}
+
+
+def _rr_by_kind(values):
+    return values.get("rr_min_by_kind") or {}
+
+
+def for_kind(values, kind):
+    """The set's values as used for one list kind: right_read_min becomes that kind's value."""
+    out = dict(values)
+    if kind in RR_MIN_DEFAULTS or kind in _rr_by_kind(values):
+        out["right_read_min"] = _rr_by_kind(values).get(kind, RR_MIN_DEFAULTS.get(kind, values.get("right_read_min")))
+    return out
+
+
+def store_for_kind(values, kind, base):
+    """Values edited for one list kind -> set values: that kind's right_read_min goes to rr_min_by_kind and the
+    shared right_read_min stays the one of base (the set the edit started from)."""
+    if kind not in RR_MIN_DEFAULTS and kind not in _rr_by_kind(base):
+        return {**values, **({"rr_min_by_kind": dict(_rr_by_kind(base))} if _rr_by_kind(base) else {})}
+    return {**values, "right_read_min": base.get("right_read_min", DEFAULT_VALUES["bnal"]["right_read_min"]),
+            "rr_min_by_kind": {**_rr_by_kind(base), kind: values["right_read_min"]}}
 
 
 def default_set(kind):
@@ -121,6 +145,21 @@ def set_current(kind, name, path=None):
         save(data, path)
 
 
+def rename_bc_file(old, new, path=None):
+    """A BC file was renamed: the BNAL sets that name it now name the new file. Returns the set names changed."""
+    data = load(path)
+    changed = []
+    for s in data["bnal"]["sets"]:
+        files = s["values"].get("bc_files") or {}
+        if old in files.values():
+            s["values"]["bc_files"] = {k: new if v == old else v for k, v in files.items()}
+            changed.append(s["name"])
+    if changed:
+        _log(data, "bnal", f"BC 名変更 {old} → {new}", "、".join(changed))
+        save(data, path)
+    return changed
+
+
 def clean(kind, values):
     """The values of FIELDS (typed, inside their range); BNAL also keeps bc_files."""
     out = {}
@@ -136,6 +175,13 @@ def clean(kind, values):
         out[key] = v
     if kind == "bnal":
         out["bc_files"] = {k: str(v) for k, v in (values.get("bc_files") or {}).items() if v}
+        lo, hi = dict((k, spec) for k, _, _, spec in FIELDS["bnal"])["right_read_min"]
+        by_kind = {k: int(v) for k, v in _rr_by_kind(values).items()}
+        bad = [f"{k}: {v}" for k, v in by_kind.items() if not lo <= v <= hi]
+        if bad:
+            raise ValueError(f"right_read_min {', '.join(bad)} は範囲外です（{lo}〜{hi}）")
+        if by_kind:
+            out["rr_min_by_kind"] = by_kind
     return out
 
 

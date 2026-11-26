@@ -20,7 +20,7 @@ from tkinter import filedialog, messagebox, ttk
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # リポジトリ直下（shared/ を読むため）
 
 from shared import ui_theme  # noqa: E402
-from scoring import axn_bridge, experiment_ledger, machine_data, rescore, score_store  # noqa: E402
+from scoring import axn_bridge, experiment_ledger, machine_data, report_history, rescore, score_store  # noqa: E402
 from scoring.score_store import MEASURED, RECONSTRUCTED  # noqa: E402
 
 try:
@@ -254,6 +254,8 @@ class App(tk.Tk):
         self.ledger_table = Table(tab, LEDGER_SHOW, titles, LEDGER_WIDTH, height=18, fixed=True)
         self.ledger_table.pack(fill='both', expand=True, pady=(6, 4))
         self.ledger_table.tree.bind('<<TreeviewSelect>>', lambda e: self.show_experiment())
+        self.reports_button = ttk.Button(tab, text='実行結果', command=self.show_reports, state='disabled')
+        self.reports_button.pack(anchor='w', pady=(0, 4))
         self.detail = tk.Text(tab, height=10, wrap='none', font=(ui_theme.MONO, 9))
         ui_theme.style_text(self.detail)
         self.detail.pack(fill='x')
@@ -366,6 +368,7 @@ class App(tk.Tk):
 
     def show_experiment(self):
         rows = self.ledger_table.selected_rows()
+        self.reports_button.configure(state='normal' if rows else 'disabled')
         self.detail.delete('1.0', 'end')
         if not rows:
             return
@@ -389,6 +392,75 @@ class App(tk.Tk):
                                  f"{r.get(score_store.SCORE_COLUMN[kind])}  {r.get(f'{kind} Score Detail', '')}  "
                                  f"[{r.get('Era')}] {r.get('Criteria')}")
         self.detail.insert('1.0', '\n'.join(lines))
+
+    def show_reports(self):
+        rows = self.ledger_table.selected_rows()
+        if not rows:
+            return
+        machine, name = rows[0]['machine'], rows[0]['name']
+        window = tk.Toplevel(self)
+        window.title('実行結果')
+        window.transient(self)
+        window.geometry('960x620')
+        body = ttk.Frame(window, padding=10)
+        body.pack(fill='both', expand=True)
+        ttk.Label(body, text=f'{machine}  {name}').pack(anchor='w')
+        status = ttk.Label(body, text='実行結果を読み込み中…')
+        status.pack(anchor='w', pady=(4, 6))
+        columns = ('when', 'operation', 'summary')
+        table = Table(body, columns, ('時刻', '操作', '結果'),
+                      dict(zip(columns, (155, 120, 620))), height=9)
+        table.tree.configure(selectmode='browse')
+        table.pack(fill='both', expand=True)
+        ttk.Label(body, text='詳細情報').pack(anchor='w', pady=(6, 2))
+        detail_frame = ttk.Frame(body)
+        detail_frame.pack(fill='both', expand=True)
+        details = tk.Text(detail_frame, height=12, wrap='char', state='disabled', font=(ui_theme.MONO, 9))
+        ui_theme.style_text(details)
+        scrollbar = ttk.Scrollbar(detail_frame, orient='vertical', command=details.yview)
+        details.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side='right', fill='y')
+        details.pack(side='left', fill='both', expand=True)
+        ttk.Button(body, text='閉じる', command=window.destroy).pack(anchor='e', pady=(6, 0))
+
+        def show_details(_event=None):
+            selected = table.selected_rows()
+            details.configure(state='normal')
+            details.delete('1.0', 'end')
+            if selected:
+                details.insert('1.0', selected[0]['details'])
+            details.configure(state='disabled')
+
+        table.tree.bind('<<TreeviewSelect>>', show_details)
+        results = queue.Queue()
+
+        def worker():
+            try:
+                results.put(report_history.load(name, machine))
+            except Exception as exc:
+                results.put(exc)
+
+        def poll():
+            if not window.winfo_exists():
+                return
+            try:
+                result = results.get_nowait()
+            except queue.Empty:
+                self.after(75, poll)
+                return
+            if isinstance(result, Exception):
+                status.configure(text=f'実行結果を読み込めませんでした。 {result}')
+                return
+            path, reports = result
+            if not reports:
+                status.configure(text='保存された実行結果がありません。' if path else '実験IDの保存先が見つかりません。')
+                return
+            status.configure(text=path)
+            table.fill([vars(report) for report in reports])
+            table.tree.selection_set(table.tree.get_children()[0])
+
+        threading.Thread(target=worker, daemon=True).start()
+        self.after(75, poll)
 
     def export_ledger(self):
         initial = experiment_ledger.ledger_path(self.folder)

@@ -45,7 +45,36 @@ TOP_XGboost_*.py）の保存先フォルダを一元管理する。
 
 from datetime import datetime
 from pathlib import Path
+import hashlib
 import json
+
+# フォルダ名に入れるサンプル名の連結の上限。サンプルが多いと Windows のパス長上限
+# （260文字）を超えて保存に失敗するため、これを超えたら短縮する。
+MAX_LABEL_CHARS = 60
+
+
+def samples_label(smns, limit: int = MAX_LABEL_CHARS) -> str:
+    """サンプル名のリストをフォルダ名用の文字列にする。
+
+    短いときは従来どおり 'A-B-C'。長いときは先頭のサンプル名＋件数＋全体のハッシュ
+    （例: 'AGO2_H336Y-AGO2_H336Y_WT_ほか28件_1a2b3c4d'）にして、同じ組み合わせなら
+    常に同じ名前・違う組み合わせなら別の名前になるようにする。
+    正式なサンプル一覧は各フォルダの manifest に保存されている。
+    """
+    smns = [str(s) for s in smns]
+    full = '-'.join(smns)
+    if len(full) <= limit:
+        return full
+    digest = hashlib.sha1(full.encode('utf-8')).hexdigest()[:8]
+    head, used = '', 0
+    for name in smns:
+        candidate = f'{head}-{name}' if head else name
+        if len(candidate) > limit - 20:
+            break
+        head, used = candidate, used + 1
+    if not head:
+        head, used = smns[0][:limit - 20], 1
+    return f'{head}_ほか{len(smns) - used}件_{digest}'
 
 # プロジェクトルート（common/ の1つ上の階層）
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -160,7 +189,7 @@ def new_run(feature_set: str, algorithm: str, smns=None, timestamp: str = None,
     戻り値: (run_dir: Path, timestamp: str)
     """
     timestamp = timestamp or datetime.now().strftime('%Y%m%d_%H%M%S')
-    label = '-'.join(smns) if smns else 'run'
+    label = samples_label(smns) if smns else 'run'
 
     if run_type:
         folder_name = f"{timestamp}_{run_type}_{label}"

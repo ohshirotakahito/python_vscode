@@ -173,14 +173,32 @@ def species(bc):
 # ---------------------------------------------------------------------------
 # editing: BC tables and targets
 # ---------------------------------------------------------------------------
-def write_bc(path, src_path, levels):
-    """Copy a BC csv with some relative levels replaced ({letter: level}); other columns are kept."""
-    rows = list(csv.reader(_decode(src_path).splitlines()))
-    for row in rows:
-        if len(row) >= 5 and row[1].strip() in levels:
-            row[4] = f"{levels[row[1].strip()]:g}"
-    with open(path, "w", newline="", encoding="cp932", errors="replace") as f:
+def read_bc_rows(path):
+    """All rows of a BC csv as written (index, letter, name, colour, level, STD, description, ...)."""
+    return list(csv.reader(_decode(path).splitlines()))
+
+
+def write_bc_rows(path, rows):
+    """A new BC csv (never overwrites: FileExistsError), in the cp932 / CRLF form LabVIEW reads."""
+    with open(path, "x", newline="", encoding="cp932", errors="replace") as f:
         csv.writer(f, lineterminator="\r\n").writerows(rows)
+
+
+def next_bc_name(folder):
+    """The next free numbered BC name (BC files are 000.csv, 001.csv, 010_RNA_konno.csv, ...)."""
+    numbers = [int(m.group(1)) for p in Path(folder).glob("*.csv") if (m := re.match(r"(\d{3})", p.name))]
+    n = max(numbers, default=-1) + 1
+    while (Path(folder) / f"{n:03d}.csv").exists():
+        n += 1
+    return f"{n:03d}.csv"
+
+
+def rename_bc(folder, old, new):
+    """Rename a BC file in the folder (the new name must be free)."""
+    src, dst = Path(folder) / old, Path(folder) / new
+    if dst.exists():
+        raise FileExistsError(new)
+    os.rename(src, dst)
 
 
 def write_targets(path, targets, append=False, *, exclusive=False):
@@ -218,6 +236,32 @@ def variants(name, seq, letter, positions):
 # condition history
 # ---------------------------------------------------------------------------
 HISTORY = Path(__file__).resolve().parent.parent / "logs" / "bnal_history.jsonl"
+
+
+RESUME = HISTORY.with_name("bnal_resume.json")  # the BNAL run in progress on this PC (removed when it finishes)
+
+
+def save_resume(entry, path=None):
+    """Remember the run (conditions + combinations) so a run that stopped can be started again."""
+    import json
+    path = Path(path or RESUME)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(entry, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def load_resume(path=None):
+    import json
+    try:
+        entry = json.loads(Path(path or RESUME).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return entry if isinstance(entry, dict) and entry.get("combinations") else None
+
+
+def clear_resume(path=None):
+    Path(path or RESUME).unlink(missing_ok=True)
 
 
 def add_history(entry, path=None):

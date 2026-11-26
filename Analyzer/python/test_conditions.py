@@ -51,6 +51,34 @@ class ConditionSetTests(unittest.TestCase):
         cur = conditions.current("bnal", self.path)["values"]
         self.assertEqual((cur["right_read_min"], cur["bc_files"]), (6, {"RNA": "BC_RNA.csv"}))
 
+    def test_right_read_min_per_list_kind(self):
+        default = conditions.DEFAULT_VALUES["bnal"]
+        # peptides default to 3; nucleotides keep the LabVIEW value
+        self.assertEqual(conditions.for_kind(default, "Peptide")["right_read_min"], 3)
+        self.assertEqual(conditions.for_kind(default, "Nucleotide")["right_read_min"], default["right_read_min"])
+        # editing the peptide value keeps the nucleotide one, and round-trips through a saved set
+        edited = conditions.store_for_kind(dict(default, right_read_min=4), "Peptide", default)
+        self.assertEqual(edited["right_read_min"], default["right_read_min"])
+        conditions.add_set("bnal", "Pep 4", edited, path=self.path)
+        cur = conditions.current("bnal", self.path)["values"]
+        self.assertEqual(conditions.for_kind(cur, "Peptide")["right_read_min"], 4)
+        self.assertEqual(conditions.for_kind(cur, "Nucleotide")["right_read_min"], default["right_read_min"])
+        # editing the nucleotide value keeps the peptide one
+        again = conditions.store_for_kind(dict(cur, right_read_min=6), "Nucleotide", cur)
+        self.assertEqual((again["right_read_min"], conditions.for_kind(again, "Peptide")["right_read_min"]), (6, 4))
+        with self.assertRaises(ValueError):
+            conditions.add_set("bnal", "bad", dict(default, rr_min_by_kind={"Peptide": 0}), path=self.path)
+
+    def test_renamed_bc_file_is_followed_by_the_sets(self):
+        conditions.add_set("bnal", "A", dict(conditions.DEFAULT_VALUES["bnal"], bc_files={"Peptide": "005.csv"}),
+                           path=self.path)
+        conditions.add_set("bnal", "B", dict(conditions.DEFAULT_VALUES["bnal"], bc_files={"Nucleotide": "001.csv"}),
+                           path=self.path)
+        self.assertEqual(conditions.rename_bc_file("005.csv", "005_amino.csv", self.path), ["A"])
+        files = {s["name"]: s["values"].get("bc_files") for s in conditions.sets("bnal", self.path)}
+        self.assertEqual((files["A"], files["B"]), ({"Peptide": "005_amino.csv"}, {"Nucleotide": "001.csv"}))
+        self.assertEqual(conditions.rename_bc_file("x.csv", "y.csv", self.path), [])
+
 
 if __name__ == "__main__":
     unittest.main()

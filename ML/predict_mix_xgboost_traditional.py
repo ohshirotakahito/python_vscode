@@ -205,7 +205,7 @@ def model_family_dir(smns: List[str]):
 
     results/ とは別ツリーの models/ 配下（common/paths.model_dir）に保存する。
     """
-    tag = "-".join(smns)
+    tag = paths.samples_label(smns)
     return paths.model_dir(FEATURE_SET, ALGORITHM, tag)
 
 

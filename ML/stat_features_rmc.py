@@ -337,7 +337,7 @@ def create_histograms(
         distance_tag += f"_distance-min-{distance_min:g}"
     if distance_max is not None:
         distance_tag += f"_distance-max-{distance_max:g}"
-    output_dir = output_root / f'{timestamp}_{"-".join(samples)}{distance_tag}'
+    output_dir = output_root / f'{timestamp}_{paths.samples_label(samples)}{distance_tag}'
     output_dir.mkdir(parents=True, exist_ok=False)
     import json
     (output_dir / 'feature_inputs.json').write_text(

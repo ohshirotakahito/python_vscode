@@ -9,7 +9,7 @@ import sys
 import threading
 import time
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 ANACONDA = Path.home() / "anaconda3" / "python.exe"
@@ -24,8 +24,8 @@ except ImportError:
 
 import numpy as np
 import pandas as pd
-from PyQt6.QtCore import QObject, QProcess, QSettings, Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QColor, QFont, QIcon
+from PyQt6.QtCore import QObject, QProcess, QSettings, Qt, QThread, QTimer, pyqtSignal
+from PyQt6.QtGui import QColor, QFont, QIcon, QKeySequence
 from PyQt6.QtWidgets import (
     QAbstractItemView, QApplication, QButtonGroup, QCheckBox, QComboBox, QCompleter, QDialog, QDoubleSpinBox,
     QFileDialog, QFormLayout, QFrame, QGridLayout, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel,
@@ -41,7 +41,7 @@ from nptdms import TdmsFile
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
-from shared import qt_theme, t_stock, ui_theme  # noqa: E402
+from shared import qt_theme, sequence_colors, t_stock, ui_theme  # noqa: E402
 from shared.app_icons import icon_path, set_taskbar_identity  # noqa: E402
 from taskbar_icon import apply_taskbar_icon
 
@@ -57,6 +57,13 @@ from first_step import DEFAULT_CONDITION as FIRST_DEFAULT, long_path
 from second_step import DEFAULT_BASES, DEFAULT_CONDITION as SECOND_DEFAULT, condition_from_bc_table
 
 BASE_COLORS = {"G": "#3b82f6", "A": "#ef4444", "C": "#d946ef", "U": "#2dd4bf", "B": "#9ca3af"}
+# peptides: the amino-acid colours shared with 配列アセンブリ (grouped by property), B as for bases
+AMINO_COLORS = {**sequence_colors.AMINO_TEXT_COLORS, "B": BASE_COLORS["B"]}
+
+
+def letter_colors(kind):
+    """Colours of the letters of a target list kind ('Peptide' / 'Nucleotide')."""
+    return AMINO_COLORS if kind == "Peptide" else BASE_COLORS
 APP_TITLE = "シグナル解析"
 APP_SUBTITLE = "1st Step（ANAL）・2nd Step（BNAL）の解析と結果ビューア"
 APP_ICON = ""
@@ -285,6 +292,28 @@ def make_progress(emit, i, n, name):
     def cb(done, total):
         emit(int(100 * (i + done / max(total, 1)) / n), f"{i + 1}/{n} {name[:40]}")
     return cb
+
+
+class Eta:
+    """Expected finish from the work done so far (bytes of TDMS analysed): redone on every update, so it follows
+    the real speed of this run and the work added while it runs."""
+
+    def __init__(self, settle=20):
+        self.t0, self.settle = None, settle
+
+    def start(self):
+        if self.t0 is None:
+            self.t0 = time.time()
+
+    def text(self, done, total):
+        if self.t0 is None or done <= 0 or total <= 0 or time.time() - self.t0 < self.settle:
+            return "終了予定 計算中"
+        left = (time.time() - self.t0) * max(total - done, 0) / done
+        finish = datetime.now() + timedelta(seconds=left)
+        when = finish.strftime("%H:%M" if finish.date() == datetime.now().date() else "%m/%d %H:%M")
+        mins = round(left / 60)
+        rest = f"{mins // 60} 時間 {mins % 60} 分" if mins >= 60 else f"{max(mins, 1)} 分"
+        return f"残り 約 {rest}（終了予定 {when}）"
 
 
 # ---------------------------------------------------------------------------
@@ -783,6 +812,7 @@ class ConditionDialog(QDialog):
     def __init__(self, parent, kind, run=True, summary="", bc_choices=None):
         super().__init__(parent)
         self.kind, self.bc = kind, bc_choices
+        self.list_kind = bc_choices["kind"] if bc_choices else None
         self.result_set = None
         self.setWindowTitle(f"解析条件 — {conditions.KINDS[kind]}")
         self.resize(720, 560)
@@ -814,8 +844,10 @@ class ConditionDialog(QDialog):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.editors = {}
-        defaults = conditions.DEFAULT_VALUES[kind]
+        defaults = self.as_used(conditions.DEFAULT_VALUES[kind])
         for i, (key, label, typ, spec) in enumerate(fields):
+            if key == "right_read_min" and self.list_kind:
+                label += f"（{self.list_kind}）"
             self.table.setItem(i, 0, QTableWidgetItem(label))
             if typ is str:
                 w = QComboBox()
@@ -866,14 +898,19 @@ class ConditionDialog(QDialog):
     def chosen(self):
         return conditions.find(self.kind, self.box.currentData()) or conditions.default_set(self.kind)
 
+    def as_used(self, values):
+        """Set values as used for the page's list kind (Right Read MIN of that kind)."""
+        return conditions.for_kind(values, self.list_kind) if self.list_kind else values
+
     def bc_of(self, s):
         return (s["values"].get("bc_files") or {}).get(self.bc["kind"]) or self.bc["selected"] if self.bc else None
 
     def show_set(self, *_):
         s = self.chosen()
+        used = self.as_used(s["values"])
         self.loading = True
         for key, w in self.editors.items():
-            v = self.bc_of(s) if key == "bc_file" else s["values"].get(key, conditions.DEFAULT_VALUES[self.kind][key])
+            v = self.bc_of(s) if key == "bc_file" else used.get(key, conditions.DEFAULT_VALUES[self.kind][key])
             if isinstance(w, QComboBox):
                 w.setCurrentText(str(v))
             else:
@@ -888,11 +925,14 @@ class ConditionDialog(QDialog):
         self.edited()
 
     def values(self):
+        """The edited values as set values (a kind's own Right Read MIN stored under rr_min_by_kind)."""
         out = {}
         for key, _, typ, _ in conditions.FIELDS[self.kind]:
             w = self.editors[key]
             v = w.currentText() if isinstance(w, QComboBox) else w.value()
             out[key] = int(v) if typ is int else v
+        if self.list_kind:
+            out = conditions.store_for_kind(out, self.list_kind, self.chosen()["values"])
         if self.bc:
             out["bc_files"] = {**(self.chosen()["values"].get("bc_files") or {}),
                                self.bc["kind"]: self.editors["bc_file"].currentText()}
@@ -902,15 +942,16 @@ class ConditionDialog(QDialog):
         """Edited away from the chosen set (the BC file counts when the set names one, or differs from the page)."""
         s, v = self.chosen(), self.values()
         keys = [k for k, *_ in conditions.FIELDS[self.kind]]
-        return (any(v[k] != s["values"].get(k) for k in keys)
+        used, v = self.as_used(s["values"]), self.as_used(v)
+        return (any(v[k] != used.get(k) for k in keys)
                 or bool(self.bc) and v["bc_files"][self.bc["kind"]] != self.bc_of(s))
 
     def edited(self, *_):
         if getattr(self, "loading", False):
             return
-        v = self.values()
-        diffs = conditions.differences(self.kind, v)
-        defaults = conditions.DEFAULT_VALUES[self.kind]
+        v = self.as_used(self.values())
+        defaults = self.as_used(conditions.DEFAULT_VALUES[self.kind])
+        diffs = conditions.differences(self.kind, v, defaults)
         for i, (key, *_) in enumerate(conditions.FIELDS[self.kind]):
             item = self.table.item(i, 0)
             item.setForeground(QColor(WARNING if v[key] != defaults[key] else TEXT))
@@ -2317,6 +2358,151 @@ def colored_seq(seq, colors, size=10):
             + "</span>")
 
 
+class BcDialog(QDialog):
+    """Make a new BC file from the selected one: letters, names, relative levels and STD can be edited and rows
+    added or removed; the other columns of each row (index, colour, description, ...) are kept."""
+
+    COLS = [("文字", 1), ("名前", 2), ("相対レベル", 4), ("STD", 5), ("説明", 6)]
+
+    def __init__(self, parent, folder, source, levels):
+        super().__init__(parent)
+        self.setWindowTitle("新しい BC ファイル")
+        self.resize(640, 640)
+        self.folder, self.saved = Path(folder), None
+        lay = QVBoxLayout(self)
+        form = QFormLayout()
+        form.addRow("元の BC", QLabel(source or "（なし：空から作成）"))
+        self.filename = QLineEdit(server_bnal.next_bc_name(self.folder))
+        form.addRow("新しいファイル名", self.filename)
+        lay.addLayout(form)
+        try:
+            rows = server_bnal.read_bc_rows(self.folder / source) if source else []
+        except OSError as e:
+            QMessageBox.warning(self, "BC", f"{source} を読めませんでした。\n{e}")
+            rows = []
+        self.table = PasteTable(0, len(self.COLS))
+        self.table.setHorizontalHeaderLabels([c for c, _ in self.COLS])
+        self.table.horizontalHeader().setSectionResizeMode(len(self.COLS) - 1, QHeaderView.ResizeMode.Stretch)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.table.pasted.connect(self.paste)
+        self.raw = []  # the full csv row behind each table row
+        for row in rows:
+            if len(row) < 5 or not row[1].strip():
+                continue
+            row = row + [""] * (7 - len(row))
+            letter = row[1].strip()
+            if letter in levels:
+                row[4] = f"{levels[letter]:g}"
+            self.add_row(row)
+        if levels:
+            note = QLabel("Base Table で変更した相対レベル（" + "、".join(f"{k} = {v:g}" for k, v in levels.items())
+                          + "）を入れてあります。")
+            note.setObjectName("subtitle")
+            note.setWordWrap(True)
+            lay.addWidget(note)
+        lay.addWidget(self.table, 1)
+        row = QHBoxLayout()
+        buttons(row, [("行を追加", lambda: self.add_row(None)), ("選択行を削除", self.delete_rows)])
+        row.addStretch()
+        self.msg = QLabel("")
+        self.msg.setObjectName("subtitle")
+        row.addWidget(self.msg)
+        lay.addLayout(row)
+        row = QHBoxLayout()
+        row.addStretch()
+        buttons(row, [("新しい BC として保存", self.save), ("閉じる", self.reject)])
+        lay.addLayout(row)
+
+    def add_row(self, raw):
+        r = self.table.rowCount()
+        self.table.insertRow(r)
+        self.raw.append(raw or ["", "", "", "0", "", "2", ""])
+        for c, (_, i) in enumerate(self.COLS):
+            item = QTableWidgetItem(self.raw[r][i])
+            if c == 0:
+                item.setFont(QFont("Consolas", 11, QFont.Weight.Bold))
+            self.table.setItem(r, c, item)
+        if raw is None:
+            self.table.setCurrentCell(r, 0)
+            self.table.editItem(self.table.item(r, 0))
+
+    def delete_rows(self):
+        for r in sorted({i.row() for i in self.table.selectedIndexes()}, reverse=True):
+            self.table.removeRow(r)
+            del self.raw[r]
+
+    def paste(self, text):
+        """Excel cells pasted from the current cell (rows added as needed)."""
+        lines = [line.split("\t") for line in text.replace("\r\n", "\n").split("\n") if line.strip()]
+        r0, c0 = max(self.table.currentRow(), 0), max(self.table.currentColumn(), 0)
+        for i, cells in enumerate(lines):
+            if r0 + i >= self.table.rowCount():
+                self.add_row(["", "", "", "0", "", "2", ""])
+            for j, v in enumerate(cells):
+                if c0 + j < len(self.COLS):
+                    self.table.item(r0 + i, c0 + j).setText(v.strip())
+
+    def save(self):
+        out, letters = [], set()
+        for r in range(self.table.rowCount()):
+            cells = [self.table.item(r, c).text().strip() for c in range(len(self.COLS))]
+            letter = cells[0]
+            if not re.fullmatch(r"[A-Za-z]", letter) or letter in letters:
+                self.problem(f"{r + 1} 行目: 文字は英字1文字で、重複しないようにしてください（{letter or '空'}）")
+                return
+            try:
+                float(cells[2]), float(cells[3])
+            except ValueError:
+                self.problem(f"{r + 1} 行目（{letter}）: 相対レベルと STD は数値で入力してください")
+                return
+            letters.add(letter)
+            row = list(self.raw[r])
+            for (_, i), v in zip(self.COLS, cells):
+                row[i] = v
+            out.append(row)
+        if "B" not in letters:
+            self.problem("Baseline の行（文字 B）が必要です")
+            return
+        for i, row in enumerate(out):  # LabVIEW numbers the rows 0, 1, 2, ...
+            row[0] = str(i)
+        name = self.filename.text().strip()
+        stem = name[:-4] if name.lower().endswith(".csv") else name
+        if not stem or stem.endswith((".", " ")) or re.search(r'[<>:"/\\|?*\x00-\x1f]', stem):
+            self.problem("有効なファイル名を入力してください")
+            return
+        path = self.folder / (stem + ".csv")
+        try:
+            server_bnal.write_bc_rows(path, out)
+        except FileExistsError:
+            self.problem(f"{path.name} はすでにあります。別の名前にしてください")
+            return
+        except OSError as e:
+            self.problem(f"{path} に保存できませんでした。\n{e}")
+            return
+        self.saved = path.name
+        QMessageBox.information(self, self.windowTitle(), f"{len(out)} 行の BC を保存しました。\n{path}")
+        self.accept()
+
+    def problem(self, text):
+        self.msg.setText(text.splitlines()[0])
+        QMessageBox.warning(self, self.windowTitle(), "保存していません。\n\n" + text)
+
+
+class PasteTable(QTableWidget):
+    """Table that hands Ctrl+V (clipboard text) and Delete to its owner instead of editing one cell."""
+
+    pasted = pyqtSignal(str)
+    delete_pressed = pyqtSignal()
+
+    def keyPressEvent(self, event):
+        if event.matches(QKeySequence.StandardKey.Paste):
+            self.pasted.emit(QApplication.clipboard().text())
+        elif event.key() in (Qt.Key.Key_Delete, Qt.Key.Key_Backspace) and self.state() != QAbstractItemView.State.EditingState:
+            self.delete_pressed.emit()
+        else:
+            super().keyPressEvent(event)
+
+
 class TargetDialog(QDialog):
     """Draft a new SEQlist CSV or add targets to the selected CSV."""
 
@@ -2377,12 +2563,20 @@ class TargetDialog(QDialog):
         b_var.clicked.connect(self.make_variants)
         row.addWidget(b_var)
         lay.addLayout(row)
-        self.table = QTableWidget(0, 3)
+        self.table = PasteTable(0, 3)
         self.table.setHorizontalHeaderLabels(["target 名", "配列", "長さ"])
-        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        self.table.verticalHeader().setVisible(False)
+        self.table.setColumnWidth(0, 160)
+        self.table.verticalHeader().setVisible(True)
+        self.table.pasted.connect(self.paste_rows)
+        self.table.delete_pressed.connect(self.clear_cells)
+        self.table.itemChanged.connect(self.cell_edited)
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self.table_menu)
+        self.table.setToolTip("target 名と配列を直接入力できます（長さは自動）。\n"
+                              "Excel でコピーした「target 名・配列」の2列を Ctrl+V で貼り付けできます。")
         tables = QSplitter(Qt.Orientation.Horizontal)
         if new_list:
             source_panel = QWidget()
@@ -2410,7 +2604,8 @@ class TargetDialog(QDialog):
         tables.addWidget(draft)
         lay.addWidget(tables, 1)
         row = QHBoxLayout()
-        buttons(row, [("選択行を削除", self.delete_rows)])
+        buttons(row, [("行を追加", self.add_blank_row), ("選択行を削除", self.delete_rows),
+                      ("貼り付け（Ctrl+V）", self.paste_clipboard)])
         row.addStretch()
         self.msg = QLabel("")
         self.msg.setObjectName("subtitle")
@@ -2418,7 +2613,8 @@ class TargetDialog(QDialog):
         lay.addLayout(row)
         row = QHBoxLayout()
         row.addStretch()
-        save_button = ("新しい CSV として保存", self.save_new) if new_list else ("既存リストに追加…", self.append_csv)
+        save_button = (("新しい CSV として保存", lambda: self.run_save(self.save_new)) if new_list
+                       else ("既存リストに追加…", lambda: self.run_save(self.append_csv)))
         buttons(row, [save_button, ("閉じる", self.reject)])
         lay.addLayout(row)
         self.kind_box.currentTextChanged.connect(self.update_kind)
@@ -2504,10 +2700,97 @@ class TargetDialog(QDialog):
     def insert_target(self, name, seq):
         r = self.table.rowCount()
         self.table.insertRow(r)
-        self.table.setItem(r, 0, QTableWidgetItem(name))
-        self.table.setItem(r, 1, QTableWidgetItem(seq))
-        self.table.item(r, 1).setFont(QFont("Consolas", 10))
-        self.table.setItem(r, 2, QTableWidgetItem(str(len(seq))))
+        self.set_row(r, name, seq)
+
+    def set_row(self, r, name=None, seq=None):
+        """Write name and/or seq into row r; the length column always follows the sequence."""
+        self.table.blockSignals(True)
+        try:
+            if name is not None:
+                self.table.setItem(r, 0, QTableWidgetItem(name))
+            if seq is not None:
+                item = QTableWidgetItem(self.clean(seq))
+                item.setFont(QFont("Consolas", 10))
+                self.table.setItem(r, 1, item)
+            for c in (0, 1):
+                if self.table.item(r, c) is None:
+                    self.table.setItem(r, c, QTableWidgetItem(""))
+            seq_text = self.table.item(r, 1).text()
+            length = QTableWidgetItem(str(len(seq_text)) if seq_text else "")
+            length.setFlags(length.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            length.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            self.table.setItem(r, 2, length)
+        finally:
+            self.table.blockSignals(False)
+
+    def cell_edited(self, item):
+        if item.column() == 1:
+            self.set_row(item.row(), seq=item.text())
+        elif item.column() == 0 and item.text() != item.text().strip():
+            self.set_row(item.row(), name=item.text().strip())
+
+    def add_blank_row(self):
+        r = self.table.currentRow() + 1 if self.table.selectedIndexes() else self.table.rowCount()
+        self.table.insertRow(r)
+        self.set_row(r, "", "")
+        self.table.setCurrentCell(r, 0)
+        self.table.editItem(self.table.item(r, 0))
+
+    def paste_clipboard(self):
+        self.paste_rows(QApplication.clipboard().text())
+
+    def paste_rows(self, text):
+        """Paste Excel cells (tab separated) from the current cell down, adding rows as needed.
+        Only the target-name and sequence columns are filled; a header row is skipped."""
+        lines = [line.split("\t") for line in text.replace("\r\n", "\n").replace("\r", "\n").split("\n")]
+        while lines and not any(c.strip() for c in lines[-1]):
+            lines.pop()
+        if lines and len(lines[0]) >= 2 and (
+                lines[0][0].strip().lower() in {"target", "target 名", "target名", "name", "名前"}
+                or lines[0][1].strip().lower() in {"seq", "sequence", "配列"}):
+            lines.pop(0)
+        if not lines:
+            self.msg.setText("貼り付けるデータがクリップボードにありません")
+            return
+        current = self.table.currentIndex()
+        if current.isValid() and current.column() < 2:
+            r0, c0 = current.row(), current.column()
+        else:
+            r0, c0 = self.table.rowCount(), 0
+        for i, cells in enumerate(lines):
+            r = r0 + i
+            if r >= self.table.rowCount():
+                self.table.insertRow(r)
+            values = {c0 + j: v.strip() for j, v in enumerate(cells) if c0 + j < 2}
+            self.set_row(r, values.get(0), values.get(1))
+        self.table.clearSelection()
+        self.table.setCurrentCell(r0, c0)
+        self.msg.setText(f"{len(lines)} 行を貼り付けました（{self.table.rowCount()} 件）")
+
+    def clear_cells(self):
+        for index in self.table.selectedIndexes():
+            if index.column() == 0:
+                self.set_row(index.row(), name="")
+            elif index.column() == 1:
+                self.set_row(index.row(), seq="")
+
+    def table_menu(self, pos):
+        menu = QMenu(self)
+        menu.addAction("行を追加", self.add_blank_row)
+        menu.addAction("貼り付け（Ctrl+V）", self.paste_clipboard)
+        menu.addAction("選択行を削除", self.delete_rows)
+        menu.exec(self.table.viewport().mapToGlobal(pos))
+
+    def reject(self):
+        """Closing (閉じる, ×, Esc) with targets still in the list asks first: nothing is saved yet."""
+        if self.saved is None and self.rows():
+            answer = QMessageBox.question(
+                self, self.windowTitle(),
+                f"一覧の {len(self.rows())} 件はまだ保存されていません。\n保存せずに閉じますか？",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+            if answer != QMessageBox.StandardButton.Yes:
+                return
+        super().reject()
 
     def make_variants(self):
         name, seq = self.name.text().strip(), self.clean(self.seq.text())
@@ -2538,8 +2821,11 @@ class TargetDialog(QDialog):
             self.table.removeRow(r)
 
     def rows(self):
-        return [(self.table.item(r, 0).text().strip(), self.clean(self.table.item(r, 1).text()))
-                for r in range(self.table.rowCount()) if self.table.item(r, 0).text().strip()]
+        def text(r, c):
+            item = self.table.item(r, c)
+            return item.text() if item else ""
+        out = [(text(r, 0).strip(), self.clean(text(r, 1))) for r in range(self.table.rowCount())]
+        return [(n, s) for n, s in out if n or s]
 
     def append_csv(self):
         rows = self.validated_rows()
@@ -2566,6 +2852,17 @@ class TargetDialog(QDialog):
         self.saved = self.current_csv
         self.accept()
 
+    def run_save(self, save):
+        """Run a save and never let it end silently: a reason that stops it, or an error, is shown in a box."""
+        self.msg.setText("")
+        try:
+            save()
+        except Exception:
+            QMessageBox.critical(self, self.windowTitle(), "保存中にエラーが起きました。\n\n" + traceback.format_exc())
+            return
+        if self.saved is None and self.msg.text():
+            QMessageBox.warning(self, self.windowTitle(), "保存していません。\n\n" + self.msg.text())
+
     def validated_rows(self):
         rows = self.rows()
         name, seq = self.name.text().strip(), self.clean(self.seq.text())
@@ -2574,6 +2871,9 @@ class TargetDialog(QDialog):
                 self.msg.setText("target 名と配列を入力してください")
                 return
             rows.append((name, seq))
+        if any(not n for n, _ in rows):
+            self.msg.setText("target 名が空の行があります")
+            return
         if not rows or any(not re.fullmatch(r"[A-Z]+", s) for _, s in rows):
             self.msg.setText("target 名と配列（英字）を入力してください")
             return
@@ -2613,6 +2913,7 @@ class TargetDialog(QDialog):
             QMessageBox.warning(self, "新しい target CSV", f"{path} に保存できませんでした。\n{e}")
             return
         self.saved, self.saved_kind = path.name, kind
+        QMessageBox.information(self, self.windowTitle(), f"{len(rows)} 件を保存しました。\n{path}")
         self.accept()
 
 
@@ -2673,6 +2974,7 @@ class HistoryDialog(QDialog):
 class ServerBnalPage(QWidget):
     db_changed = pyqtSignal()
     combos_done = pyqtSignal(list)
+    run_count = pyqtSignal(object, str, int)  # (sample key, target, B@@ in BNAL@target now) during a run
     SAMPLE_COLS = ["共有", "プロジェクト", "サンプル", "ANAL", "ANAL/stocked", "BNAL@"]
     TARGET_COLS = ["target", "配列", "長さ", "種別", "基本配列"]
     GROUP_FILTERS = {"対象＋未分類": {"target", None}, "BNAL 対象": {"target"}, "非対象": {"excluded"},
@@ -2756,7 +3058,8 @@ class ServerBnalPage(QWidget):
         self.kind_box.setCurrentText(settings().value("seq_kind", "Nucleotide"))
         self.kind_box.setToolTip("Nucleotide → BC は Base、Peptide → BC は Amino acid のリストから選びます")
         self.kind_box.currentTextChanged.connect(
-            lambda k: (settings().setValue("seq_kind", k), self.overrides.clear(), self.fill_dirs()))
+            lambda k: (settings().setValue("seq_kind", k), self.overrides.clear(), self.fill_dirs(),
+                       self.apply_kind_rr()))
         f2.addWidget(self.kind_box)
         self.seq_dir = QLineEdit(settings().value("seqlist_folder", str(server_bnal.SEQ_DIR)))
         self.seq_dir.setToolTip("SEQlist のフォルダ（分類が未指定の CSV は配列から自動判定）")
@@ -2851,8 +3154,11 @@ class ServerBnalPage(QWidget):
         tr.addLayout(opts, 0)
         l3.addLayout(tr, 1)
         r3 = QHBoxLayout()
-        buttons(r3, [("BC の値に戻す", self.reset_levels), ("BC ファイルとして保存…", self.save_bc),
-                     ("履歴…", self.open_history)])
+        b_reset, b_new_bc, b_rename_bc, _ = buttons(
+            r3, [("BC の値に戻す", self.reset_levels), ("新しい BC…", self.new_bc),
+                 ("BC の名前を変更…", self.rename_bc), ("履歴…", self.open_history)])
+        b_new_bc.setToolTip("選んでいる BC（Base Table で変えた値を含む）をもとに、新しい BC ファイルを作ります")
+        b_rename_bc.setToolTip("選んでいる BC ファイルの名前を変えます（条件セットの参照も新しい名前にします）")
         r3.addStretch()
         l3.addLayout(r3)
         top.addWidget(g3)
@@ -2874,7 +3180,9 @@ class ServerBnalPage(QWidget):
         st.addWidget(add)
         self.status_label = QLabel("④ 組み合わせ（0 組）")
         st.addWidget(self.status_label, 1)
-        buttons(st, [("選択行を削除", self.remove_combos), ("全削除", self.clear_combos)])
+        b_big, *_ = buttons(st, [("大きく表示…", self.show_combos), ("選択行を削除", self.remove_combos),
+                                 ("全削除", self.clear_combos)])
+        b_big.setToolTip("組み合わせを大きなウインドウで全部確認します")
         self.b_check = QPushButton("実フォルダを確認")
         self.b_check.clicked.connect(self.check_folders)
         st.addWidget(self.b_check)
@@ -2891,10 +3199,18 @@ class ServerBnalPage(QWidget):
         lay.addWidget(self.run, 2)
         self.db_changed.connect(self.reload)
         self.combos_done.connect(self.drop_combos)
+        # B@@ counted while a run goes on: shown in (4) before the DB is updated at the end of the run
+        self.run_counts, self.combo_view = {}, None
+        self.count_timer = QTimer(self)
+        self.count_timer.setSingleShot(True)
+        self.count_timer.setInterval(1500)
+        self.count_timer.timeout.connect(self.show_run_counts)
+        self.run_count.connect(self.got_run_count)
         self.fill_dirs()
         self.apply_condition(conditions.current("bnal")["values"])
         self.show_condition()
         self.reload()
+        QTimer.singleShot(500, self.offer_resume)
 
     # -- data -------------------------------------------------------------------
     @staticmethod
@@ -2909,6 +3225,8 @@ class ServerBnalPage(QWidget):
         except Exception as e:
             QMessageBox.warning(self, "BNAL（サーバー）", f"データベースを読めません:\n{e}")
             return
+        if not (getattr(self, "active_run", None) or {}).get("open"):
+            self.run_counts = {}  # the DB now holds what the run made
         settings().setValue("inventory_db", path)
         self.samples = [r for r in rows if (r["anal_tdms"] or 0) + (r["anal_stocked_tdms"] or 0) > 0]
         fresh = {self.key(r): r for r in self.samples}
@@ -2964,6 +3282,7 @@ class ServerBnalPage(QWidget):
             except Exception as e:
                 QMessageBox.warning(self, "BNAL（サーバー）", f"{name} を読めません:\n{e}")
         self.fill_targets()
+        self.show_bases()
 
     def bc(self):
         try:
@@ -3058,6 +3377,8 @@ class ServerBnalPage(QWidget):
             label.setTextFormat(Qt.TextFormat.RichText)
             label.setStyleSheet("background: transparent; padding-left: 4px")
             t.setCellWidget(i, 1, label)
+        if self.targets:
+            t.setCurrentCell(0, 0)  # a target is always chosen, so the Base Table is never left empty
         t.blockSignals(False)
 
     def sample_checked(self, item):
@@ -3078,6 +3399,7 @@ class ServerBnalPage(QWidget):
     def set_targets(self, names):
         self.checked_targets = set(names)
         self.fill_targets()
+        self.show_bases()
 
     def edit_targets(self, *, new_list):
         filename = self.csv_box.currentText()
@@ -3090,6 +3412,12 @@ class ServerBnalPage(QWidget):
         if dlg.exec() and dlg.saved:
             checked = self.checked_targets
             self.select_target_csv(dlg.saved_kind, dlg.saved)
+            if self.csv_box.findText(dlg.saved) < 0:
+                QMessageBox.warning(self, "target リスト",
+                                    f"{dlg.saved} を保存しましたが、{dlg.saved_kind} の一覧に出てきません。\n"
+                                    f"SEQlist フォルダ: {self.seq_folder()}")
+            else:
+                self.csv_box.setCurrentText(dlg.saved)
             if not new_list and self.csv_box.currentText() == filename:
                 self.set_targets(checked)
 
@@ -3116,6 +3444,7 @@ class ServerBnalPage(QWidget):
             self.kind_box.blockSignals(False)
             settings().setValue("seq_kind", kind)
             self.overrides.clear()
+            self.apply_kind_rr()
         self.fill_dirs(select=filename)
 
     # -- base table -----------------------------------------------------------------
@@ -3132,7 +3461,13 @@ class ServerBnalPage(QWidget):
             bc = self.bc()
             bases, _, missing = self.bases_for(seq, bc)
             names, colors = {b: n for b, n, *_ in bc}, server_bnal.species(bc)
-            self.base_label.setText(f"Base Table（{name}）" + (f"　⚠ BC に無い文字: {''.join(missing)}" if missing else ""))
+            if not bc:
+                self.base_label.setText(f"Base Table（{name}）　⚠ BC ファイル「{self.bc_box.currentText()}」を"
+                                        "読めません。塩基・アミノ酸の電流値 (BC) を選び直してください")
+            else:
+                unit = "アミノ酸" if server_bnal.is_amino(bc) else "塩基"
+                self.base_label.setText(f"Base Table（{name}）　{unit} {len(bases) - ('B' in bases)} 種 + B"
+                                        + (f"　⚠ BC に無い文字: {''.join(missing)}" if missing else ""))
             for b, v in bases.items():
                 r = self.base_view.rowCount()
                 self.base_view.insertRow(r)
@@ -3150,6 +3485,9 @@ class ServerBnalPage(QWidget):
                         item.setForeground(QColor(WARNING))
                         item.setToolTip("BC の値から変更しています")
                     self.base_view.setItem(r, c, item)
+        else:
+            self.base_label.setText("Base Table（target がありません。② で target リストを選んでください）"
+                                    if not self.targets else "Base Table（② で target を選ぶと表示）")
         self.base_view.blockSignals(False)
         self.base_view.resizeColumnsToContents()
 
@@ -3173,19 +3511,58 @@ class ServerBnalPage(QWidget):
         self.overrides = {}
         self.show_bases()
 
-    def save_bc(self):
-        src = self.bc_folder() / self.bc_box.currentText()
-        path, _ = QFileDialog.getSaveFileName(self, "BC ファイルとして保存", str(self.bc_folder()), "CSV (*.csv)")
-        if not path:
+    def new_bc(self):
+        dlg = BcDialog(self, self.bc_folder(), self.bc_box.currentText(), dict(self.overrides))
+        if dlg.exec() and dlg.saved:
+            self.select_bc(dlg.saved)
+
+    def select_bc(self, name):
+        """Show a BC file that was just made or renamed (it is listed under the kind its letters belong to)."""
+        kind = self.kind_box.currentText()
+        self.fill_dirs()
+        if self.bc_box.findText(name) < 0:
+            QMessageBox.information(self, "BC", f"{name} は {kind} 用の BC ではないため、"
+                                                "この分類の一覧には出ません（文字の内容で判定しています）。")
             return
-        if Path(path).resolve() == src.resolve() and QMessageBox.question(
-                self, "BC", f"{src.name} を上書きします。よろしいですか？"
-        ) != QMessageBox.StandardButton.Yes:
+        self.bc_box.setCurrentText(name)
+
+    def rename_bc(self):
+        old = self.bc_box.currentText()
+        if not old:
             return
-        server_bnal.write_bc(path, src, self.overrides)
-        if Path(path).parent.resolve() == self.bc_folder().resolve():
-            self.fill_dirs()
-            self.bc_box.setCurrentText(Path(path).name)
+        new, ok = QInputDialog.getText(self, "BC の名前を変更", f"{old} の新しい名前:", text=old)
+        new = new.strip()
+        if not ok or not new or new == old:
+            return
+        if not new.lower().endswith(".csv"):
+            new += ".csv"
+        if re.search(r'[<>:"/\\|?*\x00-\x1f]', new) or new[:-4].endswith((".", " ")):
+            QMessageBox.warning(self, "BC の名前を変更", f"{new} はファイル名に使えません。")
+            return
+        if QMessageBox.question(
+                self, "BC の名前を変更",
+                f"{old} → {new}\n\n共有フォルダ {self.bc_folder()} のファイル名を変えます。\n"
+                "・条件セットの参照は新しい名前にします。\n"
+                "・解析履歴や LabVIEW など、古い名前で覚えているところからは見つからなくなります。\n\n"
+                "よろしいですか？") != QMessageBox.StandardButton.Yes:
+            return
+        try:
+            server_bnal.rename_bc(self.bc_folder(), old, new)
+        except FileExistsError:
+            QMessageBox.warning(self, "BC の名前を変更", f"{new} はすでにあります。")
+            return
+        except OSError as e:
+            QMessageBox.warning(self, "BC の名前を変更", f"名前を変えられませんでした。\n{e}")
+            return
+        changed = conditions.rename_bc_file(old, new)
+        s = settings()
+        for kind in server_bnal.SEQ_KINDS:
+            if s.value(f"bc_file/{kind}") == old:
+                s.setValue(f"bc_file/{kind}", new)
+        self.select_bc(new)
+        if changed:
+            QMessageBox.information(self, "BC の名前を変更",
+                                    "条件セットの参照も変更しました: " + "、".join(changed))
 
     # -- history --------------------------------------------------------------------
     def open_history(self):
@@ -3229,13 +3606,116 @@ class ServerBnalPage(QWidget):
         if not samples or not targets:
             QMessageBox.information(self, "BNAL（サーバー）", "① のサンプルと ② の target にチェックを入れてください。")
             return
+        before = len(self.combos)
         for r in samples:
             for n, s in targets:
                 self.add_combo(r, n, s)
+        self.hand_to_run(self.combos[before:])
         self.fill_status()
         # added: clear the checks for the next sample x target choice
         self.set_samples(set())
         self.set_targets(set())
+        self.show_combos()
+
+    def hand_to_run(self, new):
+        """Combinations added while (4) is being analysed join that run (after its current ones)."""
+        ctx = getattr(self, "active_run", None)
+        if not new or not ctx:
+            return
+        with ctx["lock"]:
+            if not ctx["open"]:
+                return
+        if ctx["redo"] and QMessageBox.question(
+                self, "BNAL（サーバー）", f"実行中の解析は「再解析」です。追加した {len(new)} 組も BNAL@target の B@@ を "
+                                         "old フォルダへ移動して再解析します。今の解析に加えますか？\n"
+                                         "（いいえ: ④ に残し、今の解析には加えません）") != QMessageBox.StandardButton.Yes:
+            return
+        joined, bad = [], []
+        for r, name, seq in new:
+            if (self.key(r), name) in ctx["seen"]:
+                continue
+            cond = None
+            if name not in ctx["conds"]:
+                cond, missing = ctx["cond_for"](name, seq)
+                if cond is None:
+                    bad.append(f"{name}: {missing}")
+                    continue
+            joined.append((r, name, seq, cond))
+        with ctx["lock"]:
+            if not ctx["open"]:
+                joined = []
+            for r, name, seq, cond in joined:
+                if cond is not None:
+                    ctx["conds"][name] = cond
+                ctx["seen"].add((self.key(r), name))
+                ctx["extra"].append((r, name, seq))
+        if joined:
+            self.run.log.appendPlainText(f"＋ 実行中の解析に {len(joined)} 組を追加しました（今の組の後に続けて解析します）")
+        if bad:
+            QMessageBox.warning(self, "BNAL（サーバー）", "BC に無い文字を含む target は今の解析に加えません"
+                                "（④ には残ります）:\n" + "\n".join(bad[:10]))
+
+    def offer_resume(self):
+        """A BNAL run that stopped before its end (program closed, PC stopped, 中止, errors): offer to go on."""
+        entry = server_bnal.load_resume()
+        if not entry or (self.run.thread and self.run.thread.isRunning()):
+            return
+        combos = entry["combinations"]
+        n_samples = len({(c["root"], c["experiment"], c["sample"]) for c in combos})
+        box = QMessageBox(self)
+        box.setWindowTitle("BNAL（サーバー） — 前回の続き")
+        c = entry.get("conditions", {})
+        box.setText(f"{entry.get('time', '')} に始めた BNAL 解析が、最後まで終わっていません。\n"
+                    f"{n_samples} サンプル・{len(combos)} 組（BC {c.get('bc_file', '')}、"
+                    f"Right Read MIN {c.get('right_read_min', '')}）\n\n"
+                    "続きから解析しますか？（解析済みの B@@ は飛ばし、残りだけを解析します）")
+        b_go = box.addButton("続きから解析", QMessageBox.ButtonRole.AcceptRole)
+        b_load = box.addButton("④ に戻すだけ", QMessageBox.ButtonRole.ActionRole)
+        b_drop = box.addButton("破棄", QMessageBox.ButtonRole.DestructiveRole)
+        box.addButton("あとで", QMessageBox.ButtonRole.RejectRole)
+        box.exec()
+        if box.clickedButton() is b_drop:
+            if QMessageBox.question(self, "前回の続き", "前回の続きの記録を消します（解析結果は消えません）。"
+                                    "よろしいですか？") == QMessageBox.StandardButton.Yes:
+                server_bnal.clear_resume()
+            return
+        if box.clickedButton() not in (b_go, b_load):
+            return
+        if not self.restore_run(entry):
+            return
+        if box.clickedButton() is b_go:
+            self.start()
+
+    def restore_run(self, entry):
+        """Put the conditions and combinations of a remembered run back into (2)-(4); False when none is left."""
+        c = entry.get("conditions", {})
+        if c.get("list_kind") and c["list_kind"] != self.kind_box.currentText():
+            self.kind_box.setCurrentText(c["list_kind"])
+        if c.get("target_csv") and self.csv_box.findText(c["target_csv"]) >= 0:
+            self.csv_box.setCurrentText(c["target_csv"])
+        if c.get("bc_file") and self.bc_box.findText(c["bc_file"]) >= 0:
+            self.bc_box.setCurrentText(c["bc_file"])
+        for w, key in ((self.rrmin, "right_read_min"), (self.noise, "noise_max"), (self.filter_p, "filter_p")):
+            if key in c:
+                w.setValue(int(c[key]))
+        self.overrides = {k: float(v) for k, v in (c.get("overrides") or {}).items()}
+        self.mode_resume.setChecked(True)  # never move the B@@ of a redo to old a second time
+        self.show_bases()
+        by_key = {self.key(r): r for r in self.samples}
+        missing = 0
+        for x in entry["combinations"]:
+            r = by_key.get((x["root"], x["experiment"], x["sample"]))
+            if r is None:
+                missing += 1
+                continue
+            self.add_combo(r, x["target"], x["sequence"])
+        self.fill_status()
+        self.bottom.setCurrentIndex(0)
+        if missing:
+            QMessageBox.warning(self, "前回の続き", f"{missing} 組はサンプルが DB に見つからないため戻せませんでした。")
+        if entry.get("mode") == "再解析":
+            self.run.log.appendPlainText("前回は「再解析」でしたが、移動済みの B@@ を再び移さないよう「未解析のみ」で続けます。")
+        return bool(self.combos)
 
     def remove_combos(self):
         for i in sorted({i.row() for i in self.status.selectedIndexes()}, reverse=True):
@@ -3252,18 +3732,74 @@ class ServerBnalPage(QWidget):
         self.fill_status()
 
     def fill_status(self):
-        t = self.status
+        totals = self.fill_combo_table(self.status)
+        self.status_label.setText(self.combo_summary(totals))
+
+    def combo_summary(self, totals):
+        n_samples = len({self.key(r) for r, *_ in self.combos})
+        live = any((self.key(r), n) in self.run_counts for r, n, _ in self.combos)
+        return (f"④ 組み合わせ（{n_samples} サンプル・{len(self.combos)} 組）"
+                + (f"　BNAL {totals[0]} / {totals[1]} TDMS（解析中に作った B@@ を含む）" if live
+                   else f"　DB 上 BNAL {totals[0]} / {totals[1]} TDMS"))
+
+    def got_run_count(self, key, name, n):
+        self.run_counts[(tuple(key), name)] = n
+        if not self.count_timer.isActive():
+            self.count_timer.start()  # redraw at most every 1.5 s
+
+    def show_run_counts(self):
+        self.fill_status()
+        if self.combo_view:
+            self.combo_view()
+
+    def show_combos(self):
+        """All combinations in a large window, to check them after adding; closed with 閉じる."""
+        dlg = QDialog(self)
+        dlg.setWindowTitle("④ 組み合わせ（解析）")
+        screen = self.screen().availableGeometry()
+        dlg.resize(min(1500, screen.width() - 80), min(900, screen.height() - 80))
+        lay = QVBoxLayout(dlg)
+        label = QLabel("")
+        lay.addWidget(label)
+        t = check_table(self.STATUS_COLS)
+        t.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        lay.addWidget(t, 1)
+        def refresh():
+            label.setText(self.combo_summary(self.fill_combo_table(t)))
+        refresh()
+        self.combo_view = refresh  # follows the run while the window is open
+        row = QHBoxLayout()
+        row.addStretch()
+        b_close = QPushButton("閉じる")
+        b_close.setObjectName("primary")
+        b_close.setDefault(True)
+        b_close.clicked.connect(dlg.accept)
+        row.addWidget(b_close)
+        lay.addLayout(row)
+        try:
+            dlg.exec()
+        finally:
+            self.combo_view = None
+
+    def fill_combo_table(self, t):
+        """Rows of the combinations in table t; returns [BNAL TDMS in the DB, ANAL + stocked TDMS]."""
+        scroll = t.verticalScrollBar().value()
         t.setRowCount(0)
         t.setRowCount(len(self.combos))
         colors = self.colors()
         totals = [0, 0]
         for i, (r, name, seq) in enumerate(self.combos):
             counts = self.bnals.get((server_anal.identity(r["root"]), r["experiment"], r["sample"]), {})
+            running = self.run_counts.get((self.key(r), name))
+            if running is not None:
+                counts = {**counts, name: running}
             bnal = counts.get(name)
             anal, stocked = r["anal_tdms"] or 0, r["anal_stocked_tdms"] or 0
             goal = anal + stocked
             state = server_bnal.combo_state(r, name, counts)
             notes = []
+            if running is not None:
+                notes.append("解析中の数")
             if stocked:
                 notes.append(f"退避 {stocked}（解析しない）")
             if r["anal_distinct"] is not None and anal > r["anal_distinct"]:
@@ -3292,9 +3828,8 @@ class ServerBnalPage(QWidget):
             label.setStyleSheet(f"background: {tint.name()}; padding-left: 4px")
             t.setCellWidget(i, 5, label)
         t.resizeColumnsToContents()
-        n_samples = len({self.key(r) for r, *_ in self.combos})
-        self.status_label.setText(f"④ 組み合わせ（{n_samples} サンプル・{len(self.combos)} 組）"
-                                  f"　DB 上 BNAL {totals[0]} / {totals[1]} TDMS")
+        t.verticalScrollBar().setValue(scroll)
+        return totals
 
     # -- live check -------------------------------------------------------------
     # -- current state (bnal_status): survey the samples checked in (1), put right what can be ------------
@@ -3563,6 +4098,7 @@ class ServerBnalPage(QWidget):
             QMessageBox.warning(self, "BNAL（サーバー）", "BC（電流値）ファイルを読めません。")
             return None
         conds, bad = {}, []
+        kind = self.kind_box.currentText()
         for name, seq in {(n, s) for _, n, s in pairs}:
             bases, stds, missing = self.bases_for(seq, bc)
             if missing:
@@ -3570,13 +4106,23 @@ class ServerBnalPage(QWidget):
                 continue
             conds[name] = {"sample_name": name, "sample_sequence": seq, "right_read_min": self.rrmin.value(),
                            "noise_max": self.noise.value(), "filter_p": self.filter_p.value(),
-                           "bases": bases, "base_stds": stds, "condition_set": chosen}
+                           "bases": bases, "base_stds": stds, "condition_set": chosen, "list_kind": kind}
         if bad:
             QMessageBox.warning(self, "BNAL（サーバー）", f"{self.bc_box.currentText()} に無い文字を含む target は"
                                 "解析しません:\n" + "\n".join(bad[:10]))
         pairs = [p for p in pairs if p[1] in conds]
         if not pairs:
             return None
+        rr, noise, filter_p = self.rrmin.value(), self.noise.value(), self.filter_p.value()
+
+        def cond_for(name, seq):
+            """Conditions of a target added while the run goes on (same set, BC and levels as the run)."""
+            bases, stds, missing = self.bases_for(seq, bc)
+            if missing:
+                return None, "".join(missing)
+            return {"sample_name": name, "sample_sequence": seq, "right_read_min": rr, "noise_max": noise,
+                    "filter_p": filter_p, "bases": bases, "base_stds": stds, "condition_set": chosen,
+                    "list_kind": kind}, ""
         redo = self.mode_redo.isChecked()
         if redo and QMessageBox.question(
                 self, "BNAL（サーバー）", f"{len(pairs)} 組の BNAL@target にある B@@ を old フォルダへ移動して、"
@@ -3596,11 +4142,76 @@ class ServerBnalPage(QWidget):
             "program": second_step_io.BNAL_VERSION,
         }
 
+        # combinations added in (4) while this job runs from the page are handed over here (see hand_to_run)
+        made = {}  # (sample key, target) -> B@@ in BNAL@target, counted as the run goes on
+        ctx = {"lock": threading.Lock(), "open": False, "extra": [], "conds": conds, "cond_for": cond_for,
+               "redo": redo, "seen": {(self.key(r), n) for r, n, _ in pairs}}
+
+        def size(a):
+            try:
+                return max(os.stat(long_path(a)).st_size, 1)
+            except OSError:
+                return 1
+
+        def combos_of(some):
+            return [{"group": r["group"], "root": r["root"], "experiment": r["experiment"],
+                     "sample": r["sample"], "target": n, "sequence": s} for r, n, s in some]
+
+        def remember(some, started):
+            """The run on disk, so it can be started again if it stops (server_bnal.RESUME)."""
+            try:
+                server_bnal.save_resume({"time": started.strftime("%Y-%m-%d %H:%M:%S"), "mode": history["mode"],
+                                         "conditions": {k: v for k, v in history["conditions"].items()
+                                                        if k != "bases"},
+                                         "combinations": combos_of(some)})
+            except OSError:
+                pass
+
         def job(log, progress, cancelled=lambda: False):
+            try:
+                return run(log, progress, cancelled)
+            finally:
+                with ctx["lock"]:
+                    ctx["open"] = False
+                    left, ctx["extra"] = ctx["extra"], []
+                if left:
+                    log(f"  解析中に追加された {len(left)} 組は解析していません（④ に残っています）")
+
+        def run(log, progress, cancelled):
             started = datetime.now()
+            eta = Eta()
+            work = {"total": 0, "done": 0, "files": 0}
+            outs, failed, all_pairs, batch = [], 0, [], pairs
+
+            def pct(extra=0):
+                return int(100 * (work["done"] + extra) / work["total"]) if work["total"] else 0
+            while batch:
+                all_pairs += batch
+                remember(all_pairs, started)
+                plan = check(batch, log, progress, pct, cancelled)
+                work["total"] += sum(a[4] for a in plan)
+                work["files"] += len(plan)
+                out_batch, failed_batch = analyse(plan, log, progress, cancelled, eta, work, pct)
+                outs += out_batch
+                failed += failed_batch
+                if cancelled():
+                    break
+                with ctx["lock"]:
+                    batch, ctx["extra"] = ctx["extra"], []
+                    if not batch:
+                        ctx["open"] = False
+                if batch:
+                    log(f"■ 解析中に追加された {len(batch)} 組を続けて解析します")
+            history["combinations"] = combos_of(all_pairs)
+            history["conditions"]["bases"] = {n: c["bases"] for n, c in sorted(conds.items())}
+            return finish(all_pairs, outs, failed, work["files"], started, log, cancelled)
+
+        def check(batch, log, progress, pct, cancelled):
             plan = []
-            for i, (r, name, _) in enumerate(pairs):
-                progress(0, f"フォルダ確認 {i + 1}/{len(pairs)}")
+            for i, (r, name, _) in enumerate(batch):
+                if cancelled():
+                    break
+                progress(pct(), f"フォルダ確認 {i + 1}/{len(batch)}")
                 t = server_anal.t_dir(r)
                 where = f"{r['group']} / {r['experiment']} / {r['sample']} / {name}"
                 try:
@@ -3612,11 +4223,16 @@ class ServerBnalPage(QWidget):
                 except Exception as e:
                     log(f"✖ {where}: {e}")
                     continue
+                made[(self.key(r), name)] = p["bnal"]
+                self.run_count.emit(self.key(r), name, p["bnal"])
                 log(f"□ {where}  未解析 {len(p['todo'])} / ANAL {p['anal']}"
                     + (f"　⚠ ANAL/stocked に退避中 {p['stocked']}（解析しません）" if p["stocked"] else ""))
-                plan += [(r, t, name, a) for a in p["todo"]]
+                plan += [(r, t, name, a, size(a)) for a in p["todo"]]
+            return plan
+
+        def analyse(plan, log, progress, cancelled, eta, work, pct):
             outs, failed = [], 0
-            for k, (r, t, name, a) in enumerate(plan):
+            for k, (r, t, name, a, n_bytes) in enumerate(plan):
                 if cancelled():
                     log("■ 中止しました")
                     break
@@ -3624,26 +4240,40 @@ class ServerBnalPage(QWidget):
                 if server_anal.anal_key(a.name) in {server_anal.anal_key(e.name) for e in server_bnal._tdms(folder)
                                                     if e.name.startswith("B@@")}:
                     log(f"  - {a.name}  （ほかで解析済みのため飛ばします）")
+                    work["total"] -= n_bytes
                     continue
+                eta.start()
+                label = f"{k + 1}/{len(plan)} {name}  {a.name[:40]}"
+
+                def file_progress(done, total, label=label, n_bytes=n_bytes):
+                    part = n_bytes * done / max(total, 1)
+                    progress(pct(part), f"{label}　{eta.text(work['done'] + part, work['total'])}")
                 t0 = time.perf_counter()
                 row = dict(group=r["group"], experiment=r["experiment"], sample=r["sample"], target=name, anal=str(a),
                            condition_set=chosen)
                 try:
-                    out, res = second_step_io.process_file(
-                        a, conds[name], folder, False, make_progress(progress, k, len(plan), f"{name}  {a.name}"))
+                    out, res = second_step_io.process_file(a, conds[name], folder, False, file_progress)
                 except Exception as e:
+                    work["done"] += n_bytes
                     failed += 1
                     log(f"  ✖ {name}  {a.name}\n    {e}")
                     server_anal.log_run(BNAL_LOG, **row, out="", seconds=f"{time.perf_counter() - t0:.1f}",
                                         status="error", error=str(e))
                     continue
+                work["done"] += n_bytes
+                k_live = (self.key(r), name)
+                made[k_live] = made.get(k_live, 0) + 1
+                self.run_count.emit(self.key(r), name, made[k_live])
                 br = res["BR Table"].iloc[0]
                 log(f"  ● {name}  {out.name}  長い信号 {int(br['Long Signal Number # [n]'])}"
                     f"  MAX Right Read {int(br['MAX Right Read # [n]'])}")
                 server_anal.log_run(BNAL_LOG, **row, out=str(out), seconds=f"{time.perf_counter() - t0:.1f}",
                                     status="ok", error="")
                 outs.append(str(out))
-            result = f"{len(outs)} / {len(plan)} ファイル" + (f"　失敗 {failed}" if failed else "") \
+            return outs, failed
+
+        def finish(pairs, outs, failed, n_files, started, log, cancelled):
+            result = f"{len(outs)} / {n_files} ファイル" + (f"　失敗 {failed}" if failed else "") \
                 + ("　中止" if cancelled() else "")
             log(f"完了 {result}　記録: {BNAL_LOG}")
             server_bnal.add_history({"time": started.strftime("%Y-%m-%d %H:%M:%S"), **history, "result": result})
@@ -3667,14 +4297,24 @@ class ServerBnalPage(QWidget):
             if done:
                 log(f"  解析が終わった {len(done)} 組を組み合わせから外しました")
                 self.combos_done.emit(done)
+            # what is left can be started again later (also after the program stops); nothing left: forget the run
+            finished = {(tuple(k), n) for k, n in done}
+            left = [c for c in pairs if (self.key(c[0]), c[1]) not in finished]
+            if left:
+                remember(left, started)
+                log(f"  未解析が残る {len(left)} 組を「前回の続き」として記録しました")
+            else:
+                server_bnal.clear_resume()
             return outs
         names = sorted(conds)
         return {"kind": "BNAL（サーバー）", "desc": f"{len({self.key(r) for r, *_ in pairs})} サンプル・{len(pairs)} 組"
-                f"  ({', '.join(names)[:80]})", "fn": job, "a_files": []}
+                f"  ({', '.join(names)[:80]})", "fn": job, "a_files": [], "ctx": ctx}
 
     def start(self):
         job = self.build_job()
         if job:
+            job["ctx"]["open"] = True
+            self.active_run = job["ctx"]
             self.run.start(job["fn"])
 
     def send(self):
@@ -3693,12 +4333,17 @@ class ServerBnalPage(QWidget):
 
     def apply_condition(self, values):
         """Show the values of a condition set in (3) (the BC file of the current list kind when the set has one)."""
-        self.rrmin.setValue(values["right_read_min"])
+        self.rrmin.setValue(conditions.for_kind(values, self.kind_box.currentText())["right_read_min"])
         self.noise.setValue(values["noise_max"])
         self.filter_p.setValue(values["filter_p"])
         bc = (values.get("bc_files") or {}).get(self.kind_box.currentText())
         if bc and self.bc_box.findText(bc) >= 0:
             self.bc_box.setCurrentText(bc)
+
+    def apply_kind_rr(self):
+        """List kind changed: Right Read MIN of the current condition set for that kind (Peptide 3 by default)."""
+        self.rrmin.setValue(conditions.for_kind(conditions.current("bnal")["values"],
+                                                self.kind_box.currentText())["right_read_min"])
 
     def show_condition(self):
         self.cond_label.setText("解析条件: " + conditions.describe("bnal", conditions.current("bnal")))
@@ -4549,6 +5194,7 @@ class ViewerPage(QWidget):
                     kind = "B" if "BR Table" in t or Path(path).name.upper().startswith("B@@") else "A"
                     if kind == "B":
                         tab = read_tables(t, self.B_TABLES, self.B_COLUMNS)
+                        tab["list_kind"] = str(t.properties.get(sequence_colors.LIST_KIND_PROPERTY, "") or "")
                     else:
                         tab = read_tables(t, self.A_TABLES)
                     data = t["Data"]["Ch1"][:] * 1000 if "Data" in t and "Ch1" in t["Data"] else np.array([])
@@ -4734,6 +5380,8 @@ class ViewerPage(QWidget):
         for n in ("LSP Table", "LTP Table"):
             tab.setdefault(n, pd.DataFrame(columns=["L#", "File name"]))
         self.sample, self.b_path = bc["Sample Sequence"], str(path)
+        # Nucleotide / Peptide chosen in BNAL (old B@@ files: judged from the sequence)
+        self.colors = letter_colors(sequence_colors.list_kind(tab.get("list_kind"), self.sample))
         info = {"Sample name": bc["Sample name"], "Sample Sequence": self.sample}
         info.update({k: br[k] for k in br.index if "BNAL" not in k})
         if self.folder_info:  # folder totals stay on top, the selected file below
@@ -4825,7 +5473,10 @@ class ViewerPage(QWidget):
             tt = np.arange(i0, i1) / 10000
             self.plot.plot(tt, self.raw[i0:i1], pen=pg.mkPen("#4b5263", width=1.2),
                            symbol="o", symbolSize=3, symbolBrush="#4b5263", symbolPen=None, name="Raw")
-        for base, color in BASE_COLORS.items():
+        colors = getattr(self, "colors", BASE_COLORS)
+        shown = set(pts["Assinged Base"]) | {c[:-3] for c in sig.index if c.endswith("_AL")} | {"B"}
+        for base in [b for b in colors if b in shown]:
+            color = colors[base]
             col = f"{base}_AL" if f"{base}_AL" in sig else ("BL_AL" if base == "B" else None)
             if col and col in sig:
                 lvl = float(sig[col])
@@ -4846,7 +5497,7 @@ class ViewerPage(QWidget):
         def colored(seq, hl=None):
             out = []
             for i, ch in enumerate(seq):
-                style = f"color:{BASE_COLORS.get(ch, TEXT)}"
+                style = f"color:{getattr(self, 'colors', BASE_COLORS).get(ch, TEXT)}"
                 if hl and hl[0] <= i < hl[1]:
                     style += f";background:{ui_theme.mix(FIELD, ACCENT, 0.3)};font-weight:bold"
                 out.append(f"<span style='{style}'>{ch}</span>")

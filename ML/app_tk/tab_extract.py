@@ -12,8 +12,10 @@
 
 import importlib
 import json
+import queue
+import threading
 import tkinter as tk
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from tkinter import messagebox, ttk
 
 import pandas as pd
@@ -64,6 +66,8 @@ class ExtractTab(ttk.Frame):
         self.scan_df = pd.DataFrame()
         self.scan_key = None
         self.checked: set[int] = set()
+        # 確認中のジョブ（確認中に追加したサンプルを同じ確認処理へ流し込むため）
+        self._scan_job = None
 
         self._build_form()
         self._build_actions()
@@ -107,8 +111,11 @@ class ExtractTab(ttk.Frame):
                   lambda: self._pick("share"))
         self._row(form, 3, "実験フォルダ名", ttk.Entry(form, textvariable=self.ex),
                   lambda: self._pick("ex"))
-        self._row(form, 4, "サンプル名（カンマ区切り）", ttk.Entry(form, textvariable=self.samples),
-                  lambda: self._pick("samples"))
+        samples_entry = ttk.Entry(form, textvariable=self.samples)
+        self._row(form, 4, "サンプル名（カンマ区切り）", samples_entry, lambda: self._pick("samples"))
+        # 確認中に手入力で追加した分は、入力を終えた時点（Enter／欄から離れる）で確認に加える
+        samples_entry.bind("<Return>", lambda _e: self._queue_added_samples())
+        samples_entry.bind("<FocusOut>", lambda _e: self._queue_added_samples())
         self.path_label = ttk.Label(form, text="", foreground=MUTED)
         self.path_label.grid(row=5, column=1, columnspan=2, sticky="w")
         self.condition_note = tk.StringVar()
@@ -131,6 +138,17 @@ class ExtractTab(ttk.Frame):
 
     def _settings_changed(self):
         self._update_path()
+        job = self._scan_job
+        if job is not None:
+            if job["base"] == self._base_key():
+                self.scan_status.configure(
+                    text="確認中です。追加したサンプルも続けて確認します"
+                         "（手入力の場合は Enter で確定）。", foreground=INFO)
+            else:
+                self.scan_status.configure(
+                    text="確認中に設定が変わりました。確認が終わったら「ファイルを確認」を押し直してください。",
+                    foreground=WARNING)
+            return
         if self.scan_key is not None and self.scan_key != self._current_key():
             self.scan_status.configure(
                 text="設定が変わりました。「ファイルを確認」を押し直してください。", foreground=WARNING)
@@ -151,6 +169,8 @@ class ExtractTab(ttk.Frame):
         self.scan_status.pack(side="left", padx=12)
 
     def _on_busy(self, busy):
+        if not busy:
+            self._scan_job = None
         state = "disabled" if busy else "normal"
         self.run_button.configure(state=state)
         self.scan_button.configure(state=state)
@@ -164,9 +184,11 @@ class ExtractTab(ttk.Frame):
     def _sample_list(self):
         return [s.strip() for s in self.samples.get().split(",") if s.strip()]
 
+    def _base_key(self):
+        return (self._feature_set(), self.server.get(), self.share.get().strip(), self.ex.get().strip())
+
     def _current_key(self):
-        return (self._feature_set(), self.server.get(), self.share.get().strip(),
-                self.ex.get().strip(), tuple(self._sample_list()))
+        return self._base_key() + (tuple(self._sample_list()),)
 
     def _validated_settings(self):
         share = check_component(self.share.get(), "共有フォルダ")
@@ -207,8 +229,31 @@ class ExtractTab(ttk.Frame):
                 self, "サンプルの一覧から選択", parent,
                 loader=lambda: list_subfolders(parent), browse_dir=parent, multiple=True,
                 annotate=lambda name: f"{feature_set} に同名の特徴量あり" if name in extracted else "",
-                on_select=lambda names: self.samples.set(", ".join(dict.fromkeys(names))),
-                preselected=self._sample_list())
+                on_select=self._set_samples, preselected=self._sample_list())
+
+    def _set_samples(self, names):
+        self.samples.set(", ".join(dict.fromkeys(names)))
+        self._queue_added_samples()
+
+    def _queue_added_samples(self):
+        """確認中なら、まだ確認対象に入っていないサンプルを実行中の確認へ追加する。"""
+        job = self._scan_job
+        if job is None or job["base"] != self._base_key():
+            return
+        try:
+            new = [check_component(s, "サンプル名") for s in self._sample_list() if s not in job["queued"]]
+        except ValueError as e:
+            messagebox.showerror("入力を確認してください", str(e))
+            return
+        if not new:
+            return
+        with job["lock"]:
+            if job["closed"]:
+                return  # 確認がちょうど終わったところ。終了処理で追加分を続けて確認する
+            for sample in new:
+                job["queued"].append(sample)
+                job["queue"].put(sample)
+        self.progress.log(f"確認対象に追加: {', '.join(new)}\n")
 
     def _set_share(self, name):
         if name != self.share.get():
@@ -277,42 +322,90 @@ class ExtractTab(ttk.Frame):
         self.files.bind("<ButtonRelease-1>", self._on_click)
         self.files.bind("<space>", lambda _e: self._toggle(self.files.selection()))
 
-    def _scan(self, auto=False):
+    def _scan(self, auto=False, reuse=None):
+        """サーバー上のファイルを確認する。
+
+        確認中に「一覧から選択」や手入力（Enter）でサンプルを追加すると、同じ確認処理に追加される。
+        reuse: {サンプル: 確認結果} 確認済みの分（同じ設定のとき、その分は問い合わせ直さない）
+        """
         try:
             server, share, ex, samples = self._validated_settings()
         except ValueError as e:
             messagebox.showerror("入力を確認してください", str(e))
             return
         feature_set = self._feature_set()
-        key = self._current_key()
+        start_key = self._current_key()
+        reuse = dict(reuse or {})
+        job = {"base": self._base_key(), "queued": list(samples), "queue": queue.Queue(),
+               "lock": threading.Lock(), "closed": False}
         if not auto:
             self.sub.select(2)
 
         def task(progress):
-            frames = []
-            progress(0, len(samples), "サーバー上のファイルを確認中…")
+            frames = dict(reuse)
+            todo = [s for s in samples if s not in frames]
+            total, finished = len(todo), 0
+            progress(0, total, "サーバー上のファイルを確認中…")
             # サーバーへの問い合わせ待ちが主なので、サンプルごとに並列で確認する
-            with ThreadPoolExecutor(max_workers=min(4, len(samples))) as pool:
-                futures = {pool.submit(scan_sample, server, share, ex, s, feature_set): s
-                           for s in samples}
-                for done, future in enumerate(as_completed(futures), start=1):
-                    sample = futures[future]
-                    df = future.result()
-                    print(f"[{sample}] {len(df)} 件: {df['status'].value_counts().to_dict()}")
-                    frames.append(df)
-                    progress(done, len(samples), f"[{sample}] 確認完了")
-            order = {s: i for i, s in enumerate(samples)}
-            result = pd.concat(frames, ignore_index=True)
-            result["_order"] = result["sample"].map(order)
-            return result.sort_values(["_order", "file_no"], ignore_index=True).drop(columns="_order")
+            with ThreadPoolExecutor(max_workers=4) as pool:
+                futures = {pool.submit(scan_sample, server, share, ex, s, feature_set): s for s in todo}
+                pending = set(futures)
+                while True:
+                    while True:  # 確認中に追加されたサンプル
+                        try:
+                            sample = job["queue"].get_nowait()
+                        except queue.Empty:
+                            break
+                        future = pool.submit(scan_sample, server, share, ex, sample, feature_set)
+                        futures[future] = sample
+                        pending.add(future)
+                        total += 1
+                        progress(finished, total, f"[{sample}] を確認対象に追加")
+                    if not pending:
+                        with job["lock"]:
+                            if job["queue"].empty():
+                                job["closed"] = True
+                                break
+                        continue
+                    completed, pending = wait(pending, timeout=0.3, return_when=FIRST_COMPLETED)
+                    for future in completed:
+                        sample = futures[future]
+                        df = future.result()
+                        print(f"[{sample}] {len(df)} 件: {df['status'].value_counts().to_dict()}")
+                        frames[sample] = df
+                        finished += 1
+                        progress(finished, total, f"[{sample}] 確認完了")
+            return frames
 
-        def done(df):
+        def done(frames):
+            if job["base"] == self._base_key():
+                # 確認中に追加・削除したサンプルを反映する（並び順は入力欄の順）
+                current = self._sample_list()
+                missing = [s for s in current if s not in frames]
+                if missing:
+                    self.progress.log(f"続けて確認します: {', '.join(missing)}\n")
+                    self._scan(auto=auto, reuse=frames)
+                    return
+                order, key = current, self._current_key()
+            else:
+                order, key = job["queued"], start_key
+            chosen = [frames[s] for s in order if s in frames]
+            if not chosen:
+                self.scan_status.configure(text="確認するサンプルがありません。", foreground=WARNING)
+                return
+            result = pd.concat(chosen, ignore_index=True)
+            rank = {s: i for i, s in enumerate(order)}
+            result["_order"] = result["sample"].map(rank)
+            df = result.sort_values(["_order", "file_no"], ignore_index=True).drop(columns="_order")
             previous = self._checked_keys()
             self.scan_df, self.scan_key = df, key
             self._fill_files(previous if auto else None)
+            self._settings_changed()
             self.sub.select(0)
 
-        self.runner.run(task, self.progress, on_done=done)
+        if self.runner.run(task, self.progress, on_done=done):
+            self._scan_job = job
+            self._settings_changed()
 
     def _checked_keys(self):
         if self.scan_df.empty:

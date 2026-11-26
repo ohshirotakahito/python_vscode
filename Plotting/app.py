@@ -772,20 +772,18 @@ class AssemblyPanel(ttk.Frame):
 
         legend = ttk.Labelframe(left, text='色の見方', padding=6)
         legend.pack(fill='x', pady=(8, 0))
-        chips = tk.Text(legend, height=4, wrap='word', font=(ui_theme.MONO, 11))
+        self.chips = chips = tk.Text(legend, height=4, wrap='word', font=(ui_theme.MONO, 11))
         ui_theme.style_text(chips)
-        for base in ('A', 'U', 'G', 'C', 'M', 'N', 'S', 'X', 'Z'):
-            chips.tag_configure(base, foreground=asm.base_color(base, text=True), font=(ui_theme.MONO, 11, 'bold'))
-            chips.insert('end', f' {base} ', base)
-        chips.insert('end', '\n A/U/G/C 以外は修飾塩基\n', 'muted')
-        lo, hi = asm.Q_BANDS
-        for band, text in (('high', f' Q≥{hi:.0f} '), ('mid', f' {lo:.0f}≤Q<{hi:.0f} '), ('low', f' Q<{lo:.0f} ')):
+        for kind, colors in ((asm.NUCLEOTIDE, asm.TEXT_COLORS), (asm.PEPTIDE, asm.AMINO_TEXT_COLORS)):
+            for base in colors:
+                chips.tag_configure(self.letter_tag(base, kind), foreground=asm.base_color(base, True, kind),
+                                    font=(ui_theme.MONO, 11, 'bold'))
+        for band in ('high', 'mid', 'low'):
             chips.tag_configure(f'q_{band}', foreground=self.Q_TEXT_COLORS[band], font=(ui_theme.MONO, 10, 'bold'))
-            chips.insert('end', text, f'q_{band}')
-        chips.insert('end', '  ← q値の文字の色', 'muted')
         chips.tag_configure('muted', foreground=ui_theme.MUTED, font=(ui_theme.UI, 9))
-        chips.configure(state='disabled')
         chips.pack(fill='x')
+        self._legend_kind = None
+        self.fill_legend(asm.NUCLEOTIDE)
 
         buttons = ttk.Frame(left)
         buttons.pack(fill='x', pady=(8, 0))
@@ -818,8 +816,10 @@ class AssemblyPanel(ttk.Frame):
         xs.grid(row=1, column=0, sticky='ew')
         frame.rowconfigure(0, weight=1)
         frame.columnconfigure(0, weight=1)
-        for base, color in asm.TEXT_COLORS.items():
-            self.text.tag_configure(base, foreground=color, font=(ui_theme.MONO, 11, 'bold'))
+        for kind, colors in ((asm.NUCLEOTIDE, asm.TEXT_COLORS), (asm.PEPTIDE, asm.AMINO_TEXT_COLORS)):
+            for base, color in colors.items():
+                self.text.tag_configure(self.letter_tag(base, kind), foreground=color,
+                                        font=(ui_theme.MONO, 11, 'bold'))
         self.text.tag_configure('other', foreground='#cfcfcf', font=(ui_theme.MONO, 11, 'bold'))
         self.text.tag_configure('gap', foreground=ui_theme.DIM)
         self.text.tag_configure('head', foreground=ui_theme.MUTED)
@@ -831,6 +831,34 @@ class AssemblyPanel(ttk.Frame):
         for band, color in self.Q_TEXT_COLORS.items():
             self.text.tag_configure(f'q_{band}', foreground=color)
         self.write_message('「読み込み」タブでデータを読み込み、左の一覧から選んでください。')
+
+    @staticmethod
+    def letter_tag(base, kind):
+        """文字の色のタグ名（核酸の C とアミノ酸の C など、同じ文字でも色が違うので種類で分ける）"""
+        return f'{kind}_{base}'
+
+    def fill_legend(self, kind):
+        """「色の見方」を核酸／ペプチドに合わせて書き直す"""
+        if kind == self._legend_kind:
+            return
+        self._legend_kind = kind
+        chips = self.chips
+        chips.configure(state='normal', height=7 if kind == asm.PEPTIDE else 4)
+        chips.delete('1.0', 'end')
+        if kind == asm.PEPTIDE:
+            for name, colors in asm.AMINO_GROUPS:
+                for base in colors:
+                    chips.insert('end', f'{base} ', self.letter_tag(base, kind))
+                chips.insert('end', f'{name}\n', 'muted')
+        else:
+            for base in ('A', 'U', 'G', 'C', 'M', 'N', 'S', 'X', 'Z'):
+                chips.insert('end', f' {base} ', self.letter_tag(base, kind))
+            chips.insert('end', '\n A/U/G/C 以外は修飾塩基\n', 'muted')
+        lo, hi = asm.Q_BANDS
+        for band, text in (('high', f' Q≥{hi:.0f} '), ('mid', f' {lo:.0f}≤Q<{hi:.0f} '), ('low', f' Q<{lo:.0f} ')):
+            chips.insert('end', text, f'q_{band}')
+        chips.insert('end', '  ← q値の文字の色', 'muted')
+        chips.configure(state='disabled')
 
     # ---------- データ一覧 ----------
     def refresh_list(self):
@@ -853,7 +881,8 @@ class AssemblyPanel(ttk.Frame):
         for index in self.listbox.curselection():
             result = self.app.datasets[self.idents[index]]
             label = f'{result.entry.sample} / {result.entry.target}'
-            out.append(asm.build(result.data, label, result.entry.target, direction, min_length, min_read_q))
+            out.append(asm.build(result.data, label, result.entry.target, direction, min_length, min_read_q,
+                                 getattr(result, 'list_kind', '')))
         return out
 
     # ---------- 描画 ----------
@@ -871,6 +900,8 @@ class AssemblyPanel(ttk.Frame):
         try:
             assemblies = self.selected_assemblies()
             sort = asm.SORTS[self.sort.get()]
+            kinds = {a.kind for a in assemblies}
+            self.fill_legend(kinds.pop() if len(kinds) == 1 else asm.NUCLEOTIDE)
             if len(assemblies) == 1:
                 asm.plot_pileup(assemblies[0], self.figure, sort=sort, merge=self.merge.get(),
                                 max_rows=max(int(self.max_rows.get() or 200), 10),
@@ -903,7 +934,7 @@ class AssemblyPanel(ttk.Frame):
             width = max(len(a.label) for a in assemblies)
             for a in assemblies:
                 t.insert('end', f'{a.label:<{width}}  ', 'head')
-                self.insert_bases(a.sequence)
+                self.insert_bases(a.sequence, a.kind)
                 t.insert('end', f'  {len(a.reads):,} 本\n', 'head')
                 self._lines.append(f'{a.label:<{width}}  {a.sequence}')
             t.insert('end', '\n')
@@ -916,12 +947,12 @@ class AssemblyPanel(ttk.Frame):
                     t.insert('end', line.seq, 'ruler')
                 elif line.kind == 'ref':
                     start = t.index('end-1c')
-                    self.insert_bases(line.seq)
+                    self.insert_bases(line.seq, a.kind)
                     t.tag_add('ref', start, 'end-1c')
                 elif line.kind == 'qual':
                     self.insert_quality(line.seq, line.quals)
                 else:
-                    self.insert_bases(line.seq)
+                    self.insert_bases(line.seq, a.kind)
                 tail = line.tail
                 tag = 'fwd' if tail.startswith(asm.FORWARD) else 'rev' if tail.startswith(asm.REVERSE) else 'head'
                 t.insert('end', f'  {tail}\n' if tail else '\n', tag)
@@ -930,12 +961,13 @@ class AssemblyPanel(ttk.Frame):
             self._lines.append('')
         t.configure(state='disabled')
 
-    def insert_bases(self, seq):
+    def insert_bases(self, seq, kind=asm.NUCLEOTIDE):
         """同じ色の連続はまとめて1回で挿入する（数千行でも速く書けるように）"""
         t = self.text
+        colors = asm.AMINO_TEXT_COLORS if kind == asm.PEPTIDE else asm.TEXT_COLORS
         run, run_tag = '', None
         for ch in seq:
-            tag = 'gap' if ch == asm.GAP_CHAR else ch if ch in asm.TEXT_COLORS else 'other'
+            tag = 'gap' if ch == asm.GAP_CHAR else self.letter_tag(ch, kind) if ch in colors else 'other'
             if tag != run_tag and run:
                 t.insert('end', run, run_tag)
                 run = ''

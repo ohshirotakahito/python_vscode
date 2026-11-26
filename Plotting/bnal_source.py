@@ -39,6 +39,8 @@ Q_ASCII = 'ASCII_Q'           # Phred+33 の1文字（LCP の 'CP ASCII_Q'）
 QUALITY_COLUMNS = (Q_VALUE, Q_ASCII)
 CHANNELS = REQUIRED_CHANNELS + OPTIONAL_CHANNELS + QUALITY_COLUMNS
 FILE_COLUMN = 'file'
+# BNAL（サーバー）で選んだ target リストの分類（Nucleotide / Peptide）。B@@ のファイルのプロパティ
+from shared.sequence_colors import LIST_KIND_PROPERTY  # noqa: E402  (B@@ のプロパティ名)
 # キャッシュの形式。読む列を増やしたら上げる（古いキャッシュは次回サーバーから読み直す）
 CACHE_VERSION = 2
 
@@ -192,6 +194,7 @@ def read_lap_table(path) -> pd.DataFrame | None:
         lap_channels = REQUIRED_CHANNELS + OPTIONAL_CHANNELS
         data = {name: channels[name][:] for name in lap_channels if name in channels}
         lcp = {name: ch[:] for name, ch in _channels(tdms, QUALITY_GROUP).items()}
+        list_kind = str(tdms.properties.get(LIST_KIND_PROPERTY, '') or '')
     n = max(len(v) for v in data.values())
     columns = {}
     for name in lap_channels:
@@ -209,7 +212,9 @@ def read_lap_table(path) -> pd.DataFrame | None:
         df[name] = pd.to_numeric(df[name], errors='coerce')
     for name in ('Assigned Base', 'Direction'):
         df[name] = df[name].astype(str).replace({'nan': ''})
-    return attach_quality(df, lcp)
+    df = attach_quality(df, lcp)
+    df.attrs['list_kind'] = list_kind
+    return df
 
 
 def list_tdms(folder) -> dict[str, tuple[int, float]]:
@@ -232,6 +237,7 @@ class LoadResult:
     errors: list[str] = field(default_factory=list)
     offline: bool = False         # サーバーを見ずにキャッシュだけで読んだ
     old_cache: bool = False       # 古い形式のキャッシュ（q値なし）をそのまま使った
+    list_kind: str = ''           # 'Nucleotide' / 'Peptide'（B@@ に記録が無ければ空）
 
     @property
     def label(self):
@@ -241,19 +247,20 @@ class LoadResult:
 def _load_cache(data_path, meta_path):
     """(data, files, 現行形式か)。古い形式もキャッシュだけで読む時のために返す（無い列は空で足す）"""
     if not (data_path.exists() and meta_path.exists()):
-        return pd.DataFrame(columns=[FILE_COLUMN, *CHANNELS]), {}, True
+        return pd.DataFrame(columns=[FILE_COLUMN, *CHANNELS]), {}, True, ''
     meta = json.loads(meta_path.read_text(encoding='utf-8'))
     data = pd.read_parquet(data_path)
     for name in CHANNELS:
         if name not in data:
             data[name] = '' if name in (Q_ASCII, 'Direction') else np.nan
-    return data, meta.get('files', {}), meta.get('version', 1) == CACHE_VERSION
+    return data, meta.get('files', {}), meta.get('version', 1) == CACHE_VERSION, meta.get('list_kind', '')
 
 
-def _save_cache(data_path, meta_path, data, files, occurrence):
+def _save_cache(data_path, meta_path, data, files, occurrence, list_kind=''):
     data_path.parent.mkdir(parents=True, exist_ok=True)
     data.to_parquet(data_path, index=False)
-    meta = dict(version=CACHE_VERSION, root=occurrence.root, group=occurrence.group, files=files)
+    meta = dict(version=CACHE_VERSION, root=occurrence.root, group=occurrence.group, files=files,
+                list_kind=list_kind)
     meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding='utf-8')
 
 
@@ -265,8 +272,9 @@ def load_target(entry: TargetEntry, occurrence: Occurrence, offline=False, cache
     cancel(): True を返したら途中で止める（それまでの読み込み分はキャッシュに残す）
     """
     data_path, meta_path = cache_paths(occurrence.group, *entry.key, cache_dir=cache_dir)
-    cached, cached_files, current_format = _load_cache(data_path, meta_path)
-    result = LoadResult(entry, occurrence, cached, offline=offline, old_cache=not current_format)
+    cached, cached_files, current_format, cached_kind = _load_cache(data_path, meta_path)
+    result = LoadResult(entry, occurrence, cached, offline=offline, old_cache=not current_format,
+                        list_kind=cached_kind)
 
     if offline:
         result.files_total = result.files_cached = len(cached_files)
@@ -300,6 +308,8 @@ def load_target(entry: TargetEntry, occurrence: Occurrence, offline=False, cache
         if df is None:
             result.skipped.append(name)
             continue
+        if df.attrs.get('list_kind'):
+            result.list_kind = df.attrs['list_kind']
         df.insert(0, FILE_COLUMN, name)
         frames.append(df)
     if progress is not None:
@@ -308,8 +318,8 @@ def load_target(entry: TargetEntry, occurrence: Occurrence, offline=False, cache
     frames = [f for f in frames if not f.empty]
     result.data = (pd.concat(frames, ignore_index=True) if frames
                    else pd.DataFrame(columns=[FILE_COLUMN, *CHANNELS]))
-    if todo or set(cached_files) != set(files):
-        _save_cache(data_path, meta_path, result.data, files, occurrence)
+    if todo or set(cached_files) != set(files) or result.list_kind != cached_kind:
+        _save_cache(data_path, meta_path, result.data, files, occurrence, result.list_kind)
     return result
 
 
