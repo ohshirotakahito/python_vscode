@@ -80,8 +80,13 @@ class TrainTab(ttk.Frame):
         self.samples.pack(fill="both", expand=True, pady=2)
         ttk.Label(left, textvariable=self.sample_selection_summary,
                   wraplength=340).pack(anchor="w", fill="x")
-        ttk.Button(left, text="サンプルの選択をすべて解除",
-                   command=self.samples.clear_selection).pack(fill="x", pady=2)
+        sample_actions = ttk.Frame(left)
+        sample_actions.pack(fill="x", pady=2)
+        sample_actions.columnconfigure((0, 1), weight=1, uniform="sample_actions")
+        ttk.Button(sample_actions, text="すべて選択",
+                   command=self.samples.select_all).grid(row=0, column=0, sticky="ew", padx=(0, 2))
+        ttk.Button(sample_actions, text="すべて解除",
+                   command=self.samples.clear_selection).grid(row=0, column=1, sticky="ew", padx=(2, 0))
         ttk.Button(left, text="抽出結果の日時・条件を確認 / 使用する版を選択",
                    command=self._choose_versions).pack(fill="x", pady=2)
         self.version_summary = ttk.Label(left, text="未指定のサンプルは最新の完了版を使用",
@@ -275,7 +280,9 @@ class TrainTab(ttk.Frame):
         return True
 
     def _samples_changed(self, selected):
-        names = ", ".join(selected) if selected else "なし"
+        names = ", ".join(selected[:3]) if selected else "なし"
+        if len(selected) > 3:
+            names += f" ほか{len(selected) - 3}件"
         self.sample_selection_summary.set(f"選択中（{len(selected)}件）: {names}")
 
     def _choose_file_filters(self):

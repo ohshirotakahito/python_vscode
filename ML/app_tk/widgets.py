@@ -246,6 +246,10 @@ class CheckList(ttk.Frame):
     def get_selected(self) -> list[str]:
         return [self._items[i] for i in self.listbox.curselection()]
 
+    def select_all(self):
+        self.listbox.selection_set(0, "end")
+        self._changed()
+
     def clear_selection(self):
         self.listbox.selection_clear(0, "end")
         self._changed()
